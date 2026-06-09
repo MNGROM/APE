@@ -102,6 +102,33 @@ python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-tr
 python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --thinking enabled --llm-timeout 900
 ```
 
+## 更换模型
+
+更换模型不需要改代码。优先级为：命令行参数最高，其次是环境变量，最后是代码里的默认值。
+
+使用另一个智谱 GLM 模型：
+
+```powershell
+python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model glm-4.7-flashx
+```
+
+也可以给当前 PowerShell 会话设置默认模型：
+
+```powershell
+$env:ZHIPU_LLM_MODEL="glm-5.1"
+$env:ZHIPU_LLM_API_KEY="your-zhipu-api-key"
+$env:ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
+```
+
+如果要接入其他 OpenAI-compatible provider，需要同时设置模型名和 base URL：
+
+```powershell
+python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model your-model-name --base-url https://your-provider.example.com/v1/
+```
+
+当前评估脚本假设后端兼容 Chat Completions 接口。如果 provider 拒绝 GLM 特有字段，
+先使用默认参数运行；默认情况下 `thinking` 已关闭，`do_sample` 和 `top_p` 也不会发送。
+
 ## 评估方式
 
 每个 case 会比较生成 PlantUML 和参考 PlantUML。当前评估包含：

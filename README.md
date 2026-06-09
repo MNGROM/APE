@@ -107,6 +107,36 @@ python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-tr
 python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --thinking enabled --llm-timeout 900
 ```
 
+## Changing Models
+
+The model can be changed without editing code. Command-line arguments have the
+highest priority, then environment variables, then the built-in defaults.
+
+Use another Zhipu GLM model:
+
+```powershell
+python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model glm-4.7-flashx
+```
+
+Or configure the default model for the current shell:
+
+```powershell
+$env:ZHIPU_LLM_MODEL="glm-5.1"
+$env:ZHIPU_LLM_API_KEY="your-zhipu-api-key"
+$env:ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
+```
+
+To use another OpenAI-compatible provider, set both the model and base URL:
+
+```powershell
+python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model your-model-name --base-url https://your-provider.example.com/v1/
+```
+
+The prompt evaluator assumes a Chat Completions-compatible endpoint. If a
+provider rejects GLM-specific fields, run with the defaults first because
+`thinking`, `do_sample`, and `top_p` are already omitted or disabled unless
+explicitly requested.
+
 ## Evaluation
 
 Each case is evaluated by comparing generated PlantUML with the reference
