@@ -852,8 +852,8 @@ def initialize_run_prompt(seed_prompt_path: Path, run_dir: Path) -> Path:
 def write_run_args(args: argparse.Namespace, run_dir: Path) -> None:
     public_args: dict[str, Any] = {}
     for key, value in sorted(vars(args).items()):
-        if key == "api_key":
-            public_args["api_key_present"] = bool(value)
+        if key in {"api_key", "higen_judge_api_key"}:
+            public_args[f"{key}_present"] = bool(value)
         elif isinstance(value, Path):
             public_args[key] = str(value)
         else:
