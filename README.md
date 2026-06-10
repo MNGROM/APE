@@ -146,6 +146,8 @@ PlantUML. The evaluator checks:
 - Basic activity-diagram structure, including start/end nodes and dangling or unreachable flow.
 - Activity node matching with normalized text similarity.
 - Control-flow relation matching between extracted semantic activities.
+- HiGenModel-style PlantUML compilation pass rate, recorded as `higen_compilation_pass_rate`.
+- Optional HiGenModel-style LLM-as-judge node/relation P/R/F1, recorded as `llm_node_f1` and `llm_relation_f1`.
 
 The prompt quality score is:
 
@@ -156,6 +158,16 @@ The prompt quality score is:
 A candidate prompt is only accepted when its validation score improves over the
 current prompt by at least `--acceptance-min-delta` on the candidate validation
 set.
+
+Enable the optional LLM-as-judge metric for a small run:
+
+```powershell
+python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --higen-llm-metrics
+```
+
+The LLM judge defaults to the same GLM-compatible environment variables, and can
+be overridden with `--higen-judge-model`, `--higen-judge-api-key`, and
+`--higen-judge-base-url`.
 
 ## Outputs
 

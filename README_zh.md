@@ -137,6 +137,8 @@ python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-tr
 - 检查活动图结构，包括开始/结束节点、悬空边和不可达节点。
 - 对活动节点文本做归一化匹配。
 - 对抽取出的语义活动之间的控制流关系做匹配。
+- HiGenModel 风格的 PlantUML 编译通过率，字段为 `higen_compilation_pass_rate`。
+- 可选的 HiGenModel 风格 LLM-as-judge 节点/关系 P/R/F1，字段为 `llm_node_f1` 和 `llm_relation_f1`。
 
 提示词质量分数为：
 
@@ -146,6 +148,15 @@ python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-tr
 
 候选提示词不会因为格式合法就直接采纳。系统会先评估候选提示词，只有当候选
 分数比当前提示词至少提升 `--acceptance-min-delta` 时，才会替换本轮 `work.md`。
+
+开启可选 LLM-as-judge 指标的小规模命令：
+
+```powershell
+python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --higen-llm-metrics
+```
+
+LLM judge 默认复用 GLM 相关环境变量，也可以通过 `--higen-judge-model`、
+`--higen-judge-api-key` 和 `--higen-judge-base-url` 单独覆盖。
 
 ## 输出文件
 

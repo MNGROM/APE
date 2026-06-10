@@ -29,6 +29,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from evaluators.higen_metrics import (
+    CompilationResult,
+    LLMElementMetrics,
+    check_plantuml_compilation,
+    evaluate_llm_elements,
+)
+
 
 PROJECT_DIR = Path(__file__).resolve().parent
 DEFAULT_DATASETS_DIR = PROJECT_DIR / "prompt_datasets" / "lato"
@@ -81,6 +88,8 @@ class EvaluationRecord:
     syntax: SyntaxResult
     node_metrics: MetricBundle
     relation_metrics: MetricBundle
+    higen_compilation: CompilationResult
+    higen_llm_metrics: LLMElementMetrics
     failure_types: list[str]
 
 
@@ -509,15 +518,39 @@ def evaluate_cases(
             )
             failure_types = classify_failures(syntax, node_metrics, relation_metrics)
 
+        generated_plantuml = extract_plantuml(generated, wrap_if_needed=False)
+        higen_compilation = check_plantuml_compilation(
+            generated_plantuml,
+            args.plantuml_jar,
+            timeout=args.higen_compile_timeout,
+        )
+        higen_llm_metrics = evaluate_llm_elements(
+            ground_truth=case.gold_plantuml,
+            prediction=generated_plantuml,
+            enabled=args.higen_llm_metrics,
+            model=args.higen_judge_model,
+            api_key=args.higen_judge_api_key,
+            base_url=args.higen_judge_base_url,
+            temperature=args.higen_judge_temperature,
+            max_tokens=args.higen_judge_max_tokens,
+            timeout=args.higen_judge_timeout,
+            thinking=args.higen_judge_thinking,
+            max_retries=args.higen_judge_max_retries,
+        )
+        if higen_llm_metrics.status == "error":
+            failure_types.append("higen_llm_judge_error")
+
         record = EvaluationRecord(
             dataset=case.dataset,
             case_id=case.case_id,
             input_requirement=case.content,
             gold_plantuml=case.gold_plantuml,
-            generated_plantuml=extract_plantuml(generated, wrap_if_needed=False),
+            generated_plantuml=generated_plantuml,
             syntax=syntax,
             node_metrics=node_metrics,
             relation_metrics=relation_metrics,
+            higen_compilation=higen_compilation,
+            higen_llm_metrics=higen_llm_metrics,
             failure_types=failure_types,
         )
         records.append(record)
@@ -532,6 +565,8 @@ def avg(values: list[float]) -> float:
 
 
 def summarize_records(records: list[EvaluationRecord]) -> dict[str, float]:
+    llm_records = [r.higen_llm_metrics for r in records if r.higen_llm_metrics.enabled]
+    llm_success = [m for m in llm_records if m.status == "success"]
     return {
         "count": float(len(records)),
         "syntax_pass_rate": avg([1.0 if r.syntax.passed else 0.0 for r in records]),
@@ -542,16 +577,32 @@ def summarize_records(records: list[EvaluationRecord]) -> dict[str, float]:
         "relation_precision": avg([r.relation_metrics.precision for r in records]),
         "relation_recall": avg([r.relation_metrics.recall for r in records]),
         "relation_f1": avg([r.relation_metrics.f1 for r in records]),
+        "higen_compilation_pass_rate": avg([1.0 if r.higen_compilation.passed else 0.0 for r in records]),
+        "higen_llm_evaluated": float(len(llm_success)),
+        "higen_llm_failed": float(len(llm_records) - len(llm_success)),
+        "llm_node_precision": avg([m.node_metrics.precision for m in llm_success]),
+        "llm_node_recall": avg([m.node_metrics.recall for m in llm_success]),
+        "llm_node_f1": avg([m.node_metrics.f1 for m in llm_success]),
+        "llm_relation_precision": avg([m.relation_metrics.precision for m in llm_success]),
+        "llm_relation_recall": avg([m.relation_metrics.recall for m in llm_success]),
+        "llm_relation_f1": avg([m.relation_metrics.f1 for m in llm_success]),
     }
 
 
 def format_summary(summary: dict[str, float]) -> str:
-    return (
+    text = (
         f"count={int(summary['count'])}, "
         f"syntax={summary['syntax_pass_rate']:.1%}, "
+        f"higen_compile={summary['higen_compilation_pass_rate']:.1%}, "
         f"N-F1={summary['node_f1']:.3f}, "
         f"R-F1={summary['relation_f1']:.3f}"
     )
+    if summary.get("higen_llm_evaluated", 0.0) > 0:
+        text += (
+            f", LLM-N-F1={summary['llm_node_f1']:.3f}, "
+            f"LLM-R-F1={summary['llm_relation_f1']:.3f}"
+        )
+    return text
 
 
 def optimization_score(summary: dict[str, float]) -> float:
@@ -648,8 +699,18 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
         lines.append(f"- syntax_passed: {record.syntax.passed}")
         if record.syntax.errors:
             lines.append(f"- syntax_errors: {' | '.join(record.syntax.errors[:5])}")
+        lines.append(f"- higen_compiles: {record.higen_compilation.passed}")
+        if record.higen_compilation.errors:
+            lines.append(f"- higen_compile_errors: {' | '.join(record.higen_compilation.errors[:5])}")
         lines.append(f"- node_f1: {record.node_metrics.f1:.4f}")
         lines.append(f"- relation_f1: {record.relation_metrics.f1:.4f}")
+        if record.higen_llm_metrics.enabled:
+            lines.append(f"- higen_llm_status: {record.higen_llm_metrics.status}")
+            if record.higen_llm_metrics.status == "success":
+                lines.append(f"- llm_node_f1: {record.higen_llm_metrics.node_metrics.f1:.4f}")
+                lines.append(f"- llm_relation_f1: {record.higen_llm_metrics.relation_metrics.f1:.4f}")
+            elif record.higen_llm_metrics.error:
+                lines.append(f"- higen_llm_error: {record.higen_llm_metrics.error[:300]}")
         if record.node_metrics.missing:
             lines.append("- missing_nodes:")
             for item in record.node_metrics.missing[:8]:
@@ -979,6 +1040,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--relation-match-threshold", type=float, default=0.86)
     parser.add_argument("--candidate-max-cases", type=int, default=0, help="0 validates a candidate on the same full training set")
     parser.add_argument("--acceptance-min-delta", type=float, default=0.005, help="Minimum score improvement required before candidate prompt is accepted")
+    parser.add_argument("--higen-compile-timeout", type=int, default=30, help="Timeout in seconds for HiGen-style PlantUML compilation checks")
+    parser.add_argument("--higen-llm-metrics", action="store_true", help="Enable HiGenModel-style LLM-as-judge node/relation P/R/F1 metrics")
+    parser.add_argument("--higen-judge-model", default=os.environ.get("HIGEN_JUDGE_MODEL") or os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL))
+    parser.add_argument("--higen-judge-api-key", default=os.environ.get("HIGEN_JUDGE_API_KEY") or os.environ.get("ZHIPU_LLM_API_KEY", ""))
+    parser.add_argument("--higen-judge-base-url", default=os.environ.get("HIGEN_JUDGE_BASE_URL") or os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL))
+    parser.add_argument("--higen-judge-temperature", type=float, default=0.0)
+    parser.add_argument("--higen-judge-max-tokens", type=int, default=4096)
+    parser.add_argument("--higen-judge-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
+    parser.add_argument("--higen-judge-thinking", choices=["enabled", "disabled"], default=os.environ.get("HIGEN_JUDGE_THINKING_TYPE", "disabled"))
+    parser.add_argument("--higen-judge-max-retries", type=int, default=3)
     parser.add_argument("--mock-with-gold", action="store_true", help="Use gold PlantUML as generated output for pipeline checks")
     parser.add_argument("--no-evolve", action="store_true", help="Evaluate only; do not ask the LLM to update the prompt")
     return parser
