@@ -47,6 +47,7 @@ if load_dotenv is not None:
 DEFAULT_DATASETS_DIR = PROJECT_DIR / "prompt_datasets" / "lato"
 DEFAULT_PROMPT_PATH = PROJECT_DIR / "prompt_workspace" / "tst.md"
 DEFAULT_FAILURE_ANALYSIS_PROMPT_PATH = PROJECT_DIR / "prompt_workspace" / "failure_analysis.md"
+DEFAULT_ERROR_LOCALIZATION_PROMPT_PATH = PROJECT_DIR / "prompt_workspace" / "error_localization.md"
 DEFAULT_PROMPT_EDITOR_PROMPT_PATH = PROJECT_DIR / "prompt_workspace" / "prompt_editor.md"
 DEFAULT_RUNS_DIR = PROJECT_DIR / "prompt_runs"
 DEFAULT_PLANTUML_JAR = PROJECT_DIR / "tools" / "plantuml" / "plantuml-1.2025.4.jar"
@@ -60,6 +61,7 @@ REQUIRED_PROMPT_HEADINGS = (
     "## output",
     "## workflow",
     "## knowledge",
+    "## rule",
 )
 SECTION_NAMES = tuple(heading.replace("## ", "") for heading in REQUIRED_PROMPT_HEADINGS)
 SECTION_HEADING_BY_NAME = dict(zip(SECTION_NAMES, REQUIRED_PROMPT_HEADINGS))
@@ -277,8 +279,8 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--analysis-batch-size and --gate-batch-size must be positive")
     if args.max_sections_per_edit < 1 or args.max_sections_per_edit > len(SECTION_NAMES):
         raise ValueError("--max-sections-per-edit must be between 1 and the number of fixed prompt sections")
-    if args.analysis_max_tokens < 1 or args.editor_max_tokens < 1:
-        raise ValueError("--analysis-max-tokens and --editor-max-tokens must be positive")
+    if args.analysis_max_tokens < 1 or args.localization_max_tokens < 1 or args.editor_max_tokens < 1:
+        raise ValueError("--analysis-max-tokens, --localization-max-tokens, and --editor-max-tokens must be positive")
     if args.llm_judge_max_tokens < 1:
         raise ValueError("--llm-judge-max-tokens must be positive")
     if args.llm_judge_max_retries < 1:
@@ -941,7 +943,7 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
         lines.append("- All evaluated cases failed due to infrastructure errors. Do not change the prompt for this iteration.")
     lines.append("- Modify only the run-local `work.md` prompt.")
     lines.append("- Preserve the required markdown sections.")
-    lines.append("- Prefer concrete workflow constraints or reusable knowledge over broad stylistic advice.")
+    lines.append("- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.")
     lines.append("- Target the most frequent failure types first and avoid overfitting to a single case.")
     return "\n".join(lines) + "\n"
 
@@ -1039,6 +1041,47 @@ def validate_prompt_edit_payload(payload: dict[str, Any], *, max_sections: int) 
             errors.append(f"Edit {idx} must provide non-empty string content")
         if isinstance(content, str) and re.search(r"(?im)^##\s+", content):
             errors.append(f"Edit {idx} content must not contain markdown section headings")
+    return not errors, errors
+
+
+def validate_error_localization_payload(payload: dict[str, Any], *, max_sections: int) -> tuple[bool, list[str]]:
+    errors: list[str] = []
+    section_diagnoses = payload.get("section_diagnoses")
+    if not isinstance(section_diagnoses, list) or not section_diagnoses:
+        errors.append("Payload must contain a non-empty section_diagnoses list")
+        return False, errors
+
+    for idx, diagnosis in enumerate(section_diagnoses, start=1):
+        if not isinstance(diagnosis, dict):
+            errors.append(f"Section diagnosis {idx} must be an object")
+            continue
+        section = str(diagnosis.get("section") or "").strip().lower()
+        if section not in SECTION_NAMES:
+            errors.append(f"Section diagnosis {idx} has invalid section: {section!r}")
+
+    recommended_sections = payload.get("recommended_edit_sections", [])
+    if recommended_sections is not None:
+        if not isinstance(recommended_sections, list):
+            errors.append("recommended_edit_sections must be a list when present")
+        else:
+            if len(recommended_sections) > max_sections:
+                errors.append(f"recommended_edit_sections may contain at most {max_sections} sections")
+            for section in recommended_sections:
+                normalized = str(section or "").strip().lower()
+                if normalized not in SECTION_NAMES:
+                    errors.append(f"recommended_edit_sections contains invalid section: {section!r}")
+    do_not_edit_sections = payload.get("do_not_edit_sections", [])
+    if do_not_edit_sections is not None:
+        if not isinstance(do_not_edit_sections, list):
+            errors.append("do_not_edit_sections must be a list when present")
+        else:
+            for idx, item in enumerate(do_not_edit_sections, start=1):
+                if not isinstance(item, dict):
+                    errors.append(f"do_not_edit_sections item {idx} must be an object")
+                    continue
+                section = str(item.get("section") or "").strip().lower()
+                if section not in SECTION_NAMES:
+                    errors.append(f"do_not_edit_sections item {idx} has invalid section: {section!r}")
     return not errors, errors
 
 
@@ -1140,7 +1183,7 @@ def analyze_failures(
                     "evidence_case_ids": ["case id strings"],
                     "problem": "what went wrong at the batch level",
                     "suggested_prompt_direction": "general prompt-level direction",
-                    "target_sections": ["agent task|input|output|workflow|knowledge"],
+                    "target_sections": ["agent task|input|output|workflow|knowledge|rule"],
                 }
             ],
             "do_not_optimize_for": ["string"],
@@ -1183,10 +1226,94 @@ def analyze_failures(
     return parsed
 
 
+def localize_errors(
+    *,
+    current_prompt: str,
+    failure_analysis: dict[str, Any],
+    args: argparse.Namespace,
+    output_input_path: Path,
+    output_path: Path,
+    state_dir: Path | None,
+    iteration: int,
+) -> dict[str, Any] | None:
+    payload = {
+        "task": "Localize analyzed prompt failures to the fixed prompt sections before editing.",
+        "system_prompt_file": str(args.error_localization_prompt_path),
+        "current_prompt_sections": parse_prompt_sections(current_prompt),
+        "failure_analysis": failure_analysis,
+        "constraints": {
+            "allowed_sections": list(SECTION_NAMES),
+            "max_sections_per_edit": args.max_sections_per_edit,
+            "prefer_general_rules_over_dataset_specific_examples": True,
+        },
+        "required_output_schema": {
+            "summary": "string",
+            "section_diagnoses": [
+                {
+                    "section": "one of agent task, input, output, workflow, knowledge, rule",
+                    "priority": "low|medium|high",
+                    "failure_patterns": ["error pattern names from failure_analysis"],
+                    "section_problem": "what this prompt section currently fails to specify or overstates",
+                    "edit_intent": "what kind of prompt change should be made in this section",
+                    "evidence_case_ids": ["case id strings from failure_analysis"],
+                }
+            ],
+            "recommended_edit_sections": ["section names in priority order"],
+            "do_not_edit_sections": [
+                {
+                    "section": "one of agent task, input, output, workflow, knowledge, rule",
+                    "reason": "why editing this section would be unnecessary or risky",
+                }
+            ],
+        },
+    }
+    write_text(output_input_path, json.dumps(payload, ensure_ascii=False, indent=2))
+    messages = [
+        {
+            "role": "system",
+            "content": read_prompt_file(args.error_localization_prompt_path, label="error localization"),
+        },
+        {
+            "role": "user",
+            "content": json.dumps(payload, ensure_ascii=False, indent=2),
+        },
+    ]
+    raw = chat_completion(
+        messages=messages,
+        model=args.model,
+        api_key=args.api_key,
+        base_url=args.base_url,
+        temperature=args.localization_temperature,
+        top_p=args.top_p,
+        max_tokens=args.localization_max_tokens,
+        thinking=args.thinking,
+        do_sample=args.do_sample,
+        timeout=args.llm_timeout,
+        state_dir=state_dir,
+        retry_phase="error_localization",
+        retry_context={"iteration": iteration, "output_path": str(output_path)},
+        max_retries=args.llm_max_retries,
+        retry_initial_wait=args.llm_rate_limit_initial_wait,
+        retry_max_wait=args.llm_rate_limit_max_wait,
+    )
+    write_text(output_path, raw)
+    parsed = extract_json_object(raw)
+    if parsed is None:
+        write_text(output_path.with_suffix(".rejected.txt"), "Error localization did not return a JSON object.\n")
+        return None
+    ok, errors = validate_error_localization_payload(parsed, max_sections=args.max_sections_per_edit)
+    if not ok:
+        write_text(output_path.with_suffix(".rejected.txt"), "\n".join(errors) + "\n")
+        print(f"[evolve] Rejected error localization: {'; '.join(errors)}", flush=True)
+        return None
+    return parsed
+
+
 def propose_prompt_edits(
     *,
     current_prompt: str,
     failure_analysis: dict[str, Any],
+    error_localization: dict[str, Any],
     args: argparse.Namespace,
     output_input_path: Path,
     output_path: Path,
@@ -1201,6 +1328,7 @@ def propose_prompt_edits(
         "system_prompt_file": str(args.prompt_editor_prompt_path),
         "current_prompt_sections": parse_prompt_sections(current_prompt),
         "failure_analysis": failure_analysis,
+        "error_localization": error_localization,
         "constraints": {
             "allowed_sections": list(SECTION_NAMES),
             "allowed_operations": ["replace", "append"],
@@ -1212,7 +1340,7 @@ def propose_prompt_edits(
         "required_output_schema": {
             "edits": [
                 {
-                    "section": "one of agent task, input, output, workflow, knowledge",
+                    "section": "one of agent task, input, output, workflow, knowledge, rule",
                     "operation": "replace|append",
                     "content": "new section content or content to append, without markdown headings",
                 }
@@ -1390,9 +1518,24 @@ def run_training_iterations(
             print(f"[iteration {iteration}] failure analysis invalid; prompt unchanged")
             continue
 
+        error_localization = localize_errors(
+            current_prompt=prompt,
+            failure_analysis=failure_analysis,
+            args=args,
+            output_input_path=iter_dir / "error_localization_input.json",
+            output_path=iter_dir / "error_localization_output.json",
+            state_dir=run_dir,
+            iteration=iteration,
+        )
+        if error_localization is None:
+            write_text(iter_dir / "prompt_after.md", prompt)
+            print(f"[iteration {iteration}] error localization invalid; prompt unchanged")
+            continue
+
         edit_payload = propose_prompt_edits(
             current_prompt=prompt,
             failure_analysis=failure_analysis,
+            error_localization=error_localization,
             args=args,
             output_input_path=iter_dir / "prompt_edit_input.json",
             output_path=iter_dir / "prompt_edit_output.json",
@@ -1577,6 +1720,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--datasets-dir", type=Path, default=DEFAULT_DATASETS_DIR)
     parser.add_argument("--prompt-path", type=Path, default=DEFAULT_PROMPT_PATH, help="Read-only seed prompt copied to each run's work.md")
     parser.add_argument("--failure-analysis-prompt-path", type=Path, default=DEFAULT_FAILURE_ANALYSIS_PROMPT_PATH, help="System prompt markdown for the failure-analysis model")
+    parser.add_argument("--error-localization-prompt-path", type=Path, default=DEFAULT_ERROR_LOCALIZATION_PROMPT_PATH, help="System prompt markdown for the error-localization model")
     parser.add_argument("--prompt-editor-prompt-path", type=Path, default=DEFAULT_PROMPT_EDITOR_PROMPT_PATH, help="System prompt markdown for the prompt-edit model")
     parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
     parser.add_argument("--plantuml-jar", type=Path, default=DEFAULT_PLANTUML_JAR)
@@ -1595,10 +1739,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base-url", default=os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL))
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--analysis-temperature", type=float, default=0.2)
+    parser.add_argument("--localization-temperature", type=float, default=0.2)
     parser.add_argument("--editor-temperature", type=float, default=0.2)
     parser.add_argument("--top-p", type=optional_float, default=None, help="GLM top_p, or 'omit' to use provider default")
     parser.add_argument("--max-tokens", type=int, default=12000)
     parser.add_argument("--analysis-max-tokens", type=int, default=4096)
+    parser.add_argument("--localization-max-tokens", type=int, default=4096)
     parser.add_argument("--editor-max-tokens", type=int, default=4096)
     parser.add_argument("--thinking", choices=["enabled", "disabled"], default=os.environ.get("ZHIPU_THINKING_TYPE", DEFAULT_THINKING_TYPE))
     parser.add_argument("--do-sample", type=optional_bool, default=None, help="GLM do_sample, or 'omit' to use provider default")
@@ -1636,6 +1782,7 @@ def main() -> None:
     args.datasets_dir = args.datasets_dir.resolve()
     args.prompt_path = args.prompt_path.resolve()
     args.failure_analysis_prompt_path = args.failure_analysis_prompt_path.resolve()
+    args.error_localization_prompt_path = args.error_localization_prompt_path.resolve()
     args.prompt_editor_prompt_path = args.prompt_editor_prompt_path.resolve()
     args.runs_dir = args.runs_dir.resolve()
     args.plantuml_jar = args.plantuml_jar.resolve()
@@ -1649,6 +1796,7 @@ def main() -> None:
     if not args.prompt_path.exists():
         raise FileNotFoundError(f"Seed prompt file not found: {args.prompt_path}")
     read_prompt_file(args.failure_analysis_prompt_path, label="failure analysis")
+    read_prompt_file(args.error_localization_prompt_path, label="error localization")
     read_prompt_file(args.prompt_editor_prompt_path, label="prompt editor")
 
     if args.train_only:

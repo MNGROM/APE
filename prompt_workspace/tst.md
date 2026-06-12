@@ -13,3 +13,5 @@ Output PlantUML code only.
 ## workflow
 
 ## knowledge
+
+## rule

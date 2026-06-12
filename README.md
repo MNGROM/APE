@@ -17,6 +17,7 @@ edits only the run-local `work.md`; the seed prompt is not overwritten.
 - `prompt_evolve.py`: main batch prompt-evolution loop.
 - `prompt_workspace/tst.md`: canonical initial UML generation prompt.
 - `prompt_workspace/failure_analysis.md`: system prompt for batch failure analysis.
+- `prompt_workspace/error_localization.md`: system prompt for section-level error localization.
 - `prompt_workspace/prompt_editor.md`: system prompt for structured prompt edits.
 - `prompt_datasets/lato/`: six JSONL datasets: `bp`, `fsd`, `lmc`, `pure`, `rac`, `us`.
 - `evaluators/llm_element_metrics.py`: PlantUML compilation check and optional LLM semantic element judge.
@@ -86,6 +87,7 @@ current prompt
 -> analysis batch PlantUML generation
 -> deterministic evaluation
 -> batch failure-analysis model
+-> error-localization model maps failures to prompt sections
 -> prompt-editor model emits structured section edits
 -> program applies valid edits
 -> gate batch candidate evaluation
@@ -101,6 +103,7 @@ the fixed markdown sections in `tst.md`:
 ## output
 ## workflow
 ## knowledge
+## rule
 ```
 
 By default, at most two sections may be edited per iteration
@@ -147,7 +150,9 @@ Runs are written under `prompt_runs/`. Important files include:
 - `iteration_NNN/analysis/overview.md`: human-readable failure report.
 - `iteration_NNN/failure_analysis_input.json`: input sent to the failure-analysis model.
 - `iteration_NNN/failure_analysis_output.json`: structured failure-analysis result.
-- `iteration_NNN/prompt_edit_input.json`: input sent to the prompt-editor model.
+- `iteration_NNN/error_localization_input.json`: input sent to the error-localization model.
+- `iteration_NNN/error_localization_output.json`: section-level localization result.
+- `iteration_NNN/prompt_edit_input.json`: input sent to the prompt-editor model, including failure analysis and localization.
 - `iteration_NNN/prompt_edit_output.json`: structured prompt edit result.
 - `iteration_NNN/candidate_prompt.md`: candidate prompt after applying edits.
 - `iteration_NNN/gate_cases.json`: gate-batch case manifest.

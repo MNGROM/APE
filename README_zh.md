@@ -15,8 +15,9 @@ prompt_workspace/tst.md
 ## 仓库结构
 
 - `prompt_evolve.py`：主要 batch prompt 优化循环。
-- `prompt_workspace/tst.md`：权威初始 UML 生成 prompt。
+- `prompt_workspace/tst.md`：初始 UML 生成 prompt。
 - `prompt_workspace/failure_analysis.md`：失败分析模型的 system prompt。
+- `prompt_workspace/error_localization.md`：错误原因定位模型的 system prompt。
 - `prompt_workspace/prompt_editor.md`：结构化 prompt 编辑模型的 system prompt。
 - `prompt_datasets/lato/`：六个 JSONL 数据集：`bp`、`fsd`、`lmc`、`pure`、`rac`、`us`。
 - `evaluators/llm_element_metrics.py`：PlantUML 编译检查和可选 LLM 语义元素 judge。
@@ -85,6 +86,7 @@ python prompt_evolve.py --test-dataset all --iterations 3
 -> analysis batch 生成 PlantUML
 -> 确定性评估
 -> batch 失败分析模型
+-> 错误原因定位模型把失败映射到 prompt section
 -> prompt editor 模型输出结构化 section edits
 -> 程序应用合法 edits
 -> gate batch 评估候选 prompt
@@ -100,6 +102,7 @@ JSON edits：
 ## output
 ## workflow
 ## knowledge
+## rule
 ```
 
 默认每轮最多修改两个 section：
@@ -148,7 +151,9 @@ python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-tr
 - `iteration_NNN/analysis/overview.md`：人工可读失败报告。
 - `iteration_NNN/failure_analysis_input.json`：发送给失败分析模型的输入。
 - `iteration_NNN/failure_analysis_output.json`：结构化失败分析输出。
-- `iteration_NNN/prompt_edit_input.json`：发送给 prompt editor 的输入。
+- `iteration_NNN/error_localization_input.json`：发送给错误原因定位模型的输入。
+- `iteration_NNN/error_localization_output.json`：section 级错误定位输出。
+- `iteration_NNN/prompt_edit_input.json`：发送给 prompt editor 的输入，包含失败分析和错误定位。
 - `iteration_NNN/prompt_edit_output.json`：结构化 prompt edit 输出。
 - `iteration_NNN/candidate_prompt.md`：应用 edits 后的候选 prompt。
 - `iteration_NNN/gate_cases.json`：gate batch 样例。
