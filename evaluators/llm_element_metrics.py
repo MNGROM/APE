@@ -1,4 +1,8 @@
-"""HiGenModel-style auxiliary metrics for PlantUML activity diagrams."""
+"""APE semantic element metrics for PlantUML activity diagrams.
+
+* compilation pass rate via ``plantuml.jar -syntax``;
+* element-level LLM-as-judge node/relation precision, recall, and F1.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +13,12 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+
+from utils.rate_limit import ProviderHTTPError, call_with_provider_retries
+
+
+Language = Literal["plantuml", "sysmlv2"]
 
 
 @dataclass
@@ -40,10 +49,10 @@ class LLMElementMetrics:
 
 EXTRACTION_SYSTEM_PROMPT = (
     "You are an expert in analyzing behavioral modeling code. "
-    "Your task is to extract behavioral elements, nodes and relations, from the given code.\n\n"
-    "A node is an atomic activity, action, state, start/stop marker, or named decision point.\n"
-    "A relation is a control-flow connection between nodes, including sequential flow, "
-    "conditional branch, loop, fork/parallel, merge/join, and transition.\n\n"
+    "Your task is to extract behavioral elements (nodes and relations) from the given code.\n\n"
+    'A "node" is an atomic activity, action, or state - a named behavioral unit that appears in the model.\n'
+    'A "relation" is a control-flow connection between nodes, including: '
+    "sequential flow, conditional branch, loop, fork/parallel, merge/join, and transition.\n\n"
     "You must output valid JSON and nothing else."
 )
 
@@ -51,15 +60,38 @@ EXTRACTION_USER_PLANTUML = (
     "Analyze the following PlantUML activity diagram code and extract all behavioral elements.\n\n"
     "Code:\n{code}\n\n"
     "Extract two categories:\n"
-    "1. nodes: each atomic activity/action, start/stop marker, and any named decision point.\n"
-    "2. relations: each control-flow relationship between nodes. For each relation, identify:\n"
-    '- "from": the source node name\n'
-    '- "to": the target node name\n'
-    '- "type": one of "sequential", "conditional", "loop", "fork", "merge"\n'
-    '- "condition": the condition label if applicable, otherwise null\n\n'
+    '1. **nodes**: Each atomic activity/action (the text inside `:...;` blocks), '
+    "start/stop markers, and any named decision points.\n"
+    "2. **relations**: Each control-flow relationship between nodes. For each relation, identify:\n"
+    '   - "from": the source node name\n'
+    '   - "to": the target node name\n'
+    '   - "type": one of "sequential", "conditional", "loop", "fork", "merge"\n'
+    '   - "condition": the condition label if applicable, otherwise null\n\n'
     "Output ONLY a JSON object in this exact format:\n"
     "{{\n"
-    '  "nodes": ["node1", "node2"],\n'
+    '  "nodes": ["node1", "node2", "..."],\n'
+    '  "relations": [\n'
+    '    {{"from": "node1", "to": "node2", "type": "sequential", "condition": null}}\n'
+    "  ]\n"
+    "}}"
+)
+
+EXTRACTION_USER_SYSMLV2 = (
+    "Analyze the following SysML v2 code and extract all behavioral elements.\n\n"
+    "Code:\n{code}\n\n"
+    "Extract two categories:\n"
+    "1. **nodes**: Each behavioral element including: action definitions (action def), "
+    "action usages (action), state definitions (state def), state usages (state), "
+    "part definitions with behavioral semantics, and any other named behavioral units.\n"
+    "2. **relations**: Each behavioral relationship including: succession/flow connections, "
+    "transitions, conditional branches, parallel forks, bind connections, and specialization of behavioral elements.\n"
+    '   - "from": the source element name\n'
+    '   - "to": the target element name\n'
+    '   - "type": one of "sequential", "flow", "transition", "conditional", "fork", "bind", "specialization"\n'
+    '   - "condition": the condition or guard if applicable, otherwise null\n\n'
+    "Output ONLY a JSON object in this exact format:\n"
+    "{{\n"
+    '  "nodes": ["node1", "node2", "..."],\n'
     '  "relations": [\n'
     '    {{"from": "node1", "to": "node2", "type": "sequential", "condition": null}}\n'
     "  ]\n"
@@ -68,10 +100,12 @@ EXTRACTION_USER_PLANTUML = (
 
 MATCHING_SYSTEM_PROMPT = (
     "You are an expert in comparing behavioral model elements. "
-    "Compare extracted elements from a prediction against a ground truth reference and classify "
-    "each element as true positive, false positive, or false negative.\n\n"
-    "Two nodes match if they refer to the same activity/action/state, even if worded differently. "
-    "Two relations match if they connect semantically equivalent node pairs with the same relationship type.\n\n"
+    "Your task is to compare extracted elements from a prediction against a ground truth reference "
+    "and classify each element as a true positive (TP), false positive (FP), or false negative (FN).\n\n"
+    "Two nodes match if they refer to the same activity/action/state, even if worded slightly differently "
+    '(e.g., "user login" matches "user log in", "Verify account" matches "Account verification").\n\n'
+    "Two relations match if they connect semantically equivalent node pairs with the same relationship type, "
+    "even if the exact wording differs slightly.\n\n"
     "You must output valid JSON and nothing else."
 )
 
@@ -79,8 +113,14 @@ MATCHING_USER_PROMPT = (
     "Compare the following extracted behavioral elements from a prediction against the ground truth.\n\n"
     "Ground Truth Elements:\n{gt_json}\n\n"
     "Prediction Elements:\n{pred_json}\n\n"
-    "For nodes, determine TP, FP, and FN.\n"
-    "For relations, determine TP, FP, and FN.\n\n"
+    "For NODES, determine:\n"
+    "- TP: nodes in prediction that have a semantic match in ground truth\n"
+    "- FP: nodes in prediction with NO match in ground truth\n"
+    "- FN: nodes in ground truth with NO match in prediction\n\n"
+    "For RELATIONS, determine:\n"
+    "- TP: relations in prediction that match a ground truth relation (same source-target pair semantically, same type)\n"
+    "- FP: relations in prediction with NO match in ground truth\n"
+    "- FN: relations in ground truth with NO match in prediction\n\n"
     "Output ONLY a JSON object in this exact format:\n"
     "{{\n"
     '  "nodes": {{\n'
@@ -98,7 +138,7 @@ MATCHING_USER_PROMPT = (
 
 
 def strip_markdown_fences(code: str) -> str:
-    stripped = code.strip()
+    stripped = (code or "").strip()
     match = re.match(r"^```(?:\w+)?\s*\n?(.*?)\n?```\s*$", stripped, flags=re.DOTALL)
     if match:
         return match.group(1).strip()
@@ -115,20 +155,21 @@ def ensure_plantuml_wrappers(code: str) -> str:
 
 
 def check_plantuml_compilation(code: str, plantuml_jar: Path, timeout: int = 30) -> CompilationResult:
+    """Check PlantUML syntax with the local APE compilation metric."""
+
     if not plantuml_jar.exists():
         return CompilationResult(False, [f"PlantUML jar not found: {plantuml_jar}"])
     if not strip_markdown_fences(code).strip():
         return CompilationResult(False, ["No PlantUML content to compile."])
 
-    full_code = ensure_plantuml_wrappers(code)
     try:
         proc = subprocess.run(
             ["java", "-Djava.awt.headless=true", "-jar", str(plantuml_jar), "-syntax"],
-            input=full_code,
+            input=ensure_plantuml_wrappers(code),
+            capture_output=True,
             text=True,
             encoding="utf-8",
             errors="replace",
-            capture_output=True,
             timeout=timeout,
         )
     except FileNotFoundError:
@@ -137,27 +178,25 @@ def check_plantuml_compilation(code: str, plantuml_jar: Path, timeout: int = 30)
         return CompilationResult(False, ["PlantUML syntax check timed out."])
 
     errors: list[str] = []
-    output = (proc.stdout or "") + "\n" + (proc.stderr or "")
-    for line in output.splitlines():
-        stripped = line.strip()
-        if re.match(r"^(ERROR|SyntaxError|Exception)", stripped, re.IGNORECASE):
-            errors.append(stripped)
-        elif " line " in stripped and " :" in stripped:
-            errors.append(stripped)
+    for is_stderr, stream in ((False, proc.stdout or ""), (True, proc.stderr or "")):
+        for line in stream.splitlines():
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if re.match(r"^(ERROR|SyntaxError|Exception)", stripped, re.IGNORECASE):
+                errors.append(stripped)
+            elif " line " in stripped and " :" in stripped:
+                errors.append(stripped)
+            elif is_stderr:
+                errors.append(stripped)
     if proc.returncode != 0 and not errors:
         errors.append(f"PlantUML exited with return code {proc.returncode}")
     return CompilationResult(not errors, errors)
 
 
-def normalize_base_url(base_url: str) -> str:
-    value = (base_url or "https://open.bigmodel.cn/api/paas/v4/").strip().rstrip("/")
-    suffix = "/chat/completions"
-    if value.endswith(suffix):
-        value = value[: -len(suffix)]
-    return value + "/"
-
-
 def parse_json_response(text: str) -> Any | None:
+    """Extract JSON from LLM output, handling markdown fences and surrounding noise."""
+
     try:
         return json.loads(text)
     except json.JSONDecodeError:
@@ -180,10 +219,29 @@ def parse_json_response(text: str) -> Any | None:
     return None
 
 
+def normalize_base_url(base_url: str) -> str:
+    value = (base_url or "https://open.bigmodel.cn/api/paas/v4/").strip().rstrip("/")
+    suffix = "/chat/completions"
+    if value.endswith(suffix):
+        value = value[: -len(suffix)]
+    return value + "/"
+
+
+def _clean_optional_body_fields(body: dict[str, Any], error: BaseException) -> dict[str, Any] | None:
+    lowered = str(error).lower()
+    cleaned = dict(body)
+    changed = False
+    for field in ("thinking", "do_sample", "max_tokens"):
+        if field in cleaned and field in lowered:
+            cleaned.pop(field, None)
+            changed = True
+    return cleaned if changed else None
+
+
 def post_chat_completion(*, endpoint: str, body: dict[str, Any], api_key: str, timeout: int) -> str:
     request = urllib.request.Request(
         endpoint,
-        data=json.dumps(body).encode("utf-8"),
+        data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -195,7 +253,7 @@ def post_chat_completion(*, endpoint: str, body: dict[str, Any], api_key: str, t
             payload = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         error_body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"LLM judge HTTP {exc.code}: {error_body[:1000]}") from exc
+        raise ProviderHTTPError("APE element-level judge", exc.code, error_body, dict(exc.headers.items())) from exc
 
     try:
         content = payload["choices"][0]["message"]["content"]
@@ -214,9 +272,17 @@ def judge_chat(
     max_tokens: int,
     timeout: int,
     thinking: str,
+    state_dir: Path | None = None,
+    retry_phase: str = "llm_element_judge",
+    retry_context: dict[str, Any] | None = None,
+    provider_max_retries: int = 20,
+    retry_initial_wait: int = 30,
+    retry_max_wait: int = 600,
 ) -> str:
+    """Call an OpenAI-compatible chat endpoint with APE's provider retry layer."""
+
     if not api_key:
-        raise RuntimeError("LLM judge API key is required when HiGen LLM metrics are enabled")
+        raise RuntimeError("LLM judge API key is required when semantic element metrics are enabled")
 
     body: dict[str, Any] = {
         "model": model,
@@ -227,19 +293,41 @@ def judge_chat(
     }
     if thinking:
         body["thinking"] = {"type": thinking}
+
     endpoint = normalize_base_url(base_url) + "chat/completions"
+
+    def call(current_body: dict[str, Any], phase: str) -> str:
+        return call_with_provider_retries(
+            lambda: post_chat_completion(endpoint=endpoint, body=current_body, api_key=api_key, timeout=timeout),
+            phase=phase,
+            state_dir=state_dir,
+            context=retry_context,
+            max_retries=provider_max_retries,
+            initial_wait=retry_initial_wait,
+            max_wait=retry_max_wait,
+        )
+
     try:
-        return post_chat_completion(endpoint=endpoint, body=body, api_key=api_key, timeout=timeout)
+        return call(body, retry_phase)
     except RuntimeError as exc:
-        if "thinking" not in body or "thinking" not in str(exc).lower():
+        cleaned = _clean_optional_body_fields(body, exc)
+        if cleaned is None:
             raise
-        retry_body = {key: value for key, value in body.items() if key != "thinking"}
-        return post_chat_completion(endpoint=endpoint, body=retry_body, api_key=api_key, timeout=timeout)
+        return call(cleaned, f"{retry_phase}:openai_compat")
+
+
+def _valid_extraction(result: Any) -> bool:
+    return isinstance(result, dict) and isinstance(result.get("nodes"), list) and isinstance(result.get("relations"), list)
+
+
+def _valid_matching(result: Any) -> bool:
+    return isinstance(result, dict) and isinstance(result.get("nodes"), dict) and isinstance(result.get("relations"), dict)
 
 
 def extract_elements(
     *,
     code: str,
+    language: Language = "plantuml",
     model: str,
     api_key: str,
     base_url: str,
@@ -248,12 +336,19 @@ def extract_elements(
     timeout: int,
     thinking: str,
     max_retries: int,
+    state_dir: Path | None,
+    retry_phase: str,
+    retry_context: dict[str, Any],
+    provider_max_retries: int,
+    retry_initial_wait: int,
+    retry_max_wait: int,
 ) -> dict[str, Any]:
+    user_template = EXTRACTION_USER_PLANTUML if language == "plantuml" else EXTRACTION_USER_SYSMLV2
     messages = [
         {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
-        {"role": "user", "content": EXTRACTION_USER_PLANTUML.format(code=code)},
+        {"role": "user", "content": user_template.format(code=strip_markdown_fences(code))},
     ]
-    for _ in range(max_retries):
+    for attempt in range(1, max(1, max_retries) + 1):
         raw = judge_chat(
             messages=messages,
             model=model,
@@ -263,9 +358,15 @@ def extract_elements(
             max_tokens=max_tokens,
             timeout=timeout,
             thinking=thinking,
+            state_dir=state_dir,
+            retry_phase=f"{retry_phase}:extract",
+            retry_context={**retry_context, "json_retry_attempt": attempt},
+            provider_max_retries=provider_max_retries,
+            retry_initial_wait=retry_initial_wait,
+            retry_max_wait=retry_max_wait,
         )
         result = parse_json_response(raw)
-        if isinstance(result, dict) and isinstance(result.get("nodes"), list) and isinstance(result.get("relations"), list):
+        if _valid_extraction(result):
             return result
     return {"nodes": [], "relations": []}
 
@@ -282,6 +383,12 @@ def match_elements(
     timeout: int,
     thinking: str,
     max_retries: int,
+    state_dir: Path | None,
+    retry_phase: str,
+    retry_context: dict[str, Any],
+    provider_max_retries: int,
+    retry_initial_wait: int,
+    retry_max_wait: int,
 ) -> dict[str, Any]:
     empty = {
         "nodes": {"tp": [], "fp": pred_elements.get("nodes", []), "fn": gt_elements.get("nodes", [])},
@@ -297,7 +404,7 @@ def match_elements(
             ),
         },
     ]
-    for _ in range(max_retries):
+    for attempt in range(1, max(1, max_retries) + 1):
         raw = judge_chat(
             messages=messages,
             model=model,
@@ -307,9 +414,15 @@ def match_elements(
             max_tokens=max_tokens,
             timeout=timeout,
             thinking=thinking,
+            state_dir=state_dir,
+            retry_phase=f"{retry_phase}:match",
+            retry_context={**retry_context, "json_retry_attempt": attempt},
+            provider_max_retries=provider_max_retries,
+            retry_initial_wait=retry_initial_wait,
+            retry_max_wait=retry_max_wait,
         )
         result = parse_json_response(raw)
-        if isinstance(result, dict) and isinstance(result.get("nodes"), dict) and isinstance(result.get("relations"), dict):
+        if _valid_matching(result):
             return result
     return empty
 
@@ -335,6 +448,21 @@ def disabled_llm_metrics() -> LLMElementMetrics:
     )
 
 
+def error_llm_metrics(error: str) -> LLMElementMetrics:
+    zero = PRF(0.0, 0.0, 0.0)
+    return LLMElementMetrics(
+        enabled=True,
+        status="error",
+        node_metrics=zero,
+        relation_metrics=zero,
+        gt_elements={},
+        pred_elements={},
+        matching={},
+        counts={},
+        error=error,
+    )
+
+
 def evaluate_llm_elements(
     *,
     ground_truth: str,
@@ -343,18 +471,29 @@ def evaluate_llm_elements(
     model: str,
     api_key: str,
     base_url: str,
+    language: Language = "plantuml",
     temperature: float = 0.0,
     max_tokens: int = 4096,
     timeout: int = 300,
     thinking: str = "disabled",
     max_retries: int = 3,
+    state_dir: Path | None = None,
+    retry_phase: str = "llm_element_judge",
+    retry_context: dict[str, Any] | None = None,
+    provider_max_retries: int = 20,
+    retry_initial_wait: int = 30,
+    retry_max_wait: int = 600,
 ) -> LLMElementMetrics:
+    """Evaluate one sample using APE's element-level LLM judge."""
+
     if not enabled:
         return disabled_llm_metrics()
 
+    retry_context = retry_context or {}
     try:
         gt_elements = extract_elements(
             code=ground_truth,
+            language=language,
             model=model,
             api_key=api_key,
             base_url=base_url,
@@ -363,9 +502,16 @@ def evaluate_llm_elements(
             timeout=timeout,
             thinking=thinking,
             max_retries=max_retries,
+            state_dir=state_dir,
+            retry_phase=retry_phase,
+            retry_context={**retry_context, "judge_step": "gt_extract"},
+            provider_max_retries=provider_max_retries,
+            retry_initial_wait=retry_initial_wait,
+            retry_max_wait=retry_max_wait,
         )
         pred_elements = extract_elements(
             code=prediction,
+            language=language,
             model=model,
             api_key=api_key,
             base_url=base_url,
@@ -374,6 +520,12 @@ def evaluate_llm_elements(
             timeout=timeout,
             thinking=thinking,
             max_retries=max_retries,
+            state_dir=state_dir,
+            retry_phase=retry_phase,
+            retry_context={**retry_context, "judge_step": "pred_extract"},
+            provider_max_retries=provider_max_retries,
+            retry_initial_wait=retry_initial_wait,
+            retry_max_wait=retry_max_wait,
         )
         matching = match_elements(
             gt_elements=gt_elements,
@@ -386,6 +538,12 @@ def evaluate_llm_elements(
             timeout=timeout,
             thinking=thinking,
             max_retries=max_retries,
+            state_dir=state_dir,
+            retry_phase=retry_phase,
+            retry_context={**retry_context, "judge_step": "match"},
+            provider_max_retries=provider_max_retries,
+            retry_initial_wait=retry_initial_wait,
+            retry_max_wait=retry_max_wait,
         )
 
         node_tp = len(matching.get("nodes", {}).get("tp", []))
@@ -394,6 +552,7 @@ def evaluate_llm_elements(
         relation_tp = len(matching.get("relations", {}).get("tp", []))
         relation_fp = len(matching.get("relations", {}).get("fp", []))
         relation_fn = len(matching.get("relations", {}).get("fn", []))
+
         return LLMElementMetrics(
             enabled=True,
             status="success",
@@ -412,15 +571,4 @@ def evaluate_llm_elements(
             },
         )
     except Exception as exc:
-        zero = PRF(0.0, 0.0, 0.0)
-        return LLMElementMetrics(
-            enabled=True,
-            status="error",
-            node_metrics=zero,
-            relation_metrics=zero,
-            gt_elements={},
-            pred_elements={},
-            matching={},
-            counts={},
-            error=str(exc),
-        )
+        return error_llm_metrics(str(exc))

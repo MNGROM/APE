@@ -1,4 +1,4 @@
-# Agentic Harness Engineering 公共默认配置
+﻿# Agentic Harness Engineering 公共默认配置
 # 实验 overlay 通过 _base 字段继承此文件，只需声明差异部分
 
 # ---- 数据源（path 与 dataset 二选一；详见 README「数据集配置」）----
@@ -21,6 +21,16 @@ llm:
   api_key: "${LLM_API_KEY}"
   base_url: "${LLM_BASE_URL}"
   model: "gpt-5.4"
+
+# Prompt-UML 后端配置。LLM 语义 LLM judge 默认继承上面的 llm 配置；
+# 如需使用不同 judge 模型，在实验 overlay 的 prompt_uml 下覆盖这些字段。
+prompt_uml:
+  llm_element_metrics: true
+  llm_judge_temperature: 0.0
+  llm_judge_max_tokens: 4096
+  llm_judge_timeout: 300
+  llm_judge_thinking: "disabled"
+  llm_judge_max_retries: 3
 
 harbor:
   agent: "nexau"
@@ -130,3 +140,4 @@ post_evolve:
   datasets:
     - name: "swebench-verified"
       n_concurrent: 24
+

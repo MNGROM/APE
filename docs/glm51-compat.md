@@ -1,4 +1,4 @@
-# Zhipu GLM Compatibility
+﻿# Zhipu GLM Compatibility
 
 Use `configs/experiments/exp-simple-code-glm51.yaml` when running AHE with Zhipu GLM through the OpenAI-compatible Chat Completions endpoint.
 
@@ -6,9 +6,10 @@ Set these environment variables before launch:
 
 ```dotenv
 ZHIPU_LLM_API_KEY="your-zhipu-api-key"
-# Optional. If omitted, AHE uses https://open.bigmodel.cn/api/paas/v4/
-ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
 ```
+
+Model name, base URL, and thinking mode should be changed in the YAML config
+instead of shell environment variables.
 
 Do not put the API key in YAML files, Python code, logs, or committed examples.
 
@@ -38,3 +39,4 @@ zai_compat:
 ```
 
 If you need to force GLM sampling behavior, set `zai_compat.do_sample` explicitly. The bundled overlay omits it and uses the provider default.
+

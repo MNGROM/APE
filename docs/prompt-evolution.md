@@ -1,4 +1,4 @@
-# Prompt Evolution Workflow
+﻿# Prompt Evolution Workflow
 
 This workflow evolves one run-local prompt file for UML activity-diagram PlantUML generation:
 
@@ -20,8 +20,10 @@ Set the GLM API key before running real evaluations:
 
 ```powershell
 $env:ZHIPU_LLM_API_KEY="your-zhipu-api-key"
-$env:ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
 ```
+
+Model name, base URL, and thinking mode are run configuration. For direct runs,
+set them with CLI arguments such as `--model` and `--base-url`.
 
 Java and PlantUML syntax validation use:
 
@@ -88,3 +90,4 @@ Each run writes artifacts under `prompt_runs/`, including:
 - `test_summary.json`
 - `test_analysis.md`
 - `prompt_final.md`
+

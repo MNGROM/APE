@@ -1,4 +1,4 @@
-# AHE-Native Prompt UML Optimization
+﻿# AHE-Native Prompt UML Optimization
 
 This mode keeps the AHE outer loop and changes only the evolved component:
 
@@ -14,10 +14,10 @@ PowerShell:
 
 ```powershell
 $env:ZHIPU_LLM_API_KEY="your-zhipu-api-key"
-$env:ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
 ```
 
-The GLM overlay uses `glm-5.1` and disables thinking by default.
+Model name, base URL, and thinking mode live in the YAML config. The GLM overlay
+uses `glm-5.1` and disables thinking by default.
 
 The prompt UML backend uses local evaluation and does not require `E2B_API_KEY`.
 `E2B_API_KEY` is only needed when running the original Harbor/E2B evaluation backend.
@@ -77,3 +77,4 @@ bp, fsd, lmc, pure, rac, us
 ```
 
 Each experiment keeps its own AHE workspace, git history, iteration snapshots, change manifests, change attribution, and held-out test output.
+

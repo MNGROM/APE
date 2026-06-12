@@ -1,4 +1,4 @@
-"""AHE-compatible evaluator for UML prompt optimization.
+﻿"""AHE-compatible evaluator for UML prompt optimization.
 
 This module keeps the AHE outer loop intact while replacing Harbor evaluation
 with a prompt-evaluation backend. The editable workspace contains a single
@@ -11,6 +11,7 @@ import dataclasses
 import difflib
 import json
 import os
+import random
 import re
 import subprocess
 import time
@@ -22,12 +23,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from evaluators.higen_metrics import (
+from evaluators.llm_element_metrics import (
     CompilationResult,
     LLMElementMetrics,
     check_plantuml_compilation,
     evaluate_llm_elements,
 )
+from utils.rate_limit import ProviderHTTPError, call_with_provider_retries
 
 
 PROJECT_DIR = Path(__file__).resolve().parents[1]
@@ -36,11 +38,9 @@ DEFAULT_MODEL = "glm-5.1"
 DEFAULT_PLANTUML_JAR = PROJECT_DIR / "tools" / "plantuml" / "plantuml-1.2025.4.jar"
 
 
-class LLMHTTPError(RuntimeError):
-    def __init__(self, status_code: int, body: str) -> None:
-        self.status_code = status_code
-        self.body = body
-        super().__init__(f"LLM HTTP {status_code}: {body[:1000]}")
+class LLMHTTPError(ProviderHTTPError):
+    def __init__(self, status_code: int, body: str, headers: dict[str, str] | None = None) -> None:
+        super().__init__("LLM", status_code, body, headers)
 
 
 @dataclass
@@ -107,8 +107,8 @@ class EvaluationRecord:
     structure: StructureResult
     node_metrics: MetricBundle
     relation_metrics: MetricBundle
-    higen_compilation: CompilationResult
-    higen_llm_metrics: LLMElementMetrics
+    plantuml_compilation: CompilationResult
+    llm_element_metrics: LLMElementMetrics
     quality_score: float
     reward: float
     failure_types: list[str]
@@ -134,12 +134,83 @@ def load_cases(datasets_dir: Path) -> dict[str, list[Case]]:
     return datasets
 
 
+def grouped_cases(cases: list[Case]) -> dict[str, list[Case]]:
+    groups: dict[str, list[Case]] = {}
+    for case in cases:
+        groups.setdefault(case.dataset, []).append(case)
+    return groups
+
+
+def select_cases_with_strategy(cases: list[Case], *, max_cases: int, strategy: str, seed: int) -> list[Case]:
+    if max_cases <= 0 or max_cases >= len(cases):
+        return list(cases)
+    strategy = strategy.lower()
+    if strategy == "prefix":
+        return cases[:max_cases]
+    rng = random.Random(seed)
+    if strategy == "random":
+        selected = list(cases)
+        rng.shuffle(selected)
+        return selected[:max_cases]
+    if strategy != "stratified":
+        raise ValueError(f"Unknown prompt_uml sample strategy {strategy!r}")
+
+    groups = grouped_cases(cases)
+    names = sorted(groups)
+    if max_cases < len(names):
+        names = rng.sample(names, max_cases)
+    selected_by_dataset: dict[str, list[Case]] = {name: [] for name in names}
+    remaining = max_cases
+    base_quota = max(1, max_cases // max(1, len(names)))
+    for name in names:
+        pool = list(groups[name])
+        rng.shuffle(pool)
+        take = min(base_quota, len(pool), remaining)
+        selected_by_dataset[name].extend(pool[:take])
+        groups[name] = pool[take:]
+        remaining -= take
+        if remaining <= 0:
+            break
+    while remaining > 0:
+        available = [name for name in names if groups[name]]
+        if not available:
+            break
+        for name in available:
+            selected_by_dataset[name].append(groups[name].pop(0))
+            remaining -= 1
+            if remaining <= 0:
+                break
+    selected: list[Case] = []
+    max_len = max((len(items) for items in selected_by_dataset.values()), default=0)
+    for idx in range(max_len):
+        for name in names:
+            items = selected_by_dataset[name]
+            if idx < len(items):
+                selected.append(items[idx])
+    return selected[:max_cases]
+
+
+def describe_case_distribution(cases: list[Case]) -> str:
+    counts = Counter(case.dataset for case in cases)
+    return ", ".join(f"{name}={counts[name]}" for name in sorted(counts)) or "empty"
+
+
+def write_case_manifest(path: Path, cases: list[Case]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps([{"dataset": case.dataset, "case_id": case.case_id} for case in cases], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
 def select_split(
     datasets: dict[str, list[Case]],
     *,
     mode: str,
     dataset_name: str | None,
     max_cases: int,
+    sample_strategy: str,
+    sample_seed: int,
 ) -> list[Case]:
     mode = mode.lower()
     if mode not in {"train", "test"}:
@@ -153,9 +224,7 @@ def select_split(
         cases = list(datasets[test_name])
     else:
         cases = [case for name, items in datasets.items() if name != test_name for case in items]
-    if max_cases > 0:
-        return cases[:max_cases]
-    return cases
+    return select_cases_with_strategy(cases, max_cases=max_cases, strategy=sample_strategy, seed=sample_seed)
 
 
 def normalize_base_url(base_url: str) -> str:
@@ -181,7 +250,7 @@ def post_chat_completion(*, endpoint: str, body: dict[str, Any], api_key: str, t
             payload = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         error_body = exc.read().decode("utf-8", errors="replace")
-        raise LLMHTTPError(exc.code, error_body) from exc
+        raise LLMHTTPError(exc.code, error_body, dict(exc.headers.items())) from exc
 
     try:
         content = payload["choices"][0]["message"]["content"]
@@ -202,6 +271,12 @@ def chat_completion(
     thinking: str,
     do_sample: bool | None,
     timeout: int,
+    state_dir: Path | None = None,
+    retry_phase: str = "prompt_uml_llm_request",
+    retry_context: dict[str, Any] | None = None,
+    max_retries: int = 20,
+    retry_initial_wait: int = 30,
+    retry_max_wait: int = 600,
 ) -> str:
     if not api_key:
         raise RuntimeError("ZHIPU_LLM_API_KEY or prompt_uml.api_key is required unless mock_with_gold is enabled")
@@ -220,11 +295,19 @@ def chat_completion(
         body["thinking"] = {"type": thinking}
     endpoint = normalize_base_url(base_url) + "chat/completions"
     try:
-        return post_chat_completion(
-            endpoint=endpoint,
-            body=body,
-            api_key=api_key,
-            timeout=timeout,
+        return call_with_provider_retries(
+            lambda: post_chat_completion(
+                endpoint=endpoint,
+                body=body,
+                api_key=api_key,
+                timeout=timeout,
+            ),
+            phase=retry_phase,
+            state_dir=state_dir,
+            context=retry_context,
+            max_retries=max_retries,
+            initial_wait=retry_initial_wait,
+            max_wait=retry_max_wait,
         )
     except LLMHTTPError as exc:
         lowered = exc.body.lower()
@@ -237,11 +320,19 @@ def chat_completion(
 
         retry_body = {k: v for k, v in body.items() if k not in set(retriable_fields)}
         print(f"[glm-compat] Retrying without rejected fields: {', '.join(retriable_fields)}")
-        return post_chat_completion(
-            endpoint=endpoint,
-            body=retry_body,
-            api_key=api_key,
-            timeout=timeout,
+        return call_with_provider_retries(
+            lambda: post_chat_completion(
+                endpoint=endpoint,
+                body=retry_body,
+                api_key=api_key,
+                timeout=timeout,
+            ),
+            phase=f"{retry_phase}:glm_compat",
+            state_dir=state_dir,
+            context=retry_context,
+            max_retries=max_retries,
+            initial_wait=retry_initial_wait,
+            max_wait=retry_max_wait,
         )
 
 
@@ -1006,7 +1097,7 @@ def average(values: list[float]) -> float:
 
 
 def summarize_records(records: list[EvaluationRecord]) -> dict[str, float]:
-    llm_records = [r.higen_llm_metrics for r in records if r.higen_llm_metrics.enabled]
+    llm_records = [r.llm_element_metrics for r in records if r.llm_element_metrics.enabled]
     llm_success = [m for m in llm_records if m.status == "success"]
     return {
         "count": float(len(records)),
@@ -1019,9 +1110,9 @@ def summarize_records(records: list[EvaluationRecord]) -> dict[str, float]:
         "relation_precision": average([r.relation_metrics.precision for r in records]),
         "relation_recall": average([r.relation_metrics.recall for r in records]),
         "relation_f1": average([r.relation_metrics.f1 for r in records]),
-        "higen_compilation_pass_rate": average([1.0 if r.higen_compilation.passed else 0.0 for r in records]),
-        "higen_llm_evaluated": float(len(llm_success)),
-        "higen_llm_failed": float(len(llm_records) - len(llm_success)),
+        "plantuml_compilation_pass_rate": average([1.0 if r.plantuml_compilation.passed else 0.0 for r in records]),
+        "llm_element_evaluated": float(len(llm_success)),
+        "llm_element_failed": float(len(llm_records) - len(llm_success)),
         "llm_node_precision": average([m.node_metrics.precision for m in llm_success]),
         "llm_node_recall": average([m.node_metrics.recall for m in llm_success]),
         "llm_node_f1": average([m.node_metrics.f1 for m in llm_success]),
@@ -1068,7 +1159,14 @@ def calculate_quality_score(
     return (node_weight * node_metrics.f1 + relation_weight * relation_metrics.f1) / total
 
 
-def generate_plantuml_for_case(prompt: str, case: Case, settings: dict[str, Any]) -> str:
+def generate_plantuml_for_case(
+    prompt: str,
+    case: Case,
+    settings: dict[str, Any],
+    *,
+    state_dir: Path | None = None,
+    retry_phase: str = "prompt_uml_eval",
+) -> str:
     if settings.get("mock_with_gold"):
         return extract_plantuml(case.gold_plantuml, wrap_if_needed=True)
     messages = [
@@ -1086,12 +1184,31 @@ def generate_plantuml_for_case(prompt: str, case: Case, settings: dict[str, Any]
         thinking=settings.get("thinking", "disabled"),
         do_sample=settings.get("do_sample"),
         timeout=int(settings.get("llm_timeout", 300)),
+        state_dir=state_dir,
+        retry_phase=retry_phase,
+        retry_context={"dataset": case.dataset, "case_id": case.case_id},
+        max_retries=int(settings.get("llm_max_retries", 20)),
+        retry_initial_wait=int(settings.get("llm_rate_limit_initial_wait", 30)),
+        retry_max_wait=int(settings.get("llm_rate_limit_max_wait", 600)),
     )
 
 
-def evaluate_case(prompt: str, case: Case, settings: dict[str, Any]) -> EvaluationRecord:
+def evaluate_case(
+    prompt: str,
+    case: Case,
+    settings: dict[str, Any],
+    *,
+    state_dir: Path | None = None,
+    retry_phase: str = "prompt_uml_eval",
+) -> EvaluationRecord:
     try:
-        generated = generate_plantuml_for_case(prompt, case, settings)
+        generated = generate_plantuml_for_case(
+            prompt,
+            case,
+            settings,
+            state_dir=state_dir,
+            retry_phase=retry_phase,
+        )
     except Exception as exc:
         generated = ""
         syntax = SyntaxResult(False, [f"LLM generation failed: {exc}"])
@@ -1130,26 +1247,32 @@ def evaluate_case(prompt: str, case: Case, settings: dict[str, Any]) -> Evaluati
         failure_types = classify_failures(syntax, structure, node_metrics, relation_metrics)
 
     generated_plantuml = extract_plantuml(generated, wrap_if_needed=False)
-    higen_compilation = check_plantuml_compilation(
+    plantuml_compilation = check_plantuml_compilation(
         generated_plantuml,
         Path(settings.get("plantuml_jar", DEFAULT_PLANTUML_JAR)),
-        timeout=int(settings.get("higen_compile_timeout", 30)),
+        timeout=int(settings.get("plantuml_compile_timeout", 30)),
     )
-    higen_llm_metrics = evaluate_llm_elements(
+    llm_element_metrics = evaluate_llm_elements(
         ground_truth=case.gold_plantuml,
         prediction=generated_plantuml,
-        enabled=bool(settings.get("higen_llm_metrics", False)),
-        model=str(settings.get("higen_judge_model") or settings.get("model", DEFAULT_MODEL)),
-        api_key=str(settings.get("higen_judge_api_key") or settings.get("api_key", "")),
-        base_url=str(settings.get("higen_judge_base_url") or settings.get("base_url", DEFAULT_BASE_URL)),
-        temperature=float(settings.get("higen_judge_temperature", 0.0)),
-        max_tokens=int(settings.get("higen_judge_max_tokens", 4096)),
-        timeout=int(settings.get("higen_judge_timeout", settings.get("llm_timeout", 300))),
-        thinking=str(settings.get("higen_judge_thinking", "disabled")),
-        max_retries=int(settings.get("higen_judge_max_retries", 3)),
+        enabled=bool(settings.get("llm_element_metrics", False)),
+        model=str(settings.get("llm_judge_model") or settings.get("model", DEFAULT_MODEL)),
+        api_key=str(settings.get("llm_judge_api_key") or settings.get("api_key", "")),
+        base_url=str(settings.get("llm_judge_base_url") or settings.get("base_url", DEFAULT_BASE_URL)),
+        temperature=float(settings.get("llm_judge_temperature", 0.0)),
+        max_tokens=int(settings.get("llm_judge_max_tokens", 4096)),
+        timeout=int(settings.get("llm_judge_timeout", settings.get("llm_timeout", 300))),
+        thinking=str(settings.get("llm_judge_thinking", "disabled")),
+        max_retries=int(settings.get("llm_judge_max_retries", 3)),
+        state_dir=state_dir,
+        retry_phase=f"{retry_phase}:llm_judge",
+        retry_context={"dataset": case.dataset, "case_id": case.case_id},
+        provider_max_retries=int(settings.get("llm_max_retries", 20)),
+        retry_initial_wait=int(settings.get("llm_rate_limit_initial_wait", 30)),
+        retry_max_wait=int(settings.get("llm_rate_limit_max_wait", 600)),
     )
-    if higen_llm_metrics.status == "error":
-        failure_types.append("higen_llm_judge_error")
+    if llm_element_metrics.status == "error":
+        failure_types.append("llm_element_judge_error")
 
     reward = calculate_reward(
         syntax,
@@ -1176,8 +1299,8 @@ def evaluate_case(prompt: str, case: Case, settings: dict[str, Any]) -> Evaluati
         structure=structure,
         node_metrics=node_metrics,
         relation_metrics=relation_metrics,
-        higen_compilation=higen_compilation,
-        higen_llm_metrics=higen_llm_metrics,
+        plantuml_compilation=plantuml_compilation,
+        llm_element_metrics=llm_element_metrics,
         quality_score=quality_score,
         reward=reward,
         failure_types=failure_types,
@@ -1207,8 +1330,8 @@ def write_trace(task_dir: Path, case: Case, record: EvaluationRecord, prompt_pat
             "structure": dataclasses.asdict(record.structure),
             "node_metrics": dataclasses.asdict(record.node_metrics),
             "relation_metrics": dataclasses.asdict(record.relation_metrics),
-            "higen_compilation": dataclasses.asdict(record.higen_compilation),
-            "higen_llm_metrics": dataclasses.asdict(record.higen_llm_metrics),
+            "plantuml_compilation": dataclasses.asdict(record.plantuml_compilation),
+            "llm_element_metrics": dataclasses.asdict(record.llm_element_metrics),
             "failure_types": record.failure_types,
         },
     }
@@ -1221,15 +1344,15 @@ def write_trace(task_dir: Path, case: Case, record: EvaluationRecord, prompt_pat
         f"structure_passed={record.structure.passed}",
         f"node_f1={record.node_metrics.f1:.4f}",
         f"relation_f1={record.relation_metrics.f1:.4f}",
-        f"higen_compiles={record.higen_compilation.passed}",
-        f"higen_llm_status={record.higen_llm_metrics.status}",
+        f"plantuml_compiles={record.plantuml_compilation.passed}",
+        f"llm_element_status={record.llm_element_metrics.status}",
         f"failure_types={','.join(record.failure_types) if record.failure_types else 'none'}",
     ]
-    if record.higen_llm_metrics.status == "success":
+    if record.llm_element_metrics.status == "success":
         nexau_lines.extend(
             [
-                f"llm_node_f1={record.higen_llm_metrics.node_metrics.f1:.4f}",
-                f"llm_relation_f1={record.higen_llm_metrics.relation_metrics.f1:.4f}",
+                f"llm_node_f1={record.llm_element_metrics.node_metrics.f1:.4f}",
+                f"llm_relation_f1={record.llm_element_metrics.relation_metrics.f1:.4f}",
             ]
         )
     (task_dir / "agent").mkdir(parents=True, exist_ok=True)
@@ -1290,9 +1413,9 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
         lines.append(f"- syntax_passed: {record.syntax.passed}")
         if record.syntax.errors:
             lines.append(f"- syntax_errors: {' | '.join(record.syntax.errors[:5])}")
-        lines.append(f"- higen_compiles: {record.higen_compilation.passed}")
-        if record.higen_compilation.errors:
-            lines.append(f"- higen_compile_errors: {' | '.join(record.higen_compilation.errors[:5])}")
+        lines.append(f"- plantuml_compiles: {record.plantuml_compilation.passed}")
+        if record.plantuml_compilation.errors:
+            lines.append(f"- plantuml_compile_errors: {' | '.join(record.plantuml_compilation.errors[:5])}")
         lines.append(f"- structure_passed: {record.structure.passed}")
         if record.structure.errors:
             lines.append(f"- structure_errors: {' | '.join(record.structure.errors[:5])}")
@@ -1303,13 +1426,13 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
         )
         lines.append(f"- node_f1: {record.node_metrics.f1:.4f}")
         lines.append(f"- relation_f1: {record.relation_metrics.f1:.4f}")
-        if record.higen_llm_metrics.enabled:
-            lines.append(f"- higen_llm_status: {record.higen_llm_metrics.status}")
-            if record.higen_llm_metrics.status == "success":
-                lines.append(f"- llm_node_f1: {record.higen_llm_metrics.node_metrics.f1:.4f}")
-                lines.append(f"- llm_relation_f1: {record.higen_llm_metrics.relation_metrics.f1:.4f}")
-            elif record.higen_llm_metrics.error:
-                lines.append(f"- higen_llm_error: {record.higen_llm_metrics.error[:300]}")
+        if record.llm_element_metrics.enabled:
+            lines.append(f"- llm_element_status: {record.llm_element_metrics.status}")
+            if record.llm_element_metrics.status == "success":
+                lines.append(f"- llm_node_f1: {record.llm_element_metrics.node_metrics.f1:.4f}")
+                lines.append(f"- llm_relation_f1: {record.llm_element_metrics.relation_metrics.f1:.4f}")
+            elif record.llm_element_metrics.error:
+                lines.append(f"- llm_element_error: {record.llm_element_metrics.error[:300]}")
         if record.node_metrics.missing:
             lines.append("- missing_nodes:")
             for item in record.node_metrics.missing[:8]:
@@ -1368,15 +1491,29 @@ def run_prompt_uml_evaluation(
         mode=split,
         dataset_name=settings.get("test_dataset"),
         max_cases=int(settings.get(max_cases_key, 0) or 0),
+        sample_strategy=str(
+            settings.get("test_sample_strategy", "prefix")
+            if split == "test"
+            else settings.get("sample_strategy", "stratified")
+        ),
+        sample_seed=int(settings.get("sample_seed", 13)) + (20_000 if split == "test" else 0),
     )
 
     job_dir = output_root / datetime.now().strftime("%Y-%m-%d__%H-%M-%S")
     job_dir.mkdir(parents=True, exist_ok=False)
+    print(f"[prompt-uml] {split} distribution: {describe_case_distribution(cases)}", flush=True)
+    write_case_manifest(job_dir / f"{split}_cases.json", cases)
 
     records: list[EvaluationRecord] = []
     for idx, case in enumerate(cases, start=1):
         print(f"[prompt-uml] {split} {idx}/{len(cases)} {case.case_id}", flush=True)
-        record = evaluate_case(prompt, case, settings)
+        record = evaluate_case(
+            prompt,
+            case,
+            settings,
+            state_dir=job_dir,
+            retry_phase=f"prompt_uml:{split}",
+        )
         records.append(record)
         write_task_artifacts(job_dir, case, record, prompt_path)
 
@@ -1402,3 +1539,4 @@ def run_prompt_uml_evaluation(
         )
 
     return job_dir
+

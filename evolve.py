@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Agentic Harness Engineering: Automated Evolution Evaluation System
 
@@ -386,8 +386,8 @@ def apply_cli_overrides(config: dict, args: argparse.Namespace) -> dict:
         prompt_uml["mock_with_gold"] = True
     if getattr(args, "prompt_skip_heldout_test", False):
         prompt_uml["run_heldout_test"] = False
-    if getattr(args, "prompt_higen_llm_metrics", False):
-        prompt_uml["higen_llm_metrics"] = True
+    if getattr(args, "prompt_no_llm_element_metrics", False):
+        prompt_uml["llm_element_metrics"] = False
     if prompt_uml:
         overrides["prompt_uml"] = prompt_uml
 
@@ -794,18 +794,27 @@ def get_prompt_uml_settings(config: dict) -> dict:
     settings.setdefault("thinking", "disabled")
     settings.setdefault("max_tokens", 6000)
     settings.setdefault("llm_timeout", 300)
+    settings.setdefault("llm_max_retries", 20)
+    settings.setdefault("llm_rate_limit_initial_wait", 30)
+    settings.setdefault("llm_rate_limit_max_wait", 600)
     settings.setdefault("temperature", 0.2)
+    settings.setdefault("sample_strategy", "stratified")
+    settings.setdefault("test_sample_strategy", "prefix")
+    settings.setdefault("candidate_sample_strategy", "stratified")
+    settings.setdefault("sample_seed", 13)
+    settings.setdefault("max_prompt_growth_ratio", 1.35)
+    settings.setdefault("max_prompt_chars", 9000)
     settings.setdefault("prompt_filename", "work.md")
-    settings.setdefault("higen_compile_timeout", 30)
-    settings.setdefault("higen_llm_metrics", False)
-    settings.setdefault("higen_judge_model", os.environ.get("HIGEN_JUDGE_MODEL") or settings.get("model", "glm-5.1"))
-    settings.setdefault("higen_judge_api_key", os.environ.get("HIGEN_JUDGE_API_KEY") or settings.get("api_key", ""))
-    settings.setdefault("higen_judge_base_url", os.environ.get("HIGEN_JUDGE_BASE_URL") or settings.get("base_url", "https://open.bigmodel.cn/api/paas/v4/"))
-    settings.setdefault("higen_judge_temperature", 0.0)
-    settings.setdefault("higen_judge_max_tokens", 4096)
-    settings.setdefault("higen_judge_timeout", int(settings.get("llm_timeout", 300)))
-    settings.setdefault("higen_judge_thinking", os.environ.get("HIGEN_JUDGE_THINKING_TYPE", "disabled"))
-    settings.setdefault("higen_judge_max_retries", 3)
+    settings.setdefault("plantuml_compile_timeout", 30)
+    settings.setdefault("llm_element_metrics", True)
+    settings.setdefault("llm_judge_model", settings.get("model", "glm-5.1"))
+    settings.setdefault("llm_judge_api_key", settings.get("api_key", ""))
+    settings.setdefault("llm_judge_base_url", settings.get("base_url", "https://open.bigmodel.cn/api/paas/v4/"))
+    settings.setdefault("llm_judge_temperature", 0.0)
+    settings.setdefault("llm_judge_max_tokens", 4096)
+    settings.setdefault("llm_judge_timeout", int(settings.get("llm_timeout", 300)))
+    settings.setdefault("llm_judge_thinking", settings.get("thinking", "disabled"))
+    settings.setdefault("llm_judge_max_retries", 3)
     if "datasets_dir" in settings:
         datasets_dir = Path(settings["datasets_dir"])
         if not datasets_dir.is_absolute():
@@ -1035,15 +1044,15 @@ def compute_stats(job_dir: Path, k: int = 1) -> dict:
             f"node_f1={prompt_uml_summary.get('node_f1', 0.0):.3f}, "
             f"relation_f1={prompt_uml_summary.get('relation_f1', 0.0):.3f}, "
             f"structure={prompt_uml_summary.get('structure_valid_rate', 0.0):.1%}, "
-            f"higen_compile={prompt_uml_summary.get('higen_compilation_pass_rate', 0.0):.1%}"
+            f"plantuml_compile={prompt_uml_summary.get('plantuml_compilation_pass_rate', 0.0):.1%}"
         )
-        if prompt_uml_summary.get("higen_llm_evaluated", 0.0) > 0:
+        if prompt_uml_summary.get("llm_element_evaluated", 0.0) > 0:
             print(
-                "[stats] HiGen LLM judge: "
+                "[stats] LLM element judge: "
                 f"node_f1={prompt_uml_summary.get('llm_node_f1', 0.0):.3f}, "
                 f"relation_f1={prompt_uml_summary.get('llm_relation_f1', 0.0):.3f}, "
-                f"evaluated={int(prompt_uml_summary.get('higen_llm_evaluated', 0.0))}, "
-                f"failed={int(prompt_uml_summary.get('higen_llm_failed', 0.0))}"
+                f"evaluated={int(prompt_uml_summary.get('llm_element_evaluated', 0.0))}, "
+                f"failed={int(prompt_uml_summary.get('llm_element_failed', 0.0))}"
             )
 
     if exception_types:
@@ -5336,8 +5345,8 @@ def main():
         help="prompt_uml only: skip the final held-out test stage for cheap training-only smoke runs",
     )
     parser.add_argument(
-        "--prompt-higen-llm-metrics", action="store_true",
-        help="prompt_uml only: enable HiGenModel-style LLM-as-judge node/relation P/R/F1 metrics",
+        "--prompt-no-llm-element-metrics", action="store_true",
+        help="prompt_uml only: disable LLM semantic node/relation P/R/F1 metrics for cheap local smoke tests",
     )
     parser.add_argument(
         "--prompt-sweep-datasets", nargs="?", const="", default=None,
@@ -5393,3 +5402,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
