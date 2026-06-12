@@ -1,10 +1,6 @@
 ﻿#!/usr/bin/env python3
 """Prompt evolution loop for UML activity-diagram PlantUML generation.
 
-This is a prompt-level adaptation of the AHE loop:
-
-evaluate -> analyze -> improve
-
 Each run copies the seed prompt into its own `work.md` under `prompt_runs/` and
 only evolves that run-local file. The seed prompt is never overwritten. The
 normal mode uses a leave-one-dataset-out setup, and train-only mode can be used

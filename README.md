@@ -1,237 +1,160 @@
-﻿# APE
+# APE
 
-APE is a prompt-evolution project adapted from Agentic Harness Engineering (AHE).
-The current target is a UML activity-diagram generation prompt: APE evaluates a
-prompt on natural-language software requirements, compares the generated
-PlantUML against reference diagrams, analyzes failures, and asks an LLM to
-improve a run-local copy of the prompt.
+APE is a prompt-evolution workspace for UML activity-diagram PlantUML generation.
+It treats the UML generator prompt as the artifact under optimization.
 
-The seed prompt is kept read-only at:
+The canonical seed prompt is:
 
 ```text
 prompt_workspace/tst.md
 ```
 
-Each run copies that seed into its own `work.md` under `prompt_runs/`. The
-original seed prompt is not overwritten by training.
+Every run copies this file into its own `prompt_runs/<run>/work.md`. Training
+edits only the run-local `work.md`; the seed prompt is not overwritten.
 
-## What This Repository Contains
+## Repository Layout
 
-- `prompt_evolve.py`: standalone prompt evolution loop.
-- `prompt_workspace/tst.md`: initial prompt specification for the UML generation agent.
-- `prompt_workspace/failure_analysis.md`: system prompt for the batch-level failure-analysis model.
-- `prompt_workspace/prompt_editor.md`: system prompt for the prompt-edit model.
-- `prompt_datasets/lato/`: LATO-derived JSONL datasets used for train/test splits.
-- `evaluators/prompt_uml.py`: PlantUML syntax, structure, node, and relation evaluator.
-- `tools/plantuml/plantuml-1.2025.4.jar`: bundled PlantUML validator.
-- `docs/prompt-evolution.md`: notes for the standalone prompt evolution flow.
-- `docs/ahe-prompt-uml.md`: notes for the AHE-native prompt UML backend.
-- `docs/glm51-compat.md`: Zhipu GLM 5.1 compatibility notes.
+- `prompt_evolve.py`: main batch prompt-evolution loop.
+- `prompt_workspace/tst.md`: canonical initial UML generation prompt.
+- `prompt_workspace/failure_analysis.md`: system prompt for batch failure analysis.
+- `prompt_workspace/prompt_editor.md`: system prompt for structured prompt edits.
+- `prompt_datasets/lato/`: six JSONL datasets: `bp`, `fsd`, `lmc`, `pure`, `rac`, `us`.
+- `evaluators/llm_element_metrics.py`: PlantUML compilation check and optional LLM semantic element judge.
+- `utils/rate_limit.py`: shared provider retry and rate-limit state logging.
+- `tools/plantuml/plantuml-1.2025.4.jar`: bundled PlantUML syntax validator.
 
-The original AHE code is still present because this project keeps the AHE
-evaluate-analyze-improve idea and adapts the evolved component from a coding
-agent harness to a prompt file.
+The active workflow is the standalone prompt optimization loop in
+`prompt_evolve.py`.
 
 ## Environment
 
-Python 3.13 is recommended because the inherited AHE project declares
-`requires-python >=3.13`.
+Python 3.13 is recommended.
 
-Install dependencies with `uv`:
+Install dependencies with:
 
 ```powershell
 uv sync
 ```
 
-For real GLM calls, configure the Zhipu API key in the shell environment:
+For real model calls, configure an OpenAI-compatible chat-completions provider.
+The defaults target Zhipu GLM:
 
 ```powershell
-$env:ZHIPU_LLM_API_KEY="your-zhipu-api-key"
+$env:ZHIPU_LLM_API_KEY="your-api-key"
+$env:ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
+$env:ZHIPU_LLM_MODEL="glm-5.1"
 ```
 
-Do not write API keys into Python files, YAML files, committed examples, or logs.
-
-The standalone prompt flow does not require E2B. AHE-style runs that still use
-the E2B-backed outer harness also need:
-
-```powershell
-$env:E2B_API_KEY="your-e2b-api-key"
-```
+Do not write API keys into Python files, docs, logs, or committed examples.
 
 ## Quick Checks
 
-Verify the local pipeline without LLM calls:
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve
-```
-
-Run a tiny training-only GLM smoke test:
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3
-```
-
-Run one held-out split, using one dataset as the test set and all other datasets
-as training data:
-
-```powershell
-python prompt_evolve.py --test-dataset fsd --iterations 3
-```
-
-When a case limit is used, training defaults to stratified sampling instead of
-taking the merged train-set prefix. For example,
-`--test-dataset fsd --max-train-cases 30` samples across `bp/lmc/pure/rac/us`.
-Each run writes `train_cases.json`, `test_cases.json`, and per-iteration
-`candidate_cases.json` manifests so the actual split can be inspected.
-
-Run leave-one-dataset-out across all datasets:
-
-```powershell
-python prompt_evolve.py --test-dataset all --iterations 3
-```
-
-Available dataset names:
-
-```text
-bp, fsd, lmc, pure, rac, us
-```
-
-## GLM Compatibility
-
-The default model is `glm-5.1`.
-
-The script sends requests to the OpenAI-compatible Zhipu Chat Completions API
-and normalizes common provider details:
-
-- `thinking.type` defaults to `disabled`.
-- `do_sample` is omitted unless `--do-sample true|false` is passed.
-- `top_p` is omitted unless `--top-p <value>` is passed.
-- `max_tokens` defaults to a positive value.
-- `--base-url` may be the API base URL; the script appends
-  `chat/completions` internally.
-- `HTTP 429` and Zhipu error code `1302` are retried with backoff.
-- Rate-limit state is written to the current run's `run_state.json` and
-  `rate_limit_events.jsonl`.
-
-Useful overrides:
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --llm-timeout 600
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --thinking enabled --llm-timeout 900
-python prompt_evolve.py --test-dataset fsd --iterations 2 --max-train-cases 30 --max-test-cases 20 --llm-max-retries 40 --llm-rate-limit-max-wait 900
-```
-
-## Changing Models
-
-The model can be changed without editing code. Command-line arguments have the
-highest priority, then environment variables, then the built-in defaults.
-
-Use another Zhipu GLM model:
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model glm-4.7-flashx
-```
-
-Or configure the default model for the current shell:
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model glm-5.1 --base-url https://open.bigmodel.cn/api/paas/v4/
-```
-
-To use another OpenAI-compatible provider, set both the model and base URL:
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model your-model-name --base-url https://your-provider.example.com/v1/
-```
-
-The prompt evaluator assumes a Chat Completions-compatible endpoint. If a
-provider rejects GLM-specific fields, run with the defaults first because
-`thinking`, `do_sample`, and `top_p` are already omitted or disabled unless
-explicitly requested.
-
-## Evaluation
-
-Each case is evaluated by comparing generated PlantUML with the reference
-PlantUML. The evaluator checks:
-
-- PlantUML syntax through the bundled PlantUML jar.
-- Basic activity-diagram structure, including start/end nodes and dangling or unreachable flow.
-- Activity node matching with normalized text similarity.
-- Control-flow relation matching between extracted semantic activities.
-- PlantUML compilation pass rate, recorded as `plantuml_compilation_pass_rate`.
-- LLM semantic node/relation P/R/F1, recorded as `llm_node_f1` and `llm_relation_f1`.
-
-The prompt quality score is:
-
-```text
-0.20 * syntax_pass_rate + 0.40 * node_f1 + 0.40 * relation_f1 - 0.50 * infrastructure_error_rate
-```
-
-The model does not freely rewrite the whole prompt. Each iteration first
-evaluates a batch, asks a failure-analysis model for batch-level error patterns,
-then asks a prompt-editor model for structured JSON edits. The program applies
-only valid edits to fixed prompt sections; section names, order, and structure
-cannot change. The candidate prompt is evaluated on a gate batch and accepted
-only when relation F1, node F1, syntax pass rate, infrastructure errors, and
-prompt size satisfy the conservative guards and the core metrics meet the
-temporary improvement threshold. Held-out testing uses the best training prompt
-(`prompt_best.md`) by default, rather than blindly using the last accepted prompt.
-
-The LLM-as-judge metric runs by default. For a cheap local smoke test without
-LLM judging, disable it explicitly:
+Run the local pipeline without model calls:
 
 ```powershell
 python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-The LLM judge defaults to the same GLM-compatible model configuration as the
-generator. `prompt_evolve.py` automatically reads `.env` when `python-dotenv`
-is installed. Do not configure separate judge URL/model/thinking environment
-variables; adjust them in the command arguments for direct runs or under
-`prompt_uml` in the YAML config for AHE runs.
-
-Minimal PowerShell configuration:
+Run a tiny real training-only smoke test:
 
 ```powershell
-$env:ZHIPU_LLM_API_KEY="your-zhipu-api-key"
-$env:E2B_API_KEY="your-e2b-api-key"
+python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3
 ```
 
-The LLM semantic metric is currently a reporting metric; prompt
-acceptance still uses the deterministic syntax, structure, node F1, and relation
-F1 guards.
+Use one dataset as held-out test and the other five as training data:
+
+```powershell
+python prompt_evolve.py --test-dataset fsd --iterations 3
+```
+
+Run leave-one-dataset-out over all six datasets:
+
+```powershell
+python prompt_evolve.py --test-dataset all --iterations 3
+```
+
+When a case limit is used, training defaults to stratified sampling, so
+`--test-dataset fsd --max-train-cases 30` samples across `bp/lmc/pure/rac/us`
+instead of taking only the merged train-set prefix.
+
+## Workflow
+
+Each iteration follows this loop:
+
+```text
+current prompt
+-> analysis batch PlantUML generation
+-> deterministic evaluation
+-> batch failure-analysis model
+-> prompt-editor model emits structured section edits
+-> program applies valid edits
+-> gate batch candidate evaluation
+-> accept or reject candidate prompt
+```
+
+The prompt editor does not rewrite arbitrary files. It returns JSON edits for
+the fixed markdown sections in `tst.md`:
+
+```text
+## agent task
+## input
+## output
+## workflow
+## knowledge
+```
+
+By default, at most two sections may be edited per iteration
+(`--max-sections-per-edit 2`).
+
+## Evaluation
+
+The primary deterministic metrics are:
+
+- `node_f1` (`N-F1`): normalized activity/condition node matching.
+- `relation_f1` (`R-F1`): normalized control-flow relation matching.
+- `plantuml_compilation_pass_rate`: local PlantUML syntax compilation pass rate.
+
+Optional LLM semantic metrics are:
+
+- `llm_node_f1` (`LLM-N-F1`)
+- `llm_relation_f1` (`LLM-R-F1`)
+
+Disable the LLM semantic judge for cheap local checks:
+
+```powershell
+python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
+```
+
+The optimization score used for acceptance is:
+
+```text
+0.20 * syntax_pass_rate + 0.40 * node_f1 + 0.40 * relation_f1 - 0.50 * infrastructure_error_rate
+```
+
+Candidate prompts are accepted only when the gate-batch metrics satisfy the
+configured improvement, regression, infrastructure-error, and prompt-size
+guards. Held-out testing uses the best training prompt by default.
 
 ## Outputs
 
-Runs are written under `prompt_runs/`. A typical run contains:
+Runs are written under `prompt_runs/`. Important files include:
 
-- `prompt_initial.md`
-- `work.md`
-- `run_args.json`
-- `iteration_NNN/analysis_batch_cases.json`
-- `iteration_NNN/predictions.jsonl`
-- `iteration_NNN/evaluation_summary.json`
-- `iteration_NNN/analysis/overview.md`
-- `iteration_NNN/failure_analysis_input.json`
-- `iteration_NNN/failure_analysis_output.json`
-- `iteration_NNN/prompt_edit_input.json`
-- `iteration_NNN/prompt_edit_output.json`
-- `iteration_NNN/candidate_prompt.md`
-- `iteration_NNN/gate_cases.json`
-- `iteration_NNN/gate_predictions.jsonl`
-- `iteration_NNN/gate_summary.json`
-- `iteration_NNN/prompt_acceptance.json`
-- `iteration_NNN/prompt_after.md`
-- `test_records.jsonl`
-- `test_summary.json`
-- `test_analysis.md`
-- `prompt_final.md`
-
-## Notes
-
-This repository is an experimental research workspace. The implementation
-prioritizes reproducible prompt iteration and inspection of generated artifacts
-over packaging polish.
-
-
+- `run_args.json`: sanitized run configuration.
+- `train_cases.json`, `test_cases.json`: actual sampled cases.
+- `iteration_NNN/analysis_batch_cases.json`: batch used for failure analysis.
+- `iteration_NNN/predictions.jsonl`: generated PlantUML and metrics for the analysis batch.
+- `iteration_NNN/evaluation_summary.json`: analysis-batch metric summary.
+- `iteration_NNN/analysis/overview.md`: human-readable failure report.
+- `iteration_NNN/failure_analysis_input.json`: input sent to the failure-analysis model.
+- `iteration_NNN/failure_analysis_output.json`: structured failure-analysis result.
+- `iteration_NNN/prompt_edit_input.json`: input sent to the prompt-editor model.
+- `iteration_NNN/prompt_edit_output.json`: structured prompt edit result.
+- `iteration_NNN/candidate_prompt.md`: candidate prompt after applying edits.
+- `iteration_NNN/gate_cases.json`: gate-batch case manifest.
+- `iteration_NNN/gate_predictions.jsonl`: candidate gate predictions and metrics.
+- `iteration_NNN/gate_summary.json`: candidate gate summary.
+- `iteration_NNN/prompt_acceptance.json`: accept/reject decision and score deltas.
+- `prompt_best.md`: best prompt observed on training evaluation.
+- `prompt_final.md`: prompt used for final held-out testing.
+- `test_summary.json`, `test_analysis.md`: held-out test results.
+- `run_state.json`, `rate_limit_events.jsonl`: provider retry state and event log.

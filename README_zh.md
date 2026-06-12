@@ -1,39 +1,33 @@
-﻿# APE
+# APE
 
-APE 是一个基于 Agentic Harness Engineering (AHE) 思路改造的提示词优化项目。
-当前优化目标是 UML 活动图生成提示词：系统会用自然语言软件需求评估提示词，
-让模型生成 PlantUML 活动图代码，再与参考答案比较，分析失败原因，并让 LLM
-改进当前 run 自己的提示词副本。
+APE 是一个 UML 活动图 PlantUML 生成提示词优化工作区。当前优化对象是
+UML 生成 agent 的 markdown prompt。
 
-初始提示词保存在：
+权威初始提示词是：
 
 ```text
 prompt_workspace/tst.md
 ```
 
-每次运行都会把这个初始文件复制到 `prompt_runs/` 下本轮自己的 `work.md`。
-训练和迭代只修改这个 run-local 文件，不会覆盖原始 `tst.md`。
+每次运行都会把它复制到本次 run 的 `prompt_runs/<run>/work.md`。训练和
+迭代只修改这个 run-local `work.md`，不会覆盖 `tst.md`。
 
-## 仓库内容
+## 仓库结构
 
-- `prompt_evolve.py`：独立提示词优化主程序。
-- `prompt_workspace/tst.md`：UML 生成 agent 的初始提示词规范。
-- `prompt_workspace/failure_analysis.md`：batch-level 失败分析模型的 system prompt。
-- `prompt_workspace/prompt_editor.md`：提示词编辑模型的 system prompt。
-- `prompt_datasets/lato/`：用于训练/测试划分的 LATO 数据集。
-- `evaluators/prompt_uml.py`：PlantUML 语法、结构、节点和控制流关系评估器。
-- `tools/plantuml/plantuml-1.2025.4.jar`：本地 PlantUML 校验工具。
-- `docs/prompt-evolution.md`：独立提示词优化流程说明。
-- `docs/ahe-prompt-uml.md`：AHE-native prompt UML 后端说明。
-- `docs/glm51-compat.md`：智谱 GLM 5.1 兼容层说明。
+- `prompt_evolve.py`：主要 batch prompt 优化循环。
+- `prompt_workspace/tst.md`：权威初始 UML 生成 prompt。
+- `prompt_workspace/failure_analysis.md`：失败分析模型的 system prompt。
+- `prompt_workspace/prompt_editor.md`：结构化 prompt 编辑模型的 system prompt。
+- `prompt_datasets/lato/`：六个 JSONL 数据集：`bp`、`fsd`、`lmc`、`pure`、`rac`、`us`。
+- `evaluators/llm_element_metrics.py`：PlantUML 编译检查和可选 LLM 语义元素 judge。
+- `utils/rate_limit.py`：共享 provider 重试与限流状态记录。
+- `tools/plantuml/plantuml-1.2025.4.jar`：本地 PlantUML 语法校验工具。
 
-原 AHE 的部分代码仍保留在仓库中，因为当前项目复用了 AHE 的
-`evaluate -> analyze -> improve` 思路，只是把被优化组件从 coding-agent
-harness 改成了提示词文件。
+当前唯一工作流是 `prompt_evolve.py` 的独立 prompt 优化循环。
 
-## 环境配置
+## 环境
 
-建议使用 Python 3.13，因为继承的 AHE 项目声明了 `requires-python >=3.13`。
+建议使用 Python 3.13。
 
 安装依赖：
 
@@ -41,179 +35,127 @@ harness 改成了提示词文件。
 uv sync
 ```
 
-真实调用 GLM 时，需要在 PowerShell 中配置智谱 API key：
+真实调用模型时，配置一个 OpenAI-compatible chat-completions provider。
+默认面向智谱 GLM：
 
 ```powershell
-$env:ZHIPU_LLM_API_KEY="your-zhipu-api-key"
+$env:ZHIPU_LLM_API_KEY="your-api-key"
+$env:ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
+$env:ZHIPU_LLM_MODEL="glm-5.1"
 ```
 
-不要把 API key 写进 Python、YAML、README、日志或提交记录。
-
-独立的 `prompt_evolve.py` 流程不需要 E2B。仍使用 E2B 外层 harness 的 AHE
-运行还需要：
-
-```powershell
-$env:E2B_API_KEY="your-e2b-api-key"
-```
+不要把 API key 写进代码、文档、日志或提交记录。
 
 ## 快速验证
 
 不调用模型，只验证本地流程：
 
 ```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve
+python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-用 GLM 做一个很小的训练 smoke test：
+小规模真实训练：
 
 ```powershell
 python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3
 ```
 
-指定一个数据集作为测试集，其余数据集作为训练集：
+指定一个数据集为 held-out 测试集，其余五个作为训练集：
 
 ```powershell
 python prompt_evolve.py --test-dataset fsd --iterations 3
 ```
 
-当限制训练样例数量时，默认使用分层抽样，不会只取合并训练集的前缀。例如
-`--test-dataset fsd --max-train-cases 30` 会从 `bp/lmc/pure/rac/us`
-中均匀抽取训练样例。每次运行会写出 `train_cases.json`、`test_cases.json`
-和每轮的 `candidate_cases.json`，用于核对实际样例。
-
-对所有数据集做 leave-one-dataset-out：
+六个数据集全部做 leave-one-dataset-out：
 
 ```powershell
 python prompt_evolve.py --test-dataset all --iterations 3
 ```
 
-可用数据集名称：
+限制样例数量时，训练默认使用分层采样。例如
+`--test-dataset fsd --max-train-cases 30` 会从 `bp/lmc/pure/rac/us` 中抽样，
+不会只取合并训练集的前缀。
+
+## 工作流
+
+每轮循环如下：
 
 ```text
-bp, fsd, lmc, pure, rac, us
+当前 prompt
+-> analysis batch 生成 PlantUML
+-> 确定性评估
+-> batch 失败分析模型
+-> prompt editor 模型输出结构化 section edits
+-> 程序应用合法 edits
+-> gate batch 评估候选 prompt
+-> 接受或拒绝候选 prompt
 ```
 
-## GLM 兼容
-
-默认模型是 `glm-5.1`。
-
-脚本通过智谱 OpenAI-compatible Chat Completions API 调用模型，并处理以下兼容点：
-
-- `thinking.type` 默认是 `disabled`。
-- 除非显式传入 `--do-sample true|false`，否则不发送 `do_sample`。
-- 除非显式传入 `--top-p <value>`，否则不发送 `top_p`。
-- `max_tokens` 默认使用正数。
-- `--base-url` 可以写 API base URL，脚本会自动拼接 `chat/completions`。
-- 遇到 `HTTP 429` 或智谱错误码 `1302` 时，脚本会自动等待并重试。
-- 限流等待状态会写入当前 run 的 `run_state.json` 和 `rate_limit_events.jsonl`。
-
-常用覆盖参数：
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --llm-timeout 600
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --thinking enabled --llm-timeout 900
-python prompt_evolve.py --test-dataset fsd --iterations 2 --max-train-cases 30 --max-test-cases 20 --llm-max-retries 40 --llm-rate-limit-max-wait 900
-```
-
-## 更换模型
-
-更换模型不需要改代码。直跑 `prompt_evolve.py` 时使用命令参数；AHE 路径下在 YAML 配置中修改。
-
-使用另一个智谱 GLM 模型：
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model glm-4.7-flashx
-```
-
-也可以同时指定模型名和 base URL：
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model glm-5.1 --base-url https://open.bigmodel.cn/api/paas/v4/
-```
-
-如果要接入其他 OpenAI-compatible provider，需要同时设置模型名和 base URL：
-
-```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3 --model your-model-name --base-url https://your-provider.example.com/v1/
-```
-
-当前评估脚本假设后端兼容 Chat Completions 接口。如果 provider 拒绝 GLM 特有字段，
-先使用默认参数运行；默认情况下 `thinking` 已关闭，`do_sample` 和 `top_p` 也不会发送。
-
-## 评估方式
-
-每个 case 会比较生成 PlantUML 和参考 PlantUML。当前评估包含：
-
-- 通过本地 PlantUML jar 检查语法。
-- 检查活动图结构，包括开始/结束节点、悬空边和不可达节点。
-- 对活动节点文本做归一化匹配。
-- 对抽取出的语义活动之间的控制流关系做匹配。
-- PlantUML 编译通过率，字段为 `plantuml_compilation_pass_rate`。
-- LLM 语义节点/关系 P/R/F1，字段为 `llm_node_f1` 和 `llm_relation_f1`。
-
-提示词质量分数为：
+prompt editor 不能任意重写文件。它只能返回针对 `tst.md` 固定 section 的
+JSON edits：
 
 ```text
-0.20 * syntax_pass_rate + 0.40 * node_f1 + 0.40 * relation_f1 - 0.50 * infrastructure_error_rate
+## agent task
+## input
+## output
+## workflow
+## knowledge
 ```
 
-提示词不会由模型整篇自由重写。每轮先在一个 batch 上生成 PlantUML 并评估，再由
-failure analysis 模型做 batch-level 失败分析，prompt editor 模型输出结构化 JSON edits。
-程序只允许这些 edits 修改固定 section 的内容，不能新增、删除、改名或重排 section。
-候选提示词会在 gate batch 上重新评估；只有关系 F1、节点 F1、语法通过率、基础设施错误
-和提示词长度都满足保守约束，并且核心指标达到暂定提升阈值时，才会替换本轮 `work.md`。
-最终测试默认使用训练过程中表现最好的 `prompt_best.md`，而不是最后一次被接受的版本。
+默认每轮最多修改两个 section：
 
-LLM-as-judge 指标默认运行。如果只是做便宜的本地 smoke test，可以显式关闭：
+```text
+--max-sections-per-edit 2
+```
+
+## 评估
+
+主要确定性指标：
+
+- `node_f1` (`N-F1`)：活动/条件节点匹配。
+- `relation_f1` (`R-F1`)：控制流关系匹配。
+- `plantuml_compilation_pass_rate`：本地 PlantUML 编译通过率。
+
+可选 LLM 语义指标：
+
+- `llm_node_f1` (`LLM-N-F1`)
+- `llm_relation_f1` (`LLM-R-F1`)
+
+便宜本地测试可关闭 LLM judge：
 
 ```powershell
 python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-LLM judge 默认复用生成模型的 GLM 兼容配置。安装了 `python-dotenv` 时，
-`prompt_evolve.py` 会自动读取 `.env`。不要再为 judge 单独配置 URL、model、
-thinking type 环境变量；直跑脚本时用参数调整，AHE 路径下在 YAML 的
-`prompt_uml` 配置块中调整。
+候选接收使用的优化分数：
 
-PowerShell 最小配置：
-
-```powershell
-$env:ZHIPU_LLM_API_KEY="your-zhipu-api-key"
-$env:E2B_API_KEY="your-e2b-api-key"
+```text
+0.20 * syntax_pass_rate + 0.40 * node_f1 + 0.40 * relation_f1 - 0.50 * infrastructure_error_rate
 ```
 
-目前 LLM 语义指标作为报告指标；prompt 是否接收仍由确定性的语法、
-结构、节点 F1、关系 F1 等 gate 控制。
+候选 prompt 只有在 gate batch 上满足提升、回归、基础设施错误和 prompt 长度
+等约束时才会被接收。最终 held-out 测试默认使用训练中表现最好的 prompt。
 
-## 输出文件
+## 输出
 
-运行结果保存在 `prompt_runs/`。典型文件包括：
+运行结果在 `prompt_runs/` 下。重点文件：
 
-- `prompt_initial.md`
-- `work.md`
-- `run_args.json`
-- `iteration_NNN/analysis_batch_cases.json`
-- `iteration_NNN/predictions.jsonl`
-- `iteration_NNN/evaluation_summary.json`
-- `iteration_NNN/analysis/overview.md`
-- `iteration_NNN/failure_analysis_input.json`
-- `iteration_NNN/failure_analysis_output.json`
-- `iteration_NNN/prompt_edit_input.json`
-- `iteration_NNN/prompt_edit_output.json`
-- `iteration_NNN/candidate_prompt.md`
-- `iteration_NNN/gate_cases.json`
-- `iteration_NNN/gate_predictions.jsonl`
-- `iteration_NNN/gate_summary.json`
-- `iteration_NNN/prompt_acceptance.json`
-- `iteration_NNN/prompt_after.md`
-- `test_records.jsonl`
-- `test_summary.json`
-- `test_analysis.md`
-- `prompt_final.md`
-
-## 说明
-
-这是一个研究实验型工作区。当前实现优先保证提示词迭代过程可复现、可检查，
-而不是优先做成完整发布级 Python 包。
-
-
+- `run_args.json`：脱敏后的运行配置。
+- `train_cases.json`、`test_cases.json`：实际采样 case。
+- `iteration_NNN/analysis_batch_cases.json`：失败分析 batch。
+- `iteration_NNN/predictions.jsonl`：analysis batch 的生成结果和指标。
+- `iteration_NNN/evaluation_summary.json`：analysis batch 汇总指标。
+- `iteration_NNN/analysis/overview.md`：人工可读失败报告。
+- `iteration_NNN/failure_analysis_input.json`：发送给失败分析模型的输入。
+- `iteration_NNN/failure_analysis_output.json`：结构化失败分析输出。
+- `iteration_NNN/prompt_edit_input.json`：发送给 prompt editor 的输入。
+- `iteration_NNN/prompt_edit_output.json`：结构化 prompt edit 输出。
+- `iteration_NNN/candidate_prompt.md`：应用 edits 后的候选 prompt。
+- `iteration_NNN/gate_cases.json`：gate batch 样例。
+- `iteration_NNN/gate_predictions.jsonl`：candidate gate 生成结果和指标。
+- `iteration_NNN/gate_summary.json`：candidate gate 汇总。
+- `iteration_NNN/prompt_acceptance.json`：接收/拒绝决策。
+- `prompt_best.md`：训练中表现最好的 prompt。
+- `prompt_final.md`：最终测试使用的 prompt。
+- `test_summary.json`、`test_analysis.md`：held-out 测试结果。
+- `run_state.json`、`rate_limit_events.jsonl`：provider 重试状态和事件流。

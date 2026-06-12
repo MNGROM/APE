@@ -6,12 +6,5 @@ __pycache__/
 *.pyc
 .DS_Store
 uv.lock
-.code_sources/
-jobs/
-auto-exp/
-runs/
 prompt_runs/
 .codex_test_deps/
-agents/explore_agent/*/_patched_*.yaml
-/adb_runtime/
-agents/evolve_agent/skills/agent-debugger-cli/*.whl
