@@ -149,12 +149,6 @@ def load_cases(datasets_dir: Path) -> dict[str, list[Case]]:
     return datasets
 
 
-def select_cases(cases: list[Case], limit: int | None) -> list[Case]:
-    if limit is None or limit <= 0:
-        return cases
-    return cases[:limit]
-
-
 def grouped_cases(cases: list[Case]) -> dict[str, list[Case]]:
     groups: dict[str, list[Case]] = {}
     for case in cases:
@@ -267,8 +261,8 @@ def optional_bool(value: str) -> bool | None:
 def validate_glm_args(args: argparse.Namespace) -> None:
     if args.thinking not in {"enabled", "disabled"}:
         raise ValueError("--thinking must be 'enabled' or 'disabled' according to the GLM Chat Completions API")
-    if args.max_tokens < 1 or args.evolve_max_tokens < 1:
-        raise ValueError("--max-tokens and --evolve-max-tokens must be positive")
+    if args.max_tokens < 1:
+        raise ValueError("--max-tokens must be positive")
     if args.top_p is not None and not (0.01 <= args.top_p <= 0.99):
         raise ValueError("--top-p must be between 0.01 and 0.99, or 'omit'")
     if args.top_p is not None:
@@ -770,17 +764,6 @@ def optimization_score(summary: dict[str, float]) -> float:
     )
 
 
-def choose_candidate_cases(train_cases: list[Case], args: argparse.Namespace, iteration: int) -> list[Case]:
-    if args.candidate_max_cases <= 0 or args.candidate_max_cases >= len(train_cases):
-        return list(train_cases)
-    return select_cases_with_strategy(
-        train_cases,
-        limit=args.candidate_max_cases,
-        strategy=args.candidate_sample_strategy,
-        seed=args.sample_seed + 10_000 + iteration,
-    )
-
-
 def choose_iteration_batch(
     train_cases: list[Case],
     *,
@@ -812,7 +795,6 @@ def acceptance_decision(
     min_relation_delta: float,
     min_node_delta: float,
     min_syntax_delta: float,
-    min_structure_delta: float,
     relation_accept_delta: float,
     node_accept_delta: float,
     combined_accept_delta: float,
@@ -821,7 +803,6 @@ def acceptance_decision(
     candidate_score = optimization_score(candidate_summary)
     delta = candidate_score - baseline_score
     syntax_delta = candidate_summary.get("syntax_pass_rate", 0.0) - baseline_summary.get("syntax_pass_rate", 0.0)
-    structure_delta = candidate_summary.get("structure_valid_rate", baseline_summary.get("structure_valid_rate", 0.0)) - baseline_summary.get("structure_valid_rate", candidate_summary.get("structure_valid_rate", 0.0))
     node_delta = candidate_summary.get("node_f1", 0.0) - baseline_summary.get("node_f1", 0.0)
     relation_delta = candidate_summary.get("relation_f1", 0.0) - baseline_summary.get("relation_f1", 0.0)
     infrastructure_delta = candidate_summary.get("infrastructure_error_rate", 0.0) - baseline_summary.get("infrastructure_error_rate", 0.0)
@@ -830,7 +811,6 @@ def acceptance_decision(
 
     hard_constraints = {
         "syntax_delta_ok": syntax_delta >= min_syntax_delta,
-        "structure_delta_ok": structure_delta >= min_structure_delta,
         "node_delta_ok": node_delta >= min_node_delta,
         "relation_delta_ok": relation_delta >= min_relation_delta,
         "infrastructure_delta_ok": infrastructure_delta <= 0,
@@ -850,12 +830,10 @@ def acceptance_decision(
         "min_delta": min_delta,
         "score_delta_meets_legacy_min_delta": delta >= min_delta,
         "syntax_delta": syntax_delta,
-        "structure_delta": structure_delta,
         "node_delta": node_delta,
         "relation_delta": relation_delta,
         "infrastructure_delta": infrastructure_delta,
         "min_syntax_delta": min_syntax_delta,
-        "min_structure_delta": min_structure_delta,
         "min_node_delta": min_node_delta,
         "min_relation_delta": min_relation_delta,
         "relation_accept_delta": relation_accept_delta,
@@ -1490,7 +1468,6 @@ def run_training_iterations(
             min_relation_delta=args.acceptance_min_relation_delta,
             min_node_delta=args.acceptance_min_node_delta,
             min_syntax_delta=args.acceptance_min_syntax_delta,
-            min_structure_delta=args.acceptance_min_structure_delta,
             relation_accept_delta=args.relation_accept_delta,
             node_accept_delta=args.node_accept_delta,
             combined_accept_delta=args.combined_accept_delta,
@@ -1617,12 +1594,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--api-key", default=os.environ.get("ZHIPU_LLM_API_KEY", ""))
     parser.add_argument("--base-url", default=os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL))
     parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--evolve-temperature", type=float, default=0.4)
     parser.add_argument("--analysis-temperature", type=float, default=0.2)
     parser.add_argument("--editor-temperature", type=float, default=0.2)
     parser.add_argument("--top-p", type=optional_float, default=None, help="GLM top_p, or 'omit' to use provider default")
     parser.add_argument("--max-tokens", type=int, default=12000)
-    parser.add_argument("--evolve-max-tokens", type=int, default=12000)
     parser.add_argument("--analysis-max-tokens", type=int, default=4096)
     parser.add_argument("--editor-max-tokens", type=int, default=4096)
     parser.add_argument("--thinking", choices=["enabled", "disabled"], default=os.environ.get("ZHIPU_THINKING_TYPE", DEFAULT_THINKING_TYPE))
@@ -1633,12 +1608,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--llm-rate-limit-max-wait", type=int, default=600, help="Maximum wait seconds for provider rate-limit retries")
     parser.add_argument("--node-match-threshold", type=float, default=0.82)
     parser.add_argument("--relation-match-threshold", type=float, default=0.86)
-    parser.add_argument("--candidate-max-cases", type=int, default=0, help="Legacy alias for --gate-batch-size when set")
     parser.add_argument("--acceptance-min-delta", type=float, default=0.01, help="Minimum aggregate score improvement required before candidate prompt is accepted")
     parser.add_argument("--acceptance-min-node-delta", type=float, default=-0.005, help="Maximum tolerated node F1 regression during candidate acceptance")
     parser.add_argument("--acceptance-min-relation-delta", type=float, default=-0.002, help="Maximum tolerated relation F1 regression during candidate acceptance")
     parser.add_argument("--acceptance-min-syntax-delta", type=float, default=0.0, help="Minimum syntax pass-rate delta during candidate acceptance")
-    parser.add_argument("--acceptance-min-structure-delta", type=float, default=0.0, help="Minimum structure-valid-rate delta when that metric is available")
     parser.add_argument("--relation-accept-delta", type=float, default=0.01, help="Accept when relation F1 improves by at least this amount")
     parser.add_argument("--node-accept-delta", type=float, default=0.015, help="Accept when node F1 improves by at least this amount and relation F1 does not regress")
     parser.add_argument("--combined-accept-delta", type=float, default=0.02, help="Accept when node F1 plus relation F1 improves by at least this amount and relation F1 does not regress")
@@ -1666,8 +1639,6 @@ def main() -> None:
     args.prompt_editor_prompt_path = args.prompt_editor_prompt_path.resolve()
     args.runs_dir = args.runs_dir.resolve()
     args.plantuml_jar = args.plantuml_jar.resolve()
-    if args.candidate_max_cases > 0:
-        args.gate_batch_size = args.candidate_max_cases
     args.llm_judge_model = args.model
     args.llm_judge_api_key = args.api_key
     args.llm_judge_base_url = args.base_url

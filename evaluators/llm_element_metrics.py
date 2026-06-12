@@ -13,12 +13,9 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from utils.rate_limit import ProviderHTTPError, call_with_provider_retries
-
-
-Language = Literal["plantuml", "sysmlv2"]
 
 
 @dataclass
@@ -67,28 +64,6 @@ EXTRACTION_USER_PLANTUML = (
     '   - "to": the target node name\n'
     '   - "type": one of "sequential", "conditional", "loop", "fork", "merge"\n'
     '   - "condition": the condition label if applicable, otherwise null\n\n'
-    "Output ONLY a JSON object in this exact format:\n"
-    "{{\n"
-    '  "nodes": ["node1", "node2", "..."],\n'
-    '  "relations": [\n'
-    '    {{"from": "node1", "to": "node2", "type": "sequential", "condition": null}}\n'
-    "  ]\n"
-    "}}"
-)
-
-EXTRACTION_USER_SYSMLV2 = (
-    "Analyze the following SysML v2 code and extract all behavioral elements.\n\n"
-    "Code:\n{code}\n\n"
-    "Extract two categories:\n"
-    "1. **nodes**: Each behavioral element including: action definitions (action def), "
-    "action usages (action), state definitions (state def), state usages (state), "
-    "part definitions with behavioral semantics, and any other named behavioral units.\n"
-    "2. **relations**: Each behavioral relationship including: succession/flow connections, "
-    "transitions, conditional branches, parallel forks, bind connections, and specialization of behavioral elements.\n"
-    '   - "from": the source element name\n'
-    '   - "to": the target element name\n'
-    '   - "type": one of "sequential", "flow", "transition", "conditional", "fork", "bind", "specialization"\n'
-    '   - "condition": the condition or guard if applicable, otherwise null\n\n'
     "Output ONLY a JSON object in this exact format:\n"
     "{{\n"
     '  "nodes": ["node1", "node2", "..."],\n'
@@ -327,7 +302,6 @@ def _valid_matching(result: Any) -> bool:
 def extract_elements(
     *,
     code: str,
-    language: Language = "plantuml",
     model: str,
     api_key: str,
     base_url: str,
@@ -343,10 +317,9 @@ def extract_elements(
     retry_initial_wait: int,
     retry_max_wait: int,
 ) -> dict[str, Any]:
-    user_template = EXTRACTION_USER_PLANTUML if language == "plantuml" else EXTRACTION_USER_SYSMLV2
     messages = [
         {"role": "system", "content": EXTRACTION_SYSTEM_PROMPT},
-        {"role": "user", "content": user_template.format(code=strip_markdown_fences(code))},
+        {"role": "user", "content": EXTRACTION_USER_PLANTUML.format(code=strip_markdown_fences(code))},
     ]
     for attempt in range(1, max(1, max_retries) + 1):
         raw = judge_chat(
@@ -471,7 +444,6 @@ def evaluate_llm_elements(
     model: str,
     api_key: str,
     base_url: str,
-    language: Language = "plantuml",
     temperature: float = 0.0,
     max_tokens: int = 4096,
     timeout: int = 300,
@@ -493,7 +465,6 @@ def evaluate_llm_elements(
     try:
         gt_elements = extract_elements(
             code=ground_truth,
-            language=language,
             model=model,
             api_key=api_key,
             base_url=base_url,
@@ -511,7 +482,6 @@ def evaluate_llm_elements(
         )
         pred_elements = extract_elements(
             code=prediction,
-            language=language,
             model=model,
             api_key=api_key,
             base_url=base_url,
