@@ -14,17 +14,28 @@ prompt_workspace/tst.md
 
 ## 仓库结构
 
-- `prompt_evolve.py`：主要 batch prompt 优化循环。
+- `run.py`：主要 batch prompt 优化入口。
+- `prompt_evolve.py`：兼容入口，转发到 `run.py`。
+- `config.py`：共享路径、默认值和 prompt section 常量。
+- `ape_datasets/lato.py`：LATO 数据集加载和采样。
+- `llm.py`：OpenAI-compatible `LLMClient`。
+- `prediction.py`：UML agent 预测辅助逻辑。
+- `metrics.py`：确定性语法、节点、关系和分数指标。
+- `evaluation.py`：batch 评估流程。
+- `analysis/`：失败分析、错误定位和 prompt 编辑 agent。
+- `prompt_ops.py`：prompt section 解析和 edit 应用。
+- `versioning.py`：run 目录和 prompt 版本文件。
 - `prompt_workspace/tst.md`：初始 UML 生成 prompt。
 - `prompt_workspace/failure_analysis.md`：失败分析模型的 system prompt。
 - `prompt_workspace/error_localization.md`：错误原因定位模型的 system prompt。
 - `prompt_workspace/prompt_editor.md`：结构化 prompt 编辑模型的 system prompt。
 - `prompt_datasets/lato/`：六个 JSONL 数据集：`bp`、`fsd`、`lmc`、`pure`、`rac`、`us`。
-- `evaluators/llm_element_metrics.py`：PlantUML 编译检查和可选 LLM 语义元素 judge。
+- `llm_element_metrics.py`：PlantUML 编译检查和可选 LLM 语义元素 judge。
 - `utils/rate_limit.py`：共享 provider 重试与限流状态记录。
 - `tools/plantuml/plantuml-1.2025.4.jar`：本地 PlantUML 语法校验工具。
 
-当前唯一工作流是 `prompt_evolve.py` 的独立 prompt 优化循环。
+当前唯一工作流是 `run.py` 的独立 prompt 优化循环。`prompt_evolve.py`
+保留为旧命令的兼容入口。
 
 ## 环境
 
@@ -45,6 +56,15 @@ $env:ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
 $env:ZHIPU_LLM_MODEL="glm-5.1"
 ```
 
+`--thinking` 是所有模型调用的默认 thinking 模式。也可以按 agent 细分覆盖：
+
+```powershell
+python run.py --test-dataset fsd --thinking disabled --generation-thinking disabled --analysis-thinking enabled --localization-thinking enabled --editor-thinking disabled --judge-thinking disabled --no-llm-element-metrics
+```
+
+细分参数支持 `inherit`、`enabled`、`disabled`。推荐先让 PlantUML 生成、prompt editor
+和 LLM judge 保持 `disabled`，只尝试给 failure analysis 和 error localization 开启。
+
 不要把 API key 写进代码、文档、日志或提交记录。
 
 ## 快速验证
@@ -52,25 +72,25 @@ $env:ZHIPU_LLM_MODEL="glm-5.1"
 不调用模型，只验证本地流程：
 
 ```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
+python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
 小规模真实训练：
 
 ```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3
+python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3
 ```
 
 指定一个数据集为 held-out 测试集，其余五个作为训练集：
 
 ```powershell
-python prompt_evolve.py --test-dataset fsd --iterations 3
+python run.py --test-dataset fsd --iterations 3
 ```
 
 六个数据集全部做 leave-one-dataset-out：
 
 ```powershell
-python prompt_evolve.py --test-dataset all --iterations 3
+python run.py --test-dataset all --iterations 3
 ```
 
 限制样例数量时，训练默认使用分层采样。例如
@@ -127,17 +147,36 @@ JSON edits：
 便宜本地测试可关闭 LLM judge：
 
 ```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
+python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-候选接收使用的优化分数：
+候选接收不再使用加权总分，而是使用多指标门控。
+
+Safety Gate 全部通过后，才会进入 Benefit Gate：
 
 ```text
-0.20 * syntax_pass_rate + 0.40 * node_f1 + 0.40 * relation_f1 - 0.50 * infrastructure_error_rate
+plantuml_compile_delta >= -0.05
+node_f1_delta >= -0.02
+relation_f1_delta >= -0.01
+N-F1 和 R-F1 不能同时下降
+infrastructure_error_delta <= 0
+prompt_size_ok
 ```
 
-候选 prompt 只有在 gate batch 上满足提升、回归、基础设施错误和 prompt 长度
-等约束时才会被接收。最终 held-out 测试默认使用训练中表现最好的 prompt。
+Benefit Gate 至少满足一项才接收：
+
+```text
+relation_f1_delta >= 0.01
+或 node_f1_delta >= 0.02
+或 plantuml_compile_delta >= 0.05 且 N-F1/R-F1 都不下降
+```
+
+这样编译率提升不能单独抵消节点和关系质量的回退。
+
+第 1 轮有 bootstrap 例外：如果 `N-F1` 和 `R-F1` 都达到明显提升
+（默认分别为 `+0.02` 和 `+0.01`），且没有新增基础设施错误、prompt 未超长，
+则可以接收。后续轮次使用上面的标准门控。
+最终 held-out 测试默认使用训练中表现最好的 prompt。
 
 ## 输出
 
@@ -145,9 +184,13 @@ python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-tr
 
 - `run_args.json`：脱敏后的运行配置。
 - `train_cases.json`、`test_cases.json`：实际采样 case。
+- `prompt_evolution.md`：本次 run 的 prompt 演化总览，集中查看初始 prompt、每轮变更入口、best/final prompt。
+- `metrics_overview.md`：本次 run 的指标总览，集中查看每轮 analysis/gate/candidate 以及 held-out test 指标。
 - `iteration_NNN/analysis_batch_cases.json`：失败分析 batch。
 - `iteration_NNN/predictions.jsonl`：analysis batch 的生成结果和指标。
 - `iteration_NNN/evaluation_summary.json`：analysis batch 汇总指标。
+- `iteration_NNN/prompt_change.md`：单轮 prompt 变化报告，包含 before/after diff、candidate 是否接受和拒绝原因。
+- `iteration_NNN/metrics_report.md`：单轮指标报告，包含 analysis、baseline gate、candidate gate 和 delta。
 - `iteration_NNN/analysis/overview.md`：人工可读失败报告。
 - `iteration_NNN/failure_analysis_input.json`：发送给失败分析模型的输入。
 - `iteration_NNN/failure_analysis_output.json`：结构化失败分析输出。
@@ -159,8 +202,20 @@ python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-tr
 - `iteration_NNN/gate_cases.json`：gate batch 样例。
 - `iteration_NNN/gate_predictions.jsonl`：candidate gate 生成结果和指标。
 - `iteration_NNN/gate_summary.json`：candidate gate 汇总。
-- `iteration_NNN/prompt_acceptance.json`：接收/拒绝决策。
+- `iteration_NNN/prompt_acceptance.json`：接收/拒绝决策，包含 `safety_gate`、`benefit_gate` 和 `rejection_reasons`。
 - `prompt_best.md`：训练中表现最好的 prompt。
 - `prompt_final.md`：最终测试使用的 prompt。
 - `test_summary.json`、`test_analysis.md`：held-out 测试结果。
 - `run_state.json`、`rate_limit_events.jsonl`：provider 重试状态和事件流。
+
+已完成的历史 run 可以用下面的命令补生成这几个人类可读报告：
+
+```powershell
+python run.py --refresh-reports .\prompt_runs\<run-name>
+```
+
+不传 `RUN_DIR` 时会刷新 `prompt_runs/` 下所有 run：
+
+```powershell
+python run.py --refresh-reports
+```

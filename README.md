@@ -14,18 +14,28 @@ edits only the run-local `work.md`; the seed prompt is not overwritten.
 
 ## Repository Layout
 
-- `prompt_evolve.py`: main batch prompt-evolution loop.
+- `run.py`: main batch prompt-evolution entry point.
+- `prompt_evolve.py`: compatibility wrapper that forwards to `run.py`.
+- `config.py`: shared paths, defaults, and prompt-section constants.
+- `ape_datasets/lato.py`: LATO dataset loading and sampling.
+- `llm.py`: OpenAI-compatible `LLMClient`.
+- `prediction.py`: UML agent prediction helpers.
+- `metrics.py`: deterministic syntax, node, relation, and scoring metrics.
+- `evaluation.py`: batch evaluation workflow.
+- `analysis/`: failure analysis, error localization, and prompt editing agents.
+- `prompt_ops.py`: prompt section parsing and edit application.
+- `versioning.py`: run directory and prompt version files.
 - `prompt_workspace/tst.md`: canonical initial UML generation prompt.
 - `prompt_workspace/failure_analysis.md`: system prompt for batch failure analysis.
 - `prompt_workspace/error_localization.md`: system prompt for section-level error localization.
 - `prompt_workspace/prompt_editor.md`: system prompt for structured prompt edits.
 - `prompt_datasets/lato/`: six JSONL datasets: `bp`, `fsd`, `lmc`, `pure`, `rac`, `us`.
-- `evaluators/llm_element_metrics.py`: PlantUML compilation check and optional LLM semantic element judge.
+- `llm_element_metrics.py`: PlantUML compilation check and optional LLM semantic element judge.
 - `utils/rate_limit.py`: shared provider retry and rate-limit state logging.
 - `tools/plantuml/plantuml-1.2025.4.jar`: bundled PlantUML syntax validator.
 
-The active workflow is the standalone prompt optimization loop in
-`prompt_evolve.py`.
+The active workflow is the standalone prompt optimization loop in `run.py`.
+`prompt_evolve.py` is kept for old commands.
 
 ## Environment
 
@@ -46,6 +56,17 @@ $env:ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
 $env:ZHIPU_LLM_MODEL="glm-5.1"
 ```
 
+`--thinking` is the default thinking mode for all model calls. Agent-specific
+options can override it:
+
+```powershell
+python run.py --test-dataset fsd --thinking disabled --generation-thinking disabled --analysis-thinking enabled --localization-thinking enabled --editor-thinking disabled --judge-thinking disabled --no-llm-element-metrics
+```
+
+Agent-specific options support `inherit`, `enabled`, and `disabled`. A useful
+starting point is to keep PlantUML generation, prompt editing, and LLM judging
+disabled while enabling failure analysis and error localization.
+
 Do not write API keys into Python files, docs, logs, or committed examples.
 
 ## Quick Checks
@@ -53,25 +74,25 @@ Do not write API keys into Python files, docs, logs, or committed examples.
 Run the local pipeline without model calls:
 
 ```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
+python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
 Run a tiny real training-only smoke test:
 
 ```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3
+python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 3
 ```
 
 Use one dataset as held-out test and the other five as training data:
 
 ```powershell
-python prompt_evolve.py --test-dataset fsd --iterations 3
+python run.py --test-dataset fsd --iterations 3
 ```
 
 Run leave-one-dataset-out over all six datasets:
 
 ```powershell
-python prompt_evolve.py --test-dataset all --iterations 3
+python run.py --test-dataset all --iterations 3
 ```
 
 When a case limit is used, training defaults to stratified sampling, so
@@ -125,18 +146,38 @@ Optional LLM semantic metrics are:
 Disable the LLM semantic judge for cheap local checks:
 
 ```powershell
-python prompt_evolve.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
+python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-The optimization score used for acceptance is:
+Candidate acceptance no longer uses a weighted aggregate score. It uses
+metric gates directly.
+
+All Safety Gate checks must pass before the Benefit Gate is considered:
 
 ```text
-0.20 * syntax_pass_rate + 0.40 * node_f1 + 0.40 * relation_f1 - 0.50 * infrastructure_error_rate
+plantuml_compile_delta >= -0.05
+node_f1_delta >= -0.02
+relation_f1_delta >= -0.01
+N-F1 and R-F1 must not regress at the same time
+infrastructure_error_delta <= 0
+prompt_size_ok
 ```
 
-Candidate prompts are accepted only when the gate-batch metrics satisfy the
-configured improvement, regression, infrastructure-error, and prompt-size
-guards. Held-out testing uses the best training prompt by default.
+At least one Benefit Gate signal must pass:
+
+```text
+relation_f1_delta >= 0.01
+or node_f1_delta >= 0.02
+or plantuml_compile_delta >= 0.05 with no N-F1/R-F1 regression
+```
+
+This prevents compilation improvements from compensating for semantic quality
+regressions. Held-out testing uses the best training prompt by default.
+
+Iteration 1 has a bootstrap exception: if both `N-F1` and `R-F1` clearly
+improve (`+0.02` and `+0.01` by default), no new infrastructure errors appear,
+and the prompt stays within the size guard, the candidate can be accepted.
+Later iterations use the standard gates above.
 
 ## Outputs
 
@@ -144,9 +185,13 @@ Runs are written under `prompt_runs/`. Important files include:
 
 - `run_args.json`: sanitized run configuration.
 - `train_cases.json`, `test_cases.json`: actual sampled cases.
+- `prompt_evolution.md`: prompt evolution overview for the run, including the initial prompt, per-iteration change links, and best/final prompts.
+- `metrics_overview.md`: metric overview for the run, including per-iteration analysis/gate/candidate metrics and held-out test metrics.
 - `iteration_NNN/analysis_batch_cases.json`: batch used for failure analysis.
 - `iteration_NNN/predictions.jsonl`: generated PlantUML and metrics for the analysis batch.
 - `iteration_NNN/evaluation_summary.json`: analysis-batch metric summary.
+- `iteration_NNN/prompt_change.md`: per-iteration prompt change report with before/after diff, candidate acceptance, and rejection reasons.
+- `iteration_NNN/metrics_report.md`: per-iteration metric report with analysis, baseline gate, candidate gate, and deltas.
 - `iteration_NNN/analysis/overview.md`: human-readable failure report.
 - `iteration_NNN/failure_analysis_input.json`: input sent to the failure-analysis model.
 - `iteration_NNN/failure_analysis_output.json`: structured failure-analysis result.
@@ -158,8 +203,20 @@ Runs are written under `prompt_runs/`. Important files include:
 - `iteration_NNN/gate_cases.json`: gate-batch case manifest.
 - `iteration_NNN/gate_predictions.jsonl`: candidate gate predictions and metrics.
 - `iteration_NNN/gate_summary.json`: candidate gate summary.
-- `iteration_NNN/prompt_acceptance.json`: accept/reject decision and score deltas.
+- `iteration_NNN/prompt_acceptance.json`: accept/reject decision with `safety_gate`, `benefit_gate`, and `rejection_reasons`.
 - `prompt_best.md`: best prompt observed on training evaluation.
 - `prompt_final.md`: prompt used for final held-out testing.
 - `test_summary.json`, `test_analysis.md`: held-out test results.
 - `run_state.json`, `rate_limit_events.jsonl`: provider retry state and event log.
+
+Existing historical runs can be refreshed without rerunning model calls:
+
+```powershell
+python run.py --refresh-reports .\prompt_runs\<run-name>
+```
+
+Omit `RUN_DIR` to refresh every run under `prompt_runs/`:
+
+```powershell
+python run.py --refresh-reports
+```

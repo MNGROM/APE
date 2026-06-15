@@ -10,13 +10,25 @@ authors = [
 ]
 dependencies = [
     "python-dotenv>=1.0",
+    "sentence-transformers>=3.0",
 ]
 
 [project.scripts]
-ape-prompt-evolve = "prompt_evolve:main"
+ape-prompt-evolve = "run:main"
 
 [tool.setuptools]
-py-modules = ["prompt_evolve"]
+py-modules = [
+    "config",
+    "evaluation",
+    "llm",
+    "llm_element_metrics",
+    "metrics",
+    "prediction",
+    "prompt_evolve",
+    "prompt_ops",
+    "run",
+    "versioning",
+]
 
 [tool.setuptools.packages.find]
-include = ["evaluators*", "utils*"]
+include = ["analysis*", "datasets*", "utils*"]
