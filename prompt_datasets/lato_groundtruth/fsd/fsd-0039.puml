@@ -1,0 +1,66 @@
+@startuml
+
+start
+
+:TCMS executes on preemptive RTOS;
+:Manage via priority-scheduled tasks;
+
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Doors;
+fork again
+  :Diagnostics;
+end fork
+
+:Critical fault condition;
+fork
+  :Emergency signal combined with overspeed and brake failure;
+fork again
+  :Unavoidable track obstacle;
+fork again
+  :Persistent communication loss in control network;
+fork again
+  :Main power rail interruption with backup PMIC/BMS activation;
+fork again
+  :Door control failure precluding manual override;
+fork again
+  :Fire alarm with failed suppression;
+end fork
+
+if (Detect critical fault condition?) then (yes)
+  :Trigger deterministic emergency sequence;
+  :Initiate emergency stop;
+  :Broadcast passenger evacuation instructions;
+
+  fork
+    :Launch high-priority self-test;
+  fork again
+    :Fault logging routine with CRC-protected telemetry;
+    :Archive to non-volatile memory;
+  end fork
+
+  :Dedicated Watchdog-monitored task enters loop;
+  repeat
+    :Poll subsystem status via protected mutex;
+    :Access to sensor rings and CAN bus data;
+  repeat while(Safe state confirmed) is(no)
+
+fork
+  :Transmit train's GPS position;
+  :Issue dispatch center alarm through redundant channels;
+  repeat
+    :Poll current operational state with exponential backoff ;
+  repeat while(Safety validated) is(no)
+fork again
+  :Maintain fail-safe integrity under EN 50128/EN 50129;
+end fork
+
+else (no)
+end if
+
+stop
+
+@enduml

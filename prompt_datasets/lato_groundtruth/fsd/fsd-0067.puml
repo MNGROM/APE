@@ -1,0 +1,67 @@
+@startuml
+
+start
+
+:Avionics stack comprises;
+fork
+  :FMS;
+fork again
+  :FADEC;
+end fork
+:Operate on deterministic RTOS;
+
+if (Receive vehicle initialize signal?) then (yes)
+  fork
+  :High-priority task executes safety inspection program;
+  fork again
+    :Verify using mutex-protected sensor reads;
+   fork
+    :Seat belt status;
+   fork again
+    :Door closure status;
+   end fork
+
+  fork again
+   repeat
+  :Timer-driven ISR polls engine speed via FADEC;
+   repeat while(Idle threshold met) is(no)
+  :Task blocks on semaphore;
+  end fork
+
+  :Successful inspection;
+  fork
+    :Spawn lower-priority monitoring tasks for;
+     fork
+       :Vehicle entertainment;
+     fork again
+       :Navigation system initialization;
+     fork again
+       :Air conditioning status;
+     end fork
+  fork again
+    :Inter-task communication managed through;
+     fork
+       :Priority queues;
+     fork again
+       :Ring buffers;
+     end fork
+  end fork
+
+  :Dedicated telemetry monitor executes in periodic loop;
+  :Transmit CAN bus data with CRC checks to ground station;
+  :Employ watchdog for liveness;
+  :Implement exponential backoff for communication faults;
+
+else (no)
+end if
+
+:All event traces compliant with DO-178C/DO-254 processes;
+if(Anomalies?) then(yes)
+ :Trigger fault-tolerant strategies managed by PMIC/BMS;
+ :Transition to main control interface;
+else(no)
+end if
+
+stop
+
+@enduml

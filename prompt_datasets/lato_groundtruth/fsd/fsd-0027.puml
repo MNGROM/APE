@@ -1,0 +1,64 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+end fork
+
+if (Detect anomalous energy consumption?) then (yes)
+  :Determine if equipment overload occurred;
+  if (Equipment overload?) then (yes)
+    :Classify overload type;
+    if (Over-voltage condition on power rail?) then (yes)
+  fork
+      :Initialize voltage regulation mechanism immediately;
+
+  fork again
+    :High-priority task;
+    :Continuously sample current data via ADC;
+    :Perform real-time calculations;
+    :Update adaptive energy consumption model;
+  fork again
+    :Medium-priority task;
+    :Monitor operational hours against preset threshold;
+    :Trigger generation of structured audit logs and maintenance reminders;
+  fork again
+    :Periodic task potentially managed by watchdog;
+    :Assess battery health through BMS;
+    :Evaluate capacity;
+    :Perform charging optimization;
+    if (State-of-charge < critical value?) then (yes)
+      :Initiate backup power switching sequence via PMIC;
+    else (no)
+    end if
+  end fork
+
+  :Integrate all monitoring data;
+  :Generate detailed analysis reports for energy management;
+
+else (no)
+end if
+
+:Telemetry monitor executes within timer-driven ISR;
+:Employ bounded retries with exponential backoff on communication faults;
+
+:Write audit logs to protected ring buffer;
+:Flush to non-volatile storage under strict I/O budget constraints;
+
+if (Out-of-range sensor readings?) then (yes)
+  :Trigger redundancy checks;
+  :Controlled system cool-down path;
+else (no)
+end if
+
+    else (no)
+    end if
+  else (no)
+  end if
+stop
+
+@enduml

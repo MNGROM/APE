@@ -1,0 +1,64 @@
+@startuml
+start
+
+:Thermal management controller executes as state machine on RTOS;
+fork
+:Govern PWM fans;
+fork again
+:Govern liquid-cooling loop;
+end fork
+
+if(External ambient exceeds set threshold?) then(yes)
+:Temperature sensor ISR triggered;
+:Initiate data validation sequence;
+else (no)
+endif
+
+if (Primary sensor reading erroneous?) then(yes)
+:Fail over to redundant sensor path;
+else (no)
+endif
+
+if(Sensor over-temperature confirmed?) then(yes)
+fork
+:Priority-based task manages;
+:Activate multiple PWM fans;
+fork again
+:Timer interrupt drives periodic task;
+:Monitor thermal trajectory;
+end fork
+  
+  if (Temperature descends?) then(no)
+    :Higher-priority task initializes liquid-cooling loop;
+    :Augment heat dissipation;
+  else (yes)
+  endif
+ 
+repeat 
+:Poll for temperature fluctuations;
+repeat while(Values re-enter safe operating range) is(no)
+
+else (no)
+endif
+
+fork
+
+:Log data to ring buffer;
+fork
+:Operational data;
+fork again
+:Fault events;
+end fork
+
+:Analysis and service report generation;
+
+fork again
+:Telemetry monitor executes in timed loop;
+fork again
+:Sensor fusion and calibration routines run periodically;
+end fork
+
+:Maintain system integrity;
+
+stop
+@enduml

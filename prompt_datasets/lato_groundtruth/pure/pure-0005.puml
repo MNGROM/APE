@@ -1,0 +1,16 @@
+start
+
+:CAISO maintains Black Start database;
+:Review annually;
+
+if(A unit fails testing?) then(yes)
+:Provide to CAISO;
+fork
+:Explanation;
+fork again
+:Correction plan;
+end fork
+else(no)
+endif
+
+stop

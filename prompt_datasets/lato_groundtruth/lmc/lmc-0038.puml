@@ -1,0 +1,11 @@
+start
+
+:For equivalent input of (xt, yt);
+
+if(absolute error between zt truth data and output z <= 0.01?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

@@ -1,0 +1,57 @@
+@startuml
+
+start
+
+:Power management subsystem governed by RTOS;
+:Continuously monitor voltage rails via PMIC and BMS;
+:Execute protection policies within dedicated high-priority task;
+
+if (Signal strength < defined threshold?) then (yes)
+  :Query battery state;
+  if (Sufficient charge?) then (yes)
+    :Initiate signal compensation routine;
+  else (no)
+    fork
+    :Enter low-power mode;
+    fork again
+    :Watchdog service dispatch priority-queued warning to central control via CAN bus;
+    end fork
+  end if
+else (no)
+end if
+
+fork
+  :Data acquisition sampled via timer ISRs;
+  :Debounce;
+fork again
+  :Uplink transmission task execute under the RTOS scheduler;
+  :Write telemetry and device status reports to ring buffer;
+fork again
+  :Lower-priority telemetry task persistently observes network link;
+  if (Detect failure?) then (yes)
+    :Trigger reconnection mechanism;
+    :Employ;
+    fork
+    :Exponential backoff;
+    fork again
+    :CRC-verified link-state probing;
+    end fork
+  :Resume normal throughput;
+  else (no)
+  end if
+end fork
+
+:Capture in structured audit log;
+fork
+:Fault information;
+fork again
+:Operational state transitions;
+end fork
+
+:Flush to non-volatile storage under strict I/O budget;
+:Upload system status summary;
+:Analysis following staged recovery and verification cycles;
+
+stop
+
+@enduml

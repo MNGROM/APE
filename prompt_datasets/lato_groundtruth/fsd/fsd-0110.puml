@@ -1,0 +1,54 @@
+@startuml
+
+start
+
+:Embedded control platform implements supervisory finite-state machine orchestrated by RTOS;
+fork
+  :Coordinate high-priority ISRs for time-critical events;
+fork again
+  :Coordinate lower-priority tasks for deferred work;
+end fork
+
+if (Abnormal door lock status detected?) then (yes)
+  :Mutex-protected diagnostic routine determines root cause;
+
+  if (Illegal intrusion confirmed?) then (yes)
+    fork
+      :Trigger high-decibel alarm;
+     if(Abnormal signal persists?) then(yes)
+      :Employ exponential backoff retry mechanism;
+     else(no)
+     end if
+    fork again
+      :Stream real-time surveillance video to user's mobile device via secure cellular link;
+    end fork
+  else (no)
+    fork
+      :Initiate automated door lock self-test sequence;
+      :Execute multiple diagnostic cycles;
+    fork again
+      :Logging task records structured audit entry of status;
+    end fork
+  end if
+
+else (no)
+end if
+
+:All audit events asynchronously written to ring buffer by producer tasks;
+:Dedicated consumer task flushes to non-volatile memory;
+:Operate under strict I/O budget constraints;
+:Ensure responsiveness;
+
+fork
+:Entire process driven by periodic timer interrupts;
+fork again
+  :Concurrent routines synchronized via mutexes;
+fork again
+  :Inter-task communication handled through priority-based message queues;
+end fork
+
+:Ensure deterministic behavior for audit and post-incident analysis;
+
+stop
+
+@enduml

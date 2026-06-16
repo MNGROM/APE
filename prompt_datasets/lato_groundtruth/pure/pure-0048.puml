@@ -1,0 +1,28 @@
+start
+
+:Access main inventory screen;
+:Display;
+
+fork
+:Inventory departments;
+fork again
+:Option to select and/or edit items;
+end fork
+
+:See View Inventory;
+:Drill down to desired existing inventory item;
+
+:Item detail screen is presented;
+:Modify item information;
+:System validates item information;
+
+:Item information is updated in inventory;
+:System gives option of re-printing then item tag;
+
+if(Re-print?) then(yes)
+:re-print item tag;
+:Attach it to item;
+else(no)
+endif
+
+stop

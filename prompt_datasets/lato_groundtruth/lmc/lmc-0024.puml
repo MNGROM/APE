@@ -1,0 +1,6 @@
+start
+
+:In Inner Loop Pitch Regulator;
+:Command transient changes in angular pitch acceleration <= 50 deg/sec2/sec;
+
+stop

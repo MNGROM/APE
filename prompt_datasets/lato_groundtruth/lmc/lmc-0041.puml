@@ -1,0 +1,10 @@
+start
+
+:Output u vector;
+if(5x1 vector?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

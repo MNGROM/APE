@@ -1,0 +1,7 @@
+start
+
+:For each pitch angle, theta;
+:DCM321 provides distinct mapping from Vi to Vb;
+:DCM321 is not distinct for all phi and psi inputs;
+
+stop

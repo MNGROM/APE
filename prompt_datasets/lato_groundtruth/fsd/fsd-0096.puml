@@ -1,0 +1,72 @@
+@startuml
+
+start
+
+:TCMS executes on preemptive RTOS;
+:Manage via deterministic scheduling and priority queues;
+
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Door;
+fork again
+  :Diagnostics;
+end fork
+
+if (Approaching signal light detected?) then (yes)
+  fork
+    :Spawn high-priority task;
+    :Continuously monitor signal state using CRC-protected CAN bus;
+      if (Recognition fails?) then (yes)
+        :Employ exponential backoff;
+        :Retry acquisition loop;
+      else (no)
+      end if
+  fork again
+    :Initialize primary emergency braking module;
+    if (Initialization fail?) then (yes)
+      :Deterministic failover process activates backup brake modulee;
+      if (Backup module fails?) then (yes)
+        :Trigger alarm ISR;
+        :Notify control center;
+        :Assert PMIC reset;
+      else (no)
+      end if
+    else (no)
+    end if
+  end fork
+
+  :Successful alarm;
+  :Verify brake module status via protected mutex;
+  if (Confirmation?) then (yes)
+    :Enter low-power standby mode;
+  else (no)
+    repeat
+    :Execute;
+     fork
+      :Signal detection;
+     fork again
+      :Brake initialization sequence;
+     end fork
+    repeat while(Nominal state restored) is(no)
+  end if
+
+else (no)
+end if
+
+fork
+  :Log all critical telemetry to non-volatile ring buffer;
+fork again
+  fork
+    :Independent watchdogs;
+  fork again
+    :PMIC-managed fail-safe paths;
+  end fork
+  :Ensure compliance with EN 50128/EN 50129 safety integrity levels;
+end fork
+
+stop
+
+@enduml

@@ -1,0 +1,12 @@
+start
+
+:Use command arc_warc_verify <ARCFILE> <WARCFILE> <USER_DEFINED_ARG_READER> [options];
+:Validate migration rapidly;
+
+fork
+:Compare ARC and WARC records checksums;
+fork again
+:Optionally sample random records percentage;
+end fork
+
+stop

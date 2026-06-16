@@ -1,0 +1,4 @@
+start
+:control the location of the demo database;
+:set database backups;
+stop

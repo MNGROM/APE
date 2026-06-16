@@ -1,0 +1,57 @@
+start
+
+:Initiate call to controller;
+fork
+:Primary controller;
+fork again
+:Secondary controller;
+fork again
+:Power supply controller;
+end fork
+
+if(Unique identity?) then(no)
+:Use external systems to obtain;
+else(yes)
+endif
+
+:Obtain appropriate destination;
+:Attempt to establish call to destination;
+:Functional identity be displayed;
+
+if(Train number available?) then(yes)
+:Train number;
+else(no)
+  if(Engine number available?) then(yes)
+  :Engine number;
+  else(no)
+  :Coach number of leading cab;
+  endif
+endif
+
+:Call is proceeding;
+if(Audible and visual indication?) then(yes)
+:Provide to driver;
+else(no)
+endif
+
+:Call is connected;
+:Provide driver audible and visual indication;
+:Connect call to loudspeaker at pre-set value;
+
+if(Connected party functional identity available?) then(yes)
+:Display to driver;
+  if(An alphanumeric description?) then(yes)
+  :Display;
+  else(no)
+  endif
+else(no)
+endif
+
+if(System connect call?) then(no)
+:Provide driver audible and visual indication;
+:Show call was not received;
+:Indicate busy/network could not connect;
+else(yes)
+endif
+
+stop

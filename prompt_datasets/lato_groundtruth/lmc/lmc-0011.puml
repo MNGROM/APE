@@ -1,0 +1,11 @@
+start
+
+if(System is supported?) then(yes)
+ if(Sensor data is good?) then(yes)
+ :Autopilot change states from PULLUP to TRANSITION;
+ else(no)
+ endif
+else(no)
+endif
+
+stop

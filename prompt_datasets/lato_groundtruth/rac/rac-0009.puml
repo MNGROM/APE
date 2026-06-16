@@ -1,0 +1,61 @@
+start
+if (slow charging is active) then
+  :enter power-up mode;
+  if (high-voltage shutdown request charging/discharging is 2) then
+    :switch to state 127;
+    switch(condition judgement)
+      case (ignition switch is 2 and front MCU state unchanged)
+        :stay in state 127;
+        if(slow charging is inactive and timeout 2.2s occurs)then(yes)
+          :switch to state 12;
+          if(ignition switch is off)then(yes)
+            :shutdown;
+            stop
+          endif
+        else if(slow charging is inactive and BMS self-check counter is 1)
+          :switch to state 12;
+          if(ignition switch is off)then(yes)
+            :shutdown;
+            stop
+          endif
+        endif
+      case (ignition switch is 2 and onboard charger command is 1)
+        :stay in state 127;
+        if(command becomes 4)then(yes)
+          :switch to state 12;
+          if(ignition switch is off and slow charging is inactive)then(yes)
+            :shutdown;
+            stop
+          endif
+        endif
+      case (remote mode is active and front MCU state unchanged)
+        :stay in state 127;
+        if (slow charging is inactive)then(yes)
+          :switch to state 12;
+          if (remote mode is disabled)then(yes)
+            :shutdown;
+            stop
+          endif
+        endif
+      case (pet mode request is received)
+        :stay in state 127;
+        if (slow charging is inactive)then(yes)
+          :switch to state 12;
+          if (pet request mode ends)then(yes)
+            :shutdown;
+            stop
+          endif
+        endif
+      case (battery SOC is 20 and front MCU state unchanged)
+        :stay in state 127;
+        if (slow charging is inactive)then(yes)
+          :switch to state 12;
+          if (SOC reaches 100 and DCDC state is 2)then(yes)
+            :shutdown;
+            stop
+          endif
+        endif
+    endswitch
+    endif
+endif
+end

@@ -1,0 +1,11 @@
+start
+
+:Click "OK";
+
+fork
+:Close window;
+fork again
+:Display statistics;
+end fork
+
+stop

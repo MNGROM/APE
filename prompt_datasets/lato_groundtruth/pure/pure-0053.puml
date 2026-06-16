@@ -1,0 +1,16 @@
+start
+
+:Access acquisitions screen;
+:Display list of all acquisitions;
+:Latest ones at top;
+
+if(Filter acquisitions?) then(yes)
+:Change filtering options;
+else(no)
+endif
+
+:Click on acquisition record;
+:Display acquisition details;
+:Expected items are displayed;
+
+stop

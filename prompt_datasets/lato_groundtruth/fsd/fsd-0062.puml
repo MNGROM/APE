@@ -1,0 +1,83 @@
+@startuml
+
+start
+
+:Avionics stack comprises;
+fork
+  :FMS;
+fork again
+  :FADEC;
+end fork
+:Execute on deterministic RTOS;
+
+fork
+:Control law computations implemented within high-priority ISRs;
+:Sample sensor data;
+fork again
+:Lower-priority worker tasks handle asynchronous processing;
+end fork
+
+if (Aircraft enters preset altitude envelope?) then (yes)
+  if (Abnormal engine temperature rise detected via EHM?) then (yes)
+    :Trigger fault-tolerant state machine;
+    :Initiate concurrent multi-task response;
+
+    fork
+      :High-frequency task;
+      :Managed by RTOS scheduler using priority-based preemption;
+      :Continuously monitor;
+     fork
+      :Heat exchanger efficiency;
+     fork again
+      :Coolant flow;
+     end fork
+
+    fork again
+      :Medium-priority task;
+      :Periodically polls PMIC and BMS via protected CAN bus channel for;
+     fork
+      :Fuel supply status;
+     fork again
+      :Thruster pressure;
+     end fork
+      :Employ CRC for data integrity;
+    end fork
+
+    :Synchronize data access using mutex;
+    :Communicate via ring buffer;
+
+    :Active monitoring loop persists;
+      if (Temperature trend stabilizes?) then (yes)
+       repeat
+        :Utilize exponential backoff strategy;
+       repeat while (Temperature returns to safe threshold?) is (no)
+      else (no)
+      end if
+
+    :Post-contingency;
+    :System reconfiguration task assesses flight state;
+    if (Navigation system calibration warranted?) then (yes)
+      fork
+        :Execute heading sensor data validation;
+      fork again
+        :IMU parameter optimization;
+      end fork
+    else (no)
+    end if
+
+    fork
+    :Final system-level diagnostic task consolidates event traces from shared memory ring buffer;
+    :Generate service report compliant with DO-178C/DO-254 data integrity requirements;
+    :Initiate telemetry uplink to ground station;
+    fork again
+    :Hardware watchdog ensures liveness throughout sequence;
+    end fork
+
+  else (no)
+  end if
+else (no)
+end if
+
+stop
+
+@enduml

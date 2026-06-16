@@ -1,0 +1,4 @@
+start
+:bulk approve sessions as accepted;
+:save time;
+stop

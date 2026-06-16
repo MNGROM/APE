@@ -1,0 +1,74 @@
+@startuml
+
+start
+
+:Avionics stack comprises;
+fork
+  :FMS;
+fork again
+  :FADEC;
+end fork
+:Execute on deterministic RTOS;
+
+:Employ concurrent monitoring tasks with priority queues;
+
+if (Anomalous flight altitude detected?) then (yes)
+ fork
+  :Dedicated health management task initializes multi-sensor verification routine;
+ fork again
+  :Acquire data from;
+  fork
+    :Air pressure sensor;
+  fork again
+    :Altimeter;
+  fork again
+    :GPS module;
+  end fork
+ end fork
+
+  :Enter iterative loop;
+  :Continuously compare datasets using voting mechanism protected by mutex;
+
+  if (Pressure sensor inconsistent while altimeter and GPS agree?) then (yes)
+    :Declare pressure sensor fault;
+    :Exit loop;
+    :Generate structured error audit log with CRC;
+  else (no)
+    if (All sensors indicate anomaly?) then (yes)
+    :Confirm abnormal flight altitude;
+    :Initiate mitigation processing;
+  else (no)
+  end if
+end if
+else(no)
+endif
+
+if (Airspeed anomaly detected?) then (yes)
+  :Compare airspeed and angle of attack sensor data;
+  fork
+  :Sensor fault diagnosis and alarm;
+  fork again
+  :Abnormalities trigger emergency handling process involving FADEC and BMS;
+ end fork
+end if
+
+:Watchdog timer supervises critical loops;
+:Employ exponential backoff for non-critical retries;
+
+:All structured audit logs written asynchronously to ring buffer;
+:Flushed to non-volatile memory by low-priority task;
+:Task governed by PMIC power state and I/O budget constraints;
+
+fork
+:Event traceability aligns with DO-178C/DO-254 processes;
+fork again
+if (Confirmed anomalies?) then (yes)
+  :Activate fault-tolerant strategies;
+  :Initiate data uplink to ground station via CAN bus;
+else (no)
+end if
+end fork
+
+stop
+
+@enduml

@@ -1,0 +1,52 @@
+@startuml
+
+start
+
+:Power management subsystem monitors voltage rails via PMIC and BMS;
+:Execute predefined protection;
+:Execute recovery policies;
+
+if (Detect anomalous sensor data?) then (yes)
+  :Initiate data verification sequence;
+
+  if (Verification fails?) then (yes)
+    :Trigger fault isolation routine;
+    :Check sensor hardware connection;
+    :Check data uplink channel integrity via CAN;
+    :Check power rail stability;
+
+    if (Any check fails?) then (yes)
+      :Activate redundant sensor path;
+      :Spawn deterministically parallel processing tasks;
+      :Managed by RTOS scheduler using priority queues and mutexes;
+      :Protect shared resource;
+       fork
+      :Timer ISR drives periodic sampling from redundant path;
+      fork again
+      :Process data through protected ring buffer;
+      end fork
+
+      :Parallel task completion;
+      :Initialize second-stage recovery mechanism;
+
+      repeat
+        :Execute concurrent data repair algorithms within dedicated RTOS tasks;
+      repeat while(Data integrity restored) is(no)
+
+    else (no)
+    end if
+
+  else (no)
+  end if
+
+else (no)
+end if
+
+:Watchdog timer is serviced;
+:Hardware events are debounced;
+:State transitions are logged;
+:Ensure monitoring data accuracy and overall system stability;
+
+stop
+
+@enduml

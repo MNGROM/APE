@@ -1,0 +1,69 @@
+@startuml
+
+start
+
+:Avionics stack comprises;
+fork
+  :FMS;
+fork again
+  :FADEC;
+end fork
+:Execute on deterministic RTOS;
+
+fork
+  :High-priority ISR driven by periodic timer;
+  :Sample sensor data；
+  :Execute control laws;
+fork again
+  :Lower-priority worker task;
+  :Manage non-time-critical computations;
+end fork
+
+if (Flight altitude < preset threshold?) then (yes)
+  :Initiate altitude calibration module;
+  :Spawn concurrent tasks managed by priority-based scheduler;
+
+  fork
+    :Task monitors atmospheric pressure via ring buffer;
+    if (Pressure > safe range?) then (yes)
+      repeat
+      :Perform closed-loop pressure compensation using PID controller;
+      repeat while(Pressure normalized?) is(no)
+    else (no)
+      :Skip adjustment;
+    end if
+  fork again
+    :Task with elevated priority checks for abnormal engine speed;
+    if (Detect abnormal engine speed?) then (yes)
+      :Trigger alarm;
+      :Initiate exponential backoff retry strategy for associated FADEC channel;
+    else (no)
+      :Continue monitoring other parameters via CAN bus;
+    end if
+  fork end
+
+  :Final supervisory task protected by mutex;
+  :Synthesize all monitoring results;
+  :Include CRC-verified data from;
+   fork
+   :BMS;
+   fork again
+   :PMIC;
+   end fork
+  :Determine if flight attitude adjustment required;
+end if
+
+fork
+:Watchdog timer supervises entire process;
+fork again
+:All event traces compliant to DO-178C/DO-254 processes;
+if (Anomalies detected?) then (yes)
+  :Trigger fault-tolerant strategies;
+  :Immediate data uplink to ground station;
+else (no)
+end if
+end fork
+
+stop
+
+@enduml

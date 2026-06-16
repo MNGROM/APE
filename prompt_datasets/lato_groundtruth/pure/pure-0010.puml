@@ -1,0 +1,11 @@
+start
+
+partition "Central trading system"{
+  :Give out successful trade information;
+}
+
+partition "Security account management"{
+  :Save trade instruction;
+}
+
+stop

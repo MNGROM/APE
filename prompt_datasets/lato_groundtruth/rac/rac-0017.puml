@@ -1,0 +1,30 @@
+start
+if (slow charging is active and front MCU initialization=0) then
+  :enter state 82;
+  if (BMS counter=1 and battery pre-heating demand=3) then
+    :switch to state 126;
+    if (slow charging is inactive) then
+      :shutdown;
+      stop
+    endif
+  else if (pre-charge failure occurs) then
+    :switch to state 126;
+    if (slow charging inactive) then
+      :shutdown;
+      stop
+    endif
+  else if (slow charging is inactive) then
+    :switch to state 126;
+    :shutdown;
+    stop
+  else if (AC charging/discharging system fault) then
+    while(after 10s)
+    endwhile
+    :switch to state 126;
+    if (slow charging inactive) then
+      :shutdown;
+      stop
+    endif
+  endif
+endif
+end

@@ -1,0 +1,10 @@
+start
+
+:2-norm of output Buminusd;
+if(< 0.01? ) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

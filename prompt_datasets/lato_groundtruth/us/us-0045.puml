@@ -1,0 +1,8 @@
+start
+:Make Dataset more useful;
+split
+   :add useful metadata;
+split again
+   :add in new data columns;
+end split
+stop

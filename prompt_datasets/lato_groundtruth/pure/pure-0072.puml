@@ -1,0 +1,28 @@
+start
+
+:Peering arrangement is established;
+:Initiating primary CDN advertise configuration information;
+:Support relationships between enlisted CDNs;
+
+:PAs exchange;
+fork
+:Content availability;
+fork again
+:Load information;
+end fork
+
+:Identify optimal peer to handle requests;
+:Request is redirected to optimal peer's Web server;
+:PAs exchange accounting information;
+:Perform billing;
+
+:Established policy repository instance assists;
+fork
+:Deployment;
+fork again
+:Administration;
+fork again
+:Enforcement;
+end fork
+
+stop

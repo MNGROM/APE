@@ -1,0 +1,40 @@
+start
+
+:Go to Data Warehousing Workbench;
+:Go to Modeling area;
+:Choose "Info Provider";
+
+:Info Area displays information;
+fork
+  :Transformation;
+fork again
+  :Data source;
+fork again
+  :Attributes;
+fork again
+  :Texts;
+end fork
+
+repeat
+    :Open Data source context menu;
+    :Choose "Create InfoPackage...";
+    
+    :Enter description;
+    :Choose "Save";
+    :The Info Package maintenance screen appears;
+
+    :Go to tab page Schedule;
+    :Choose "Start";
+
+    :Open the toolbar;
+    :Choose "Monitor";
+    :Check the load process;
+
+    :Select date;
+    :Choose "Execute";
+
+    :The monitor is displayed;
+    :Select load process from left tree;
+repeat while (The texts are completed?) is (no)
+
+stop

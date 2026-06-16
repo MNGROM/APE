@@ -1,0 +1,32 @@
+start
+
+:Group members (not driver) initiate LAS;
+
+if(One member transmits?) then(no)
+:Not allowed;
+else(yes)
+ switch(Maintenance mode)
+ case(Mode 1)
+ :Continuous button press;
+ case(Mode 2)
+ :Periodic button press;
+ if(Timeout?) then(yes)
+ :Deactivate LAS;
+ else(no)
+ endif
+endswitch
+
+:Intermittent tone;
+fork
+:800–850 Hz;
+fork again
+:1s on / 2s off;
+end fork
+
+if(Receive Shunting Emergency Call?) then(yes)
+:LAS is interrupted;
+else(no)
+endif
+endif
+
+stop

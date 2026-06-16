@@ -1,0 +1,55 @@
+@startuml
+
+start
+
+:Central ECU operates within safety-critical automotive context per ISO 26262;
+:Manage subsystems via CAN and Ethernet networks;
+fork
+:Powertrain;
+fork again
+:BMS;
+fork again
+:Chassis;
+end fork
+:Utilize RTOS for priority-based scheduling of concurrent tasks;
+
+if (Anomalous sensor data detected?) then (yes)
+  :Initiate data verification process;
+
+  fork
+    :High-priority loop executes cyclic data integrity check;
+    repeat
+      :Continuously read from sensor ring buffer;
+      :Validate data with CRC;
+    repeat while (Data confirmed correct?) is (no)
+  fork again
+    :Lower-priority task performs data format verification against predefined schema;
+  end fork
+
+  if (Error confirmed?) then (yes)
+    :Enter error handling state;
+    fork
+      :Mutex-protected logging task;
+      :Classify and timestamp event in non-volatile memory;
+    fork again
+      :ISR-triggered alarm task;
+      :Signal PMIC and FADEC according to fault level;
+      :Potentially invoke limp-home mode;
+    end fork
+  else (no)
+  end if
+
+  :Perform final checksum processing;
+  :Arm watchdog timer to guard against hangs;
+  :Enter low-power standby state;
+  :UDS/ISO-TP diagnostics remain available for interrogation;
+
+else (no)
+end if
+
+:All actions time-stamped and persisted;
+:Facilitate post-mortem analysis;
+
+stop
+
+@enduml

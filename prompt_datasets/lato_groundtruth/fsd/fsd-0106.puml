@@ -1,0 +1,62 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within RTOS;
+:Govern;
+fork
+  :PWM fans;
+fork again
+  :Liquid-cooling loops;
+end fork
+:Execution preemptively scheduled against concurrent tasks;
+
+if(Ambient readings > preset threshold?) then(yes)
+  :Temperature ISR triggered;
+  :Acquire mutex to read current operational mode;
+  if (Rising trend confirmed?) then (yes)
+    repeat
+    :Post message to priority queue;
+    :Activate cooling controller;
+    repeat while(Temperatures normalize) is(no)
+  else (no)
+  end if
+else(no)
+end if
+
+
+:In parallel RTOS task;
+:Humidity sensor data polled;
+  if (> setpoint?) then (yes)
+    :Initialize air conditioner's dehumidification mode and air purifier;
+    :Manage tasks via priority-based scheduling;
+  else (no)
+  end if
+
+  :User-initiated command to disable intelligent temperature control;
+  :Serviced by separate handler;
+  if (Shutdown confirmed?) then (yes)
+    repeat
+    :Place system into quiescent state;
+   repeat while(Reactivated) is(no)
+  else (no)
+  end if
+
+:Watchdog-monitored telemetry task maintains system integrity;
+:Runs periodic loop driven by timer interrupts;
+:Implements exponential backoff on communication faults;
+:Employs CRC-protected CAN bus messages;
+
+fork
+  :Sensor fusion routines and calibration routines execute periodically;
+fork again
+if (Out-of-range readings?) then (yes)
+  :Trigger redundant sensor checks;
+  :Initiate controlled, failsafe cool-down path;
+else (no)
+end if
+end fork
+
+stop
+
+@enduml

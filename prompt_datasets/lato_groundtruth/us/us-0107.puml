@@ -1,0 +1,11 @@
+start
+:Set expire date;
+if(data expired?)then(yes)
+split
+   :delete data;
+split again
+   :hide then delete data;
+end split
+stop
+else(no)
+stop

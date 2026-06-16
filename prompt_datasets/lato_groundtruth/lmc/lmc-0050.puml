@@ -1,0 +1,10 @@
+start
+
+:Body Vector Output Vb;
+if( =DCM321 * Vi?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

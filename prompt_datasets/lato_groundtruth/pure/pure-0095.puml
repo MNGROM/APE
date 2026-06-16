@@ -1,0 +1,15 @@
+start
+
+:Use command arc_warc_migrate <ARC_FILES> <CONFIG> [options];
+:Refer to provided configuration;
+
+fork
+:Specify how fields are translated into WARC records;
+fork again
+:Generate errors requiring operator intervention;
+:Handle missing fields;
+end fork
+
+:Migrate content from ARC files to WARC files;
+
+stop

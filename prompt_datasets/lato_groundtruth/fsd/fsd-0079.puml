@@ -1,0 +1,53 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+end fork
+
+if (Detect abnormal power load and ambient temperature > set threshold?) then (yes)
+  :BMS initializes parallel processing mode;
+
+  fork
+    :Acquire real-time battery pack temperature data;
+    :Sample battery rail voltage fluctuations on 5-second periodic timer;
+
+  :Frame all telemetry with CRC;
+  :Publish telemetry to central processor via CAN bus;
+
+  if (Battery state stable?) then (yes)
+    :Re-enter parallel process;
+    :Continuously monitor charge-discharge efficiency;
+    :Analyze life attenuation;
+    :Store diagnostic results in non-volatile memory;
+    :Generate comprehensive battery health report for maintenance;
+  else (no)
+  end if
+
+fork again
+
+  :Telemetry monitor task scheduled by high-priority timer interrupt;
+  :Execute in tight loop with bounded retries and exponential backoff strategy for fault handling;
+end fork
+else (no)
+end if
+
+  fork
+    :Sensor fusion routines  and calibration routines run in periodic threads;
+  fork again
+
+  if (Out-of-range readings?) then (yes)
+    :Engage redundant sensors;
+    :Activate controlled cool-down state managed by FADEC/equivalent safety monitor;
+  else (no)
+  end if
+  end fork
+
+
+stop
+
+@enduml

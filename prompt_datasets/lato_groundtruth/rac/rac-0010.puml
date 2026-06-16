@@ -1,0 +1,52 @@
+start
+if (slow charging is active) then(yes)
+  :enter power-up mode;
+  if (high-voltage shutdown request is 2 and BMS self-check counter is 1) then
+    :enter state 126;
+  else if (high-voltage shutdown request is 2 and BMS counter is 0) then
+    :enter state 126;
+  else
+    stop
+  endif
+else
+  stop
+endif
+if (fast charging is active and front MCU initialization state is 0) then
+    :switch to state 127;
+else if (front MCU low-voltage shutdown flag is 0) then(yes)
+    :switch state 127;
+else
+  stop
+endif
+switch (condition judgement)
+  case(timeout 2.2s occurs)
+    :switch to state 142;
+    if(fast charging is inactive)then(yes)
+      :shutdown;
+      stop
+    endif
+    stop
+  case(BMS counter is 0)
+    :switch to state 142;
+    if(fast charging is inactive)then(yes)
+      :shutdown;
+      stop
+    endif
+     stop
+  case(fast charging is active and front MCU initialization state is 0)
+    :stay in state 127;
+    if(front MCU low-voltage shutdown request flag is 1)then(yes)
+      :switch to state 142;
+      if(fast charging is inactive)then(yes)
+        :shutdown;
+        stop
+      endif
+    else if(timeout 2.2s occurs)then
+      :switch to state 142;
+      if(fast charging is inactive)then(yes)
+        :shutdown;
+        stop
+      endif
+    endif
+endswitch
+end

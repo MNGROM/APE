@@ -1,0 +1,6 @@
+start
+repeat 
+:Change estimate;
+repeat while(selects a card and all are shown?)
+:change mind based on information;
+stop

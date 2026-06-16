@@ -1,0 +1,16 @@
+start
+
+:Use calendar controls;
+
+:Specify for interested historical interval;
+fork
+:Start time;
+fork again
+:End time;
+end fork
+
+:Display historical results;
+:From first result/specified start time to end time;
+:View is confined to selected period;
+
+stop

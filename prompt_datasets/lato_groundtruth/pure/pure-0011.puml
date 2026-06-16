@@ -1,0 +1,13 @@
+start
+
+partition "Trading information release system"{
+  :Send a query;
+}
+
+partition "Central trading system"{
+  :Implement the query;
+  :Structuralize queried data;
+  :Send data to release;
+}
+
+stop

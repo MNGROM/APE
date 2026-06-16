@@ -1,0 +1,4 @@
+start
+:upload inventories;
+:get time requesting material;
+stop

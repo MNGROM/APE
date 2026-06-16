@@ -1,0 +1,12 @@
+start
+
+partition "Transaction user interface"{
+  :Give cancel instruction;
+}
+
+partition "Central trading system"{
+  :Save cancel instruction;
+  :Cancel correlative instruction;
+}
+
+stop

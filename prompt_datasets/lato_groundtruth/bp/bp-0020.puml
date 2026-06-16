@@ -1,0 +1,29 @@
+start
+
+:Log in LifeCycle Manager tool;
+:Create a new job;
+if (More information?) then(yes)
+:See Creating a New Job on page 37;
+else(no)
+endif
+
+:Open Source System drop-down list;
+:Select "Login";
+:To a New CMS;
+
+:"Login to System" dialog box appears;
+:Enter user credentials;
+:Select appropriate authentication type;
+:Click "Login";
+
+:Open Destination System drop-down list;
+:Select "Login";
+:To a New CMS;
+
+:Enter user credentials;
+:Select appropriate authentication type;
+:Click "Login";
+
+:Click "Create";
+
+stop

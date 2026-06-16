@@ -1,0 +1,57 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within hard real-time RTOS;
+fork
+:Govern multi-zone PWM fans;
+fork again
+:Govern liquid-cooling loops;
+end fork
+
+:Primary control task scheduled from high-priority queue;
+:Continuously monitor temperature sensor data protected by mutex;
+
+if (Reading > threshold?) then (yes)
+  :Associated ISR triggers emergency cooling state;
+  :Initialize primary fan array;
+  :Validate operation via dedicated watchdog;
+
+  if (Detect fan fault?) then (yes)
+    fork
+      :Engage redundant backup unit;
+    fork again
+      :Concurrent lower-priority task monitors coolant flow via CAN-connected sensor;
+      if (Insufficient flow?) then (yes)
+        :Trigger replenishment from reserve system;
+      else (no)
+      end if
+    end fork
+  else (no)
+  end if
+
+  if (Temperature continues to rise?) then (yes)
+    :Indicate critical fault;
+    :Execute exponential backoff;
+    :Re-initialize backup cooling plan;
+    repeat
+    :Iterate through ring buffer of recent sensor data within closed-loop FADEC-style control law;
+    :Dynamically adjust cooling intensity;
+    repeat while(Core equipment remains within safe operating range?) is(no)
+  else (no)
+  end if
+
+else (no)
+end if
+
+fork
+  :System health monitor task driven by periodic timer interrupts;
+  :Perform bounded-retry checks on PMIC and BMS;
+  :Guarantee other functional modules remain unaffected;
+fork again
+  :Secure all critical telemetry packets by CRC;
+end fork
+
+stop
+
+@enduml

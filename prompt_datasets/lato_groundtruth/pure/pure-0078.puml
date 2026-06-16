@@ -1,0 +1,13 @@
+start
+
+:Selects period within displayed period; 
+
+switch(Operation)
+case(Expand)
+:Selected period becomes new viewing period;
+case(Contract)
+:New viewing period becomes twice;
+:Encloses selected period;
+endswitch
+
+stop

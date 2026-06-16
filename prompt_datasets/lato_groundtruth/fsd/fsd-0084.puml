@@ -1,0 +1,58 @@
+@startuml
+
+start
+
+:Power management subsystem architected as hard real-time task;
+:Continuously monitor all voltage rails via PMIC and BMS within dedicated RTOS thread;
+
+:Associated ISR triggered by hardware timer;
+:Manage high-frequency sampling;
+:Incoming telemetry debounced;
+:Log to ring buffer protected by mutex;
+
+if (Detect energy demand fluctuation?) then (yes)
+  :Assess supply sufficiency;
+
+  if (Deficit identified?) then (yes)
+    :Initiate concurrent processes;
+
+    fork
+      :Employ polling loop with exponential backoff;
+      :Check energy storage state-of-charge;
+      if (State-of-charge < defined threshold?) then (yes)
+        :Initiate controlled charging cycle;
+      else (no)
+      end if
+    fork again
+      :Verify availability of external energy source;
+      if (Successful CRC-verified handshake?) then (yes)
+        :Engage via CAN bus command;
+      else (no)
+      end if
+    end fork
+
+    :Re-evaluate energy allocation strategy;
+    if (Optimization required?) then (yes)
+      :Spawn parallel tasks to;
+      fork
+        :Dynamically adjust scheduling priorities within priority queue;
+      fork again
+        :Recalculate allocation ratios;
+        :Meet guaranteed demands of critical loads;
+      end fork
+    else (no)
+    end if
+
+  else (no)
+  end if
+else (no)
+end if
+
+repeat
+:Execute all recovery policies through staged verification cycles;
+:Dedicated watchdog ensures system liveness;
+repeat while(System converges to stable operating state) is(no)
+
+stop
+
+@enduml

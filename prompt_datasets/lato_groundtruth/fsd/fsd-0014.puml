@@ -1,0 +1,71 @@
+@startuml
+
+start
+
+:Avionics stack(FMS/FADEC) executes on deterministic RTOS;
+
+:Vehicle initialization;
+:High-priority task samples BMS via PMIC;
+if (State of charge < 20%?) then (yes)
+  fork
+  :Enter low-rail voltage mode;
+  fork again
+    :Lower-priority task checks charging status;
+    if (No charger connected?) then (yes)
+      :Prompt user;
+      :Initiate exponential backoff sequence;
+      :Enter deep energy-saving state;
+    else (no)
+    end if
+  end fork
+
+else (no)
+  :Proceed to sample engine temperature via dedicated ISR;
+
+  if (Temperature > safety threshold?) then (yes)
+    fork
+    :Activate cooling system task;
+    fork again
+    :Mutex-protected handshake to FADEC;
+    fork again
+    :Lower-priority thread initializes multimedia system;
+    end fork
+  else (no)
+  end if
+
+end if
+
+:Health monitoring task iterates through ring buffer of sensor data;
+:Validate system integrity;
+
+:While driving;
+:Real-time task monitors vehicle speed and acceleration;
+
+if (Exceed speed limit?) then (yes)
+  :Trigger alert;
+  :Schedule high-priority navigation task;
+  :Re-compute path using real-time CAN traffic data with CRC verification;
+else (no)
+end if
+
+:Arrive destination;
+:Transition to parking mode;
+
+fork
+  :Automatic parking process executes;
+fork again
+  :Task for shutting down non-essential equipment;
+  :Timer-driven ISR periodically polls device statuses;
+  :Ensure safe parking procedure;
+end fork
+
+fork
+:Dedicated telemetry monitor executes in fixed-periodic loop;
+:Manage data uplink to ground station with bounded retries;
+fork again
+:All event traces and fault-tolerant strategie adhere to DO-178C/DO-254 processes;
+end fork
+
+stop
+
+@enduml

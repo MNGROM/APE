@@ -1,0 +1,72 @@
+@startuml
+
+start
+
+:Avionics stack comprises;
+fork
+  :FMS;
+fork again
+  :FADEC;
+end fork
+:Execute on deterministic RTOS;
+
+:Control law computations performed within;
+fork
+  :High-priority ISRs;
+fork again
+  :Lower-frequency worker tasks;
+end fork
+:Sample sensor data;
+:Manage actuator outputs;
+
+if (Abnormal flight status detected?) then (yes)
+  :Fault management task scheduled via priority queues;
+  :Initiate diagnostic sequence;
+  :Involve conditional check for navigation device failure;
+
+  if (True?) then (yes)
+    :Spawn parallel tasks;
+    fork
+      :Monitor GPS signal strength;
+        if (Signal < defined threshold?) then (yes)
+        :Execute exponential backoff retry;
+          :Switch to backup positioning system;
+        else (no)
+        end if
+    fork again
+      :Evaluate inertial navigation system health;
+    end fork
+  else (no)
+  end if
+end if
+
+
+  if (Communications link interruption?) then (yes)
+    :Trigger parallel diagnostic routine;
+    fork
+      :Check RF module status;
+    fork again
+      :Validate antenna connection via CRC-checked CAN bus query;
+    end fork
+  else (no)
+  end if
+
+  :Log all fault diagnosis results to ring buffer protected by mutex;
+  :Determine if emergency landing procedures must be triggered;
+
+fork
+:Adhere to DO-178C/DO-254 processes;
+fork again
+:Critical anomalies initiate;
+ fork
+ :Fault-tolerant strategies;
+ fork again
+  :Prioritized data uplink to ground station;
+ end fork
+fork again
+  :Independent watchdog timer ensures system liveness;
+end fork
+
+stop
+
+@enduml

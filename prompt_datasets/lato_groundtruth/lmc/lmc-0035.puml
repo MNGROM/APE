@@ -1,0 +1,10 @@
+start
+
+:Input any value;
+if(Maximum value of NN output z <= 1.1?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

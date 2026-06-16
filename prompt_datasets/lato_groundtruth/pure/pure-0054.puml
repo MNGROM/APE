@@ -1,0 +1,41 @@
+start
+
+:Donor/Primary Contact has valid donation number;
+:Arrive at receiving dock;
+
+:See View Acquisitions;
+:Locate donation request;
+
+:Display donation request information;
+:See Add Item to Inventory;
+:Enter information;
+
+if(Add new item?) then(yes)
+switch(Way to add item)
+case(Clone)
+:Clone an existing item;
+case(Click)
+:Click Add Item button;
+endswitch
+else(no)
+endif
+
+if(Remove item?) then(yes)
+:Set received quantity to 0;
+else(no)
+endif
+
+:Print donation receipt;
+
+if(Write information?) then(yes)
+:Write information to receipt by hand;
+else(no)
+endif
+
+:Give donation receipt to Donor/Primary Contact;
+:See Add Item to Inventory;
+:Print item tags for unique and stock items;
+:Aattach printed tags to corresponding items;
+:Close donation request;
+
+stop

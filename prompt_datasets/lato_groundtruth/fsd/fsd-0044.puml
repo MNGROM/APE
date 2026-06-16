@@ -1,0 +1,72 @@
+@startuml
+
+start
+
+:Embedded control platform employs FSM;
+:Orchestrate complex, safety-critical operations;
+fork
+  :Scheduling of ISRs;
+fork again
+  :Management of deferred work in RTOS tasks with priority queues;
+fork again
+  :Enforcement of fail-safe policies supervised by hardware watchdog;
+end fork
+
+:Concurrent set of preconditions;
+fork
+  :Target detection within effective sensor range;
+fork again
+  :Admissible trajectory and velocity;
+fork again
+  :Unobstructed line-of-sight;
+fork again
+  :Safe distance thresholds;
+fork again
+  :No active obstacle avoidance warnings;
+fork again
+  :No conflict with current path plan;
+end fork
+
+:Verify via mutex-protected validation loop;
+if (Satisfy concurrent set of preconditions?) then (yes)
+  :Initialize multi-core computing module;
+
+fork
+  :Trigger positioning module's real-time data acquisition;
+  :Perform iterative calculations within dedicated thread;
+  :Continuously update target's state within ring buffer;
+  :Update drive dynamic path planning adjustments;
+
+fork again
+    :Launch environment perception module's multi-threaded processing mechanism;
+    :Synchronously execute;
+    fork
+      :Sensor data fusion;
+    fork again
+      :Environmental feature extraction;
+    end fork
+    :Analyze surrounding information in real-time;
+    :Dynamically update world model;
+    :Condition monitoring and task execution occur under RTOS supervision;
+end fork
+
+else (no)
+end if
+
+fork
+  :Core periodic control loops driven by high-priority timer interrupts;
+fork again
+  :Inter-task communication synchronized via;
+  fork
+    :Mutexes;
+  fork again
+    :Message queues;
+  end fork
+fork again
+  :All critical state transitions and system events logged;
+  :Post-mortem audit and analysis;
+end fork
+
+stop
+
+@enduml

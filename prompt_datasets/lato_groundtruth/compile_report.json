@@ -1,0 +1,110 @@
+{
+  "dataset_dir": "ape/prompt_datasets/lato",
+  "groundtruth_output_dir": "ape/prompt_datasets/lato_groundtruth",
+  "manifest": "ape/prompt_datasets/lato_groundtruth/manifest.jsonl",
+  "compiler": {
+    "plantuml_jar": "C:\\Users\\16373\\AppData\\Local\\Temp\\plantuml-1.2025.4.jar",
+    "command": "java -Djava.awt.headless=true -jar <jar> -syntax",
+    "wrappers_added_for_compile": true,
+    "parallel_workers": 8
+  },
+  "summary": {
+    "datasets": 6,
+    "total_lines": 542,
+    "valid_records": 542,
+    "blank_lines": 0,
+    "invalid_json": 0,
+    "records_with_missing_required_fields": 0,
+    "compile_passed": 542,
+    "compile_failed": 0,
+    "compile_pass_rate": 1.0,
+    "records_with_complete_wrappers": 116,
+    "records_missing_wrappers": 426,
+    "duplicate_content_values": 1,
+    "duplicate_plantuml_values": 1,
+    "elapsed_seconds": 102.202
+  },
+  "per_dataset": {
+    "bp": {
+      "lines": 30,
+      "records": 30,
+      "invalid_json": 0,
+      "missing_content": 0,
+      "missing_plantuml": 0,
+      "compile_passed": 30,
+      "compile_failed": 0,
+      "has_wrappers": 0,
+      "missing_wrappers": 30,
+      "suspicious_start_colon": 28,
+      "double_semicolon": 0
+    },
+    "fsd": {
+      "lines": 116,
+      "records": 116,
+      "invalid_json": 0,
+      "missing_content": 0,
+      "missing_plantuml": 0,
+      "compile_passed": 116,
+      "compile_failed": 0,
+      "has_wrappers": 116,
+      "missing_wrappers": 0,
+      "suspicious_start_colon": 116,
+      "double_semicolon": 0
+    },
+    "lmc": {
+      "lines": 56,
+      "records": 56,
+      "invalid_json": 0,
+      "missing_content": 0,
+      "missing_plantuml": 0,
+      "compile_passed": 56,
+      "compile_failed": 0,
+      "has_wrappers": 0,
+      "missing_wrappers": 56,
+      "suspicious_start_colon": 41,
+      "double_semicolon": 0
+    },
+    "pure": {
+      "lines": 100,
+      "records": 100,
+      "invalid_json": 0,
+      "missing_content": 0,
+      "missing_plantuml": 0,
+      "compile_passed": 100,
+      "compile_failed": 0,
+      "has_wrappers": 0,
+      "missing_wrappers": 100,
+      "suspicious_start_colon": 89,
+      "double_semicolon": 1
+    },
+    "rac": {
+      "lines": 20,
+      "records": 20,
+      "invalid_json": 0,
+      "missing_content": 0,
+      "missing_plantuml": 0,
+      "compile_passed": 20,
+      "compile_failed": 0,
+      "has_wrappers": 0,
+      "missing_wrappers": 20,
+      "suspicious_start_colon": 0,
+      "double_semicolon": 0
+    },
+    "us": {
+      "lines": 220,
+      "records": 220,
+      "invalid_json": 0,
+      "missing_content": 0,
+      "missing_plantuml": 0,
+      "compile_passed": 220,
+      "compile_failed": 0,
+      "has_wrappers": 0,
+      "missing_wrappers": 220,
+      "suspicious_start_colon": 214,
+      "double_semicolon": 0
+    }
+  },
+  "invalid_json": [],
+  "missing_required_fields": [],
+  "compile_failures": []
+}

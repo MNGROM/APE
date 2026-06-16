@@ -1,0 +1,51 @@
+start
+
+:Launch tool;
+
+if(Double-click relative icon?) then(no)
+:Type application's name;
+else(yes)
+endif
+
+:Display splash screen momentarily;
+fork
+:Tool;
+fork again
+:Developing organizations;
+fork again
+:Sponsoring organizations;
+fork again
+:Copyright information;
+end fork
+
+:Display tool main window;
+:Open drop down menu “Status”;
+:Select menu item named “Start Diagnostics”;
+:Start diagnostic processing;
+
+if(User has appropriate privilege?) then(yes)
+:Request user confirmatory response;
+if(Confirm?) then(yes)
+:Start diagnostic processing;
+:Display animated indication;
+else(no)
+:Do not start diagnostic processing;
+:User remains authenticated;
+endif
+
+else(no)
+:Do not start diagnostic processing;
+endif
+
+:Open drop down menu named “File”;
+:Select menu item named “Logout”;
+:Secure tool;
+
+:Return user's privileges to general;
+
+if(User does not secure >= 15mins?) then(yes)
+:Privileges revert to general;
+else(no)
+endif
+
+stop

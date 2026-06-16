@@ -1,0 +1,41 @@
+start
+
+:Click “History” button;
+:Display history window by color map;
+:Show historical results of interested selected condition;
+
+if(Data are available prior to default period?) then(yes)
+:Provide scroll bar for historical results;
+:Default period extends backward 1 week prior to current date;
+:Displayed period do not change;
+:Default time resolution is 1h;
+:Slide scroll bar backward or forward;
+:View previous results up to current time;
+else(no)
+endif
+
+:Tool function;
+fork
+:Display results within 1 week viewing period;
+fork again
+:Add results to period beginning/ending;
+fork again
+:Drop opposite end results;
+fork again
+:Viewing period do not change;
+end fork
+
+if(Close history window?) then(yes)
+:Click “Close” button;
+:Dismiss;
+fork
+:History window;
+fork again
+:Diagnostic information window;
+end fork 
+
+:Make condition window current window;
+else(no)
+endif
+
+stop

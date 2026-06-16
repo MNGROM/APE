@@ -1,0 +1,59 @@
+@startuml
+
+start
+
+:Employ FSM to orchestrate interactions between;
+fork
+:High-priority ISRs;
+fork again
+:Lower-priority deferred tasks managed by RTOS;
+fork again
+:Overarching fail-safe policies;
+end fork
+
+if (Detcet anomalous air pressure data via monitored ISR?) then (yes)
+  :Initiate sensor calibration sequence;
+  if (Calibration fails?) then (yes)
+    :FSM transitions to redundant sensor path;
+    :Initialize data acquisition;
+    :Launch concurrent data verification process scheduled via RTOS priority queue;
+    if (CRC validates redundant data?) then (yes)
+      :Resume normal operation;
+    else (no)
+    end if
+    if(Persistent fault?) then(yes)
+      :Trigger recovery loop;
+      fork
+        :Execute data acquisition;
+      fork again
+        :Execute calibration tasks;
+      end fork
+      fork
+        :Employ mutex;
+        :Protect shared sensor control registers;
+      fork again
+        :Employ exponential backoff strategy;
+        :Limit retries;
+      end fork
+
+      :Final arbitration by FSM;
+      if (Activate critical alarm?) then (yes)
+        :Activate;
+      else (no)
+        :Maintain degraded operation;
+      end if
+    end if
+  end if
+else (no)
+end if
+
+fork
+  :Timer-driven periodic loops monitor system health;
+fork again
+  :State transitions and fault events are asynchronously logged to persistent ring buffer;
+  :Subsequent audit and diagnostic analysis;
+end fork
+
+stop
+
+@enduml

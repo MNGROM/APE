@@ -1,0 +1,116 @@
+start
+
+:Log in LifeCycle Manager tool;
+switch(Selection method)
+case(1)
+:Go to "Promotion Jobs" home page;
+:Select the job want to promote;
+case(2)
+:Right-click;
+:Click "Promote";
+endswitch
+
+:Open source and destination systems drop-down lists;
+:Select source and destination systems;
+
+if(Have logged into both source and destination systems) then(no)
+stop
+else(yes)
+endif
+
+:Go to External Change Management ID field;
+:Enter appropriate value;
+:Click "Save";
+
+:Click "Mappings";
+if(Create and validate mappings) then(yes)
+:Click "Edit Mappings";
+else(no)
+endif
+
+if(See Security Settings?) then(yes)
+:Click "Security Settings";
+:Options are displayed;
+fork
+:"Do not Promote Security";
+note right:Default option
+fork again
+:"Promote Security";
+:Promote jobs along with associated security rights;
+fork again
+:"Include application rights";
+
+if (Select "Promote Security"?) then(yes)
+:The option is enabled;
+  if(Objects inherit any application rights?) then(yes)
+  :Job is promoted along with these rights;
+  else(no)
+  endif
+else(no)
+endif
+end fork
+
+if(Click "View Security"?) then(yes)
+:View infoobjects security dependencies;
+else(no)
+endif
+endif
+
+:Click "Test Promote";
+:Ensure no conflict between CUIDs in the source and destination systems;
+:Promotion details are displayed;
+
+fork
+:First column;
+:Objects to be promoted;
+fork again
+:Second column;
+:Promotion status;
+end fork
+
+:LifeCycle Manager tool classifies selected objects;
+
+:Run Test Promote feature;
+:Commit no infoobjects for promotion;
+
+switch(Results)
+case(Overwritten)
+ :Infoobject in destination is overwritten by infoobject in source system;
+case(Mapped)
+ :Infoobject types;
+ fork
+ :Folders,
+ fork again
+ :Users;
+ fork again
+ :User groups;
+ fork again
+ :Custom roles;
+ end fork
+
+ if(Security option is enabled?) then(yes)
+ :Infoobject is mapped to destination system and promoted;
+ else(no)
+ :Infoobject is not promoted;
+ endif
+case(Copied)
+ :Infoobject in source system is copied to destination system;
+case(Dropped)
+ :Infoobject is not promoted from source system to destination system;
+case(Warning)
+ :Infoobject in destination system is the newer version;
+ :Remove infoobject from Job;
+if(Promote?) then(yes)
+ :Infoobject gets promoted;
+else(no)
+endif
+endswitch
+
+if(Schedule job promotion?) then(yes)
+:Click "Schedule Job";
+else(no)
+endif
+
+:Click "Promote";
+
+stop

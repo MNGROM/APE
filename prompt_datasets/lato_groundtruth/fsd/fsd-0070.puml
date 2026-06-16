@@ -1,0 +1,54 @@
+@startuml
+start
+:Receive vehicle initialize signal;
+:Thermal management controller initiates multi-threaded power-on sequence;
+
+:System verifies sufficient battery power via BMS;
+  if (Adequate?) then (yes)
+    :Spawn concurrent, prioritized tasks;
+     fork
+      :Initialize CAN data uplink with motor controller;
+     fork again
+      :Use cyclic task reads sensors into ring buffer;
+      :Monitor;
+       fork
+        :Battery temperature;
+       fork again
+        :Voltage;
+       fork again
+        :Current;
+       end fork
+     fork again
+     :Motor controller task checks motor temperature;
+     if (Normal?) then (yes)
+    :Deterministically execute motor initialization;
+    :Execute parameter calibration;
+  endif
+     end fork
+  else (no)
+    :Initiate charging management process;
+    :Charging controller validates charging interface connection;
+    if (Successful CRC-checked protocol handshake?) then (yes)
+      :Begin charging;
+      repeat
+      :BMS continuously monitors battery status via high-priority task;
+      :Ensure charging safety;
+      repeat while(Preset power threshold met) is(no)
+    else(no)
+    endif
+  endif
+
+:Telemetry monitor driven by timer ISR;
+:Run in periodic loop;
+:Employ bounded retries with exponential backoff\non communication faults;
+
+:All sensor fusion and calibration routines execute periodically;
+
+if (Out-of-range readings?) then (yes)
+  :Trigger redundant sensor checks;
+  :Invoke controlled cool-down state machine;
+else(no)
+endif
+
+stop
+@enduml

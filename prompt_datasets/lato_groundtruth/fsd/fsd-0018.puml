@@ -1,0 +1,65 @@
+@startuml
+
+start
+
+:Integrated avionics stack (FMS/FADEC) hosted on deterministic RTOS for redundancy;
+:Execute control laws via high-priority ISRs and lower-frequency worker tasks;
+
+fork
+  :Dedicated monitoring task scheduled with real-time priority;
+  :Continuously sample from protected ring buffers;
+ fork
+  :Flight attitude;
+ fork again
+  :Engine parameters;
+ end fork
+fork again
+  :BMS/PMIC monitor task uses cyclic executive model;
+ fork
+  :Track fuel consumption;
+ fork again
+  :Track remaining volume;
+ end fork
+end fork
+
+if (Altitude breaches safety threshold?) then (yes)
+  :Trigger auditory alarm;
+  if (Uncorrected within defined window?) then (yes)
+    :FADEC engages automatic recovery function;
+    :Command aircraft to safe altitude;
+  else(no)
+  end if
+
+  :Telemetry task handles concurrent updates;
+  :Stream via CRC-secured CAN bus/similar data link to ground control station;
+else (no)
+end if
+
+:Restore normal altitude;
+fork
+:Silence alarm;
+:Log event;
+fork again
+  :Same RTOS but lower priority navigation management task;
+  :Use active flight plan and live meteorological data;
+  :Periodically calculate optimal flight path and ETA;
+  :Employ exponential backoff for comms faults;
+end fork
+
+repeat
+  :Periodic monitoring driven by timer interrupts with bounded retries;
+  :Ensure flight parameter integrity;
+repeat while(Mission completion) is(no)
+
+:In compliance with DO-178C/DO-254;
+:Log comprehensive event traces;
+
+if (Detect anomalies ?) then (yes)
+  :Initiate fault-tolerant strategies;
+  :Immediate data uplink to ground station;
+else (no)
+end if
+
+stop
+
+@enduml

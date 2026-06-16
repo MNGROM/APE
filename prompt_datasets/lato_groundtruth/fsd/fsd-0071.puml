@@ -1,0 +1,51 @@
+@startuml
+start
+:Automotive ECU compliant with ISO 26262;
+:Orchestrate via CAN and Ethernet;
+fork
+ :Powertrain;
+fork again
+ :BMS;
+fork again
+ :Chassis subsystems;
+end fork
+:Employ RTOS with priority queues for task scheduling;
+
+if(Receive external signal?) then(yes)
+:ISR immediately time-stamps event;
+:Place into protected ring buffer;
+
+:High-priority supervisory task dequeues signal;
+if (Emergency command?) then (yes)
+  :Spawn concurrent verification tasks under mutex protection;
+    :Authenticate signal source via cryptographic challenge;
+    :Validate data integrity using CRC check;
+    if (Failed check?) then (yes)
+      :Trigger exponential backoff retry;
+      :Exit process;
+    else (no)
+    endif
+
+else (no)
+  if (Require response?) then (yes)
+    :Initialize similar but lower-priority parallel verification routine;
+  else(no)
+  end if
+endif
+
+else(no)
+end if
+
+fork
+:All diagnostic and command traffic formatted per UDS/ISO-TP;
+fork again
+:Dedicated watchdog task with PMIC monitors system health;
+if (Fault?) then (yes)
+  :Enforce transition to limp-home mode;
+else (no)
+endif
+:Ensure fail-operational behavior;
+end fork
+
+stop
+@enduml

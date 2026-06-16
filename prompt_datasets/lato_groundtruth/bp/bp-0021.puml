@@ -1,0 +1,35 @@
+start
+
+:Log in LifeCycle Manager tool;
+:Go to "Promotion Jobs" home page;
+:Click "New Job";
+
+:Click "the Copy an Existing Job" option;
+:The list of jobs is displayed;
+
+:Select a job from list;
+:Cick "Create";
+
+:Information is displayed;
+fork
+:Name;
+fork again
+:Keywords;
+fork again
+:Description;
+end fork
+
+if(Modification?) then(yes)
+:Modify these fields;
+note right
+Cannot change source system
+end note
+else(no)
+endif
+
+:Go to "Save Job" field;
+:Browse and select folder;
+:Click "Create";
+:A new job is created;
+
+stop

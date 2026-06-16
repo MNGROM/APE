@@ -1,0 +1,19 @@
+start
+if (gear is D or N) then
+  :set D_S gear mileage parameter to 1;
+  stop
+else if (gear is S) then
+  :set D_S gear mileage parameter = S gear nominal mileage / D gear nominal mileage;
+  stop
+else if (vehicle status is 30) then
+  :switch to driving mode;
+  switch(gear check)
+  case(gear is D or E)
+    :set D_S gear mileage parameter = S gear nominal mileage / D gear nominal mileage;
+    stop
+  case(gear is N or R)
+    :observe using D_S gear mileage parameter;
+    stop
+  endswitch
+endif  
+end

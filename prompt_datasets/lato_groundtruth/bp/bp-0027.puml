@@ -1,0 +1,28 @@
+start
+
+if(Experienced expert user?) then (yes)
+
+:Open the "Promote" window;
+:Click "Mappings";
+:Click "Federation Mappings";
+:The connection list is displayed;
+:Select a connection;
+:Click "Edit Federation Connection Properties";
+:"Edit Federation Connection Properties" Tab appears;
+
+note right:Display the list of properties and their values
+
+:Modify the appropriate fields;
+:Click "Apply";
+:"Federation Mappings" Tab appears;
+
+if (Edit in the source system?) then (yes)
+  :"edited5" is displayed;
+else (no)
+endif
+
+:Click "Save" or "Promote";
+
+else (no)
+endif
+stop

@@ -1,0 +1,8 @@
+start
+
+if(Sensor data is good?) then(no)
+:Autopilot change states from NOMINAL to MANEUVER;
+else(yes)
+endif
+
+stop

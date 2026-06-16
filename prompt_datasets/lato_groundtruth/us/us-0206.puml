@@ -1,0 +1,16 @@
+start
+:recognize/categorize document type;
+fork
+:process historical report still published;
+fork again
+:process expired historical report;
+fork again
+:process single topic dataset;
+fork again
+:process broad topic dataset,;
+fork again
+:process report with subtopic;
+fork again
+:process computer file;
+fork end
+stop

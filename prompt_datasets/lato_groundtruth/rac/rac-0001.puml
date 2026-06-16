@@ -1,0 +1,44 @@
+start
+switch(initial judgement)
+case (vehicle status > 9 and < 28) or (vehicle status > 30 and <= 49)
+  :set instantaneous driving mileage gradient to 0;
+  stop
+case (vehicle status == 28 or 29 or 30)
+  :switch to new state;
+  :set instantaneous driving mileage to 10;
+  if (current > -Current Threshold A and < Current Threshold A) then
+    :set instantaneous driving mileage gradient to 0;
+    stop
+  else if (vehicle speed > speed threshold (kph)) then(yes)
+    :switch to new state;
+    :reset cumulative discharge distance to 0;
+    if (energy recovery mileage >1) then
+      :switch to new state;
+      :reset energy recovery mileage to 0;
+      stop
+    else
+      stop
+    end if
+  else if (cumulative discharge distance < energy recovery mileage) then
+    :switch to new state;
+    :set instantaneous driving mileage gradient to 0;
+    stop
+  else if (vehicle speed < speed threshold (kph)) then
+    :enter new state;
+    :query cumulative discharge distance;
+    if (cumulative discharge distance >0.1?) then(yes)
+      :switch to new state;
+      :set instantaneous driving mileage gradient = cumulative discharge distance * driving error correction coefficient /2;
+      stop
+    else 
+      stop
+    end if
+  else(vehicle speed > speed threshold (kph))
+    if (instantaneous discharge mileage > instantaneous driving mileage?) then(yes)
+      :switch to new state;
+      :set instantaneous driving mileage gradient = instantaneous discharge mileage * error correction coefficient;
+      stop
+    else(no)
+      :switch to another state;
+      :set instantaneous driving mileage gradient = instantaneous driving mileage * error correction coefficient;
+      stop

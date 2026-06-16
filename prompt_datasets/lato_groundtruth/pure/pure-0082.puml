@@ -1,0 +1,75 @@
+start
+
+:Presented with main window;
+:Open “File” menu;
+:Select “Configure Diagnostics” menu item;
+
+if(Administrator user?) then(no)
+:Include (Authenticate User);
+else(yes)
+endif
+
+if(Have appropriate privilege?) then(yes)
+:Display configuration window;
+else(no)
+endif
+
+:Click “Recall” button;
+:Read previously saved changes from disk file/database;
+:Populate window with disk file data;
+
+if(Change configuration?) then(yes)
+:Click “Save”;
+:Request confirmation;
+if(Confirm?) then(yes)
+:Request permanent storage disk file name;
+switch(Operation)
+case(Enter name)
+:Save changes;
+
+:Complete save operation;
+
+:Ask if relay changes to diagnostic processing for immediate use;
+
+if(Confirm relay?) then(yes)
+ if(Processing is active?) then(yes)
+  :Relay changes;
+ else(no)
+  :Do not relay changes;
+ endif
+else(no)
+endif
+
+case(Cancel)
+:Perform no function;
+endswitch
+else(no)
+endif
+
+
+else(no)
+:Click “Close”;
+:Request confirmation;
+
+fork
+:For close;
+fork again
+:For potential loss of changes;
+end fork
+
+if(Confirm?) then(yes)
+fork
+:Dismiss configuration window;
+fork again
+:Ignore any changes;
+fork again
+:Return main window;
+end fork
+
+else(no)
+:Perform no function;
+endif
+
+endif
+
+stop

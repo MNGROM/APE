@@ -1,0 +1,61 @@
+@startuml
+
+start
+
+:Thermal management controller implemented as state machine on RTOS;
+fork
+  :Regulate PWM fans;
+fork again
+  :Regulate liquid-cooling loop;
+end fork
+
+if (Battery rail voltage < threshold?) then (yes)
+  :Initiate primary control logic;
+  :Trigger conditional verification sequence;
+  if (Charging current within safe range?) then (yes)
+    if (Battery temperature < upper limit?) then (yes)
+      if (Battery health status confirmed good?) then (yes)
+        :Spawn concurrent RTOS tasks for charge and discharge cycles;
+
+        fork
+          : High priority charging task;
+          :Iteratively monitor battery rail voltage and temperature;
+        fork again
+          :Discharge task;
+          :Monitor output power;
+        end fork
+
+        if (Rail voltage < threshold?) then (yes)
+          :Restart with expanded monitoring scope including health status;
+
+fork
+repeat
+  :Cycle persists;
+repeat while(Voltage setpoint achieved/Protection mode engaged) is(no)
+fork again
+  :Telemetry monitor executed as high-priority periodic task;
+  :Poll sensor data with bounded retries;
+  :Employ exponential backoff for fault handling;
+fork again
+  :Sensor fusion and calibration routines run periodically;
+  if (Out-of-range readings?) then (yes)
+    :Activate redundant sensors;
+    :Initiate controlled cool-down sequence managed by FADEC/BMS;
+  else (no)
+  end if
+end fork
+
+        else (no)
+        end if
+      else (no)
+      end if
+    else (no)
+    end if
+  else (no)
+  end if
+else (no)
+end if
+
+stop
+
+@enduml

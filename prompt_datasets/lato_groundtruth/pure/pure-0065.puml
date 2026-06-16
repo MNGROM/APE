@@ -1,0 +1,31 @@
+start
+
+:Open KeePass;
+:Select to find something;
+
+if(Leave find field empty?) then(yes)
+if(Leave search unchecked?) then(no)
+:All data appear;
+else(yes)
+:Nothing appears;
+endif
+
+else(no)
+:Type word to search for;
+
+if(Leave search unchecked?) then(no)
+:Select fields;
+switch(Selection)
+case(OK)
+:Results appears;
+case(Cancel)
+:Main window appears;
+endswitch
+
+else(yes)
+:Nothing appears;
+endif
+
+endif
+
+stop

@@ -1,0 +1,66 @@
+@startuml
+
+start
+
+:TCMS operates on preemptive RTOS;
+:Manage through deterministically scheduled tasks;
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Door control;
+fork again
+  :Diagnostic functions;
+end fork
+
+if (Vehicle speed > defined threshold and detect anomalous signal?) then (yes)
+  :Trigger high-priority condition;
+  :Launch two concurrent processes;
+
+  fork
+    :Dedicated control task;
+    repeat
+      :Sample and analyze engine speed data via protected ring buffer;
+    repeat while (Stability restored?) is (no)
+  fork again
+    :Monitoring task verifies within operational envelopes;
+    fork
+      :Fuel injection parameters;
+    fork again
+      :Intake volume parameters;
+    end fork
+  end fork
+
+  if (Braking subsystem reports insufficient pressure?) then (yes)
+    :TCMS executes safety-critical sequence;
+    :Initialize emergency braking assist function;
+    :Synchronize states across relevant ECUs;
+    :Launch synchronized fault diagnosis for;
+    fork
+      :ABS;
+    fork again
+      :EBD;
+    end fork
+    repeat
+      :Run in locked-step manner;
+    repeat while (All involved nodes complete self-test and calibration?) is (no)
+  else (no)
+  end if
+
+else (no)
+end if
+
+fork
+  :Archive telemetry data with CRC checksums to non-volatile memory;
+fork again
+  :Independent watchdogs monitor task deadlines;
+fork again
+  :System adheres to fail-safe design principles;
+  :Graceful degradation;
+end fork
+:Ensure compliance with EN 50128 and EN 50129 safety standards;
+
+stop
+
+@enduml

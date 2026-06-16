@@ -1,0 +1,10 @@
+start
+:Get changes made to language(s);
+fork
+:collection changes;
+fork again
+:object changes;
+fork again
+:object component changes;
+fork end
+stop

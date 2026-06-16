@@ -1,0 +1,36 @@
+start
+:Log in;
+:Go to "Promotion Jobs";
+:Click "New Job";
+:"New Job" window appears;
+
+fork
+  :Enter name;
+fork again
+  :Enter description;
+fork again
+  :Enter keywords;
+end fork
+
+:Go to "Save Job " field;
+:Browse and select the folder;
+:Drop-lists appears;
+
+if (System name is displayed?) then (yes)
+  :Select the source system;
+  :Select the destination system;
+else (no)
+  :Click "Login";
+  :Launch a new window;
+  fork
+    :Enter system name;
+  fork again
+    :Enter user name;
+  fork again
+    :Enter password;
+end fork
+
+endif
+
+:Click "Create";
+stop

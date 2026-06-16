@@ -1,0 +1,11 @@
+start
+if(resource data stored on servers)then(yes)
+if(registry caches data copy?)then(yes)
+:publish data package;
+if(data lost or broken)then(yes)
+:get copy to use;
+stop
+endif
+endif
+endif
+stop

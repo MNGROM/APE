@@ -1,0 +1,62 @@
+@startuml
+
+start
+
+:TCMS operates on preemptive RTOS;
+:Manages safety-critical functions with deterministic scheduling;
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Doors;
+fork again
+  :Diagnostics;
+end fork
+
+if (Detect train entry signal?) then (yes)
+  :Initiate multi-stage verification sequence within high-priority task;
+  :Confirm platform doors are closed;
+  :Verify no obstructions are present via platform area sensors;
+  :Validate train's arrival time against scheduled window;
+  :Cross-check train number with dispatch plan via CRC-secured CAN message;
+  :Perform platform door sensor diagnostic;
+
+  if (All checks pass?) then (yes)
+    :Issue platform door open command;
+    :Trigger platform broadcast service;
+
+    fork
+      :Medium-priority task enters polling loop;
+      repeat
+      :Monitor door's status via protected ring buffer;
+      repeat while(Fully-open state confirmed) is(no)
+    fork again
+      :Under same priority-based scheduler;
+      :Coordinated task dispatches train door open command;
+      :Activate passenger guidance instructions;
+    fork again
+      repeat
+      :Check train door status;
+      repeat while(Safe opening verified) is(no)
+    end fork
+  else (no)
+  end if
+
+else (no)
+end if
+
+fork
+  :Dedicated watchdog task monitors for timing faults;
+fork again
+  :Telemetry logged to non-volatile memory with mutex-protected access;
+fork again
+  :Poll PMIC/BMS to ensure power integrity;
+fork again
+  :All operations adhere to fail-safe design principles under EN 50128/EN 50129;
+  :Graceful degradation;
+end fork
+
+stop
+
+@enduml

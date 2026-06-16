@@ -1,0 +1,59 @@
+start
+if (fast charging is active) then
+  :enter power-up state;
+  if (high-voltage shutdown request=2) then(yes)
+    :enter state 186;
+    switch(condition judgement)
+    case (ignition switch=2 and BMS counter=2)
+      :stay in state 186;
+      if (fast charging is inactive) then(yes)
+        while(after 2.2s timeout?)
+        endwhile
+        :switch to state 12;
+      else if(fast charging is inactive and BMS counter=1)then(yes)
+        :switch to state 12;
+      endif
+      if(ignition switch=0)then(yes)
+        :shutdown;
+        stop
+      endif
+    case(ignition switch=2 and onboard charger command=0)
+      :stay in state 186;
+      if (onboard charger command=4) then(yes)
+        :switch to state 12;
+        if(ignition switch=0 and fast charging is disabled)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    case(remote mode is enabled and front MCU initialization=0)
+      :stay in state 186;
+      if (fast charging is inactive) then(yes)
+        :switch to state 12;
+        if(remote mode is disabled)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    case(pet mode request is received and front MCU initialization=0)
+      :stay in state 186;
+      if (fast charging is inactive) then(yes)
+        :switch to state 12;
+        if(pet mode ends)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    case(battery SOC=20 and front MCU initialization=0)
+      :stay in state 186;
+      if (fast charging is inactive) then(yes)
+        :switch to state 12;
+        if(battery SOC=80 and DCDC state=3)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    endswitch
+  endif
+endif
+end

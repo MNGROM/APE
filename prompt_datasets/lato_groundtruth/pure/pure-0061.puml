@@ -1,0 +1,37 @@
+start
+
+:Open KeePass;
+
+:Information can be input;
+fork
+:Password;
+fork again
+:User name;
+fork again
+:URL;
+fork again
+:Word of notes;
+fork again
+:Title;
+fork again
+:Group;
+end fork
+
+switch(Input)
+case(Existing)
+:List of data related are appeared;
+case(Two or more words)
+:Nothing appears;
+case(No input)
+:Nothing appears;
+case(Part or one character)
+ if(Found?) then(yes)
+ :List of data related are appeared;
+ else(no)
+ :Nothing appears;
+ endif
+case(Not related input)
+:Nothing appears;
+endswitch
+
+stop

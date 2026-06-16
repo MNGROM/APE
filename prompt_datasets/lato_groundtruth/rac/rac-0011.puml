@@ -1,0 +1,51 @@
+start
+if (slow charging is active) then
+  :enter power-up mode;
+  if (AC charging system fault=1) then
+    :switch to state 127;
+    if(recharge demand=1 and front MCU initialization state=0)then(yes)
+      :switch to state 82;
+      if(slow charging is inactive)then(yes)
+        :shutdown;
+        stop
+      endif
+    endif
+  else if (high-voltage shutdown request charging/discharging is 2) then
+    :switch to state 126;
+    if(recharge demand=1 and front MCU low-voltage shutdown flag=0)then(yes)
+      :switch to state 127;
+      if(front MCU low-voltage flag=1 or timeout 2.2s occurs)then(yes)
+        :switch to state 82;
+        if(slow charging is inactive)then(yes)
+         :shutdown;
+         stop
+        endif
+      endif
+     endif
+  else if(high-voltage shutdown request charging/discharging is 2 and BMS counter=2)then
+    :switch to state 126;
+    if(recharge demand=1 and front MCU initialization state=0)then(yes)
+      :switch to state 127;
+      if(BMS counter=0 or timeout 2.2s occurs)then(yes)
+        :switch to state 82;
+        if(slow charging is inactive)then(yes)
+         :shutdown;
+         stop
+        endif
+      endif
+    endif
+  endif
+else if(slow charging is active and charging/discharging power-up readiness=3)then
+  :switch to state 105;
+  if(AC discharge system fault=1)then(yes)
+    :switch to state 127;
+    if(recharge demand =1 and AC discharge system no fault)then(yes)
+      :switch to state 82;
+      if(slow charging is inactive)then(yes)
+        :shutdown;
+        stop
+      endif
+    endif
+  endif
+endif
+end

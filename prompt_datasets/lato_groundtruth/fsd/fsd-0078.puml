@@ -1,0 +1,58 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within hard real-time RTOS;
+fork
+  :Govern multi-zone PWM fans;
+fork again
+  :Govern liquid-cooling pump loops;
+end fork
+
+:Primary task scheduled with high priority;
+:Continuously monitor via protected sensor fusion thread;
+fork
+:Equipment temperature;
+fork again
+:Rail voltage;
+end fork
+
+if (Either parameter > defined threshold?) then (yes)
+  :Initiate concurrent mitigation tasks;
+  :Managed through;
+  fork
+  :Priority queues;
+  fork again
+  :Mutex-protected shared resources;
+  end fork
+
+  fork
+    :Power management routine;
+    if (Detect critical battery state from BMS/abnormal power consumption?) then (yes)
+      :Engage exponential backoff retry logic with PMIC for power optimization;
+    else (no)
+    end if
+  fork again
+    :Communications handler;
+    if (Signal insufficient?) then (yes)
+      :Attempt network signal enhancement;
+    else (no)
+    end if
+    :Secure critical commands with CRC checks over CAN bus;
+  end fork
+end if
+
+fork
+:Lower-priority periodic task runs sensor calibration;
+fork again
+if (Out-of-range readings?) then (yes)
+  :Switch to redundant sensors;
+  :Invoke controlled, state-based cool-down sequence managed by FADEC;
+else (no)
+end if
+end fork
+:Ensure system safety;
+
+stop
+
+@enduml

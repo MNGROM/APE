@@ -1,0 +1,57 @@
+@startuml
+
+start
+
+:Embedded control system architected around deterministic finite-state machine;
+:Orchestrate;
+fork
+:High-priority ISRs;
+fork again
+:Lower-priority deferred tasks managed by RTOS;
+end fork
+
+:Receive signal;
+:Perform multi-stage validation check against configurable thresholds for;
+fork
+  :Signal strength;
+fork again
+  :Frequency;
+fork again
+  :Source authorization via secure handshake;
+fork again
+  :Uplink integrity;
+fork again
+  :Protocol compliance;
+fork again
+  :Processing latency;
+end fork
+
+if (All validation criteria met?) then (yes)
+  :Initiate parallel processing mode;
+  fork
+    :RTOS task continuously samples external environmental parameters via ring buffer;
+  fork again
+    :Watchdog-monitored task cyclically verifies device health status;
+  end fork
+
+  if(Any fault detection?) then(yes)
+   :Terminate all conditional state branches;
+  else(no)
+  end if
+
+  :System concurrency managed through;
+  fork
+   :Mutex-protected shared resources;
+  fork again
+   :Priority queues;
+  end fork
+
+  :Timer-driven periodic loops handle regular sampling;
+  :Log critical events to non-volatile memory for post-incident analysis;
+
+else (no)
+end if
+
+stop
+
+@enduml

@@ -1,0 +1,18 @@
+start
+
+:Load Master Data;
+:Load Transaction Data;
+
+:Dene a query;
+
+note right
+  Basis for a Web application
+  Allow ad-hoc analysis of Web data
+end note
+
+:Create Web Applications;
+:Analyze data;
+:Add comments to data;
+:Broadcast the data by E-mail to other employees;
+
+stop

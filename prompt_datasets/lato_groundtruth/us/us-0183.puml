@@ -1,0 +1,10 @@
+start
+:indicate names related to the collection;
+fork
+:check creator;
+fork again
+:check source;
+fork again
+:check subject;
+fork end
+stop

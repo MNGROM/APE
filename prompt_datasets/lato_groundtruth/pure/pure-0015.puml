@@ -1,0 +1,41 @@
+start
+
+:Power up Cab radio;
+:Initiate operations;
+
+fork
+:Automatic self-testing;
+fork again
+:Automatic pre-set loudspeaker volume selection;
+fork again
+:Other on-train system registration;
+fork again
+:Record all self_tests failures;
+fork again
+
+if(Connect to last registered mobile network?) then(yes)
+ if(Succeed?) then(yes)
+ :Display network name;
+ :Give audible indication;
+ :Can receive calls by;
+  fork
+  :Cab radio telephone number;
+  fork again
+  :Engine number;
+  fork again
+  :Appropriate group numbers;
+  end fork
+ else(no)
+ :Provide audible and visual indication;
+ :Initiate manual network selection procedure;
+ endif
+else(no)
+endif
+
+end fork
+
+:Power down Cab radio;
+:Disconnection from mobile network;
+:Retain any  stored numbers;
+
+stop

@@ -1,0 +1,18 @@
+start
+
+:Transmission Failure;
+
+switch(National Value reactions)
+case(Option 1)
+:ETCS trainborne equipment command emergency brake;
+:Failure be shown on DMI;
+case(Option 2)
+:ETCS trainborne equipment command full service brake;
+:Failure be shown on DMI;
+case(Option 3)
+:Train proceed to authority end;
+:Remain indication on DM;
+:Inform driver about transmission loss;
+endswitch
+
+stop

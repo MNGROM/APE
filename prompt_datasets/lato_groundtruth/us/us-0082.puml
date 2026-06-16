@@ -1,0 +1,7 @@
+start
+:Start two-minute countdown timer;
+if (talk long enough?) then (yes)
+:Limit time spent discussing estimates;
+else (no)
+endif
+stop

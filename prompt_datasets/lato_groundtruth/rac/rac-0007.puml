@@ -1,0 +1,51 @@
+start
+if (slow charging is active) then(yes)
+  :enter power-up mode;
+  if (high-voltage shutdown request charging/discharging flag is 2) then(yes)
+    :switch to state 115;
+    if (flag becomes 0 and CP duty cycle is 85%) then(yes)
+      :switch to state 126;
+      if (BMS self-check counter is 1) then(yes)
+        :switch to state 130;
+        if (slow charging is inactive) then(yes)
+          :shutdown;
+          stop
+        endif
+      else if (battery pre-heating is required) then
+        :switch to state 130;
+        if (slow charging is inactive) then(yes)
+         :shutdown;
+         stop
+        endif
+      endif
+  
+    else if(flag becomes 0 and BMS self-check counter is 1)then
+    :switch to state 126;
+      if (CP duty cycle is 85% and CP amplitude is 3000) then(yes)
+        :switch to state 130;
+        if (slow charging is inactive) then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    endif
+
+  else if(central control command is 2 and vehicle is not in charging/discharging mode)then
+    :switch to state 110;
+    if (flag becomes 2) then(yes)
+      :switch to state 115;
+      if(flag becomes 0 and CP duty cycle is 88%)then(yes)
+        :switch to state 126;
+        if(central control command is 2 and charging state is 2)then(yes)
+          :switch to state 130;
+          if (slow charging is inactive) then(yes)
+            :shutdown;
+            stop
+          endif
+        endif  
+      endif
+    endif
+    
+  endif
+endif
+end

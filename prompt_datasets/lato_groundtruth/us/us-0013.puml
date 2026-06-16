@@ -1,0 +1,8 @@
+start
+:Request PreApplication Assistance;
+split
+:Receive a response to a request for a meeting;
+split again
+:Receive result of preapplication assistance;
+split end
+stop

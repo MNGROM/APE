@@ -1,0 +1,34 @@
+start
+
+:Go to "Administration Options" window;
+:Click "Manage Syetems";
+
+:List is displayed;
+fork
+:Host names;
+fork again
+:Port numbers;
+fork again
+:Display names;
+fork again
+:Descriptions;
+end fork
+
+:Click "Add";
+:"Add System" dialog box appears;
+
+:Add information;
+fork
+:Host name;
+fork again
+:Port number;
+fork again
+:Display name;
+fork again
+:Description;
+end fork
+
+:Click "Add";
+:Host system is added;
+
+stop

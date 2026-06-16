@@ -1,0 +1,60 @@
+@startuml
+
+start
+
+:Power management subsystem leverages PMIC and BMS;
+:Verify critical preconditions;
+fork
+  :Stable external power;
+fork again
+  :Sufficient battery charge;
+fork again
+  :Successful device self-test;
+fork again
+  :Established network link;
+fork again
+  :Calibrated sensors;
+fork again
+  :Adequate data storage;
+fork again
+  :Valid user permissions;
+end fork
+
+:Transition to normal operational mode;
+
+:Under RTOS control;
+fork
+:Manage high-priority tasks via;
+fork
+:Mutex-protected ring buffers;
+fork again
+:Priority queues;
+end fork
+
+:High-frequency timer ISR triggers sensor sampling;
+:Write acquired data to ring buffer;
+
+:Dedicated collection task scheduled by RTOS;
+fork
+  :Package data;
+  :Append CRC for integrity;
+fork again
+  :Concurrent transmission task;
+  :Manage uplink over CAN bus;
+  :Employ exponential backoff in case of network faults;
+end fork
+
+fork again
+:Lower-priority monitoring task serviced by RTOS scheduler;
+:Cyclically poll hardware module status via FADEC;
+:Log system health to non-volatile storage;
+:Watchdog task ensures overall system liveness;
+end fork
+
+:Debounce all critical events before logging;
+:Recovery procedures follow staged backoff with verification cycles;
+:Ensure robust fault containment;
+
+stop
+
+@enduml

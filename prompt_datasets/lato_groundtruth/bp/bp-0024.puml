@@ -1,0 +1,37 @@
+start
+
+:Go to "Promote" window;
+:Click "Mappings";
+
+:Click "Edit Mappings";
+:Tabs are displayed;
+fork
+:Connection Mappings;
+fork again
+:QaaWS Mappings;
+fork again
+:Crystal Report Mappings;
+fork again
+:Federation Mappings;
+end fork
+
+:Click the Connection Mappings tab;
+:Source connections and database types are displayed;
+
+if(Edit properties of a source connection) then(yes)
+:Select the source connection;
+:Click "Edit Connection Properties";
+:"Edit Connection Properties" tab appears;
+:List of properties and their values are displayed;
+:Modify the values per your requirements;
+:Click "Apply";
+:"Connection Mappings" tab appears;
+else(no)
+endif
+
+:Open Destination Connection drop-down list;
+:Select a destination connection;
+
+:Click "Apply";
+
+stop

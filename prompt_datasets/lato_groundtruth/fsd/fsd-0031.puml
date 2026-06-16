@@ -1,0 +1,47 @@
+@startuml
+
+start
+
+:Supervisory network stack initializes;
+:Validate external environmental conditions meet operating specifications;
+:Check device interface connectivity;
+
+if (Prerequisites satisfied?) then (yes)
+  :Verify sensor data validity via CRC check;
+  :Initialize data acquisition module;
+
+  :Under fixed-priority preemptive model;
+  :Deterministic, multi-threaded scheduler within RTOS launches concurrent tasks;
+
+  fork
+    :High-priority periodic task;
+    :Continuous device status monitoring managed by watchdog;
+  fork again
+    :Parallel threads for ring buffer management;
+  fork again
+    :Parallel threads for network communication;
+  end fork
+
+  :Network module initialization;
+  :Spawn second set of deterministic tasks;
+  fork
+    :Timer-driven telemetry loop;
+    :Dispatch data to cloud server via CAN bus/similar protocol;
+    :Bounded retries and backoff on transmission faults;
+  fork again
+    :Mutex-protected priority queue;
+    :Handle concurrent parsing and publishing;
+  fork again
+    :Dedicated ISR mirrors critical status to central FADEC or BMS;
+  end fork
+
+  :Terminate all tasks gracefully;
+  :Modules closed by PMIC in controlled sequence;
+  :System enters safe standby state;
+
+else (no)
+end if
+
+stop
+
+@enduml

@@ -1,0 +1,22 @@
+start
+
+if(Dismiss current window?) then(yes)
+if(Initial window?) then(yes)
+:Not allowed;
+else(no)
+:Re-establish previous window as current window;
+:Make new selection;
+endif
+else(no)
+endif
+
+if(Print window image?) then(yes)
+:Click “Print”;
+:Display window listing possible items to print;
+:Select diagnostic information window;
+:Click “OK” ;
+:Print window;
+else(no)
+endif
+
+stop

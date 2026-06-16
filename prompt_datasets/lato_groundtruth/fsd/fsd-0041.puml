@@ -1,0 +1,52 @@
+@startuml
+
+start
+
+:Power management subsystem initialization;
+:Perform sequential power-on self-test;
+:Interrogate PMIC and BMS for power rail abnormalities;
+:Validate within expected operational envelope;
+fork
+:Network link;
+fork again
+:Sensor data;
+end fork
+
+if (All checks pass?) then (yes)
+  :Spawn concurrent tasks within RTOS environment;
+  fork
+    :High-priority main thread scheduled via priority queue;
+    :Enter continuous loop;
+    :Monitor device operational state;
+  fork again
+    :Lower-priority background thread;
+    :Asynchronously update monitoring data;
+    :Protected by mutexes for shared resource access;
+  fork again
+    :Health management task executes periodic device diagnostics;
+  fork again
+    :Hardware watchdog timer supervises all tasks;
+  end fork
+
+else (no)
+end if
+
+  :Structured audit incorporates with CRC for integrity;
+  :Write to non-blocking ring buffer;
+  :Asynchronously flush to non-volatile storage within managed I/O budget;
+
+fork
+  :Critical sampling driven by timer ISRs;
+  :Debounce events prior to logging;
+fork again
+  if (Fault detected?) then (yes)
+    :Trigger FADEC-like recovery policy;
+      :Implement exponential backoff with verification cycles before attempting full system reset;
+  else (no)
+  end if
+
+end fork
+
+stop
+
+@enduml

@@ -1,0 +1,39 @@
+start
+
+:Sort revenue data;
+if (Click arrows in Revenue eld?) then (yes)
+  :Sort increasing or decreasing;
+else (no)
+  :Click alternative mouse button;
+  :Open context menu;
+  :Choose "Sort Increasing" or "Sort Decreasing";
+endif
+
+:Internet channel is the greatest;
+
+if(Analyze differences for months?) then(yes)
+:Open dropdown box Calendar Year/Month;
+:Select 08.2007;
+:Select 07.2007;
+:See increased data;
+:Internet shop marketing campaign was successful;
+
+:Open dropdown box Calendar Year/Month;
+:Select 09.2007;
+:Filter the data back to September;
+
+else(no)
+endif
+
+if(Add a comment?) then(yes)
+:Go to subtotal of the distribution channel Internet;
+:Open context menu;
+:Choose "Documents Create New Comment";
+
+:Enter name and description;
+:Enter a text;
+:Choose "Save";
+else(no)
+endif
+
+stop

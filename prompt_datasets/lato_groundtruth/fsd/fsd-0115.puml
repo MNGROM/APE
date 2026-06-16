@@ -1,0 +1,47 @@
+@startuml
+start
+:Power-on reset;
+:verify firmware signature;
+if (valid?) then (yes)
+    :Initialize clocks and buses;
+    :Select self-test/calibration targets;
+    repeat
+      fork
+        :Calibrate IMU via I2C;
+        if (IMU OK?) then (yes)
+          :Record result;
+        else (no)
+          :Timeout / retry handling;
+        endif
+      fork again
+        :Calibrate temperature sensor (ADC);
+        if (Temp sensor OK?) then (yes)
+          :Record result;
+        else (no)
+          :Timeout / retry handling;
+        endif
+      fork again
+        :Verify storage CRC;
+        if (CRC OK?) then (yes)
+          :Record result;
+        else (no)
+          :Fallback to safe partition;
+        endif
+      end fork
+      if (Failure count > 3) then (yes)
+        :Enter Safe Mode;
+        :Buzzer/LED alarm;
+        stop
+      else (no)
+        :Continue initialization;
+      endif
+    repeat while (At least two subsystems successful)
+    :Enable application services;
+    :Persist boot report;
+else (no)
+    :Blink error LED;
+    stop
+endif
+:Start watchdog and periodic self-test;
+stop
+@enduml

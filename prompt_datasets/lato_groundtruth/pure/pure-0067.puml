@@ -1,0 +1,23 @@
+start
+
+:Open KeePass;
+:Select to view/edit an existing entry;
+:Change fields as needed;
+
+if(Change password field?) then(yes)
+:Repeat password field is not identical;
+:“the repeated password must be identical with the password” appears;
+else(no)
+endif
+
+switch(Selection)
+case(OK)
+:Modified entry is saved;
+case(Help)
+:Help file/URL field features/Autotype is opened;
+case(Cancel)
+:Main window opens;
+:Selected entry is not modified;
+endswitch
+
+stop

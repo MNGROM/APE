@@ -1,0 +1,55 @@
+@startuml
+
+start
+
+:Embedded communications layer validates incoming CAN frames by;
+fork
+:Check ID;
+fork again
+:Check DLC;
+fork again
+:Check CRC;
+end fork
+
+:Enqueue into lock-free, multi-producer ring buffers;
+:Subsequent processing;
+
+fork
+  :High-priority telemetry monitor task;
+  :Scheduled by RTOS and triggered by periodic timer interrupt;
+    :Execute control loop with bounded retries and exponential backoff strategy for fault recovery;
+
+fork again
+  :Power management task interfaces with BMS and PMIC;
+  :Monitor battery state;
+  if (Level < 20%?) then (yes)
+    :Check charging status;
+    if (Charging active?) then (yes)
+      repeat
+      :Monitor FADEC/equivalent system until completion;
+      repeat while(Charging complete) is(no)
+      :Notify user;
+    else (no)
+      :Initialize low-battery warning;
+      :Enter automatic power-saving mode;
+      repeat
+        :Issue user reminder every 30 seconds from timer-driven ISR;
+      repeat while (Charger connection detected?) is (no)
+      :Initialize charging process;
+      :Cancel low-battery warnings using mutex-protected command;
+      :Resume normal operation post-charge;
+    end if
+  else (no)
+  end if
+
+fork again
+  :Separate thread scans continuously for external device connections;
+
+fork again
+  :Back-pressure from serialization and parsing threads managed via priority queues;
+  :Ensure deterministic system behavior;
+end fork
+
+stop
+
+@enduml

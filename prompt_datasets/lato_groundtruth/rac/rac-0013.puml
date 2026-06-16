@@ -1,0 +1,67 @@
+start
+if (fast charging is active and BMS manual charging/discharging flag=0) then
+  :enter state 155;
+  switch(condtion judgement)
+  case(DCDC state=1)
+    :stay in state 155;
+    if(BMS-fast charger handshake flag=1)then(yes)
+      :switch to state 156;
+      if(DCDC state≠1 or 3s elapsed)then(yes)
+        :switch to state 157;
+        if(fast charging is inactive)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    endif
+  case(EAS state=1)
+    :stay in state 155;
+    if(BMS-fast charger handshake flag=1)then(yes)
+      :switch to state 156;
+      if(EAS state≠1 or 3s elapsed)then(yes)
+        :switch to state 157;
+        if(fast charging is inactive)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    endif
+  case(power battery current=6.1)
+    :stay in state 155;
+    if(BMS-fast charger handshake flag=1)then(yes)
+      :switch to state 156;
+      if(current<6.1 or 3s elapsed)then(yes)
+        :switch to state 157;
+        if(fast charging is inactive)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    endif
+  case(WTCH state=1)
+    :stay in state 155;
+    if(BMS-fast charger handshake flag=1)then(yes)
+      :switch to state 156;
+      if(WTCH state≠1)then(yes)
+        :switch to state 157;
+        if(fast charging is inactive)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    endif
+  case(WTCH state=3)
+    :stay in state 155;
+    if(BMS-fast charger handshake flag=1)then(yes)
+      :switch to state 156;
+      if(WTCH state≠1)then(yes)
+        :switch to state 157;
+        if(fast charging is inactive)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    endif
+  endswitch
+endif
+end

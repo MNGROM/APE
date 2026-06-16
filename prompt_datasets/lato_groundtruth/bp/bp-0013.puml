@@ -1,0 +1,29 @@
+start
+
+:Connect to source system;
+
+if(Have existing job?) then(no)
+:Create a new job; 
+else(yes)
+:copy existing job;
+endif
+
+:Add infoobjects;
+
+if (Promote all Dependencies?) then (yes)
+  :Use "Manage Dependencies";
+  :Open Type drop-down list;
+  :Select dependent want to promote;
+else(no)
+endif
+
+if (Source and the destination systems connected?) then (no)
+  :Export infoobjects with Output to BIAR file;
+  :Click Import BIAR tab;
+  :Infoobjects from the BIAR file are imported;
+else (yes)
+endif
+
+:Promote the job;
+
+stop

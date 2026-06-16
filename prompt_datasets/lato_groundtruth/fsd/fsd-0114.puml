@@ -1,0 +1,37 @@
+@startuml
+start
+:Swipe card for entrance;
+:verify user;
+if (valid?) then (yes)
+    :ON Lights;
+    :Activate Sensor;
+    :Set AC;
+    fork
+    :Check Temperature;
+    switch()
+    case (Hot)
+        :Close Blinds and Set Ac to High;
+    case (normal)
+        :Set AC to Medium;
+    case (Cloudy)
+        :OFF AC and open Blinds;
+    endswitch
+    fork again
+        :Activate Sensor;
+        :Detect Smoke;
+    if (detected?) then (yes)
+        fork
+           :Open Door;
+        fork again
+           :Generate Alarm;
+        end fork
+    else (no)
+    endif
+    :exit;
+    :Activate Sleep mode;
+    end fork
+    stop
+else (no)
+    :Rejected;
+    stop
+@enduml

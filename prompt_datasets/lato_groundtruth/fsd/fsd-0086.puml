@@ -1,0 +1,51 @@
+@startuml
+
+start
+
+:Embedded control platform implements safety-critical FSM;
+:Orchestrate;
+fork
+:High-priority ISRs;
+fork again
+:Lower-priority deferred RTOS tasks;
+fork again
+:Fail-safe policies;
+end fork
+
+if (Anomalous physiological data detected?) then (yes)
+  :Initiate dual-path verification sequence;
+  :Executed by concurrent prioritized tasks;
+
+  fork
+    :Primary task enters polling loop managed by timer interrupt;
+    repeat
+    :Confirm persistence of anomaly;
+    repeat while (Data normalizes?) is (no)
+    :Employ exponential backoff;
+    :Manage polling frequency;
+
+  fork again
+    :Secondary task performs two consecutive data integrity checks;
+    :Utilize CRC for accuracy and mutex-protected ring buffer;
+    :Access sensor data;
+  end fork
+
+  :Trigger second dual-path judgment;
+
+  fork
+    :Process executes two consecutive security verifications;
+  fork again
+    :Parallel process performs single confirmation of data processing efficacy;
+  end fork
+
+  :Synchronize verification results through priority queue;
+
+else (no)
+end if
+
+:Dedicated watchdog task monitors health of entire sequence;
+:Log all state transitions and verification results to non-volatile memory for audit;
+
+stop
+
+@enduml

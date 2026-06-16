@@ -1,0 +1,41 @@
+@startuml
+
+start
+
+:Power management subsystem governed by priority-based RTOS scheduler;
+:Continuously monitor voltage rails and battery state via PMIC and BMS;
+
+if (Remaining power < 20%?) then (yes)
+  :High-priority task initiates low-power mode entry sequence;
+  fork
+  :Check charging status;
+  if (Connected to supply?) then (no)
+    :Reduce CPU frequency;
+    :Disable non-essential peripherals;
+    :Execute power-saving strategy;
+  else (yes)
+  end if
+
+  fork again
+    :Background task with lower priority;
+    :Monitor for change in charging state;
+
+  if (Charging not detected within defined period?) then (yes)
+    :Escalate to deep power-saving mode;
+  else (no)
+  end if
+ end fork
+else (no)
+end if
+
+:Periodic telemetry monitor task driven by timer interrupts;
+:Sample system data;
+:Employ digital debouncing for events;
+:Log to ring buffer protected by mutex;
+:Implement fault recovery routine using staged exponential backoff;
+:Use CRC-verified commands;
+:Ensure bounded retries;
+
+stop
+
+@enduml

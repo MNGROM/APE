@@ -1,0 +1,68 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine on RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+end fork
+
+if (Detect external signal abnormality?) then (yes)
+  :Primary diagnostic;
+
+  if (Critical system failure?) then (yes)
+    :Spawn high-priority task;
+    fork
+      :Continuously monitor temperature sensor data via protected ring buffer;
+      if (Temperature > safety threshold?) then (yes)
+        :Terminate operation;
+        :Trigger alarm via system watchdog;
+      else (no)
+      end if
+    fork again
+      :Use mutex to access structured audit log;
+      :Correlate events;
+      :Locate fault source;
+    end fork
+
+  else (no)
+    :Initiate separate parallel process;
+    fork
+      :Validate communication module status;
+      :CRC check over CAN bus;
+    fork again
+      :Interface with PMIC/BMS;
+      :Detect power rail instability;
+    end fork
+
+    :Execute corresponding repair operations;
+    :May involve reset sequences with exponential backoff;
+  end if
+
+:Fault resolution confirmation;
+ fork
+  :Return to nominal system state;
+  :Generate complete fault report;
+ fork again
+  :Telemetry monitor driven by periodic timer ISR;
+  :Run with bounded retries;
+ fork again
+  :Sensor fusion and calibration routines execute at fixed intervals;
+  if (Out-of-range readings?) then (yes)
+    :Engage redundant sensors;
+    :Initiate controlled cool-down path;
+  else (no)
+  end if
+ end fork
+
+else (no)
+end if
+
+:All audit logs written to ring buffer;
+:Flush to non-volatile memory within strict I/O budget constraints;
+
+stop
+
+@enduml

@@ -1,0 +1,23 @@
+start
+
+:Open KeePass;
+:Select modify group/subgroup;
+
+if(Leave name field empty?) then(no)
+:Type new name;
+:Have option to select image;
+
+switch(Selection)
+case(OK)
+:Group/Subgroup changes name;
+:Return to database main window;
+case(Cancel)
+:Name remains the same;
+:Return to main window;
+endswitch
+
+else(yes)
+:“Add a name for the group/subgroup” appears;
+endif
+
+stop

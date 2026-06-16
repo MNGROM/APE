@@ -1,0 +1,43 @@
+start
+
+:Go to "Promote" window;
+:Click "Mappings";
+
+:Click "Edit Mappings";
+:Tabs are displayed;
+fork
+:Connection Mappings;
+fork again
+:QaaWS Mappings;
+fork again
+:Crystal Report Mappings;
+fork again
+:Federation Mappings;
+end fork
+
+:Click "QaaWS Mappings";
+:Source URL and Query as a Web Service types are displayed;
+
+if(Edit properties of source URL?) then(yes)
+:Select source URL;
+:Click "Edit QaaWs Properties";
+:Edit QaaWS Propertiestab appears;
+:List of properties and their values are displayed;
+:Modify the values per your requirements;
+:Click "Apply";
+:QaaWS Mappings tab appears;
+:Destination field displays: Edited Source URL;
+else(no)
+endif
+
+:Open Destination URL drop-down list;
+:Select a destination URL;
+
+if(Reset modifications made to destination URL) then(yes)
+:Click the icon;
+else(no)
+endif
+
+:Click "Apply";
+
+stop

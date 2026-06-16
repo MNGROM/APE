@@ -1,0 +1,11 @@
+start
+
+:In the cockpit;
+switch(Select heading switch)
+case(Select)
+:Heading Hold becomes active mode;
+case(Deselect)
+:Active mode deactivates;
+endswitch
+
+stop

@@ -1,0 +1,47 @@
+@startuml
+
+start
+
+:Avionics stack (FMS/FADEC) executes on RTOS;
+
+fork
+:High-frequency ISR-driven sensor samples;
+fork again
+:Lower-priority worker tasks;
+end fork
+
+:Realize control law computations;
+
+:Dedicated telemetry monitor operates within periodic timer-interrupt loop;
+:Perform multi-stage validation of flight data;
+
+:Source legitimacy;
+:Format correctness;
+:Data completeness;
+:Logical consistency;
+
+if (Detect anomaly?) then (yes)
+  :Initiate root-cause investigation;
+  if (Fail?) then (yes)
+    :Log structured audit event to ring buffer;
+    :Trigger automatic data retransmission mechanism;
+    repeat
+    :Operations managed by priority-queued tasks;
+    :Watchdog-monitored supervisor oversees retransmission and recovery processes;
+    repeat while(Successful completion) is(no)
+    :Employ exponential backoff strategy;
+    :Persistent communication faults;
+  else (no)
+  end if
+else (no)
+end if
+
+:All event traces adhere to DO-178C/DO-254 processes;
+:Critical anomalies activate fault-tolerant strategies;
+:Initiate prioritized data uplink to ground station via CRC-protected CAN bus;
+
+:Flush ring buffer asynchronously to non-volatile memory within I/O budget constraints managed by PMIC/BMS;
+
+stop
+
+@enduml

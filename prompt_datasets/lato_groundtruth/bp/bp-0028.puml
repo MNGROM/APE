@@ -1,0 +1,54 @@
+start
+
+:Log in;
+:Create a new job;
+if(More information?) then (yes)
+  :See "Creating a New Job";
+  note right: Page 372
+else (no)
+endif
+
+:Open drop-lists;
+:Select "Output to a BIAR file";
+:Click "Create";
+
+:Click "Add objects";
+:Infoobjects are added;
+
+if(Other operations?) then(yes)
+
+switch(Option)
+  case("Manage Dependencies" option)
+    :Manage dependencies;
+  case(Click "Promote")
+    :"Promote - Job Name" screen appears;
+endswitch
+
+else (no)
+endif
+
+:Click "Export";
+:BIAR file is created;
+
+if(Save?) then(yes)
+
+:Open "Promote - Job Name"screen;
+:Click "Biar File Destination";
+:"Biar File Destination" pane appears;
+
+switch(Location)
+  case(File System)
+    :Select "File System";
+    :Click "Export";
+    :BIAR file is exported to a file system;
+  case(FTP)
+    :Select "FTP";
+    :Enter Host, Port, Username, \nPassword, Directory, Filename;
+    :Click "Export";
+    :BIAR file is exported to an FTP location;
+endswitch
+
+else (no)
+endif
+
+stop

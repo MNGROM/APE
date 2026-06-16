@@ -1,0 +1,61 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within hard real-time RTOS;
+fork
+  :Govern multi-zone PWM fans;
+fork again
+  :Govern liquid-cooling solenoids;
+end fork
+
+fork
+if (Energy demand > preset threshold and power load unbalanced?) then (yes)
+  :Initiate prioritized adjustment of high-energy-consuming equipment via PMIC and BMS;
+else(no)
+end if
+
+fork again
+  if (Temperature sensors report out-of-range ambient reading?) then (yes)
+    :Dynamically optimize refrigeration equipment operating curve;
+  else (no)
+  end if
+end fork
+
+  if (Multiple concurrent fault signals from parameter monitoring units?) then (yes)
+    :Handle via protected ring buffer;
+    :Spawn high-priority task;
+    :Execute energy distribution optimization algorithm;
+
+    repeat
+      :Perform iterative load balancing calculations;
+      :Execute dynamic power adjustments;
+      :Managed by watchdog-timed loop with exponential backoff;
+    repeat while(Loads reach optimal state) is(no)
+  else (no)
+  end if
+
+ fork
+  :Synchronize;
+  fork
+  :FADEC-managed charging/discharging strategy;
+  fork again
+  :Backup power rail switching logic;
+  end fork
+ fork again
+  :Cycle capacity monitoring and release plan for energy buffer;
+ end fork
+
+fork
+:Periodic sensor fusion and calibration routines execute;
+fork again
+if (Persistent out-of-range readings?) then (yes)
+  :Trigger hardware redundancy;
+  :Initiate controlled failsafe cool-down path;
+else (no)
+end if
+end fork
+
+stop
+
+@enduml

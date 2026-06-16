@@ -1,0 +1,22 @@
+start
+
+:See View Inventory;
+:Navigate to Category;
+
+:Display Edit Category button;
+:Click Edit Category button;
+:Display Category type screen;
+
+if(Unique Item?) then(yes)
+:Display Unique Item screen;
+else(no)
+:Display Stock Item screen;
+endif
+
+:Edit Category data;
+:System validates data;
+
+:System updates information;
+:Back to Category screen;
+
+stop

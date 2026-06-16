@@ -1,0 +1,30 @@
+start
+
+:Choose "Data sources";
+:Open the toolbar on the right;
+:Choose "Choose Source System";
+
+:Choose the menu option File;
+:Select source system with technical name PC_FILE;
+:The hierarchical tree is displayed;
+
+note right
+  Data sources are structured semantically
+  by application component
+end note
+
+:Open context menu;
+:Select "Create application component...";
+
+:Enter technical name and description;
+note right:Group Data sources
+
+:Open context menu;
+:Choose "Create Data source";
+
+:Click "Transfer";
+:The Data source maintenance screen appears;
+:Find the tab page General Info;
+:Enter the required data;
+
+stop

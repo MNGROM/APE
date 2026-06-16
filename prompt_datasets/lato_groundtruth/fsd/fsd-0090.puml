@@ -1,0 +1,60 @@
+@startuml
+
+start
+
+:System initialization;
+:Power management subsystem governed by RTOS;
+:Upon system initialization;
+:Query PMIC and BMS;
+:Assess power state;
+
+if (Within nominal limits?) then (yes)
+  :High-priority task via;
+
+  fork
+    :Timer-driven interrupts;
+  fork again
+    :Calibration routine iterates within control loop;
+    repeat
+      :Initiate sensor data acquisition;
+    repeat while (Sensor accuracy meets predefined threshold?) is (no)
+  end fork
+
+  :Successful calibration;
+  :Verify communication module status;
+
+  :Spawn concurrent tasks managed by priority-based scheduler;
+  fork
+    :Network link verification;
+    :Check signal strength and stability;
+  fork again
+    :Initialize secure data uplink protocol;
+    :Incorporate CRC checks on CAN bus/similar interface;
+  end fork
+
+  :All critical operations;
+  :Include event debouncing and logging to ring buffer;
+  :Protected by mutexes where shared resources are accessed;
+
+  fork
+  :Dedicated watchdog task monitors system health;
+  fork again
+  :Recovery procedures employ;
+   fork
+    :Exponential backoff;
+   fork again
+    :Staged verification cycles;
+   end fork
+  end fork
+
+  if (Confirmed all operational?) then (yes)
+    :Enter normal running state;
+  else (no)
+  end if
+
+else (no)
+end if
+
+stop
+
+@enduml

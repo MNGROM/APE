@@ -1,0 +1,44 @@
+start
+
+:Start diagnostic processing; 
+if(Stop?) then(yes)
+:Open main menu “Status”;
+:Select “Stop Diagnostics” menu item;
+
+if(Authenticated as administrator user?) then(no)
+:Include to validate privileges;
+else(yes)
+:Request confirmation;
+:Stop diagnostic processing;
+
+if(Responds positively?) then(yes)
+:Stop diagnostic processing;
+:Indicates stopped condition;
+else(no)
+:Perform no function;
+:User remains authenticated;
+endif
+endif
+else(no)
+endif
+
+if(Select “Exit” from “File”?) then(yes)
+ if(Diagnostic processing is active?) then(no)
+  :Tool exits;
+ else(yes)
+  if(User is validated?) then(no)
+  :Verify privilege to stop processing;
+  else(yes)
+  endif
+ endif
+else(no)
+endif
+
+if(Permitted to stop processing?) then(yes)
+:Stop diagnostic processing;
+:Exit;
+else(no)
+:Perform no function;
+endif
+
+stop

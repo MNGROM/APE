@@ -1,0 +1,22 @@
+start
+
+:Open KeePass;
+:Select to add new group/subgroup;
+
+if(Leave name field empty?) then(no)
+:Type name;
+:Have option to select image;
+
+switch(Selection)
+case(OK)
+:Group/Subgroup is created;
+:Return to database main window;
+case(Cancel)
+:Return to main window;
+endswitch
+
+else(yes)
+:“Add a name for the group/subgroup” appears;
+endif
+
+stop

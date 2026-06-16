@@ -1,0 +1,49 @@
+@startuml
+
+start
+
+:Power management subsystem architected as a set of concurrent RTOS tasks;
+:Continuously monitor all power rails via PMIC and BMS;
+
+if (Load > rated capacity?) then (yes)
+  :Initialize multi-channel parallel processing routine;
+
+  fork
+    :Check main power rail state;
+    if (Voltage fluctuations > defined threshold?) then (yes)
+      :Enter iterative monitoring mode;
+      repeat
+        :Sample rail via timer-driven ADC within dedicated ISR;
+      repeat while (Stability confirmed?) is (no)
+    else (no)
+    end if
+  fork again
+    :High-priority task managed by priority queue;
+    :Execute backup power switching logic;
+    :Acquire mutex;
+    :Assess backup power state from BMS over CRC-protected CAN bus;
+    if (Sufficient?) then (yes)
+      :Command switch to backup rail;
+    else (no)
+      :Initialize generator power rail via FADEC;
+    end if
+    :Re-verify energy supply status;
+    if (Stability restored?) then (yes)
+      :Conclude process;
+    else (no)
+      :Continue iterative detection with exponential backoff algorithm;
+    end if
+  end fork
+
+else (no)
+end if
+
+:Telemetry monitor task woken by periodic timer interrupts;
+:Run in continuous loop;
+:Log debounced events to ring buffer;
+:Manage fault recovery via staged backoff and verification cycles;
+:Hardware watchdog supervises entire process;
+
+stop
+
+@enduml

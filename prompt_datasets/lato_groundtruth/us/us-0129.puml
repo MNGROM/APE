@@ -1,0 +1,10 @@
+start
+:execute workflow;
+split
+:Get the details of the workflow plan;
+split again
+:Get the execution history;
+split again
+:Get results recorded in Neurohub;
+end split
+stop

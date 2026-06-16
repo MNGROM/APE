@@ -1,0 +1,37 @@
+@startuml
+start
+:Read RFID/NFC card;
+:verify credential;
+if (valid?) then (yes)
+    :Turn ON Status LED;
+    :Enable Relays;
+    :Start Fan Controller;
+    fork
+    :Read Temperature;
+    switch()
+    case (Hot)
+        :Set Fan PWM High;
+    case (Normal)
+        :Set Fan PWM Medium;
+    case (Cold)
+        :Set Fan OFF/Low;
+    endswitch
+    fork again
+        :Activate Safety Sensor;
+        :Detect Smoke/Gas;
+    if (detected?) then (yes)
+        fork
+           :Unlock Door Relay;
+        fork again
+           :Trigger Buzzer Alarm;
+        end fork
+    else (no)
+    endif
+    :exit;
+    :Enter Low-Power Sleep;
+    end fork
+    stop
+else (no)
+    :Access Denied;
+    stop
+@enduml

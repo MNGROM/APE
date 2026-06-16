@@ -1,0 +1,69 @@
+@startuml
+
+start
+
+:Thermal management controller implements as state machine on RTOS;
+:Receive vehicle start signal from PMIC;
+:Initialize;
+
+:Boot sequence validates;
+fork
+:Battery state-of-charge via BMS;
+fork again
+:Engine temperature;
+end fork
+
+if (Both within safe thresholds?) then (yes)
+  :Initialize engine preheating program;
+  :Verify fuel system pressure;
+  if (Successful validation?) then (yes)
+    :FADEC initiates engine start;
+  else (no)
+  end if
+else (no)
+end if
+
+fork
+:High-priority task managed by RTOS scheduler;
+:Continuously monitor engine speed and oil pressure via protected ring buffer;
+if (Critical anomaly?) then (yes)
+  :Trigger immediate ISR;
+  :Set system alarm;
+else (no)
+end if
+
+fork again
+:Medium-priority periodic task via timer interrupts;
+:Poll emission system sensors over CAN bus;
+:Ensure compliance with pollutant standards;
+
+fork again
+:Lower-priority tasks manage non-critical functions;
+  fork
+    :Periodic software updates for infotainment system;
+  fork again
+    :Monitor cabin air quality;
+    :Adjust climate control;
+  end fork
+end fork
+
+:Sensor fusion and calibration routines execute in fixed-period loops;
+ if (Out-of-range readings?) then (yes)
+  :Engage redundant sensors;
+  :Initiate controlled cool-down sequence;
+ else (no)
+ end if
+
+:Dedicated timer-driven telemetry monitor;
+:Implement exponential backoff for communication faults;
+if (Successful data collection?) then (yes)
+  :Assemble final vehicle status report protected by mutex;
+  :Transmit to cloud;
+  else (no)
+  end if
+
+:Watchdog timer ensures liveness;
+
+stop
+
+@enduml

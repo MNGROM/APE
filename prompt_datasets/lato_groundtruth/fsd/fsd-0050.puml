@@ -1,0 +1,69 @@
+@startuml
+
+start
+
+:Thermal management controller implemented as deterministic state machine on RTOS;
+fork
+:Govern PWM fans;
+fork again
+:Govern liquid-cooling loops;
+end fork
+
+:Receive user-initiated air conditioner start command;
+if (Unit in powered-off state?) then (yes)
+  if (Indoor temperature > setpoint?) then (yes)
+    :Execute air conditioner startup sequence;
+
+    fork
+      :High-priority task synchronized via mutexes with BMS/PMIC interface;
+      :Continuously monitor compressor status and condenser temperature;
+       :Ensure operational parameters within safe bounds;
+
+    fork again
+      :Medium-priority periodic task scheduled by RTOS;
+      repeat
+      :Poll indoor temperature sensors;
+      repeat while(Setpoint achieved?) is(no)
+
+    fork again
+    :User commands for wind speed adjustment serviced via interrupt-driven priority queue;
+    :Enter control loop;
+    repeat
+    :Regulate PWM duty cycle;
+    repeat while(Actual fan speed matches requested value) is(no)
+    :Log telemetry data to ring buffer;
+
+    fork again
+    :Timer-driven telemetry monitor task runs;
+     fork
+       fork
+      :Bounded retries;
+       fork again
+      :Exponential backoff;
+       end fork
+      :For fault handling;
+     fork again
+      fork
+      :Sensor fusion;
+      fork again
+      :Calibration routines;
+       end fork
+      :Execute periodically;
+     fork again
+     if (Out-of-range readings?) then (yes)
+      :Trigger redundant sensor checks;
+      :Initiate controlled cool-down safety path;
+    else (no)
+    end if
+    end fork
+   end fork
+  else (no)
+  end if
+else (no)
+end if
+
+:Return to low-power standby state;
+
+stop
+
+@enduml

@@ -1,0 +1,60 @@
+@startuml
+
+start
+
+:Validate incoming CAN frames;
+fork
+  :Check ID;
+fork again
+  :Check DLC;
+fork again
+  :Check CRC;
+end fork
+
+:Place into lock-free ring buffer;
+:Decouple;
+:Validate;
+
+fork
+:Confirm adherence to security protocol;
+fork again
+:Adequate system resources;
+fork again
+:Non-full buffer;
+fork again
+:System state is not in low-power;
+fork again
+:System state is not fault condition as monitored by PMIC/BMS;
+end fork
+
+if (Successful validation?) then (yes)
+  :Spawn primary processing task;
+  fork
+    :Data cyclic parsing;
+    :Data format conversion;
+  fork again
+    :Write structured data to protected shared memory area;
+    :Access synchronized via a mutex;
+  end fork
+
+  if (Detect anomaly/Signal insufficiency?) then (yes)
+    :Initialize exception-handling task;
+    fork
+      :Perform cyclic error logging with exponential backoff for retries;
+    fork again
+      :Issue status feedback message to upper-layer application via priority queue;
+      :Manage back-pressure;
+    end fork
+  else (no)
+  end if
+
+  :Re-arm CAN ISR;
+  :Await subsequent frames;
+else (no)
+end if
+
+:Ensure continuous operation under watchdog supervision;
+
+stop
+
+@enduml

@@ -1,0 +1,70 @@
+@startuml
+
+start
+
+:Validate incoming CAN frames;
+fork
+  :Check ID;
+fork again
+  :Check DLC;
+fork again
+  :Check CRC;
+end fork
+:Place valid messages into lock-free ring buffer for consumer tasks;
+
+:Dedicated safety monitor task triggered by periodic timer ISR;
+:Sample ambient temperature sensor;
+
+if (Reading > predefined threshold?) then (yes)
+  :Employ debouncing routine;
+  repeat
+  :Consecutive confirmations to eliminate transient noise;
+  repeat while(Confirmation < 3) is(true)
+  :Initiate primary thermal mitigation sequence;
+  :Activate emergency cooling mechanism;
+  :Spawn concurrent, priority-based tasks;
+    fork
+      :Manage fan speed increase;
+    fork again
+      :Manage refrigerant release;
+    fork again
+      :Continuously monitoring temperature with dedicated watchdog;
+    end fork
+
+  if (Temperature continues to rise?) then (yes)
+    fork
+    :Trigger backup refrigeration unit;
+    :Enter cyclic control loop;
+    :Temperature detection and PID-based adjustment operations;
+    fork again
+      :High-priority task handles concurrent alarm signaling via CAN bus;
+      :Record structured audit log to ring buffer;
+    end fork
+
+    :Poll PMIC/BMS for power telemetry;
+
+    if (Backup system fails to arrest temperature rise?) then (yes)
+      :Declare critical fault;
+      :Invoke FADEC-like emergency shutdown procedure;
+      :Halt all active operations;
+      :Finalize comprehensive fault log with CRC;
+      :Enter safe standby state awaiting manual intervention;
+    else (no)
+    end if
+  else (no)
+  end if
+else(no)
+end if
+
+fork
+  :Lower-priority logger task governed by I/O budget manager;
+  :Asynchronously flush audit log ring buffer to non-volatile storage;
+fork again
+  :Manage back-pressure via priority queues;
+fork again
+  :Exponential backoff retry strategy for bounded resource contention;
+end fork
+
+stop
+
+@enduml

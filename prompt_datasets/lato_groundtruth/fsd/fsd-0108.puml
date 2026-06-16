@@ -1,0 +1,61 @@
+@startuml
+
+start
+
+:Embedded communications layer validates incoming CAN frames by;
+fork
+  :Check ID;
+fork again
+  :Check DLC;
+fork again
+  :Check CRC;
+end fork
+:Place into lock-free ring buffers;
+:Subsequent processing;
+
+:Supervisory control task scheduled by RTOS;
+:Manage device access requests from multiple sources;
+:Arbitrate requests based on priority scheme;
+:Continuously evaluate;
+fork
+  :Request priority;
+fork again
+:Current operational state of device;
+end fork
+
+if (Device idle?) then (yes)
+  :Service all pending requests from priority queue;
+else (no)
+  :Enter state where;
+  fork
+  :High-priority requests preempt current operation;
+  fork again
+  :Lower-priority requests managed via mutex-protected waiting loop with priority inheritance;
+  end fork
+end if
+
+fork
+  :Dynamic re-evaluation of queue order;
+  :In response to real-time device status changes;
+
+fork again
+  :Telemetry monitor implemented as high-priority periodic task driven by hardware timer;
+  :Sample system health data;
+  :Employ bounded retry strategy with exponential backoff for fault recovery;
+end fork
+
+fork
+  :Message parsing and serialization handled by separate threads;
+fork again
+  :Back-pressure managed through;
+  fork
+  :Prioritized message queues;
+  fork again
+  :Watchdog-monitored timeouts;
+  end fork
+end fork
+:Ensure system liveness;
+
+stop
+
+@enduml

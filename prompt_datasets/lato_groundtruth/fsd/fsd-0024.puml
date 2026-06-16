@@ -1,0 +1,70 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+end fork
+
+:Detect fault conditions;
+fork
+  :Abnormal current fluctuations;
+fork again
+  :Exceeded rail voltage thresholds;
+fork again
+  :Frequency anomalies;
+fork again
+  :Overtemperature;
+fork again
+  :Communication loss;
+fork again
+  :Hardware failure;
+fork again
+  :Standby state;
+end fork
+
+if (Detect any fault condition?) then (yes)
+  :Activate emergency protection mechanism;
+  :Initiate concurrent,prioritized tasks;
+
+  fork
+    :Data acquisition task;
+    :Cyclically read sensor data;
+    :Update system status using ring buffer;
+  fork again
+    :Self-test task;
+    :Iteratively check hardware integrity via PMIC and BMS;
+    :Log anomalies to structured audit log protected by CRC;
+  fork again
+    :Lower-priority task;
+    :Handle exponential backoff retry logic;
+    :Generate fault service report;
+    :Upload to cloud via CAN bus;
+  end fork
+
+  :FADEC executes controlled shutdown sequence;
+  :Disengage power;
+  :Trigger alarm system;
+  :Notify maintenance personnel;
+
+else (no)
+end if
+
+fork
+  :Sensor fusion and calibration routines run periodically;
+  if (Out-of-range readings?) then (yes)
+    :Trigger redundant sensor checks;
+    :Initiate controlled cool-down path;
+  else (no)
+  end if
+fork again
+  :Watchdog timer ensures system liveness;
+  :Flush audit logs to non-volatile memory within I/O budget;
+end fork
+
+stop
+
+@enduml

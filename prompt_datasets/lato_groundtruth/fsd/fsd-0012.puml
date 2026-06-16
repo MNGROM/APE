@@ -1,0 +1,51 @@
+@startuml
+
+start
+
+:Vehicle initialization;
+:Power management subsystem governed by RTOS;
+:Monitor power rails via PMIC and BMS;
+
+if (Battery rail voltage < defined threshold?) then (yes)
+  :High-priority task checks engine state;
+  if (Engine uninitialized and vehicle in parking state?) then (yes)
+    :Initiate engine start sequence;
+    fork
+    repeat
+    :Monitor engine speed via FADEC;
+    :Employ closed-loop control;
+    :Adjust throttle valve opening;
+    repeat while(Speed stabilizes within required range) is(no)
+
+    fork again
+    repeat
+    :Periodically sample generator output rail voltage and battery charging status;
+    :Trigger ADC readings by timer interrupts;
+    :Debounce;
+    :Place into protected ring buffer;
+    :CRC checks on critical CAN bus telemetry;
+    repeat while(Battery rail voltage within safe operating range) is(no)
+
+:Execute as concurrent RTOS tasks managed by priority queues;
+fork
+  repeat
+  :Generator output power adjustment;
+  :Employ PID controller;
+  repeat while(Generator output stabilizes) is(no)
+fork again
+  :Battery status feedback;
+end fork
+end fork
+else(no)
+end if
+
+else(no)
+end if
+
+:Dedicated watchdog task supervises startup state machine;
+:Fault recovery handlers implement exponential backoff with staged verification cycles;
+:Retry attempt;
+
+stop
+
+@enduml

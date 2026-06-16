@@ -1,0 +1,45 @@
+@startuml
+
+start
+
+:Implement safety-critical finite-state machine;
+:Orchestrate;
+fork
+:ISRs;
+fork again
+:Priority-scheduled RTOS tasks;
+fork again
+:Fail-safe policies;
+end fork
+
+if (Detect abnormal patient vitals?) then (yes)
+  :Initialize multi-level criticality assessment;
+  if (Highest priority determined?) then (yes)
+    :Trigger immediate alarm;
+  else (no)
+  end if
+
+  :Spawn two high-priority tasks;
+  fork
+    :Continuously monitor heart rate;
+    :Log each sample to ring buffer protected by mutex;
+  fork again
+    :Periodic task samples blood oxygen saturation;
+    :Perform on-device data analysis with CRC-verified integrity;
+    :Transmit comprehensive evaluation via CAN bus to medical staff;
+  end fork
+
+  :Telemetry subsystem driven by timer interrupts;
+  :Operate in guaranteed periodic loop;
+  :Employ exponential backoff for fault recovery;
+  :Watchdog for liveness assurance;
+
+  :All concurrent routines synchronize via mutexes and priority queues;
+  :Persist structured audit logs for post-hoc analysis;
+
+else (no)
+end if
+
+stop
+
+@enduml

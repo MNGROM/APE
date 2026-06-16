@@ -1,0 +1,13 @@
+start
+
+:Perform Fourier Transform lag set time series;
+:Use Fast Fourier Transform;
+fork
+:Power-of-two complex-to-complex;
+fork again
+:Retention of all output positive/negative frequencies;
+end fork
+
+:Accept any output as input;
+
+stop

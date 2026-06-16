@@ -1,0 +1,10 @@
+start
+
+:Rotation Matrix Output DCM321;
+if( =Roll * Pitch * Heading 3*3 Matrix Product?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

@@ -1,0 +1,23 @@
+start
+
+:Units must satisfy CAISO technical requirements;
+
+:CAISO requirements;
+fork
+:Conduct tests with or without notice;
+fork again
+:Determine when Black Start operation;
+fork again
+:Test >= 1/3 RMR and Interim Black Start units annually;
+end fork
+
+:Possible test contents;
+fork
+:Self-providing start-up power;
+fork again
+:Successive starts;
+fork again
+:Reactive power production;
+end fork
+
+stop

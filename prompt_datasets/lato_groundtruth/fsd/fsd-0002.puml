@@ -1,0 +1,69 @@
+@startuml
+start
+
+:Thermal management controller operates as state machine in RTOS;
+fork
+:Regulate PWM fans;
+fork again
+:Regulate liquid-cooling loop;
+end fork
+
+if(External sensor over-temperature?) then(yes)
+  :Initiates multi-tiered safety protocol;
+  fork
+    :ISR validates calibration status and data CRC;
+    if(Detect anomaly?) then(yes)
+      :Dispatch high-priority alarm via CAN bus;
+    else(no)
+    end if
+  fork again
+    repeat
+    :Manage buffering of telemetry data into non-blocking ring buffer;
+    repeat while(All samples secured?) is(no)
+  fork again
+    :Handle uplink transmission;
+  end fork
+
+  :Fusion algorithm performs multi-parameter environmental analysis;
+
+  if(Results meet predefined fault conditions?) then(yes)
+    :Spawn concurrent tasks;
+    fork
+      :Logging—executed in cyclic fashion;
+      :Ensure complete audit trail;
+    fork again
+      :Status updates protected by mutex;
+    end fork
+  else(no)
+  end if
+
+  fork
+    :Security state evaluation;
+  fork again
+    :FADEC-style control command generation;
+  fork again
+    :Operational feedback confirmation;
+  end fork
+
+  :Sequence culminates;
+  :Ensure processing integrity;
+
+  :Sensor fusion and calibration routines execute periodically;
+  if(Persistent out-of-range readings?) then(yes)
+    :Engage;
+    fork
+      :Hardware redundancy;
+    fork again
+      :Controlled cool-down sequence;
+    fork again
+      :Watchdog timer enforce liveness;
+    end fork
+  else(no)
+  end if
+
+else(no)
+end if
+
+stop
+
+@enduml

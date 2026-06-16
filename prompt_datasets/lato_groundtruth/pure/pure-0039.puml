@@ -1,0 +1,27 @@
+start
+
+:See View Inventory;
+:Navigate to Department/Category;
+
+:Display Add Category buttons;
+fork
+:Unique Item;
+fork again
+:Stock Item;
+end fork
+
+:Click desired Add Category button;
+
+if(Unique Item?) then(yes)
+:Display Unique Item screen;
+else(no)
+:Display Stock Item screen;
+endif
+
+:Enter Category data;
+:System validates Category data;
+:New Category is added;
+
+:Back to parent Department/Category;
+
+stop

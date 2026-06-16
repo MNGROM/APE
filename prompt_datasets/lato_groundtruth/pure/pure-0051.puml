@@ -1,0 +1,18 @@
+start
+
+:Access main inventory screen;
+:Display inventory departments;
+
+:See View Inventory;
+:Drill down to desired existing inventory item;
+:Item detail screen is presented;
+
+:Click Item History button;
+:Display Item History screen;
+fork
+:Current inventory item information;
+fork again
+:Historical inventory item information;
+end fork
+
+stop

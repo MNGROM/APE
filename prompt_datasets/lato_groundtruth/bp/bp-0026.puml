@@ -1,0 +1,44 @@
+start
+
+:Open the "Promote" window;
+:Click "Mappings";
+:Click "Crystal Report Mappings";
+
+:List of Crystal reports is displayed;
+:Select required Crystal Report;
+:Click "Edit Crystal Report Properties";
+
+:"Edit Crystal Report Properties" tab appears;
+note right
+Displays list of properties 
+and their values
+end note
+
+:Modify appropriate fields;
+:Click "Apply";
+
+if (Edited in source system?) then (yes)
+  :"edited" is displayed;
+endif
+
+if (Created using Universes?) then (yes)
+  :Cannot be mapped;
+  :Use "Connections Mappings";
+  stop
+else
+  :Proceed with mapping;
+endif
+
+switch (Mapping scope)
+case (Single)
+  :Map single report;
+case (Group)
+  :Map the group;
+case (Multiple)
+  :Not allowed;
+  stop
+endswitch
+
+:Click "Save" or "Promote";
+
+stop

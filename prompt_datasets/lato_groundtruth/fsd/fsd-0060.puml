@@ -1,0 +1,85 @@
+@startuml
+
+start
+
+:Avionics stack comprises;
+fork
+  :FMS;
+fork again
+  :FADEC;
+end fork
+:Execute on deterministic RTOS;
+
+if (Detect abnormal aircraft attitude?) then (yes)
+ fork
+  :High-priority ISR samples sensor data;
+  :Signal supervisory task;
+
+  if (Altitude < preset threshold?) then (yes)
+    :RTOS scheduler launches tasks from priority queue;
+    fork
+      :Emergency altitude adjustment task;
+      repeat
+      :Periodically read from air data computer via protected ring buffer;
+      :Issue commands to servo actuators;
+      repeat while(Safe altitude reached?) is(no)
+
+    fork again
+      :Attitude correction task;
+      :Acquire gyroscope data;
+      :Use validated control laws;
+      :Calculate correction angles;
+      :Drive rudder actuator;
+    end fork
+
+  else (no)
+  end if
+
+ fork again
+  if (Aircraft in manual mode?) then (yes)
+    fork
+      :Spawn auxiliary control task;
+      :Apply input filtering and scaling to pilot commands;
+    fork again
+      :Spawn warning prompt task;
+      :Dispatch hazard alerts through visual and acoustic channels;
+      :Mutex managed to prevent message corruption;
+    end fork
+  else (no)
+  end if
+ end fork
+
+else (no)
+end if
+
+
+:Dedicated telemetry monitor task driven by timer interrupt;
+fork
+ :Run periodic loop performing CRC checks on data;
+fork again
+ :Employ exponential backoff for communication retries with ground station;
+end fork
+
+fork
+:Health management task;
+fork again
+:Watchdog;
+fork again
+:PMIC/BMS;
+end fork
+:Monitor all subsystems;
+
+:Log all event traces per DO-178C/DO-254 standards;
+if (Any anomalies?) then (yes)
+    :Trigger fault-tolerant strategy;
+  fork
+    :Command arbitration in FADEC;
+  fork again
+    :Status uplink via CAN bus to ground control station;
+  end fork
+else (no)
+end if
+
+stop
+
+@enduml

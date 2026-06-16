@@ -1,0 +1,27 @@
+start
+
+:Choose "Info Objects";
+repeat
+:Open characteristics Info Object catalog;
+:Open "ZD_PGROUP" context menu;
+:Select "Maintain master data";
+:Choose "Execute";
+
+repeat
+    :Choose "Create";
+    fork
+    :Enter Product Group;
+    note right:eg.DS10
+    fork again
+    :Enter Short description;
+    note right:eg.Computer
+    end fork
+    :Choose "Continue";
+repeat while (More values?) is (yes) not(no)
+
+:Save entries;
+:Return to Info Object tree;
+
+repeat while (More values for ZD_CHAN?) is (yes)
+
+stop

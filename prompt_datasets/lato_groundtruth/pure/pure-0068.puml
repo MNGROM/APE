@@ -1,0 +1,30 @@
+start
+
+:Each CDN Web server publishes information;
+fork
+:Resource;
+fork again
+:Service;
+end fork
+
+if(New resource?) then(yes)
+:Service information is registered;
+:Resource ID counter is incremented;
+else(no)
+:Information in SR is updated regularly;
+endif
+
+if(Traffic surges?) then(yes)
+:Supply to Mediator;
+fork
+:Available local resources information;
+fork again
+:IDs;
+end fork
+else(no)
+endif
+
+:In established peering arrangement;
+:Local and delegated external resource information is encapsulated;
+
+stop

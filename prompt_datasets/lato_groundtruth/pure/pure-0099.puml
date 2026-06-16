@@ -1,0 +1,16 @@
+start
+
+:Use command warc_compare <CRAWL_1_WARC_FILES> ... <CRAWL_N_WARC_FILES> [options];
+
+:Compare crawls in WARC files;
+:Generate delta reports;
+
+fork
+:Percentage changes;
+fork again
+:Lists of changed pages;
+fork again
+:Options to filter by URL patterns/metadata;
+end fork
+
+stop

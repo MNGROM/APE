@@ -1,0 +1,16 @@
+start
+
+:See View Inventory;
+:Navigate to Department;
+
+:Display Edit Department button;
+:Click Edit Department button;
+:Display Department data;
+
+:Click Delete Department button;
+:System validates deletion;
+
+:System removes Department;
+:Back to main inventory screen;
+
+stop

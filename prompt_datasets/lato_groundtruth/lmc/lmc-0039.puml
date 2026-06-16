@@ -1,0 +1,8 @@
+start
+
+:Ridge_on set to True;
+:Determinant of B(inv(Wp’)B’<= 1e-12;
+:Each element with respect to 3x3 identity matrix elements < 1e-6 tolerance;
+:B(inv(Wp’)B’matrix inversion be accurate to 6 digits precision;
+
+stop

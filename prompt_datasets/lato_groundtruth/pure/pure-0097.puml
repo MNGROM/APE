@@ -1,0 +1,24 @@
+start
+
+:Use command warc_repackage -i <WARC_FILE> <WARC_PATTERN> [options];
+
+:Filters;
+fork
+:URL;
+fork again
+:MIME-Types;
+fork again
+:Size;
+fork again
+:Timestamp;
+end fork
+
+:Extract and repackage WARC records;
+fork
+:Use provided pattern;
+:Specify output WARC file names;
+fork again
+:Include metadata records describing extraction context;
+end fork
+
+stop

@@ -1,0 +1,9 @@
+start
+
+:In Inner Loop Pitch Regulator;
+if(Durations > 100 frames?) then(yes)
+:Command angular pitch accelerations <= 50 deg/sec2;
+else(no)
+endif
+
+stop

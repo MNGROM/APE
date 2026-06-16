@@ -1,0 +1,7 @@
+start
+:Visualize the most recent year of dataset;
+if (Dataset contains multiple years?) then(yes)
+:Visualize by treemap, bubble tree, map and pivot table;
+stop
+else(no)
+stop

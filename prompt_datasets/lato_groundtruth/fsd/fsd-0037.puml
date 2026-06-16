@@ -1,0 +1,59 @@
+@startuml
+
+start
+
+:TCMS executes on preemptive RTOS;
+:Manage via deterministic, priority-scheduled tasks;
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Doors;
+fork again
+  :Diagnostics;
+end fork
+
+:Station entry;
+:Execute sequential state validation routine;
+:Confirm zero speed via wheel speed sensor ISR;
+:Check passenger doors are closed;
+:Initiate safety interlock chain;
+fork
+  :Validate platform screen doors are closed;
+fork again
+  :Validate emergency brake actuator is released;
+end fork
+:Perform CRC-checked status query of traction FADEC;
+
+  if (Validation successful?) then (yes)
+    :Authorize train initialization;
+    :Spawn concurrent, mutex-protected operations;
+
+    fork
+      :High-priority task manages door lock signaling;
+    fork again
+      :Lower-priority control loop;
+      :Use ring buffer for sensor data;
+      :Modulate traction force;
+      :Monitor PMIC/BMS output；
+      :Maintain current and rail voltage within safe operating limits;
+    fork again
+      :Watchdog-supervised state machine processes platform door closing signal;
+      :Place traction system into standby;
+    fork again
+      :Separate monitoring task employs exponential backoff for CAN bus queries;
+      :Poll platform door status;
+      :Ensure complete closure before startup finalizes;
+    end fork
+
+  else (no)
+  end if
+
+:Transition to normal operational state;
+:Archive all critical telemetry to non-volatile memory and fail-safe paths;
+:Ensure graceful degradation in compliance with EN 50128/EN 50129;
+
+stop
+
+@enduml

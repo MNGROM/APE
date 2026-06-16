@@ -1,0 +1,66 @@
+@startuml
+
+start
+
+:Validate incoming CAN frames;
+fork
+ :Check ID;
+fork again
+ :Check DLC;
+fork again
+ :Check CRC fields;
+end fork
+
+:Enqueue into lock-free,multi-producer ring buffers;
+:Subsequent processing;
+
+if (Abnormal patient heart rate detected?) then (yes)
+  :Assess emergency state;
+  if (Emergency state confirmed?) then (yes)
+    :Trigger alarm;
+    :Initiate comprehensive vital sign scan;
+
+    if (Device fault check via BMS/PMIC successful?) then (yes)
+      :Spawn concurrent, priority-based RTOS tasks;
+
+      fork
+        :Continuous blood pressure monitoring;
+        :Real-time data logging;
+      fork again
+        :Continuous SpO2 monitoring;
+        :Real-time data logging;
+      fork again
+        :Lower-priority task executes primary equipment self-test;
+      end fork
+
+      :Upon completion, launch second wave of tasks;
+      fork
+        :Circulate patient ECG signal through dedicated processing loop;
+      fork again
+        :Perform continuous analysis and recording to secure ring buffer protected by mutex;
+      fork again
+        :Secondary self-test validates all critical functional modules;
+      end fork
+
+      :Final supervisory task consolidates diagnostic results;
+      :Generate comprehensive service report;
+      :Archive data with CRC for integrity;
+
+    else (no)
+    end if
+
+  else (no)
+  end if
+else (no)
+end if
+
+fork
+  :Manage back-pressure from high-frequency data streams using priority queues;
+  :Employ exponential backoff retry mechanism;
+fork again
+  :Watchdog timer ensures system liveness;
+end fork
+
+stop
+
+@enduml

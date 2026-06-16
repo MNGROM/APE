@@ -1,0 +1,10 @@
+start
+
+repeat
+:Store input data records in memory buffer;
+:Track buffer locations;
+repeat while(Data processing is incomplete)
+
+:Report any buffer overflow conditions;
+
+stop

@@ -1,0 +1,46 @@
+@startuml
+start
+  :Perform user account authentication;
+  if (Is user account valid?) then (yes)
+     :Initiate multi-factor authentication;
+     :Select authentication methods;
+     repeat
+       fork
+         :Enter password;
+         if (Is password correct?) then (yes)
+           :Record authentication details;
+         else (no)
+           :Timeout and error handling;
+         endif
+       fork again
+         :Scan fingerprint;
+         if (Is fingerprint matched?) then (yes)
+           :Record authentication details;
+         else (no)
+           :Timeout and error handling;
+         endif
+       fork again
+         :Perform facial recognition;
+         if (Is facial recognition successful?) then (yes)
+           :Record authentication details;
+         else (no)
+           :Timeout and error handling;
+         endif
+       end fork
+       if (Failure count > 3) then (yes)
+         :Lock account;
+         :Send alert notification;
+         stop
+       else (no)
+         :Continue authentication;
+       endif
+     repeat while (At least two authentication methods successful)
+     :Authentication successful;
+     :Log authentication event;
+  else (no)
+     :Notify invalid user account;
+     stop
+  endif
+  :Periodically re-verify;
+stop
+@enduml

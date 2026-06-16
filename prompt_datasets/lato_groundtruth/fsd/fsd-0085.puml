@@ -1,0 +1,48 @@
+@startuml
+
+start
+
+:Embedded control platform employs FSM;
+:Coordinate;
+fork
+:Time-critical ISRs;
+fork again
+:Deferred RTOS tasks;
+fork again
+:Fail-safe policies;
+end fork
+
+if (Abnormal signal detected?) then (yes)
+  :System behavior is mode-dependent;
+
+  if (State?) then (NORMAL)
+    :Initialize parallel processing module;
+    :Perform real-time signal monitoring;
+    repeat
+      :Sample signal strength within dedicated task;
+    repeat while (Stability confirmed via moving average?) is (no)
+    :Deinitialize module;
+  else (DEBUG)
+      :Initialize and execute accelerated analysis;
+      :High-priority task generates detailed service report;
+      :Deinitialize;
+  end if
+
+  :Processing concludes by restoring nominal system operation;
+
+else (no)
+end if
+
+fork
+  :Manage system concurrency using mutexes;
+  :Protect shared resources;
+fork again
+  :Inter-task communication utilizes priority queues;
+end fork
+
+  :Watchdog timer supervises all activities;
+  :Periodic control loops driven by timer interrupts;
+
+stop
+
+@enduml

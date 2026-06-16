@@ -1,0 +1,37 @@
+start
+
+:Display window;
+:Cancel and return is allowed at any time;
+
+while(Attempt count <= 3?) is(yes)
+
+:Enter authenticating information;
+
+fork
+:User name;
+fork again
+:Password;
+end fork
+
+:Validate and establish user privilege;
+:Authenticate user;
+
+if(Successful?) then(yes)
+:Indicate authentication has succeeded;
+stop
+else(no)
+:Indicate authentication has not succeeded;
+
+if(Another attempt?) then(no)
+stop
+else(yes)
+:Attempt count + 1;
+endif
+endif
+
+endwhile(no)
+
+:Dismissing authentication window;
+:Return to previous window;
+
+stop

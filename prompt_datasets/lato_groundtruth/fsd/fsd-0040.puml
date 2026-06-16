@@ -1,0 +1,54 @@
+@startuml
+
+start
+
+:TCMS executes on preemptive RTOS;
+:Manage via deterministic, priority-scheduled tasks;
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Door control;
+fork again
+  :System diagnostics;
+end fork
+
+if (Detect train overspeed condition?) then (yes)
+  :Verify emergency braking arming criteria;
+  :Continuously poll status of trackside signal lights via high-priority monitoring task;
+  if (Signal anomaly?) then (yes)
+    :Trigger immediate emergency response;
+    :Initiate concurrent operations;
+    fork
+      :ISR-driven process acquires track sensor data for real-time;
+      :Upload to central control unit via CAN bus with CRC protection;
+    fork again
+      :Parallel safety task;
+      :With mutex-protected access to shared sensor ring buffer;
+      :Assess headway to forward obstacle against safe envelope;
+    end fork
+  else (no)
+  end if
+
+  :Proceed to next phase of safety assessment cycle;
+  :Spawn parallel tasks;
+  fork
+    :Continuously monitor traction force;
+  fork again
+    :Continuously monitor braking performance;
+  end fork
+  :Whether within certified operational bounds;
+
+  :Timer-interrupt-driven telemetry task archives system state to non-volatile memory;
+  :Employ exponential backoff for transient communication faults;
+
+else (no)
+end if
+
+:Independent watchdog timers and PMIC monitoring enforce system integrity;
+:Ensure fail-safe degradation in compliance with EN 50128/EN 50129;
+
+stop
+
+@enduml

@@ -1,0 +1,4 @@
+start
+: mark individual files as restricted;
+: avoid getting shared by mistake;
+stop

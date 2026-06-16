@@ -1,0 +1,36 @@
+start
+
+:At information window;
+if(Display diagnostic history window?) then(no)
+:Click “Close” button;
+:Dismiss information window;
+:Make condition window current window;
+else(yes)
+endif
+
+if(Close information window?) then(yes)
+ if(History window is displayed?) then(yes)
+  :Information window is dismissed;
+  :History window remains;
+ else(no)
+ endif
+else(no)
+endif
+
+if(Condition window is closed?) then(yes)
+:Close if open;
+fork
+:Information window;
+fork again
+:History window;
+end fork
+else(no)
+endif
+
+:In Browsing Arbitrary History Intervals;
+if(Specify history interval end time?) then(no)
+:Default to current time;
+else(yes)
+endif
+
+stop

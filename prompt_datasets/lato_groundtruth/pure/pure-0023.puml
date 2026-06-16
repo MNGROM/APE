@@ -1,0 +1,33 @@
+start
+:Receive through track-to-train transmission;
+
+fork
+:Movement authority;
+fork again
+:All other necessary information;
+end fork
+
+:Transfer to Full Supervision automatically;
+
+if(Trainborne equipment active?) then(yes)
+:Remain in Full Supervision;
+else(no)
+:Exit Full Supervision;
+stop
+endif
+
+if(Shunting is selected?) then(no)
+:Remain in Full Supervision;
+else(yes)
+:Exit Full Supervision;
+stop
+endif
+
+if(Partial Supervision information?) then(no)
+:Remain in Full Supervision;
+else(yes)
+:Exit Full Supervision;
+stop
+endif
+
+stop

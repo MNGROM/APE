@@ -1,0 +1,16 @@
+start
+
+:See View Inventory;
+:Navigate to Department;
+
+:Display Edit Department button;
+:Click Edit Department button;
+:Display Department data;
+
+:Edit Department data;
+:System validates data;
+
+:System updates information;
+:Back to Department screen;
+
+stop

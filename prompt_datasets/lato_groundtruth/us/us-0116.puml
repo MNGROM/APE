@@ -1,0 +1,7 @@
+start
+:Deploy new version of app;
+if(it includes older version of dataset type?)then(yes)
+:dataset instances use type code;
+stop
+else(no)
+stop

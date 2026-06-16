@@ -1,0 +1,3 @@
+start
+:Get all files that checksum has changed since last registered;
+stop

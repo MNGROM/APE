@@ -1,0 +1,61 @@
+@startuml
+
+start
+
+:Avionics stack (FMS/FADEC) operates on deterministic RTOS;
+:High-frequency ISRs manage control law execution;
+:Lower-priority worker tasks process;
+
+if (Sensor A reports anomaly?) then (yes)
+  if (Altitude > 10,000 feet and Air pressure substandard?) then (yes)
+    :Trigger fault condition;
+    :Initiate emergency processing module;
+
+    :Perform environmental data acquisition at preset frequency;
+    :Apply digital filter in real-time via ring buffer;
+    :Condition incoming stream;
+
+    if (Multiple submodules require synchronized activation?) then (yes)
+      :Initialize engine monitoring unit;
+
+      :Critical tasks;
+      fork
+        :Cooling system diagnostics;
+      fork again
+        :Fuel pressure monitoring;
+      end fork
+
+      :Dispatch as concurrent,preemptible threads under RTOS scheduler;
+      fork
+      :Managed by priority queue;
+      fork again
+      :Protected by mutexes for shared resource access;
+      end fork
+    else (no)
+    end if
+
+    :Real-time analysis;
+    if (Any parameter breaches safety envelope?) then (yes)
+      :Trigger alarm subsystem immediately;
+      :Log event with CRC-verified fault code;
+      :Uplink to ground control center via CAN bus;
+      :Use exponential backoff retry mechanism for communication assurance;
+    else (no)
+    end if
+  else (no)
+  end if
+else (no)
+end if
+
+fork
+  :Watchdog timer supervises all active tasks;
+fork again
+  :Fault-tolerant strategies ensure deterministic recovery and data integrity;
+end fork
+
+:All software processes adhere to DO-178C/DO-254 design assurance levels;
+:Ensure deterministic response and data integrity;
+
+stop
+
+@enduml

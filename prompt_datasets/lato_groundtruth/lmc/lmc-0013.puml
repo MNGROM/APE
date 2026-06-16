@@ -1,0 +1,8 @@
+start
+
+if(A failure occurs (apfail)?) then(yes)
+:Autopilot change states from STANDBY to MANEUVER;
+else(no)
+endif
+
+stop

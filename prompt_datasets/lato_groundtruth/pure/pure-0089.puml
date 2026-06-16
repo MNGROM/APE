@@ -1,0 +1,8 @@
+start
+
+:Large square move to board bottom;
+:Freeze player statistics;
+:Analyse performance;
+:Display "Finish Window with Statistics"/"Simple Finish Window";
+
+stop

@@ -1,0 +1,40 @@
+start
+
+:Log in LifeCycle Manager tool;
+:Create a new job;
+if (More information?) then(yes)
+:See Creating a New Job on page 37;
+else(no)
+endif
+
+:Add required infoobjects to new job;
+:Go to "Promotion Jobs" home page;
+:Click "Manage Dependencies";
+:"Manage Dependencies" window appears;
+:List of infoobjects and their dependents is displayed;
+
+:Open Select Dependents drop-down list;
+:Dependents are displayed on the right;
+
+switch(Selection)
+case(no)
+ :Dependents are not selected;
+case(All Universes)
+ :All universes are automatically selected;
+case(Other available options)
+ :Dependents are added to job;
+endswitch
+
+:Click;
+:View supported filtering options of infoobjects;
+:Select an option;
+:Click "OK";
+:Filtered infoobjects are displayed;
+
+:Click "Apply Changes";
+:List of dependents is updated;
+
+:Click "Apply Changes";
+:Close to save the changes;
+
+stop

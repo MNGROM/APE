@@ -1,0 +1,13 @@
+start
+
+:Request for CDN WSs content;
+:Sudden burst in traffic;
+:Flash crowds occurred;
+
+:Hotspot is generated;
+:Unable to handle excess load;
+
+:WS sends initialization request to mediator;
+:Trigger peering;
+
+stop

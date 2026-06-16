@@ -1,0 +1,70 @@
+@startuml
+
+start
+
+:Operating on preemptive RTOS;
+:TCMS manages via deterministic scheduling;
+fork
+:Traction;
+fork again
+:Braking;
+fork again
+:Doors;
+fork again
+:Diagnostics;
+end fork
+
+:Detect acceleration threshold exceedance;
+:Verify brake system status via protected BMS query;
+
+if (Braking pressure insufficient?) then (yes)
+  fork
+    :High-priority task;
+    :Command emergency braking assistance immediately;
+  fork again
+    :Medium-priority task;
+    :Evaluate need for ESP intervention;
+  end fork
+else(no)
+end if
+
+if (ESP activated?) then (yes)
+  :Cyclic task with mutex-protected ring buffer;
+  fork
+    :Process wheel speed sensor data;
+  fork again
+    :Calculate individual wheel slip rates;
+  fork again
+    :Execute real-time braking force distribution algorithm;
+  end fork
+else (no)
+end if
+
+if (Steering angle sensor indicates anomaly?) then (yes)
+  :Activate steering assist control task;
+  :Periodically sample steering angle sensor;
+  :Compute target angle via PID control loop;
+  :Electronic Power Steering system's output torque;
+else (no)
+end if
+
+fork
+ :State evaluation task;
+ :Assess overall vehicle stability;
+ :Trigger layered deactivation of control modules;
+fork again
+  :Low-priority telemetry task driven by timer ISR;
+  :Transmit data with exponential backoff retry mechanism on communication faults;
+  :Archive to non-volatile memory;
+end fork
+
+fork
+:Independent watchdogs;
+fork again
+:PMIC-monitored fail-safe paths;
+end fork
+:Ensure graceful degradation;
+
+stop
+
+@enduml

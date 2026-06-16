@@ -1,0 +1,10 @@
+start
+
+:Magnitude of Vb;
+if( =Magnitude of Vi?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

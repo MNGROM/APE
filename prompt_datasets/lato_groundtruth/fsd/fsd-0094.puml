@@ -1,0 +1,59 @@
+@startuml
+
+start
+
+:TCMS executes on preemptive RTOS;
+:Manage;
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Door;
+fork again
+  :Diagnostics;
+end fork
+
+if (Anomalous train signal status detected?) then (yes)
+  :High-priority task initializes signal diagnostic program;
+  :Spawn concurrent lower-priority tasks;
+    fork
+      :Signal data acquisition;
+      repeat
+      :Employ exponential backoff when dispatching requests;
+      repeat while(Complete data set received into protected ring buffer) is(no)
+    fork again
+      :Preliminary signal anomaly classification;
+    end fork
+
+fork
+  :Perform spectral analysis of signal waveform;
+  :Generate service report;
+fork again
+  :Integrity-checking task scheduled via RTOS priority queues;
+  :Calculate CRC;
+  :Monitor signal strength;
+  :Judge uplink transmission quality;
+
+  if (Quality < mandated standard?) then (yes)
+    :Mutex-protected fault manager triggers automatic retransmission mechanism;
+    :Log event to non-volatile memory;
+  else (no)
+  end if
+end fork
+
+else (no)
+end if
+
+fork
+  :Independent watchdog timers;
+fork again
+  :Fail-safe monitors;
+end fork
+:Designed to EN 50128/50129 constraints;
+:Ensure deterministic system responsiveness;
+:Initiate graceful degradation paths upon any timing fault;
+
+stop
+
+@enduml

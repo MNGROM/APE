@@ -1,0 +1,26 @@
+start
+
+:Choose "Start Programs Business Explorer Query Designer";
+:BEx Query Designer is started;
+:Log in;
+
+:Open toolbar;
+:Choose "New Query";
+:Choose "Find";
+
+fork
+:Enter "ZD_SALES" as search string;
+fork again
+:Select "Search" in Technical Name;
+fork again
+:Deselect "Search" in Description;
+end fork
+
+:Choose "Find";
+:Info Cube ZD_SALES is displayed;
+
+:Select InfoCube ZD_SALES;
+:Choose "Open";
+:ZD_SALES data is displayed;
+
+stop

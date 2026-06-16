@@ -1,0 +1,55 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine on RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loop;
+fork again
+  :Input signal validation;
+  :Initialization;
+end fork
+
+:System verifies main processor's successful self-test;
+:Check temperature and pressure sensor integrity;
+
+:Spawn concurrent, prioritized tasks;
+  fork
+    :Periodic sensor data acquisition via protected ring buffer;
+  fork again
+    :Continuous system health monitoring;
+  end fork
+
+:Enter uplink phase;
+fork
+  :High-priority task packages telemetry with CRC;
+  :Dispatch over CAN bus;
+fork again
+  :Lower-priority task monitors communication link status in real-time;
+end fork
+
+:Dedicated telemetry monitor;
+fork
+  :Implement bounded retries;
+fork again
+  :Exponential backoff for fault handling;
+end fork
+
+fork
+  :Sensor fusion,calibration,and out-of-range checks execute periodically;
+fork again
+  :Critical faults engage redundancy;
+  :Initiate controlled cool-down sequence via FADEC/BMS;
+end fork
+
+:Update operational state;
+:Write structured audit logs to non-volatile memory within defined I/O budget;
+:Update watchdog;
+:Signal PMIC;
+:Mmanage power states for standby modules;
+
+stop
+
+@enduml

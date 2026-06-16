@@ -1,0 +1,22 @@
+start
+
+:Apply user selected frequency domain processes;
+
+:Process construction requirments;
+fork
+:Chainable;
+
+fork
+:Output of Fourier Transform;
+fork again
+:Any frequency domain process;
+end fork
+:Can be piped to any input;
+
+fork again
+:Repeatable in chain;
+end fork
+
+:No frequency domain processes;
+
+stop

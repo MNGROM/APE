@@ -1,0 +1,4 @@
+start
+:limit to one registration per day per authenticated user;
+:avoid having duplicate spaces;
+stop

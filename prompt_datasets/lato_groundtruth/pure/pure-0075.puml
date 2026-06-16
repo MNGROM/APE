@@ -1,0 +1,15 @@
+start
+
+:Display main (initial) window;
+:List buildings under diagnosis;
+
+:Select interested building;
+:Display subsystems window;
+
+:Select interested subsystem;
+:Display condition window;
+
+:Select interested diagnostic;
+:Display diagnostic information window;
+
+stop

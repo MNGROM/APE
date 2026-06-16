@@ -1,0 +1,56 @@
+@startuml
+
+start
+
+:Automotive ECU operates within safety-critical ISO 26262 framework;
+:Orchestrate subsystems via CAN/Ethernet network;
+fork
+  :Powertrain;
+fork again
+  :BMS;
+fork again
+  :Chassis subsystems;
+end fork
+:Utilize priority-based scheduling managed by RTOS;
+
+if (Anomalous sensor data?) then (yes)
+fork
+  :Trigger dedicated signal conditioning ISR;
+  :Initialize multi-threaded task module;
+
+  fork
+    :Time-sliced data acquisition from ring buffer;
+  fork again
+    :Real-time execution of primary control algorithm;
+  end fork
+
+  :Perform CRC-based data verification check;
+  if (Successful?) then (yes)
+    :Re-initialize module with dedicated threads;
+    :Transition to low-power standby state managed by PMIC;
+  else (no)
+    :Mutex-protected fault handler engages default operating mode;
+    :Continuously poll environmental sensors;
+  end if
+
+fork again
+  :Telemetry monitor driven by hardware timer;
+  :Execute in fixed-periodic loop ;
+  :Implement exponential backoff for transient faults;
+end fork
+
+else (no)
+end if
+
+:All system actions time-stamped for persistence;
+fork
+:UDS/ISO-TP diagnostics and hardware watchdog timer ensure;
+fork
+:Robust recovery;
+fork again
+:Managed transitions to limp-home modes;
+end fork
+
+stop
+
+@enduml

@@ -1,0 +1,24 @@
+start
+
+:Access main inventory screen;
+:See View Inventory;
+:Display inventory departments in matrix format;
+
+switch(Drill down to appropriate category)
+case(Donation processing mode)
+:Item entry screen is presented automatically;
+case(Inventory management mode)
+:List of existing inventory items is displayed;
+endswitch
+
+:Click Add Item button;
+:Appropriate item entry screen is presented;
+:Fill in item information;
+:Confirm addition;
+
+:Inventory is updated;
+:System gives option of printing item tag;
+:Print item tag for unique/stock item;
+:Attach tag to item;
+
+stop

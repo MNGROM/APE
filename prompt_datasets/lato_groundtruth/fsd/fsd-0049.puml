@@ -1,0 +1,55 @@
+@startuml
+
+start
+
+:Embedded control system employs FSM;
+:Orchestrate;
+fork
+  :ISRs;
+fork again
+  :Priority-scheduled RTOS tasks;
+fork again
+  :Fail-safe policies;
+end fork
+
+:Photodiode-driven ISR serviced upon timer interrupt;
+:Continuously sample ambient light intensity;
+
+if ( < defined threshold?) then (yes)
+  :Medium-priority task acquires mutex;
+  :Check if system is in night mode;
+  if (Confirmed?) then (yes)
+    :Initialize object detection algorithm;
+    if (Intrusion identified within monitoring area?) then (yes)
+      fork
+      :Trigger infrared fill light via GPIO command;
+
+      fork again
+        :High-priority task enters loop;
+        repeat
+        :Capture infrared image data into ring buffer;
+        :Apply real-time noise filtering;
+        repeat while(Object departed?) is(no)
+      fork again
+        :Lower-priority monitoring task employs exponential backoff;
+        if (Ambient light returns to normal level?) then(yes)
+        :Command deactivation of fill light;
+        : FSM transitions back to normal monitoring state;
+        else(no)
+        end if
+
+      fork again
+:Package all critical events and state transitions with CRC;
+:Log to non-volatile memory for audit and diagnostics;
+      end fork
+
+    else (no)
+    end if
+  else (no)
+  end if
+else (no)
+end if
+
+stop
+
+@enduml

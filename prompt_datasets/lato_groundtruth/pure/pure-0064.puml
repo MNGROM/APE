@@ -1,0 +1,17 @@
+start
+
+:Open KeePass;
+:Select group/subgroup;
+
+:Select to delete group/subgroup;
+:Message is appeared to confirm;
+
+switch(Selection)
+case(yes)
+:Group/Subgroup is deleted;
+:Main window opens;
+case(no)
+:Group/Subgroup is not deleted;
+endswitch
+
+stop

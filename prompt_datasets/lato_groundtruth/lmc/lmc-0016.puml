@@ -1,0 +1,11 @@
+start
+
+if(Autopilot is not requesting support (not request)?) then(yes)
+ if(Limits are not exceeded (not limits)?) then(yes)
+ :Sensor change states from FAULT to TRANSITION;
+ else(no)
+ endif
+else(no)
+endif
+
+stop

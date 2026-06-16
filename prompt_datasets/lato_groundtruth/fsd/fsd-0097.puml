@@ -1,0 +1,69 @@
+@startuml
+
+start
+
+:TCMS executes on preemptive RTOS;
+:Orchestrate via deterministic, priority-scheduled tasks;
+
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Door control;
+fork again
+  :Diagnostics services;
+end fork
+
+if (Train running state detected?) then (yes)
+ fork
+ :Evaluate forn emergency braking condition;
+  if (Triggered?) then (yes)
+    :Initiate two concurrent high-priority tasks;
+
+    fork
+      :Brake signal acquisition ISR;
+      :Iteratively sample braking torque;
+        if (Safety threshold exceeded?) then (yes)
+          :Issue alarm via priority queue;
+        else (no)
+        end if
+    fork again
+      :Speed monitoring task;
+      :Feed real-time velocity data into shared ring buffer protected by mutex;
+    end fork
+
+  else (no)
+  end if
+
+ fork again
+    :Lower-priority supervisory task determines if power system self-test is required;
+    :Spawn parallel checks via PMIC/BMS;
+    fork
+      :Motor winding temperature;
+    fork again
+      :Inverter output rail voltage;
+    end fork
+ end fork
+
+  :All acquired sensor data integrity verified by CRC;
+  :Fused by TCMS for comprehensive state judgment;
+  :Output final status report;
+
+else (no)
+end if
+
+fork
+  :Archive system telemetry to non-volatile memory;
+fork again
+  fork
+    :Independent watchdogs;
+  fork again
+    :Fail-safe paths;
+  end fork
+  :Ensure graceful degradation adhere to EN 50128/EN 50129;
+end fork
+
+stop
+
+@enduml

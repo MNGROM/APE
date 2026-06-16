@@ -1,0 +1,59 @@
+@startuml
+
+start
+
+:Thermal management controller implemented as state machine on RTOS;
+:Govern;
+fork
+:PWM fans;
+fork again
+:Liquid-cooling loops;
+end fork
+
+if (Abnormal device connection status detected?) then (yes)
+  :Assess network module's health;
+
+  if (Network module functional?) then (yes)
+    :Initialize two concurrent prioritized tasks;
+
+    fork
+      :Ring buffer cache processing task;
+      :Continuously monitor cache-full condition using polling loop;
+    fork again
+      :Real-time monitoring task;
+      :Sample device temperature and data uplink rate;
+      :Acquire sensor data via mutex-protected interface;
+    end fork
+
+  else (no)
+    :Launch fault-handling routine;
+
+    fork
+      :Execute backup communication protocol with exponential backoff retry strategy;
+    fork again
+      :Supervised device restart mechanism;
+      :Poll for system normalization;
+    end fork
+
+  end if
+
+else (no)
+end if
+
+fork
+:Periodically execute sensor fusion and calibration routines;
+:Validate multi-source inputs;
+fork again
+if (Out-of-range readings detected?) then (yes)
+  fork
+  :Engage system redundancy;
+  fork again
+  :Initiate controlled cool-down sequence via FADEC/analogous safety-critical control path;
+  end fork
+else (no)
+end if
+end fork
+
+stop
+
+@enduml

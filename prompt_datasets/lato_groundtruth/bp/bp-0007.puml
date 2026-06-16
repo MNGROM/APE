@@ -1,0 +1,61 @@
+start
+
+:Go to Data Warehousing Workbench;
+:Go to Modeling area;
+:Choose "Info Provider";
+
+:Info Area displays information;
+fork
+  :Transformation;
+fork again
+  :Data source;
+end fork
+
+:Open Data source context menu;
+:Choose "Create Info Package...";
+
+:Enter description;
+:Choose "Save";
+:The Info Package maintenance screen appears;
+
+:Go to tab page Schedule;
+:Choose "Start";
+
+:Open the toolbar;
+:Choose "Monitor";
+:Check the load process;
+
+:Select date;
+:Choose "Execute";
+
+:The monitor is displayed;
+:Select load process from left tree;
+
+:Exit Info Package maintenance;
+
+:Open Data Source context menu;
+:Choose "Create Data Transfer Process...";
+:Information is displayed;
+
+fork
+:Description;
+fork again
+:Type;
+fork again
+:Source;
+fork again
+:Target;
+end fork
+
+:Choose "Continue";
+
+:Data Transfer Process maintenance screen appears;
+:Go to tab page Extraction;
+:Select extraction mode "Full";
+
+:Activate data transfer process;
+
+:Go to tab page Execute;
+:Choose "Execute";
+
+stop

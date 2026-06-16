@@ -1,0 +1,9 @@
+start
+
+:In Inner Loop Airspeed Regulator;
+if(Durations > 100 frames?) then(yes)
+:Command translational axial accelerations <= 32 ft/sec2;
+else(no)
+endif
+
+stop

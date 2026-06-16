@@ -1,0 +1,43 @@
+start
+if (slow charging state is 1 and charging/discharging power-up is ready) then
+  :switch to state 95;
+ if (vehicle charging/discharging mode is 2 and power-up is ready) then
+  :switch to state 105;
+  switch(condition judgement) 
+  case (high-voltage shutdown charging/discharging value is 3 or 4)
+    :switch to state 115;
+     if (slow charging?) then(no)
+     :shutdown;
+     stop
+     end if
+  case (high-voltage shutdown request is 3 and ignition switch is 2)
+    :switch to state 105;
+    if(ignition switch becomes 0) then
+    :switch to state 115;
+     if (slow charging?) then(no)
+          :shutdown;
+     stop
+     end if
+    end if
+  case (pre-charge failure occurs)
+    :switch to state 115;
+    if (slow charging?) then(no)
+         :shut down;
+     stop
+     end if
+  case (AC discharge system fault occurs)
+    :switch to state 115;
+    if (slow charging?) then(no)
+         :shutdown;
+     stop
+     end if
+  case (slow charging is inactive)
+   :switch to state 115;
+    if (slow charging?) then(no)
+         :shutdown;
+     stop
+     end if
+  endswitch
+  end if
+  end if
+  end

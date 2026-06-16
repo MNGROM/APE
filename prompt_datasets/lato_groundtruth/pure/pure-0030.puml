@@ -1,0 +1,16 @@
+:Respond to;
+
+fork
+:Incoming correlator mode changes,;
+fork again
+:User optional processing sequence;
+fork again
+:Parameter changes;
+fork again
+:Other affective external inputs;
+end fork
+
+:Update internal parameter tables;
+:Synchronize data processing pipeline;
+
+stop

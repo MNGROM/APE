@@ -1,0 +1,27 @@
+start
+
+:Open KeePass;
+:Select to add an entry;
+
+if(Leave all fields empty?) then(no)
+:Fill 1-9 fields as needed;
+
+if(Fills in password field?) then(yes)
+:Repeat password field is not identical;
+:“the repeated password must be identical with the password” appears;
+else(no)
+endif
+
+switch(Selection)
+case(OK)
+:New entry is added;
+case(Help)
+:Help file/URL field features/Autotype is opened;
+case(Cancel)
+:Main window opens;
+endswitch
+
+else(no)
+endif
+
+stop

@@ -1,0 +1,10 @@
+start
+
+:In NLGuidance;
+if(target = vehicle altitude?) then(yes)
+:Define In-plane navigation;
+:Output equivalent altitude of the vehicle;
+else(no)
+endif
+
+stop

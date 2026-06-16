@@ -1,0 +1,77 @@
+start
+
+:Log in to CMC;
+:Select "Applications";
+
+:Double-click "LifeCycle Manager";
+
+:Click "User Security";
+:Select "Administrators";
+:View Security tab is enabled;
+
+:Select rights;
+
+fork
+if (Create a job?) then (yes)
+  :Set;
+else (no)
+endif
+
+fork again
+if (Edit a job?) then (yes)
+  :Set;
+else (no)
+endif
+
+fork again
+if (Promote a job?) then (yes)
+  :Set;
+else (no)
+endif
+
+fork again
+if (Export a BIAR file?) then (yes)
+  :Set;
+else (no)
+endif
+
+fork again
+if (Edit a BIAR file?) then (yes)
+  :Set;
+else (no)
+endif
+
+fork again
+if (Delete a job?) then (yes)
+  :Set;
+else (no)
+endif
+
+fork again
+if (Rollback a job?) then (yes)
+  :Set;
+else (no)
+endif
+
+fork again
+if (Use Administration options?) then (yes)
+  :Set;
+else (no)
+endif
+
+fork again
+if (Edit Connections properties?) then (yes)
+  :Set;
+else (no)
+endif
+
+fork again
+if (Use Version Management System?) then (yes)
+  :Set;
+else (no)
+endif
+endfork
+
+:Click "OK";
+
+stop

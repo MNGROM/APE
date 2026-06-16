@@ -1,0 +1,58 @@
+@startuml
+
+start
+
+:Avionics stack comprises;
+fork
+  :FMS;
+fork again
+  :FADEC;
+end fork
+:Operate on deterministic RTOS;
+
+if (Flight altitude < predetermined threshold?) then (yes)
+  if (Active flight mode is automatic cruise?) then (yes)
+    :RTOS scheduler launches concurrent tasks from priority queue;
+    fork
+      :Altitude correction task;
+      :Execute within high-priority ISR context;
+      repeat
+        :Continuously sample barometer data;
+        :Calculate altitude deviation;
+        :Employ timer-driven polling loop;
+        :Apply fine-tuning control laws;
+      repeat while (Altitude restored?) is (no)
+    fork again
+      :Speed adjustment task;
+      :Modulate engine thrust via FADEC;
+      :Based on altitude trend and inputs from EMU;
+    end fork
+  else (no)
+    :Trigger concurrent tasks;
+    fork
+      :Alarm activation task;
+      :Use mutex-protected protocol;
+      :Check multiple output channels;
+      :Sequentially activate visual and auditory alerts;
+    fork again
+      :Data recording task;
+      :Collect key flight parameters protected by CRC;
+      :Write to non-volatile memory via ring buffer;
+    end fork
+  end if
+else (no)
+end if
+
+:Telemetry monitor task runs in periodic loop;
+:Implement exponential backoff and bounded retries on communication faults;
+
+:All event traces comply with DO-178C/DO-254 processes;
+if (Anomalies?) then (yes)
+  :Invoke fault-tolerant strategies;
+  :Initiate prioritized data uplink to ground station;
+else (no)
+end if
+
+stop
+
+@enduml

@@ -1,0 +1,54 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine on RTOS;
+:Govern via priority-based task scheduling;
+fork
+:PWM fan speeds;
+fork again
+:Liquid-cooling pump duty cycles;
+end fork
+
+fork
+:Watchdog-monitored supervisory task manages concurrent health checks;
+if (Abnormal heart rate/Blood oxygen saturation < defined threshold?) then (yes)
+  :Initiate device integrity check;
+  :Validate via protected CRC-enabled CAN bus transaction;
+  fork
+  :Connection status;
+  fork again
+  :Calibration;
+  end fork
+
+  if (Abnormal connection detected?) then (yes)
+    :Non-maskable ISR audible-visual alarm;
+  else (no)
+    :Sensor fusion algorithms process data into ring buffer;
+    if (Out-of-range readings?) then (yes)
+      :Engage hardware redundancy;
+      :Initiate controlled cool-down state machine;
+    else (no)
+    end if
+  end if
+else (no)
+end if
+
+fork again
+  :Safety task monitors body temperature;
+  if (Abnormal temperature and PMIC/BMS fault?) then (yes)
+    :Terminate parallel processing tasks via mutex-protected shutdown sequence;
+    :Escalate alarm priority;
+  else (no)
+  end if
+end fork
+
+fork
+:All sensor calibration routines execute periodically;
+fork again
+:Communication faults employ exponential backoff retry strategy;
+end fork
+
+stop
+
+@enduml

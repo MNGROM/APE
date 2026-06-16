@@ -1,0 +1,64 @@
+@startuml
+
+start
+
+:TCMS operates on preemptive RTOS;
+:Manage safety-critical functions through deterministic scheduling and priority queues;
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Doors;
+fork again
+  :Diagnostics;
+end fork
+
+if (Vehicle speed threshold violation?) then (yes)
+  fork
+  :Initialize braking pressure monitoring via high-priority task;
+  fork again
+   :Execute engine power limiting module;
+      :Cyclic task continuously polls current gear status;
+      :Dynamically adjust power output;
+      fork
+      :Governed by engine speed;
+      fork again
+      :Coordinated with powertrain FADEC;
+      end fork
+  fork again
+    :Execute tire friction detection routine;
+  end fork
+end if
+
+:TCMS activates;
+fork
+ :Safe distance holding function;
+fork again
+  :Front and obstacle detection;
+fork again
+  :Lane departure warning system;
+end fork
+  :Protected by mutexes;
+  :Access shared resources like CAN bus;
+
+:Dedicated safety monitor task;
+if (Completion signals from concurrent processes?) then (yes)
+  :Perform comprehensive risk assessment;
+  :Integrate data validated with CRC checks;
+  :Generate appropriate safety control instructions;
+else (no)
+end if
+
+fork
+:Telemetry data asynchronously logged to ring buffer;
+:Commit to non-volatile memory;
+fork again
+  :Independent watchdog timers and fail-safe paths;
+  :Include PMIC/BMS coordination;
+  :Ensure graceful degradation in compliance with EN 50128/EN 50129;
+end fork
+
+stop
+
+@enduml

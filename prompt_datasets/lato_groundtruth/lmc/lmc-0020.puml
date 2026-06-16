@@ -1,0 +1,9 @@
+start
+
+:In Inner Loop Yaw Regulator;
+if(Durations > 100 frames?) then(yes)
+:Command angular yaw accelerations <= 50 deg/sec2;
+else(no)
+endif
+
+stop

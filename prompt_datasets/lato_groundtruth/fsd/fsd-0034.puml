@@ -1,0 +1,62 @@
+@startuml
+
+start
+
+:System initialization;
+:Supervisory finite-state machine orchestrates fault-handling procedures;
+
+if (Abnormal external sensor signal detected?) then (yes)
+  :ISR triggers high-priority diagnostic task;
+  :Verify sensor physical connection via PMIC/BMS;
+
+  if (Connection intact?) then (yes)
+    :FSM analyzes sensor data stream for drift or noise;
+    :Validate data integrity using CRC;
+
+    if (Data anomalies confirmed?) then (yes)
+      :Trigger;
+       fork
+       :Deterministic sensor calibration sequence;
+      fork again
+      :Comprehensive system self-test;
+       end fork
+     :Scheduled as concurrent, prioritized RTOS tasks;
+
+      repeat
+        :Iteratively poll each hardware module status via priority queue;
+      repeat while(All modules verified) is(no)
+
+      :Revalidate sensor data;
+      if (Normal operation restored?) then (yes)
+        :Resume primary monitoring loop;
+      else (no)
+      end if
+
+    else (no)
+    end if
+
+  else (no)
+  end if
+
+  if (Persistent data faults?) then (yes)
+    :Escalate to critical failure mode;
+    :Issue device fault alarm;
+    :Initialize backup monitoring module as concurrent failover task;
+
+    :FSM then iterates;
+    :Confirm backup module—potentially on redundant CAN bus;
+    :Successfully assumed monitoring workload;
+  else (no)
+  end if
+
+else (no)
+end if
+
+      :Structured audit logs written to ring buffer;
+      :Asynchronously flushed to non-volatile storage by lower-priority task within I/O budget;
+:All concurrent routines synchronize access to shared resources using mutexes;
+:Ensure exception handling sequence is logged for post-incident analysis;
+
+stop
+
+@enduml

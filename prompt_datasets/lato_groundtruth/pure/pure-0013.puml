@@ -1,0 +1,55 @@
+start
+
+:Initiate Railway emergency calls;
+
+if(Train-borne recorder connects Cab radio?) then(yes)
+:Event occurs;
+
+:Send details to train-borne recorder;
+fork
+:Activation;
+fork again
+:Termination;
+fork again
+:Emergency function failure;
+end fork
+else(no)
+endif
+
+:Emergency function be activated;
+:Provide continuous visual and audible indication;
+
+if(Handset is off-hook?) then(yes)
+:Audible indication at low volume;
+:Not from handset;
+else(no)
+endif
+
+if(Emergency call is connected?) then(yes)
+:Audible indication is finished;
+
+:Provide indication;
+if(Want to speak?) then(yes)
+:Use PushTo-Talk button;
+else(no)
+endif
+
+if(Pick up handset?) then(no)
+:Call be connected to loudspeaker;
+else(yes)
+endif
+
+if(Train moves out of call area whilst?) then(yes)
+:Leave call;
+:Provide loss audible and visual indication;
+else(no)
+endif
+
+:Call is terminated;
+:Visual alarm indication ceases;
+
+else(no)
+:Provide audible and visual indication;
+endif
+
+stop

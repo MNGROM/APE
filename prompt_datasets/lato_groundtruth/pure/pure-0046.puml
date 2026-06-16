@@ -1,0 +1,49 @@
+start
+
+:Access main inventory screen;
+:Display Edit Details button;
+
+:Click Edit Details button;
+
+:Display Edit Details screen;
+fork
+:All existing item details;
+fork again
+:Detail x department assignments;
+fork again
+:Detail x category assignments;
+end fork
+
+if(Filter view?) then(yes)
+
+switch(Detail status)
+case(Active)
+:Active status;
+case(Inactive)
+:Inactive status;
+case(All)
+:All status;
+endswitch
+
+else(no)
+endif
+
+:Edit details;
+
+fork
+:Detail x department/category assignments;
+fork again
+:Detail data;
+fork again
+:Detail active x inactive status;
+fork again
+:Create new detail;
+end fork
+
+:System validates detail data;
+:System updates information;
+
+:Click Done button;
+:Back to main inventory screen;
+
+stop

@@ -1,0 +1,6 @@
+start
+
+:In Inner Loop Yaw Regulator;
+:Command transient changes in angular yaw acceleration <= 50 deg/sec2/sec;
+
+stop

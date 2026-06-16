@@ -1,0 +1,10 @@
+start
+
+:Output cost J;
+if(Minimum possible value?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

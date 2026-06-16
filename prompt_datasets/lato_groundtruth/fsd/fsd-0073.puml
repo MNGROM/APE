@@ -1,0 +1,65 @@
+@startuml
+
+start
+
+:Avionics stack comprises;
+fork
+  :FMS;
+fork again
+  :FADEC;
+end fork
+:Execute on deterministic RTOS;
+
+fork
+:Core control laws implemented via high-frequency ISRs;
+:Sample sensor data;
+fork again
+:Lower-priority worker tasks handle ancillary computations;
+end fork
+
+if (Abnormal signal/sensor reading > preset threshold?) then (yes)
+  :Flight control module triggers concurrent initialization of tasks;
+  :Scheduled by RTOS using priority-based preemption;
+  fork
+    :Data verification module;
+    :Employ calibration algorithm to compute CRC;
+      if (Data error detected?) then (yes)
+        repeat
+        :Initiate automatic data retransmission protocol with exponential backoff algorithm;
+        repeat while(Valid data confirmed) is(no)
+      else (no)
+      end if
+  fork again
+    :Fault diagnosis module;
+    :Execute diagnostic routines;
+    if (Persistent hardware failure?) then (yes)
+      :Spawn synchronized tasks;
+      fork
+        :Sensor recalibration;
+      fork again
+        :Managed system restart;
+      end fork
+        :Mutex to protect shared resources like CAN bus;
+    else (no)
+    end if
+  end fork
+end if
+
+:System watchdog timer supervises entire process;
+
+if (Successful completion of all corrective actions?) then (yes)
+  :Reset system;
+  :Resume normal operational state;
+else (no)
+end if
+
+:All event traces comply with DO-178C/DO-254 processes;
+if (Critical anomalies?) then (yes)
+  :Trigger additional fault-tolerant strategies;
+  :Immediate data uplink to ground station via secure telemetry link;
+else (no)
+end if
+
+stop
+
+@enduml

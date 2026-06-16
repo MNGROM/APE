@@ -1,0 +1,73 @@
+start
+if (remote mode enabled) then
+  :switch to remote power-up state;
+  if(remote mode is disabled)then(yes)
+    :switch to state 49;
+    if(GW_trigger=2 and battery SOC=20)then(yes)
+      :switch to state 28;
+      if(GW_trigger=0 and DCDC state=3)then(yes)
+        :shutdown;
+        stop
+      endif
+    endif
+  endif
+else if (slow charging active) then
+  :switch to slow charging power-up state;
+  if(slow charging is inactive)then(yes)
+    :switch to state 129;
+    if(GW_trigger=2 and SOC=20)then(yes)
+      :switch to state 28;
+      if(GW_trigger=0 and DCDC state=3)then(yes)
+        :shutdown;
+        stop
+      endif
+    endif
+  endif
+else if (fast charging active) then
+  :switch to fast charging power-up state;
+  if(fast charging is inactive)then(yes)
+    :switch to state 189;
+    if(GW_trigger=2 and SOC=20)then(yes)
+      :switch to state 28;
+      if(GW_trigger=0 and DCDC state=3)then(yes)
+        :shutdown;
+        stop
+      endif
+    endif
+  endif
+else if (GW_trigger=2) then(yes)
+  :switch to state 10;
+  if(battery SOC=20)then(yes)
+    :switch to state 28;
+    if (GW_trigger=0 and SOC=80) then(yes)
+      :switch to state 49;
+      switch(condition judgement)
+        case(ignition switch=2)
+          :switch to state 30;
+          if(ignition switch=0)then(yes)
+            :shutdown;
+            stop
+          endif
+        case(remote mode is enabled)
+          :switch to state 28;
+          if(remote mode is disabled)then(yes)
+            :shutdown;
+            stop
+          endif
+        case(slow charging is active)
+          :switch to state 110;
+          if(slow charging is inactive)then(yes)
+            :shutdown;
+            stop
+          endif
+        case(fast charging is active)
+          :switch to state 170;
+          if(fast charging is inactive)then(yes)
+            :shutdown;
+            stop
+          endif
+      endswitch
+    endif
+  endif
+endif
+end

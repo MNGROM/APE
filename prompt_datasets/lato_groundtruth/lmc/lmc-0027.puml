@@ -1,0 +1,6 @@
+start
+
+:In Inner Loop Height Regulator;
+:Command transient changes in translational height acceleration <= 32 ft/sec2/sec;
+
+stop

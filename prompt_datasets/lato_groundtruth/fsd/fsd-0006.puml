@@ -1,0 +1,65 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine on RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling pump duty cycles;
+end fork
+
+:Multi-source fault condition triggered by deviations in;
+fork
+ :Temperature;
+fork again
+ :Pressure;
+fork again
+ :Humidity;
+fork again
+ :System rail voltage from PMIC;
+fork again
+ :RF signal strength;
+fork again
+ :Data uplink rate;
+end fork
+
+:Activate level-1 fault handler;
+:Initiate concurrent tasks;
+
+fork
+:High-priority ISR;
+:Real-time environmental monitoring;
+fork again
+:Medium-priority task using a watchdog;
+:Cyclic equipment status checks;
+fork again
+:Lower-priority thread via mutex-protected priority queue;
+:Continuous system load assessment and resource optimization;
+end fork
+
+:Level-2 fault management routine;
+:Spawn parallel operations;
+
+fork
+:Cyclically probe CAN bus link state with CRC verification;
+fork again
+:Asynchronously record structured audit logs to ring buffer;
+:Flush to non-volatile storage within I/O budget limits;
+fork again
+:Periodically evaluate system performance envelope;
+fork again
+:Update fault diagnosis report;
+end fork
+
+:Sensor fusion and calibration routines execute periodically;
+if(Persistent out-of-range reading?) then(yes)
+:Engage system redundancy;
+:Invoke controlled cool-down protocol managed by FADEC/BMS;
+:Employ exponential backoff for retry operations;
+else(no)
+end if
+
+stop
+
+@enduml

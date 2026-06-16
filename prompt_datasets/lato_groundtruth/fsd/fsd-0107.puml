@@ -1,0 +1,61 @@
+@startuml
+
+start
+
+:Embedded control platform employs FSM;
+:Orchestrate interactions between;
+fork
+:High-priority ISRs;
+fork again
+:Lower-priority deferred RTOS tasks;
+fork again
+:Fail-safe supervisory policies;
+end fork
+
+:Receive user instructions via command interface;
+:Evaluate requirement for multitasking;
+
+if (Confirmed?) then (yes)
+  :Initialize parallel processing module;
+    :Dedicated task synchronized via mutexes and priority queues;
+    :Continuously monitor sensor states;
+    if (Sensor data outside nominal bounds?) then (yes)
+      :Calibration routine engages in closed-loop cycle;
+      repeat
+        :Read raw data;
+        :Apply error compensation;
+        :Generate corrected values;
+      repeat while (Sensor recovers?) is (no)
+    else (no)
+    end if
+
+    :Successful calibration/Normal sensor;
+    :Re-evaluate multitasking requirement;
+    if (Additional parallel processing warranted?) then (yes)
+      :Spawn subsequent task;
+      :Monitor environmental parameters;
+      if (Parameters exceed defined threshold?) then (yes)
+        :Terminate all non-critical tasks via system-wide abort;
+        :Activate alarm indicators;
+        :Initiate controlled shutdown via safety monitors;
+      else (no)
+      end if
+    else (no)
+    end if
+
+else (no)
+end if
+
+:Aggregate all task execution results within protected ring buffer;
+:Data integrity verified by CRC;
+:Final comprehensive processing and output command generation;
+
+fork
+:Entire process underpinned by timer-driven periodic loops for time-critical functions;
+fork again
+:Structured logs persisted for post-mortem analysis and audit trails;
+end fork
+
+stop
+
+@enduml

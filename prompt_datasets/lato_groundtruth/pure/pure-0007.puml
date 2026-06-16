@@ -1,0 +1,14 @@
+start
+
+partition "Transaction user interface"{
+  :Give buy instruction;
+}
+
+partition "Central trading system"{
+  :Save buy instruction;
+  :Match instructions with same stock id;
+  :Make a trade by matching;
+  :Modify information of matched instructions;
+}
+
+stop

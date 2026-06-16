@@ -1,0 +1,14 @@
+start
+
+:Monitor direction of permitted movement;
+:Drive for national value distance;
+:Apply emergency brake;
+
+if(Traction unit comes to standstill?) then(yes)
+:Driver can release emergency brake;
+:Roll away protection is initiated;
+:ETCS provides supervision appertaining;
+else(no)
+endif
+
+stop

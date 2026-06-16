@@ -1,0 +1,13 @@
+start
+
+:In no-fail state;
+if(One branch differing with the other two branches by a unique trip level?) then(yes)
+ if(Last for more than persistence limit?) then(yes)
+ :It is mis-compare;
+ :Reported it to failure management as a failure;
+ else(no)
+ endif
+else(no)
+endif
+
+stop

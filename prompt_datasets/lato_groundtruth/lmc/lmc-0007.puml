@@ -1,0 +1,10 @@
+start
+
+if(System is supported?) then(yes)
+ if(Sensor data is good?) then(yes)
+ :Autopilot change states from TRANSITION to NOMINAL;
+ else(no)endif
+ else(no)
+endif
+
+stop

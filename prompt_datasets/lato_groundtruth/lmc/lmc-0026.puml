@@ -1,0 +1,6 @@
+start
+
+:In Inner  Loop Airspeed Regulator;
+:Command transient changes in translational axial acceleration <= 32 ft/sec2/sec;
+
+stop

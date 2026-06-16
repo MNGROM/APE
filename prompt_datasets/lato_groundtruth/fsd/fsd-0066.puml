@@ -1,0 +1,60 @@
+@startuml
+
+start
+
+:Thermal management controller executes as deterministic state machine within RTOS;
+fork
+  :Govern PWM fan speeds;
+fork again
+  :Govern liquid-cooling pump actuators;
+end fork
+
+:Vehicle startup;
+
+if (PMIC confirms battery rail voltage nominal and BMS reports sufficient fuel?) then (yes)
+  :Initiate multi-threaded pre-start check;
+
+  fork
+    :High-priority task triggered by valid coolant temperature sensor signal;
+    :Periodically poll engine speed against start threshold;
+  fork again
+    :Dedicated ISR services ring buffer from ignition system's three-port valve(044);
+    :Validate sensor data packets via CRC;
+  fork again
+    :Successful ECU self-test;
+    :Medium-priority task;
+    :Verify using mutex-protected shared data;
+   fork
+   :Fuel pump pressure;
+   fork again
+   :Injector status;
+   end fork
+  end fork
+else (no)
+end if
+
+:All sensor fusion and calibration routines execute in fixed-periodic loops;
+if (Out-of-range reading from monitored group?) then (yes)
+  :Initiate system-level redundancy check;
+    if (Confirmed?) then (yes)
+      :Initiate controlled cool-down state via FADEC;
+    else (no)
+    end if
+else (no)
+end if
+
+if(All subsystem checks pass without exception?) then(yes)
+ fork
+  :Proceed deterministically with main engine startup sequence;
+ fork again
+  if(critical task timeout?) then(yes)
+  :Watchdog timer enforces fail-safe exponential backoff;
+  else(no)
+  end if
+ end fork
+else(no)
+end if
+
+stop
+
+@enduml

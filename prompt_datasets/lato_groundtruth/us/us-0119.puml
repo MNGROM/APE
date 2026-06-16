@@ -1,0 +1,4 @@
+start
+:create pipeline;
+:upgrade dataset instance to newer version of the code;
+stop

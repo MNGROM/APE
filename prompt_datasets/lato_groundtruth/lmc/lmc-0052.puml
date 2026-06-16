@@ -1,0 +1,10 @@
+start
+
+:Rotation Matrix DCM321;
+if(theta = +/- pi/2 radians?) then(yes)
+:Not invertible;
+else(no)
+:Invertible;
+endif
+
+stop

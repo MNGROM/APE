@@ -1,0 +1,7 @@
+start
+
+:Requirement When heading hold mode becomes active;
+:Pilot uses cockpit control;
+:Set heading hold reference;
+
+stop

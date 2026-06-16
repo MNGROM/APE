@@ -1,0 +1,10 @@
+start
+:assess picture;
+split
+:automated analysis;
+split again
+:citizen annotations;
+split again
+:comments on Talk;
+end split
+stop

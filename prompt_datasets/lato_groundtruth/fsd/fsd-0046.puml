@@ -1,0 +1,67 @@
+@startuml
+
+start
+
+:Embedded communications layer managed by hard real-time RTOS task;
+:Validate incoming CAN frames;
+fork
+  :Check ID;
+fork again
+  :Check DLC;
+fork again
+  :Check CRC;
+end fork
+:Place into lock-free, multi-producer ring buffer;
+:Subsequent processing;
+
+:Proximity sensor triggers associated high-priority ISR;
+if (Detect obstacle within defined threshold?) then (yes)
+  :Initiate critical safety sequence;
+  :State evaluation within FADEC/Primary motion controller;
+
+  if (System's current speed within safe operating envelope?) then (yes)
+    :Validate obstacle type against known list of avoidable objects;
+    if (All conditions met?) then (yes)
+      :Initialize emergency obstacle avoidance routine;
+      :Spawn concurrent tasks;
+      fork
+        :Path planning;
+        repeat
+        :Fuse real-time environmental perception data with trajectory optimization algorithms;
+        repeat while(viable path computed and validated) is(no)
+      fork again
+        :Robotic arm trajectory pre-adjustment;
+        fork
+          :Dispatch parallel operations;
+          :Control robotic arm's movement;
+          :Perform closed-loop position calibration;
+          :Force adjustment via mutex-protected resource;
+        fork again
+          :Command vehicle's powertrain and steering subsystems;
+          :Body repositioning;
+        end fork
+      end fork
+    else (no)
+    end if
+  else (no)
+  end if
+else (no)
+end if
+
+fork
+  :System watchdog monitors entire sequence for timing violations;
+fork again
+  :Back-pressure from high-frequency sensor data managed through;
+ fork
+  :Priority queues;
+ fork again
+  :Bounded retry strategy with exponential backoff;
+ end fork
+end fork
+
+:Ensure all operations conclude;
+:System resumes nominal state;
+
+stop
+
+@enduml

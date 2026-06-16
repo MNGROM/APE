@@ -1,0 +1,7 @@
+start
+:Deposit objects in repository;
+if(assign permission to edit metadta?)then(yes)
+:describe the objects;
+stop
+else
+stop

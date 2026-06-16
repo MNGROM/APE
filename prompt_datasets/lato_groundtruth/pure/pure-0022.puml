@@ -1,0 +1,30 @@
+start
+
+:Select Partial Supervision;
+if(By driver?) then(yes)
+:Driver selects;
+else(no)
+:By Track-to-train transmission information;
+endif
+
+if(Specified acknowledgement?) then(yes)
+:Acknowledge transfer in 5s;
+else(no)
+endif
+
+if(Trainborne equipment is not operative?) then(yes)
+:Leave Partial Supervision;
+else(no)
+endif
+
+if(Shunting is selected?) then(yes)
+:Leave Partial Supervision;
+else(no)
+endif
+
+if(Full Supervision available?) then(yes)
+:Leave Partial Supervision;
+else(no)
+endif
+
+stop

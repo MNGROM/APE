@@ -1,0 +1,11 @@
+start
+
+if(Pilot is not in control (not standby)?) then(yes)
+ if(System is supported without failures (not apfail)?) then(yes)
+ :Exceeding sensor limits latch an autopilot pullup;
+ else(no)
+ endif
+else(no)
+endif
+
+stop

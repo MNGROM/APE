@@ -1,0 +1,25 @@
+start
+
+:Roll hold mode becomes the active mode;
+if(Actual roll angle < 6 degrees?) then(yes)
+:Roll hold reference = zero;
+else(no)
+:Roll hold reference = Actual roll attitude;
+endif
+
+if(Actual roll angle > 30 degrees?) then(yes)
+fork
+:Roll hold reference = 30 degrees;
+fork again
+:In same direction as actual roll angle;
+end fork
+else(no)
+endif
+
+if(Turn knob commands 3 degrees or more in either direction?) then(yes)
+:Roll reference be set to command;
+:Up to 30 degree limit;
+else(no)
+endif
+
+stop

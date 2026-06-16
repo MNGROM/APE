@@ -1,0 +1,64 @@
+@startuml
+
+start
+
+:System initialization;
+:Thermal management controller implemented as deterministic state machine on RTOS;
+
+fork
+  :PWM fan speeds;
+fork again
+  :Liquid-cooling pump actuators;
+end fork
+
+if (Sensor reading > preset threshold?) then (yes)
+  :Evaluate ambient temperature and humidity against setpoints;
+  :Initiate concurrent data processing tasks;
+
+  fork
+    :High-priority task executes cyclic data smoothing algorithm;
+    :Convergence check;
+  fork again
+    :Lower-priority task performs outlier rejection;
+  end fork
+
+  :Both utilize shared mutex-protected sensor data ring buffer;
+
+  if (Fault detected?) then (yes)
+    :ISR triggers as separate scheduled threads;
+    fork
+      :Fault diagnosis module sequentially validates hardware status via;
+      fork
+        :PMIC/BMS;
+      fork again
+        :Software parameters;
+      end fork
+    fork again
+      :Alarm module records CRC-audited log entry into ring buffer;
+      :Trigger alarm signals;
+    end fork
+      :Asynchronously flush logs to non-volatile storage within strict I/O budgets;
+
+  else (no)
+  end if
+
+else (no)
+end if
+
+:Sensor fusion and calibration routines run as periodic RTOS tasks;
+  if (Persistent out-of-range readings?) then (yes)
+    :Engage system redundancy;
+    :Invoke controlled cool-down sequence via FADEC/equivalent control logic;
+  else (no)
+  end if
+
+:Dedicated watchdog monitors health of entire task ensemble;
+:Ensure timely execution;
+if(Task starvation/deadline misses?) then(yes)
+:Initiate exponential backoff recovery procedure;
+else(no)
+end if
+
+stop
+
+@enduml

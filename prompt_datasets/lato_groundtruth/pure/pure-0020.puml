@@ -1,0 +1,19 @@
+start
+
+:Normal services unavailable;
+:Switch to Direct Mode;
+
+if(Exist multiple channels?) then(yes)
+:Manual channel selection;
+else(no)
+endif
+
+:Use PPT for voice transmission;
+:Provide portables battery warnings;
+
+if(Normal services resume?) then(yes)
+:Give audible/visual indication;
+else(no)
+endif
+
+stop

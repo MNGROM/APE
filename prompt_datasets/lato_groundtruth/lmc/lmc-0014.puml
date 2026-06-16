@@ -1,0 +1,8 @@
+start
+
+if(Limits are exceeded?) then(yes)
+:Sensor change states from NOMINAL to FAULT;
+else(no)
+endif
+
+stop

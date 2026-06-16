@@ -1,0 +1,8 @@
+start
+
+if(Pilot is not in control (not standby)?) then(yes)
+:Autopilot change states from STANDBY to TRANSITION;
+else(no)
+endif
+
+stop

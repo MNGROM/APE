@@ -1,0 +1,69 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine on RTOS;
+fork
+:Govern PWM fans;
+fork again
+:Govern liquid-cooling actuators;
+end fork
+
+:Primary sequence initiates;
+:Check system rail voltage status via PMIC;
+if (Primary power rail nominal?) then (yes)
+  :Operation proceeds;
+  :Two high-priority tasks spawned;
+  fork
+    :Sample current sensor data;
+    if (Overcurrent detected?) then (yes)
+      :Enter iterative monitoring mode using ring buffer;
+      repeat
+        :Hold system state;
+      repeat while (Data normalized?) is (no)
+    else (no)
+    end if
+  fork again
+    :Monitor temperature sensor data against safety thresholds;
+    if (Excursion?) then (yes)
+      :Trigger immediate heat dissipation measures;
+      if (Persistent?) then (yes)
+        :Initiate controlled cool-down path managed by BMS/FADEC;
+      else (no)
+      end if
+    else (no)
+    end if
+  end fork
+
+  while (Rail voltage stable?) is (yes)
+    :Two further checks performed;
+    fork
+      :Verify power output stability;
+    fork again
+      :Ensure frequency output compliance;
+    end fork
+  endwhile
+
+  :Supervisory state confirms all monitored parameters within nominal ranges;
+  :Complete control cycle;
+
+else (no)
+end if
+
+  :Telemetry monitor operates in periodic loop driven by timer interrupts;
+  :Employ bounded retries with exponential backoff on communication faults;
+  :Supplement core logic;
+
+fork
+  :Sensor fusion and calibration routines execute periodically;
+fork again
+  if (Out-of-range readings?) then (yes)
+    :Engage redundant sensors and mutex-protected priority queues;
+    :Critical command handling;
+  else (no)
+  end if
+end fork
+
+stop
+
+@enduml

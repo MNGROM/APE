@@ -1,0 +1,52 @@
+@startuml
+
+start
+
+:Embedded control platform employs FSM;
+:Coordinate;
+fork
+:High-priority ISRs;
+fork again
+:Deferred RTOS tasks;
+fork again
+:Fail-safe policies under RTOS;
+end fork
+
+if (Patient heart rate > preset threshold?) then (yes)
+  fork
+  :ISR immediately triggers alarm;
+  :Signal high-priority task via message queue;
+
+  fork again
+    :Medium-priority task monitors blood oxygen saturation;
+    if (Desaturation detected?) then (yes)
+     fork
+      :Acquire mutex to safely adjust ventilator's oxygen supply via PMIC;
+     fork again
+      :Log anomaly with CRC to ring buffer for audit;
+     end fork
+
+      repeat
+        :Sample data at intervals defined by timer interrupt;
+        :Apply exponential backoff algorithm for parameter adjustment;
+      repeat while (Saturation levels recover within bounded retries) is (no)
+    else (no)
+    end if
+
+end fork
+
+else (no)
+end if
+
+
+fork
+    :Background analytics task processes all collected vital signs in real time;
+    :Dynamically refine alarm strategy;
+fork again
+  :Watchdog timer ensures liveness;
+fork again
+  :Persist all structured diagnostic data for post-hoc analysis;
+end fork
+stop
+
+@enduml

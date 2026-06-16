@@ -1,0 +1,8 @@
+start
+
+if(A second failure in progress?) then(yes)
+:Selected value remain unchanged;
+else(no)
+endif
+
+stop

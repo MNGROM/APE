@@ -1,0 +1,42 @@
+start
+
+:Log in LifeCycle Manager tool;
+:Go to "Promotion Jobs" home page;
+:Click "New Job";
+:"New Job"window appears;
+
+:Enter information;
+fork 
+:Enter name;
+fork again
+:Enter description;
+fork again
+:Enter keywords;
+end fork
+
+:Go to "Save Job" field;
+:Browse and select folder;
+
+:Open drop-downlists;
+if (System name is diaplayed?) then (no)
+:Click "theLogin";
+:A new CMS option;
+:A new window is launched;
+
+:Enter information;
+fork 
+:Enter system name;
+fork again
+:Enter user name;
+fork again
+:Enter password;
+end fork
+
+else(yes)
+:Select source system;
+:Select destination system;
+endif
+
+:Click "Create";
+
+stop

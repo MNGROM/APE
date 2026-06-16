@@ -1,0 +1,12 @@
+start
+
+:Menu selection;
+:Load game data from file;
+
+fork
+:Redraw board;
+fork again
+:Set player statistics;
+end fork
+
+stop

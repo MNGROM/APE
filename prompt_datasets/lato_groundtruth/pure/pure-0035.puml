@@ -1,0 +1,23 @@
+start
+
+:Access main inventory screen;
+:Display inventory departments;
+:Click department cell;
+:Display inventory categories;
+
+:Click category cell;
+:Display inventory sub-categories;
+:Click sub-category cell;
+
+switch(Category)
+case(Unique Item)
+:Display list of inventory items;
+:Click item;
+:Display item details;
+case(Stock Item)
+:Display Stock Item category detail;
+case(Under $5)
+:Not clickable;
+endswitch
+
+stop

@@ -1,0 +1,95 @@
+@startuml
+
+start
+
+:TCMS operates on preemptive RTOS;
+:Manage with deterministic scheduling; 
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Door;
+fork again
+  :Diagnostics;
+end fork
+
+if (Train enters designated track range?) then (yes)
+  if (Signal light green?) then (yes)
+    :Initialize parallel processing sequence;
+    :Track circuit status check;
+
+    if (Abnormality detected?) then (yes)
+     :Fault diagnosis process;
+      repeat
+        :Retry up to 3 times with exponential backoff;
+      repeat while (Circuit confirmed operational?) is (no)
+    else (no)
+    end if
+
+    :Spawn two independent, high-priority tasks;
+
+    fork
+      :Collect train speed data;
+      :Perform real-time calculations integrated with track slope info from geographic database;
+    fork again
+      :Analyze brake system response time against performance envelope;
+      if (Envelope insufficient?) then (yes)
+        :Trigger immediate early warning via FADEC;
+      else (no)
+      end if
+    end fork
+
+    fork
+    :Enter monitoring state;
+    :Poll train position via dedicated ISR;
+
+    if (Approaching switch section?) then (yes)
+      :Launch safety-critical procedure;
+      fork
+        :Employ mutex-protected ring buffer for sensor data;
+        :Within priority-based task model;
+      fork again
+        :Execute dual verification checks;
+        fork
+          :Switch mechanical lock status inquiry;
+        fork again
+          :Electrical control system feedback confirmation;
+        end fork
+      end fork
+    else (no)
+    end if
+
+    fork again
+      :Asynchronously acquire and validate with CRC checksum;
+      fork
+      :Track temperature sensor data;
+      fork again
+      :Train wheel rim wear detection results;
+      end fork
+    if (Pass all verifications?) then(yes)
+      :Train permitted to proceed;
+    else(no)
+    end if
+
+    end fork
+  else (no)
+  end if
+else (no)
+end if
+
+fork
+  :Telemetry monitor task driven by periodic timer interrupt;
+  :Archive data to non-volatile memory;
+fork again
+  fork
+  :Independent watchdogs;
+  fork again
+  :PMIC-managed fail-safe path;
+  end fork
+  :Ensure graceful degradation in compliance with EN 50128/EN 50129;
+end fork
+
+stop
+
+@enduml

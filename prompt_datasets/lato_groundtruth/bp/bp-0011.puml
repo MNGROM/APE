@@ -1,0 +1,33 @@
+start
+
+:Open Web application;
+:Click on "Send";
+:Broadcasting Wizard appears;
+
+:Select output format MHTML;
+:System creates MHTML le;
+:All components in one le;
+
+if(Generate one document and broadcast it?) then(yes)
+
+:Output format is suitable;
+:Choose "Continue";
+
+:Enter recipient email addresses;
+note right:Separate with semicolons
+
+fork
+:Enter subject line;
+fork again
+:Enter text;
+fork again
+:Dene the importance of email;
+end fork
+
+:Choose "Execute";
+
+else(no)
+:Modification;
+endif
+
+stop

@@ -1,0 +1,65 @@
+@startuml
+
+start
+
+:TCMS operates on preemptive RTOS;
+:Manage subsystems with deterministic scheduling via priority queues;
+
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Door;
+fork again
+  :Diagnostics;
+end fork
+
+if (Station arrival?) then (yes)
+  fork
+  :Verify door status via dedicated monitoring task;
+  if (Any door open?) then (yes)
+    :Issue door closure command;
+    :Initiate cyclic control process;
+    repeat
+      :Monitor door switch status;
+      :Check locking mechanism via CAN bus message with confirming CRC;
+    repeat while (Fully closed and locked state achieved?) is (no)
+  else (no)
+  end if
+
+  fork again
+    :High-priority task potentially serviced by ISR from platform sensors;
+    :Perform safety-critical monitoring of passenger egress and ingress;
+
+  if(All doors confirmed secure?) then(yes)
+  :Update mutex-protected state variable;
+  :Signal train readiness for departure;
+  else(no)
+  end if
+
+  :Dispatch departure signal via FADEC/equivalent propulsion controller;
+  fork
+  :Final system checks;
+  fork again
+  :Initialization of train movement;
+  end fork
+  end fork
+
+else (no)
+end if
+
+fork
+    :Telemetry data asynchronously logged to ring buffer for archival in non-volatile memory;
+fork again
+  fork
+  :Independent watchdogs;
+  fork again
+  :PMIC-managed fail-safe path;
+  end fork
+  :Enforce graceful degradation in compliance with EN 50128/EN 50129 safety standards;
+end fork
+
+stop
+
+@enduml

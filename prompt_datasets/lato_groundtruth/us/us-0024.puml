@@ -1,0 +1,8 @@
+start
+:Use website;
+split
+:upload content;
+split again
+:delete content;
+split end
+stop

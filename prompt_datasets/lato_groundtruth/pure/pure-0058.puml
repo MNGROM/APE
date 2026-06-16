@@ -1,0 +1,28 @@
+start
+
+:Open KeePass;
+:Select Open->Database;
+
+:Navigate through folders;
+
+:Select database;
+if(Folder is suitable?) then(no)
+:“File not found” appears;
+:Select another folder;
+else(yes)
+endif
+
+:Choose cancel;
+:Exit from KeePass;
+
+:Type Master Password;
+
+if(Password is right?) then(no)
+:“Invalid/wrong key” appears;
+:Type another master key;
+else(yes)
+endif
+
+:Main database window opens;
+
+stop

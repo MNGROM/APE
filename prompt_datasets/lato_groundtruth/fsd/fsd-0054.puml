@@ -1,0 +1,85 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within RTOS;
+fork
+  :Govern multi-zone cooling via PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+fork again
+  :Concurrently execute;
+ fork
+ :Periodic sensor fusion;
+ fork again
+ :Calibration routines;
+ end fork
+end fork
+
+if (Detect smoke concentration exceedance?) then (yes)
+  :Validate temperature sensor integrity through CRC check;
+  if (Fault confirmed?) then (yes)
+  :Trigger alarm;
+  :High-priority task initializes;
+   fork
+   :Emergency ventilation system;
+   fork again
+   :Monitoring process with exponential backoff;
+   end fork
+  else (no)
+  end if
+else (no)
+end if
+
+if (Carbon monoxide threshold breached?) then (yes)
+  repeat
+  :Analyze via dedicated gas composition algorithm;
+  :Activate exhaust fan;
+  :Activate persistent iterative detection task;
+  repeat while(Concentrations normalize) is(no)
+else (no)
+end if
+
+if (Water immersion sensor trigger?) then (yes)
+  :Command closure of water supply valve via ISR-to-actuator signal;
+  :Initiate leak-mitigation monitoring loop;
+else (no)
+end if
+
+:For security sensors;
+fork
+  :Door magnetic;
+fork again
+  :Infrared;
+fork again
+  :Glass breaker;
+end fork
+:Employ debouncing and validation state;
+:Filter false alarms;
+
+if (Intrusion confirmed?) then (yes)
+  :Trigger;
+  fork
+  :Central alarm;
+  fork again
+  :High-priority, iterative monitoring task;
+  :Use ring buffer for event logging;
+  end fork
+else (no)
+end if
+
+if (All sensor data nominal?) then (yes)
+  :Enter low-power standby state managed by PMIC;
+  :Await next scheduled supervisory cycle;
+else (no)
+end if
+
+if(Any out-of-range readings?) then(yes)
+  :Engage redundant sensor paths;
+  :Initiate controlled, failsafe cool-down procedure;
+else(no)
+end if
+
+stop
+
+@enduml

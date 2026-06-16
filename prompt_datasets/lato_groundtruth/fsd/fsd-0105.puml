@@ -1,0 +1,57 @@
+@startuml
+
+start
+
+:Embedded communications layer validates incoming CAN frames;
+
+fork
+  :Check ID;
+fork again
+  :Check DLC;
+fork again
+  :Check CRC;
+end fork
+
+:Place into lock-free ring buffer for consumer threads;
+
+:Supervisory task scheduled by RTOS;
+:Monitor system resource occupancy;
+  if (> defined threshold?) then (yes)
+     if (Task queue empty/idle computing unit available?) then(yes)
+    :Initialize parallel processing mechanism
+    :Analyze task priority and resource allocation via PMIC/BMS;
+
+    if (Confirmed periodic tasks with sufficient resources?) then (yes)
+      repeat
+        :FADEC-like control loop performs iterative task decomposition and resource scheduling;
+      repeat while (All subtasks complete and resources released?) is (no)
+      :Poll system state for return to normalcy;
+    else (no)
+    end if
+  else (no)
+  end if
+else(no)
+end if
+
+  :External interrupt signals serviced by corresponding ISR;
+  :Evaluate interrupt's importance and urgency;
+  :Trigger parallel processing when system idle;
+
+fork
+  :High-priority interrupt tasks undergo allocation and scheduling;
+fork again
+  :Watchdog ensures timely completion;
+end fork
+
+:Telemetry monitor task driven by timer interrupt;
+:Implements bounded retries with exponential backoff for fault recovery;
+
+fork
+  :Concurrent threads handle message parsing and  serialization;
+fork again
+:Back-pressure managed via priority queues and mutex-protected access to shared resources;
+end fork
+
+stop
+
+@enduml

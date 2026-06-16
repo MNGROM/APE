@@ -1,0 +1,56 @@
+start
+
+:Employ multiple active traction vehicles;
+
+if(Connect to on-train wire?) then(no)
+:Establish permanent radio connection between active cabs;
+else(yes)
+endif
+
+:Establish call from lead traction vehicle active cab;
+:Whilst on-going;
+:Display ‘multi-drivers’ indication permanently;
+
+if(Group member places call on hold?) then(yes)
+:Not affect other communications;
+:Notify lead driver;
+else(no)
+endif
+
+if(Lead driver wants to remove member?) then(yes)
+:Remove group member;
+else(no)
+endif
+
+if(Lead driver wants to terminate entire call?) then(yes)
+:Terminate entire call;
+else(no)
+endif
+
+if(Disconnected from multi-driver call?) then(yes)
+:Give claer indication;
+else(no)
+endif
+
+:Use automation or guidance;
+:Simplify setting up and closing down;
+
+:Connect caall to loudspeaker whilst;
+:Handset is onhook;
+
+if(Any part fails?) then(yes)
+:Provide audible and visual indication;
+ if(Fail in lead traction vehicle?) then(yes)
+  :Lead driver reestablish call;
+ else(no)
+ endif
+
+ if(Fail to any other cab?) then(yes)
+  :Driver call lead cab;
+  :Request re-establishment;
+ else(no)
+ endif
+else(no)
+endif
+
+stop

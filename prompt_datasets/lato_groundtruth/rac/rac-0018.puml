@@ -1,0 +1,69 @@
+start
+if (slow charging is active and front MCU high-voltage detection flag=0) then(yes)
+  :switch to state 93;
+  if (front MCU high-voltage flag=1 and charging/discharging power-up=1) then(yes)
+    :switch to state 95;
+    if (pre-charge failure) then(yes)
+      :switch to state 115;
+      if (slow charging is inactive) then(yes)
+        :shutdown;
+        stop
+      endif
+    else if (AC charging/discharging system fault) then
+      :switch to state 115;
+      if (slow charging is inactive) then
+        :shutdown;
+        stop
+      endif
+    else if (slow charging is inactive) then
+      :switch to state 115;
+      :shutdown;
+      stop
+    endif
+  else if(DCDC state=1 and no battery pre-heating demand)then
+    :switch to state 95;
+    if(power-up readiness and pre-heating demand exist)then(yes)
+      :switch to state 115;
+      if (slow charging is inactive) then
+        :shutdown;
+        stop
+      endif
+    endif
+  else if(front MCU high-voltage flag=1 and power-up readiness)then
+    :switch to state 93;
+    switch(condition judgement)
+      case(vehicle charging/discharging mode=1 and power battery charging demand=2)
+        :switch to state 95;
+        :switch to state 115;
+        if (slow charging is inactive) then
+          :shutdown;
+          stop
+        endif
+      case(charging/discharging power-up guidance=2 or 3)
+        :switch to state 115;
+        if (slow charging is inactive) then
+          :shutdown;
+          stop
+        endif
+      case(vehicle charging/discharging mode=1)
+        :switch to state 115;
+        if (slow charging is inactive) then
+          :shutdown;
+          stop
+        endif
+      case(power battery charging demand=2)
+        :switch to state 115;
+        if (slow charging is inactive) then
+          :shutdown;
+          stop
+        endif
+      case(battery pre-heating demand=3)
+        :switch to state 115;
+        if (slow charging is inactive) then
+          :shutdown;
+          stop
+        endif
+    endswitch    
+  endif
+endif
+end

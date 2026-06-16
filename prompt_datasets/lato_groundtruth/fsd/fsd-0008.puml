@@ -1,0 +1,71 @@
+@startuml
+
+start
+
+:Vehicle ignition;
+:Validate incoming CAN frames for;
+fork
+  :ID;
+fork again
+  :DLC;
+fork again
+  :CRC;
+end fork
+:Queue via lock-free ring buffers;
+
+:Startup sequence managed by safety-critical task;
+:Check primary battery rail against preset threshold using PMIC;
+
+if (< threshold?) then (yes)
+  :Execute low-rail voltage protection mechanism;
+  if (Rail voltage recovers?) then (no)
+    :Initialize backup power switching procedure via BMS;
+    :Monitor rail voltage fluctuations in real-time;
+    if (Deviations exceed safe range?) then (yes)
+      :Trigger immediate alarm;
+    else (no)
+    end if
+    else(yes)
+  end if
+else (no)
+end if
+
+:Backup power is stable and confirmed;
+:Spawns high-priority concurrent tasks;
+fork
+  :Perpetually monitor battery state of charge;
+  :Cyclically execute deterministic battery health diagnostic;
+fork again
+  :Initialize engine management system;
+  :Cyclically generate ignition signal;
+end fork
+
+:Rail voltage stabilization;
+:Launch multi-layered protection scheme;
+fork
+  :Automatic start-stop optimization task;
+  :Cycle strategy algorithm;
+fork again
+  :Energy recovery function;
+  :Cycle distribution algorithm;
+end fork
+
+:Ensure reliable ignition across diverse operating conditions;
+
+:Telemetry monitor driven by timer ISR;
+:Operate in fixed-period loop with bounded retries and exponential backoff on faults;
+
+:Synchronized using mutexes;
+fork
+  :Concurrent parsing thread;
+fork again
+  :Serialization threads;
+end fork
+:Manage back-pressure via priority queue;
+
+:Watchdog timer supervises critical tasks;
+:Ensure task liveness;
+
+stop
+
+@enduml

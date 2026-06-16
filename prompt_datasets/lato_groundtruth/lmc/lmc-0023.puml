@@ -1,0 +1,6 @@
+start
+
+:In Inner Loop Roll Regulator;
+:Command transient changes in angular roll acceleration <= 50 deg/sec2/sec;
+
+stop

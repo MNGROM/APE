@@ -1,0 +1,57 @@
+@startuml
+
+start
+
+:TCMS operates on preemptive RTOS;
+:Manages with deterministic scheduling;
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Doors;
+fork again
+  :Diagnostics;
+end fork
+
+if (Validate train entry signal?) then (yes)
+  if (Active task priority > preset threshold and safe operation assured?) then (yes)
+    :Execute status verification of signal processing module;
+    :CRC check;
+
+    :Initialize concurrent tasks;
+    fork
+      :Continuously monitor real-time train operational parameters via a ring buffer;
+    fork again
+      :Acquire track detection data through CAN bus interface managed by ISR;
+    fork again
+      :Cyclically update scheduling database protected by mutex;
+    end fork
+
+    :Synchronize independent units;
+    fork
+      :Primary unit use priority queue;
+      :Periodically compute optimal operation plan;
+    fork again
+      :Secondary unit cyclically validates scheduling rule compliance;
+    end fork
+
+    :Culminate in train's intelligent scheduling task;
+    :Archive telemetry to non-volatile memory;
+
+  else (no)
+  end if
+else (no)
+end if
+
+fork
+  :Watchdog timers and fail-safe paths governed by EN 50128/EN 50129;
+  :Ensure graceful degradation;
+fork again
+  :PMIC/analogous BMS/FADEC-style supervisory component manages power state transitions;
+  :Fault recovery with exponential backoff where applicable;
+end fork
+
+stop
+
+@enduml

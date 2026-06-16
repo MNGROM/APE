@@ -1,0 +1,45 @@
+start
+
+partition "RMR & Interim BS Unit Owner"{
+ :Request Availability Test;
+ :Submit request using G-213H Black Start Test Report Form;
+
+ if(Testing above contract MNDC?) then(yes)
+ :Request in the form;
+ else(no)
+ endif
+
+ if(Unit retests and passes?) then(yes)
+ :Correct Availability in SLIC;
+ else(no)
+ endif
+}
+
+partition "Alhambra Generation Dispatcher"{
+ :Notify BS Unit SC via telephone;
+ :Transmit Availability Test Dispatch Notice;
+}
+
+partition "BS Generating Unit Operator"{
+ :Ramp to requested MW;
+ :Maintain requested MW for 4 hours;
+ :Test;
+ :Ramp down/continue Market Transaction;
+}
+
+partition "RMR Generating Unit Operator"{
+ :Submit Ambient Temperature;
+ :Submit 4 Ambient Temperature Points;
+}
+
+partition "CAISO Operations Support Test Administrator" {
+ :Average MWh output;
+ :Determine BS Unit's Availability;
+   if(Output >= 99%?) then (yes)
+   :Declare unit available;
+   else (no)
+   :Adjust Availability Limit;
+   endif
+}
+
+stop

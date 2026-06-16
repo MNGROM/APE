@@ -1,0 +1,23 @@
+start
+
+:Rows and columns of DCM321;
+if(Orthonormal?) then(yes)
+:Allowed;
+
+fork
+:<r1, r2> = r1 r2T = 0;
+fork again
+:<r1, r1> = r1 r1T = 1;
+end fork
+
+fork
+:<c1, c2> = c1 c2T = 0;
+fork again
+:<c1, c1> = c1 c1T = 1;
+end fork
+
+else(no)
+:Not allowed;
+endif
+
+stop

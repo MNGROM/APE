@@ -1,0 +1,23 @@
+start
+
+:Open KeePass;
+:Select New->Database;
+
+:Write private Master Password and/or select Key File;
+
+if(Determine Master Password?) then(yes)
+switch(Selection)
+case(Help)
+:Help files open;
+case(Cancel)
+:Exit from KeePass;
+case(OK)
+:Retype Master Password for confirmation;
+:Main database window opens;
+endswitch
+
+else(no)
+:Message prompts to enter password/key file;
+endif
+
+stop

@@ -1,0 +1,60 @@
+@startuml
+
+start
+
+:Network stack supervises connectivity through;
+fork
+  :Exponential backoff retry logic;
+fork again
+  :Keep-alive heartbeats;
+fork again
+  :Continuous link-state monitoring;
+end fork
+
+if (External signal RSSI > preset threshold?) then (yes)
+  :Initialize parallel processing;
+
+  fork
+    :High-priority ISR validates signal source via cryptographic challenge-response;
+    if (Successful?) then (yes)
+      :Trigger periodic data acquisition mode;
+      repeat
+      :DMA controller fills ring buffer with data packets;
+      repeat while(Preset count reached) is(no)
+      :Perform CRC-based integrity check;
+    else (no)
+    end if
+  fork again
+    :Lower-priority RTOS task managed by scheduler;
+    :Execute backup channel detection routine;
+    if (Available channel identified via CAN/equivalent?) then (yes)
+      :Use mutex-protected shared resource;
+      :Establish redundant communications link;
+    else (no)
+    end if
+  end fork
+
+  :FADEC/central controller evaluates all processing results;
+  fork
+  if (Evaluation meets safety criteria?) then (yes)
+    :Dispatch status service report to control center;
+    :Enter low-power standby state;
+    :Await next command;
+  else (no)
+  end if
+  fork again
+:Watchdog timer ensures liveness;
+  end fork
+
+else (no)
+end if
+
+fork
+:Concurrent parsing and publishing tasks managed through RTOS priority queues;
+fork again
+:Mirror bounded retry loops and critical status to central controller for fault tolerance;
+end fork
+
+stop
+
+@enduml

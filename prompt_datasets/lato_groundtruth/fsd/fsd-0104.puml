@@ -1,0 +1,52 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within RTOS;
+
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops using multi-threaded architecture;
+end fork
+
+:High-priority ISR triggered by PMIC/dedicated temperature sensors;
+if (Abnormal temperature rise?) then (yes)
+  :Initiate safety protocols;
+
+  :Employ primary control loop;
+  if (Early warning threshold reached?) then (yes)
+    :Spawn concurrent tasks from priority queue;
+    :Actively monitor temperature in fixed cycles;
+    if (Thermal stability confirmed?) then (yes)
+      :Cease;
+    else (no)
+      :Escalate;
+    end if
+  else (no)
+  end if
+
+  if(Temperature remains < threshold but exhibits significant fluctuation?) then(yes)
+    :Lower-priority task logs anomaly to structured audit trail in ring buffer protected by mutex;
+  else(no)
+  end if
+else (no)
+end if
+
+  :All critical safety actions verified;
+  fork
+    :Sensor fusion;
+  fork again
+    :Calibration routines;
+  fork again
+    :Redundancy management for out-of-range readings;
+  end fork
+
+  :Processing results and audit logs asynchronously flushed to non-volatile memory under strict I/O budget constraints;
+
+:Dedicated watchdog timer supervises entire sequence;
+:Ensure failsafe, controlled cool-down path is executed if required;
+
+stop
+
+@enduml

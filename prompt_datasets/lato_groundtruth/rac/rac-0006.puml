@@ -1,0 +1,39 @@
+start
+if (slow charging is active) then(yes)
+  :enter power-up mode;
+  switch(condition judgement)
+  case (remote mode is enabled)
+    :switch to state 110;
+    if (slow charging is inactive) then
+      :switch to state 28;
+      if (remote mode is disabled) then
+      :shutdown;
+      stop
+      endif
+    endif
+
+  case (pet mode request is received)
+    :switch to state 110;
+    if (slow charging is inactive) then
+      :switch to state 28;
+      if (pet mode request handling is finished) then
+      :shutdown;
+      stop
+      endif
+    endif
+
+  case (battery SOC is 20)
+    :switch to state 110;
+    if (slow charging is inactive) then
+      :switch to state 28;
+      if (battery SOC reaches 80 and DCDC state is 3) then
+      :shutdown;
+      stop
+      endif
+    endif
+    
+  endswitch
+else(no)
+  stop
+endif
+end

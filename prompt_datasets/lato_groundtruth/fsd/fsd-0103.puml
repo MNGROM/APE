@@ -1,0 +1,59 @@
+@startuml
+
+start
+
+:Thermal management controller implemented as deterministic state machine on RTOS;
+
+fork
+  :Govern PWM fan speeds;
+fork again
+  :Govern liquid-cooling pump actuators;
+end fork
+
+if (PMIC/fused sensor input indicate ambient temperature > safety threshold?) then (yes)
+  :Scheduler initializes high-priority tasks;
+
+  fork
+    :Data acquisition unit logs timestamped readings to ring buffer;
+  fork again
+    :Alarm unit that signals event;
+  end fork
+  :Data acquisition loop protected by mutex for sensor data integrity;
+    repeat
+      :Run continuously;
+    repeat while (Temperature normalized?) is (no)
+    :Terminate loop;
+    :Final alarm issued;
+
+  if (Fault persists without external intervention via CAN command?) then (yes)
+    :Spawn secondary tasks;
+
+    fork
+      :External communication module;
+      :Employ exponential backoff to establish link;
+      :Transmit CRC-protected status packet upon success;
+    fork again
+      :Emergency cooling module;
+      :Trigger emergency cooling module's maximum cooling profile;
+    end fork
+  else (no)
+  end if
+else(no)
+end if
+
+:Completion of all fault-handling tasks;
+:System re-enters monitoring state;
+
+fork
+  :Periodic sensor fusion routines execute;
+fork again
+  if (Out-of-range readings?) then (yes)
+    :Engage redundant sensors;
+    :Initiate controlled safety-critical cool-down sequence;
+  else (no)
+  end if
+end fork
+
+stop
+
+@enduml

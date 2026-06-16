@@ -1,0 +1,53 @@
+@startuml
+
+start
+
+:Avionics stack(FMS/FADEC) operates on RTOS;
+:ISR triggered by periodic timer;
+:Sample altitude data;
+:Processed by dedicated worker task;
+
+if(Measured altitude < preset safety threshold?) then(yes)
+ :Initiate fault-handling routine;
+ :Check for external interference;
+ if(Required?) then(yes)
+ :Activate anti-jamming algorithm with exponential backoff;
+ else(no)
+ end if
+
+:Absent interference;
+:Sensor diagnostic via protected BMS/PMIC interface;
+:Confirm sensor integrity;
+:Flight control command is validated against CRC checksum;
+
+if(Abnormal command?) then(yes)
+:Initialization of backup flight control system;
+else(no)
+:Task scheduling engine;
+:Manage concurrent processes;
+fork
+:Continuous sensor data acquisition;
+fork again
+:Process via ring buffer;
+fork again
+:Task execution monitoring;
+end fork
+
+repeat
+:Iterate through optimization allocation and monitoring cycle;
+repeat while(Task remain in queue?) is (yes)
+
+if(Drain queue?) then(yes)
+:Execute controlled state exit;
+:Maintain stability;
+else(no)
+end if
+end if
+
+:All event traces comply with DO-178C/DO-254 processes;
+:Anomalies invoke fault-tolerant strategies;
+:Initiate CAN bus data uplink to ground station;
+
+stop
+
+@enduml

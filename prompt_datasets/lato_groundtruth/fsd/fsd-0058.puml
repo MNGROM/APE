@@ -1,0 +1,67 @@
+@startuml
+
+start
+
+:Embedded control system employs FSM;
+:Orchestrate complex real-time behavior;
+fork
+  :Coordinate high-priority ISRs for time-critical events;
+fork again
+  :Deferred processing in RTOS-managed tasks;
+fork again
+  :Fail-safe policy execution;
+end fork
+
+if (Sensor data > predefined thresholds?) then (yes)
+  :Initialize concurrent execution paths based on operational mode;
+
+  if (Mode?) then (Normal mode)
+    fork
+      repeat
+      :High-priority data acquisition task samples sensors via DMA ring buffer;
+      repeat while(Required sample count met) is(no)
+
+    fork again
+      :Medium-priority processing task applies;
+      fork
+       :Digital filtering;
+      fork again
+       :Calibration algorithms;
+      end fork
+      :Shared data access protected by mutexes;
+    end fork
+  else (Debug mode)
+      :Spawn complementary diagnostic tasks;
+      fork
+        :Use exponential backoff for bus recovery;
+        :Perform sensor parameter calibration;
+      fork again
+        :Conduct comprehensive system health checks through PMIC and BMS interfaces;
+      end fork
+  end if
+
+  :Converge operational paths;
+  :Generate consolidated status report;
+  :With CRC-protected audit entries;
+  :Write to structured ring buffer;
+  :Periodically flush to non-volatile storage within strict I/O budget constraints;
+
+else (no)
+end if
+
+fork
+:Maintain system supervision;
+fork
+  :Watchdog monitoring;
+fork again
+  :Priority-based message queues;
+end fork
+
+fork again
+:Execute critical FADEC/CAN bus operations in highest-priority contexts;
+:Ensure deterministic response;
+end fork
+
+stop
+
+@enduml

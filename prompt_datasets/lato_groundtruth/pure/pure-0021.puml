@@ -1,0 +1,34 @@
+start
+
+if(Transfer to Shunting on driver's selection?) then(yes)
+ if(Stationary?) then(yes)
+ :From Stand By/Full Supervision/Partial Supervision operation;
+ :Manually select Shunting;
+ else(no)
+ :Not allowed;
+ endif
+else(no)
+endif
+
+if(Automatic transfer?) then(yes)
+ if(Speed <= Supervised speed?) then(yes)
+ :From Full Supervision/Partial Supervision operation;
+ :ETCS requests driver confirmation;
+ :Automatic transfer;
+ else(no)
+ :Not allowed;
+ endif
+else(no)
+endif
+
+if(Exit from Shunting?) then(yes)
+ if(Stationary?) then(yes)
+ :Driver selects exit from shunting;
+ :Exit;
+ else(no)
+ :Not allowed;
+ endif
+else(no)
+endif
+
+stop

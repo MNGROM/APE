@@ -1,0 +1,23 @@
+start
+
+:Receive service requirements from mediator;
+if(Peering policies?) then(yes)
+:Return them;
+:Establish long-term peering arrangement;
+else(no)
+:Perform short-term negotiation;
+endif
+
+:Local PA and mediator interacts with external PAs;
+:External resources are discovered;
+:Negotiation is performed with selected CDN peers;
+
+if(Acquire sufficient resources?) then(yes)
+:Peering arrangement is established;
+else(no)
+:Mediator re-evaluates service requirements;
+:Send to local PA;
+:Perform re-negotiation;
+endif
+
+stop

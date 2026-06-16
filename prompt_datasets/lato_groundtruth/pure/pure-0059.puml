@@ -1,0 +1,34 @@
+start
+
+:Open KeePass;
+:Change data;
+
+switch(Selection) 
+case(Save database)
+:Database is saved;
+case(Save as)
+:Give new database name;
+:New database is saved;
+:Open with same master password;
+case(Exit)
+ switch(Massage asks if save?)
+ case(Yes)
+  :Select yes;
+  :Exit;
+ case(No)
+  :Select no;
+  :Exit;
+ case(Cancel)
+  :Cancel;
+  :Return to database;
+ endswitch
+case(Minimize)
+:Message asks if save before locking;
+endswitch
+
+if(Continue working?) then(no)
+:Exit KeePass;
+else(yes)
+endif
+
+stop

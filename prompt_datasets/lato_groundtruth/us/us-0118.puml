@@ -1,0 +1,7 @@
+start
+:create datasets in app deployment;
+if(properties are different but compatible?)then(yes)
+:tolerate existing datasets;
+stop
+else(no)
+stop

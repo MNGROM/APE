@@ -1,0 +1,8 @@
+start
+:Get modified time of copyright status for object or object component;
+fork
+:manual modify;
+fork again
+:automatical modify;
+fork end
+stop

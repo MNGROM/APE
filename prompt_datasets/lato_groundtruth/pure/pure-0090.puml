@@ -1,0 +1,13 @@
+start
+
+:Enter name;
+:Click "OK";
+:Record player statistics in file;
+
+fork
+:Close window;
+fork again
+:Display statistics;
+end fork
+
+stop

@@ -1,0 +1,12 @@
+start
+:describe each component;
+fork
+:describe title;
+fork again
+:describe date(s);
+fork again
+:describe languages(s);
+fork again
+:describe other facets;
+fork end
+stop

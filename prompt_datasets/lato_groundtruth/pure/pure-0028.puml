@@ -1,0 +1,15 @@
+:Verify successful receipt;
+
+fork
+:Check for receive errors;
+fork again
+:Determine all expected data was received;
+fork again
+:Accumulation of error statistics;
+fork again
+:Comparison against tolerances;
+fork again
+:Report out of tolerance conditions;
+end fork
+
+stop

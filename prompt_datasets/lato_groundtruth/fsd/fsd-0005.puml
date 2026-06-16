@@ -1,0 +1,65 @@
+@startuml
+start
+
+:Validate incoming CAN frames;
+fork
+ :Check ID;
+fork again
+ :Check DLC;
+fork again
+ :Check CRC fields;
+end fork
+
+:Enqueue into lock-free,multi-producer ring buffers;
+:Subsequent processing;
+
+if(Detect sensor signal anomaly?) then(yes)
+ :Execute preliminary diagnostic ISR;
+ if(Inconclusive?) then(yes)
+  :Multi-layer fault analysis task;
+  :Interrogate via protected health-monitoring mutex;
+  :PMIC, BMS or FADEC;
+  :Communication interfaces;
+  :Sensor data pipelines;
+  if(Identified potential fault?) then(yes)
+   :Trigger parallel monitoring process;
+   :Track key parameters using exponential backoff strategy;
+    if(Fault confirmed/dismissed?) then(yes)
+     :No longer tracking;
+    else(no)
+    end if
+  else(no)
+  end if
+ else(no)
+ end if
+
+ if(Confirm fault?) then(yes)
+  :Dispatch concurrent,priority-queued recovery tasks;
+  fork
+   :Hardware reset;
+  fork again
+   :Software module reload;
+  fork again
+   :Data reconstruction from protected ring buffers;
+  end fork
+  :Iteratively validate their repair efficacy;
+  :Dedicated telemetry monitor scheduled by timer interrupt;
+  fork
+   :Oversee entire sequence;
+  fork again
+   :Manage back-pressure with bounded retries;
+  end fork
+  
+  :Consolidates diagnostic and repair logs;
+  :Generate CRC-protected service report;
+  :Restore operational state;
+  :Supervised by watchdog timer;
+  :Ensure liveness;
+  else(no)
+  end if
+else(no)
+end if
+
+stop
+
+@enduml

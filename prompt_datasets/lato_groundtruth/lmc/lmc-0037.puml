@@ -1,0 +1,24 @@
+start
+
+:Use first order finite backward difference equation;
+fork
+:n:index to current values;
+fork again
+:n-1:prior values;
+fork again
+:Included truth data for xt and yt;
+end fork
+
+fork
+: Δz/ Δxt = (z(n,1)-z(n-1))/(xt(n,1)-xt(n-1,1));
+fork again
+:Δz/ Δyt = (z(n,1)-z(n-1))/(yt(n,1)-yt(n-1,1));
+end fork
+
+if(-35 <= Spatial derivatives <= 10?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

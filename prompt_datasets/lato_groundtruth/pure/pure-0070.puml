@@ -1,0 +1,24 @@
+start
+
+:Receive initialization request to activate peering;
+
+:Obtain information;
+fork
+:SR resource;
+fork again
+:SR access information;
+fork again
+:PR policy information;
+end fork
+
+:Establish negotiation;
+
+:Generate service requirements;
+
+if(Service requirements are acceptable) then(yes)
+:Pass it to local;
+else(no)
+:Reject user requests;
+endif
+
+stop

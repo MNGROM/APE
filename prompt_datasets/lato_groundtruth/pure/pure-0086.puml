@@ -1,0 +1,13 @@
+start
+
+:During "Block displacement" state;
+:Mouse movement result;
+fork
+:Selected block follows mouse;
+fork again
+:Do not overlap others;
+fork again
+:Do not exit game zone;
+end fork
+
+stop

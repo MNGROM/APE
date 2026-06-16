@@ -1,0 +1,11 @@
+start
+
+if(Autopilot is engaged?) then (yes) 
+ if(No other lateral mode is active?) then(yes)
+ :Roll hold mode be active mode;
+ else(no)
+ endif
+else(no)
+endif
+
+stop

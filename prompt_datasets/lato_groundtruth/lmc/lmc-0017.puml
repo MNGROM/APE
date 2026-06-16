@@ -1,0 +1,11 @@
+start
+
+if(Autopilot is requesting support (request)?) then(yes)
+ if(Autopilot reports the correct active mode (mode)?) then(yes)
+ :Sensor change states from TRANSITION to NOMINAL;
+ else(no)
+ endif
+else(no)
+endif
+
+stop

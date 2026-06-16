@@ -1,0 +1,4 @@
+start
+:allow users to log in using Active Directory credentials;
+:avoid managing set of usernames and passwords;
+stop

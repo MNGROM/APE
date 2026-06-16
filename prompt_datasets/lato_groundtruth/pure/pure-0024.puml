@@ -1,0 +1,20 @@
+start
+
+:Traction unit passes a stop-signal;
+:Trigger emergency brake;
+
+repeat
+:Apply emergency brake;
+repeat while(Not Stationary?)
+
+:Acknowledge train trip condition;
+:Release emergency brake;
+
+:Continue movement;
+
+if(Backwards?) then(yes)
+:Drive for national value distance;
+else(no)
+endif
+
+stop

@@ -1,0 +1,39 @@
+start
+
+:Open KeePass;
+:Select print from file menu;
+
+:List of options opens;
+:Checked fields;
+fork
+:Password groups;
+fork again
+:Title;
+fork again
+:User name;
+fork again
+:Password;
+fork again
+:URL;
+fork again
+:Notes;
+end fork
+
+switch(Selection on fields)
+case(More)
+:Select some more;
+case(Less)
+:Unselect some others;
+case(No)
+:Unselect all fields;
+:Empty report is printed;
+endswitch
+
+if(Selection) then(OK)
+:Data are print;
+else(Cancel)
+endif
+
+:Return on main window;
+
+stop

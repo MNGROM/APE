@@ -1,0 +1,57 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine on RTOS;
+
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling pumps;
+end fork
+
+if (Ambient temperature threshold breach?) then (yes)
+  :High-priority task concurrently activates temperature adjustment module;
+  :Enable fan cooling;
+
+    if (Temperature continues to rise?) then (yes)
+    fork
+    repeat
+      :Execute rapid cooling subroutine in controlled loop with exponential backoff;
+    repeat while (Temperature re-enters safe range?) is (no)
+   :Disable fan;
+   :Halt adjustment module;
+
+fork again
+  :Separate high-priority task triggered by humidity alert;
+  repeat
+  :Initialize humidity monitor;
+  :Activate dehumidifier;
+  repeat while (Humidity normalized?) is (no)
+end fork
+
+else(no)
+end if
+
+else(no)
+end if
+
+:Telemetry monitor driven by timer ISR;
+:Run in periodic loop;
+:Employ bounded retries and watchdog supervises for fault recovery;
+
+fork
+:Sensor fusion and calibration routines execute periodically;
+fork again
+if (Out-of-range readings?) then (yes)
+  :Trigger sensor redundancy;
+  :Initiate controlled cool-down safety state via FADEC;
+else (no)
+end if
+end fork
+
+:Controller returns to low-power standby mode;
+
+stop
+
+@enduml

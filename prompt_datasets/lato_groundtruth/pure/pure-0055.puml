@@ -1,0 +1,12 @@
+start
+
+:Buyer arrives at cashier/checkout desk;
+:Show items to be purchased;
+
+:Sales associate scans tags;
+:Associate processes QuickBooks POS sale;
+
+:System updates inventory;
+:Reflect sale;
+
+stop

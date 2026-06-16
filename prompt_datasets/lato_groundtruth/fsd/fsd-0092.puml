@@ -1,0 +1,58 @@
+@startuml
+
+start
+
+:Receive train initialize signal;
+:TCMS hosted on preemptive RTOS;
+:Initiate multi-threaded safety verification sequence conditioned on confirmed track idle state;
+
+fork
+  :High-priority task continuously monitors train speed via dedicated sensor ISR;
+  :Stream data through ring buffer to;
+  fork
+  :Local control logic;
+  fork again
+  :Central monitoring system;
+  end fork
+  repeat
+    :Stream data;
+  repeat while (Preset speed threshold attained?) is (no)
+
+fork again
+  :Supervisory task managed by RTOS priority scheduler;
+  :Validate operational status of all track equipment;
+
+  if (Nominal?) then (yes)
+    :Spawn concurrent checks using mutex-protected access to shared hardware resources;
+    fork
+      :Confirm switch position;
+    fork again
+      :Validate signal light status against operational profile;
+    fork again
+      :Perform CRC-checked integrity detection of track circuit;
+    end fork
+  else (no)
+  end if
+end fork
+
+:Consolidated analysis of all verification results;
+:Aggregated via priority queue;
+:Determine if safe initialization is permissible;
+
+fork
+  :Telemetry monitor on fixed-period timer interrupt;
+  :Archive data to non-volatile memory;
+  :Employ exponential backoff for transient communication faults with central server;
+  :Ensure System-wide fault tolerance;
+fork again
+  fork
+  :Independent hardware watchdogs;
+  fork again
+  :PMIC-managed fail-safe paths;
+  end fork
+  :Enforce graceful degradation in compliance with EN 50128/EN 50129;
+end fork
+
+stop
+
+@enduml

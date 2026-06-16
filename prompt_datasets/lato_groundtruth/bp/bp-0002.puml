@@ -1,0 +1,51 @@
+start
+if (User authorizations are sufficient?) then (no)
+  stop
+else (yes)
+:Log in;
+:Choose Modeling Data Warehousing Workbench: Modeling;
+:Data Warehousing Workbench is started;
+:Choose "Info Objects";
+:Info Object tree is displayed;
+:Open root node context menu;
+:Choose "Create Info Area";
+
+fork
+  :Enter a technical name;
+fork again
+  :Enter a description;
+end fork
+
+:Info Area is displayed;
+
+note right
+Group Info Objects
+end note
+
+:Open Info Area context menu;
+:Choose "Create Info Object Catalog";
+
+fork
+  :Enter a technical name;
+fork again
+  :Enter a description;
+end fork
+
+:Select "Key Figure";
+:Choose "Create";
+:Activate Info Object Catalog;
+:Info Object catalog is displayed;
+
+note right
+Group key figures
+end note
+
+fork
+  :Create Revenue;
+fork again
+  :Create Quantity;
+fork again
+  :Create Price;
+end fork
+
+stop

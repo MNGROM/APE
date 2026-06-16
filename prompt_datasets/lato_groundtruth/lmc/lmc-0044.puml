@@ -1,0 +1,12 @@
+start
+
+:In cockpit;
+switch(Autopilot engage switch)
+case(Select)
+:Roll Autopilot engage;
+case(Deselect)
+:Roll Autopilot disengage;
+:Command to roll actuator be zero;
+endswitch
+
+stop

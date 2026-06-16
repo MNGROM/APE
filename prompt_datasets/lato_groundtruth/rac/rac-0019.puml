@@ -1,0 +1,56 @@
+start
+if (ignition switch=2) then(yes)
+  :switch to state 30;
+  if (ignition switch=0) then(yes)
+    :switch to state 49;
+    stop
+  else if (fast charge Vcc2=6) then
+    :observe charging gun indicator;
+    if (charging system command=4)then(yes)
+      :switch to state 29;
+      if(ignition switch=0 and Vcc2=12)then(yes)
+        :switch to state 49;
+        stop;
+      endif
+    endif
+  else if(slow charging is active and charging system command=1)then
+    :switch to state 110;
+    if(charging system command=4)then(yes)
+      :switch to state 29;
+      if(ignition switch=0 and slow charging is inactive)then(yes)
+        :switch to state 49;
+        stop;
+      endif
+    endif
+  endif
+else if (remote mode enabled) then
+  :switch to state 28;
+  if(remote mode is disabled)(yes)
+    :switch to state 49;
+    stop
+  endif
+else if (slow charging is active) then
+  :switch to state 110;
+  if(slow charging is inactive)(yes)
+    :switch to state 129;
+    stop
+  endif
+else if (fast charging is active) then
+  :switch to state 170;
+  if(fast charging is inactive)(yes)
+    :switch to state 189;
+    stop
+  endif
+else if(GW_trigger=2)then
+  :switch to state 10;
+  if(battery SOC=20 and DCDC state=1)then(yes)
+    :switch to state 28;
+    if(SOC=80 and DCDC state=3)then(yes)
+      :switch to state 49;
+      if(DCDC state=0 and GW_trigger=0)then(yes)
+        stop
+      endif
+    endif
+  endif
+endif
+end

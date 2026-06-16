@@ -1,0 +1,51 @@
+@startuml
+
+start
+
+:Thermal management controller implemented as state machine on RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+fork again
+  :Concurrent lower-priority task executes;
+   fork
+    :Periodic sensor fusion;
+   fork again
+    :Calibration routines;
+   end fork
+end fork
+
+if (Detect anomalous spacecraft attitude?) then (yes)
+  :High-priority ISR triggers fault-handling sequence;
+  fork
+    :Dedicated task with mutex-protected watchdog;
+    repeat
+    :Monitor sensor temperature in tight control loop;
+    repeat while(Reading returns to nominal range) is(no)
+  fork again
+    :Other fault detection tasks serviced from priority queue;
+    fork
+      :Verify PMIC/BMS rail voltages;
+    fork again
+      :Inspect signal processing circuits via CRC-checked CAN bus;
+    end fork
+  end fork
+
+  :Successful fault isolation;
+  :Potentially invoke;
+  fork
+    :Redundancy management if required;
+  fork again
+    :Controlled cool-down FADEC path;
+  end fork
+
+  :Confirm all sensor data nominal;
+  :Exit parallel fault-processing state;
+  :Controller resume standard thermal regulation;
+else (no)
+end if
+
+stop
+
+@enduml

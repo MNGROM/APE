@@ -1,0 +1,22 @@
+start
+
+:Use command warc_summary <WARC_FILES> [options];
+
+:Refer to WARC file content;
+fork
+:Summaries;
+fork again
+:MIME-type breakdowns;
+fork again
+:Hostname reports;
+end fork
+
+:Generate reports;
+fork
+:Export reports in formats like XML/CSV;
+fork again
+:Apply filters;
+:Restrict reports by time ranges/domains;
+end fork
+
+stop

@@ -1,0 +1,10 @@
+start
+
+:Determinant of Rotation Matrix |DCM321|;
+if( =10?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

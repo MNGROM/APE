@@ -1,0 +1,15 @@
+start
+
+:In NLGuidance;
+if(UAV relative position to target < minimum standoff distance?) then(yes)
+fork
+:Command nearest inertial position;
+:Reestablish minimum standoff distance;
+fork again
+:Maintain target on vehicle port-side;
+end fork
+
+else(no)
+endif
+
+stop

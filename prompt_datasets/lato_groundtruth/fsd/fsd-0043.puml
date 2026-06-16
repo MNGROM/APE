@@ -1,0 +1,66 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within hard real-time RTOS;
+fork
+  :Govern multi-zone PWM fans;
+fork again
+  :Govern liquid-cooling pumps;
+end fork
+
+if (Ambient temperature < set threshold?) then (yes)
+  if (BMS reports sufficient battery power and motor state normal?) then (yes)
+    :High-priority supervisory task triggered by temperature sensor ISR;
+    :Initiate controlled heating sequence via FADEC;
+
+    :Heating task uses protected ring buffer for sensor fusion data;
+    :Monitor power draw and temperature delta;
+    if (Watchdog timeout/Temperature reaches preset/PMIC issues low-power alert?) then (yes)
+      :RTOS scheduler preemptively terminates heating task;
+
+    :Spawn concurrent medium-priority tasks;
+    :Managed through;
+    fork
+    :Priority queues;
+    fork again
+    :Mutex-protected access to shared CAN resources;
+    end fork
+    :Periodically poll via timer interrupts for;
+    fork
+    :Ambient temperature stability;
+    fork again
+    :Battery power;
+    end fork
+    :Recovery to safe threshold;
+
+    :Final decision task employs CRC-checked status word;
+    :Evaluate conditions;
+    if (Low-power standby mode?) then (yes)
+      :Into low-power standby mode;
+    else (no)
+      :Use exponential backoff algorithm;
+      :Prevent rapid cycling;
+      :Re-initiate heating sequence;
+    end if
+  else (no)
+  end if
+else (no)
+end if
+else (no)
+end if
+
+fork
+  :Background sensor fusion routines execute periodically;
+fork again
+  :Calibration routines execute periodically;
+fork again
+  if(Out-of-range readings?) then(yes)
+  :Trigger sensor redundancy and controlled cool-down safety path;
+  else(no)
+  end if
+end fork
+
+stop
+
+@enduml

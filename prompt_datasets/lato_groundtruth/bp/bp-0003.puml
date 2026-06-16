@@ -1,0 +1,54 @@
+start
+
+:Choose "Info Provider";
+:Info Provider tree is displayed;
+:The Info Area is displayed;
+
+note right 
+It contains Info Provider characteristics and is used to group further objects
+end note
+
+:Open context menu;
+:Choose "Create Info Cube";
+
+fork 
+:Enter "ZD_SALES" as the technical name;
+fork again 
+:Enter "Sales Overview" as the description;
+end fork
+
+:Select "Standard Info Cube" as Info Provider Type;
+:Choose "Create";
+:Screen for Info Cube editing is shown;
+
+:Open context menu;
+:Choose "Create New Dimensions";
+:Enter "Product" as the new dimension description;
+:Choose "Create Another Dimension";
+
+:Enter "Sales Organization" as the next dimension description;
+:Choose "Continue";
+:Dimensions are inserted;
+
+:Open the toolbar on the left;
+:Choose "Info Object Catalog";
+:Select your Info Object catalog for characteristics;
+:Choose "Continue";
+:Info Object catalog is displayed;
+
+:Open context menu;
+:Choose "Info Object Direct Input";
+:Enter characteristic 0DOC_NUMBER;
+
+note right 
+Sales Document:a shipped Info Object of BI Content
+end note
+
+:Choose "Continue";
+
+:Expand "Navigation Attributes" folder;
+:Set the indicator ON/OFF;
+:Activate navigation attribute;
+note right:ZD_PROD__ZDPGROUP
+
+stop

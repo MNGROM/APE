@@ -1,0 +1,35 @@
+start
+
+:Select "Start";
+:Select "Programs";
+:Select "BusinessObjects XI 3.1";
+:Select "BusinessObjects Enterprise";
+:Select "BusinessObjects LifeCycle Manager";
+:LifeCycle Manager login screen appears;
+
+:Go to System field;
+:Enter CMS name;
+:Enter username and password;
+
+:Open Authentication drop-down list;
+:Select authentication method;
+
+if(Default method?) then(yes)
+  :Enterprise authentication;
+  :Recognize user name and password;
+else(no)
+switch (Other Methods)
+case(LDAP)
+  :Recognize user name and password;
+  :Special setup;
+case(Windows AD)
+  :Recognize user name and password;
+  :Special setup;
+case(other third-party types)
+  :Special setup;
+endswitch
+endif
+
+:Click "Log on";
+
+stop

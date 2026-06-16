@@ -1,0 +1,7 @@
+start
+
+:Menu selection;
+:Revert positions to last movement state;
+:Update game board display;
+
+stop

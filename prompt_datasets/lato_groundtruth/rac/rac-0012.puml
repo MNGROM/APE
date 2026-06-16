@@ -1,0 +1,39 @@
+start
+if (charging=1 and front MCU high-voltage detection flag=0) then(yes)
+  :switch to state 153;
+  if (BMS-fast charger handshake flag=0 and front MCU high-voltage flag=0) then(yes)
+    :enter state 155;
+    switch(condition judgement)
+    case (pre-charge failure occurs)
+      :switch to state 175;
+      if(fast charging is inactive)then(yes)
+        :shutdown;
+        stop
+      endif
+    case (high-voltage shutdown request charging/discharging =2)
+      :wait 0.8s;
+      :switch to state 175;
+      if(fast charging is inactive)then(yes)
+        :shutdown;
+        stop
+      endif
+    case (ignition switch=2)
+      :stay in state 155;
+      if (high-voltage shutdown request charging/discharging =2) then
+        :wait 0.8s;
+        if (ignition switch=0) then
+          :switch to state 175;
+          if(fast charging is inactive)then(yes)
+            :shutdown;
+            stop
+          endif
+        endif
+      endif
+    case (fast charging is inactive)
+      :switch to state 175;
+      :shutdown;
+      stop
+    endswitch
+  endif
+endif
+end

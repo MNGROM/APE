@@ -1,0 +1,40 @@
+start
+
+:Use simple MMI action;
+:Railway emergency be initiated;
+
+:Establish priority connection to pre-determined set;
+fork
+:Receiving mobiles;
+fork again
+:Controllers;
+end fork
+
+if(System connects call?) then(no)
+fork
+:Automatically keep trying 30s;
+fork again
+:Provide trying indication;
+end fork
+ if(Successful connection?) then(no)
+ :Provide unable indication;
+ else(yes)
+ endif
+else(yes)
+endif
+
+:At originating and receiving terminal;
+fork
+:Provide different indications for 5s;
+fork again
+:Provide continuous visual indication;
+end fork
+:Show that emergency function is activated;
+
+:Warning stage is complete;
+if(Rrain enters affected area?) then(yes)
+:Provide same audible and visual indications;
+else(no)
+endif
+
+stop

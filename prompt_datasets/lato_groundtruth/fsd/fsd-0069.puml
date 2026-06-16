@@ -1,0 +1,56 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within RTOS;
+fork
+  :Govern PWM fan speeds;
+fork again
+  :Govern liquid-cooling pumps;
+end fork
+
+fork
+  :High-priority task potentially serviced by ISR;
+  :Monitor via sensor fusion algorithm;
+ fork
+  :Temperature;
+ fork again
+  :Ambient humidity;
+ end fork
+  
+  if (Validated temperature > safety threshold?) then (yes)
+    :Execute closed-loop cooling operation;
+   repeat
+    :Cycle cooling assets;
+   repeat while(Temperature normalizes) is (no)
+  endif
+
+fork again
+  :Lower-priority task leverage PMIC/BMS data;
+  :Monitor battery rail voltage and current;
+  
+  if (Voltage < safe level/current > rated maximum?) then (yes)
+    :Trigger protection mechanism via FADEC/safety monitor;
+    :Log fault with timestamp to non-volatile memory;
+  else (no)
+  endif
+end fork
+
+fork
+:Separate watchdog task ensures system liveness;
+fork again
+:Mutex protects shared sensor data in ring buffer;
+end fork
+
+:All sensor data undergoes periodic calibration;
+
+if (Out-of-range readings?) then (yes)
+  :Initiate redundancy switch;
+  :Controlled cool-down sequence using exponential backoff strategy;
+  :Confirm normal status;
+  :Enter low-power standby mode;
+else (no)
+endif
+
+stop
+@enduml

@@ -1,0 +1,11 @@
+start
+
+:In no-fail state;
+:Mid-value be selected value;
+
+if(A first failure in progress?) then(yes)
+:Not affect method for determining selected value;
+else(no)
+endif
+
+stop

@@ -1,0 +1,13 @@
+start
+
+:Double-clicks cell in history window;
+
+if(Display current window?) then(yes)
+:Dismiss it;
+else(no)
+endif
+
+:Noticeable delay of approximately 1s;
+:Display associated diagnostic information window;
+
+stop

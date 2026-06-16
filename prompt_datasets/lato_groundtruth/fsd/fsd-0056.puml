@@ -1,0 +1,84 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine within RTOS;
+:Coordinate concurrent tasks for environmental control;
+
+:High-priority task monitors sensor inputs;
+fork
+if (Ambient temperature > 35°C?) then (yes)
+  fork
+    :Activate PWM-controlled liquid-cooling loop;
+  fork again
+    :Activate air conditioner refrigeration;
+  end fork
+else (no)
+end if
+
+fork again
+if (Indoor humidity > 70%?) then (yes)
+  :Mutex-protected sensor fusion routine triggers dehumidification;
+else (no)
+end if
+end fork
+
+:Event-driven task handles discrete events;
+if(Window detected open/Automatically closing curtains based on light intensity?) then(yes)
+  :Send reminder notification;
+else(no)
+end if
+
+fork
+if (Detect occupancy?) then (yes)
+  :Initiate energy-saving mode;
+else (no)
+end if
+
+fork
+if (Sub-standard air quality?) then (yes)
+  :Activate air purifier;
+else (no)
+end if
+end fork
+
+:During nominal conditions;
+:Lower-priority periodic tasks execute;
+
+fork
+  :Telemetry monitor driven by timer interrupts;
+  :Employ ring buffer;
+  :Collect room temperature data for cloud upload;
+
+fork again
+  :Continuously supervise equipment status;
+  if (Fault?) then (yes)
+    :Dispatch immediate alarm;
+  else (no)
+  end if
+
+fork again
+  :Watchdog-supervised task uses periodic polling via timer interrupts;
+  :Check equipment power via PMIC/BMS;
+  if (Power < 20%?) then (yes)
+    :Issue low-power reminder;
+  else (no)
+  end if
+  :Telemetry monitor implements;
+   fork
+    :Bounded retries;
+   fork again
+    :Exponential backoff on communication faults;
+   end fork
+end fork
+
+:All sensor calibration routines run periodically;
+if (Out-of-range readings?) then (yes)
+  :Trigger redundancy checks;
+  :Initiate controlled system cool-down path;
+else (no)
+end if
+
+stop
+
+@enduml

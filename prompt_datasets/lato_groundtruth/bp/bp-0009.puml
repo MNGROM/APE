@@ -1,0 +1,19 @@
+start
+
+:Choose "Start Programs Business Explorer Web Application Designer";
+:BEx Web is started;
+
+:Log in;
+:Initial screen is shown;
+:Click "Create New Blank Web Template";
+
+:Choose "New Data Provider";
+
+:Open data provider type dialog box;
+:Select "Query";
+:Enter "ZD_SALES_2007" as query name;
+
+:Choose "OK";
+:Data provider is displayed;
+
+stop

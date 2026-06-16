@@ -1,0 +1,17 @@
+start
+
+:Go to "PromotionJobs" screen;
+:Click the Preferences link;
+:"Preferences" window appears;
+
+:Open "Enter the Maximum Page Size" dialog box;
+:Go to "Promotion Jobs" screen;
+:specify the number;
+
+:Open Show Jobs Created drop-down list;
+:Select time interval;
+:View the jobs created during the specified period;
+
+:Click "OK";
+
+stop

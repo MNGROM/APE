@@ -1,0 +1,25 @@
+start
+
+:Sum;
+fork
+:Frequency domain;
+fork again
+:Spectral results;
+end fork
+
+:Observational mode parameter obtained via M&C;
+:Control summation amount;
+
+:Keep track of samples/dumps number;
+
+if(All optional frequency domain processing?) then(no)
+:Fourier Transform;
+else(yes)
+endif
+
+:Summation occurs;
+
+:Integration for long time;
+:Throttle output to E2E manageable rate;
+
+stop

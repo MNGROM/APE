@@ -1,0 +1,51 @@
+start
+
+:Designed to prevent accidental ON/OFF;
+
+:Switch MMI on;
+fork
+:MMI self test;
+fork again
+:Determine Cab radio status;
+:Display radio status;
+end fork
+
+:Determine configuration;
+switch(Time elapsed since MMI last OFF)
+case(<t<240 mins)
+:Same as last OFF;
+case(>t>0 mins)
+:Default settings;
+case(Other)
+:Not allowed;
+endswitch
+
+if("Soft" switch off?) then(yes)
+:Cab radio completes before OFF;
+
+fork
+:Control current call termination;
+fork again
+:Deregister train number;
+fork again
+:Store required data;
+fork again
+:Confirm Railway emergency calls;
+end fork
+endif
+
+:Apply procedure on power failure;
+
+:Switch MMI off;
+if(Functions available?) then(yes)
+:Provide functions;
+fork
+:Public address;
+fork again
+:Call Chief Conductor;
+fork again
+:Intercom;
+end fork
+endif
+
+stop

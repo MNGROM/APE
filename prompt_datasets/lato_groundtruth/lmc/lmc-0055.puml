@@ -1,0 +1,10 @@
+start
+
+:DCM321 * DCM321T;
+if( =Identity (3x3) Matrix.v?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

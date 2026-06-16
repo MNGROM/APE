@@ -1,0 +1,56 @@
+start
+if (fast charging is active) then
+  :enter power-up state;
+  if (high-voltage shutdown request=2 and DCDC state=1) then(yes)
+    :enter state 175;
+    switch(condition judgement)
+    case (DCDC state=0)
+      :switch to state 185;
+      if (fast charging is inactive) then(yes)
+        :switch to state 180;
+        :shutdown;
+        stop
+      else if(power battery relay control=0)then
+        :switch to state 180;
+        if (fast charging is inactive) then(yes)
+          :shutdown;
+          stop
+        endif
+      else if(pre-charge failure occurs)then
+        :switch to state 180;
+        if (fast charging is inactive) then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    case(DCDC state=0 and insulation resistance is low)
+      :switch to state 185;
+      while(after 30s?)
+      endwhile
+      :switch to state 180;
+      if (fast charging is inactive) then(yes)
+        :shutdown;
+        stop
+      endif
+    case(GW_trigger=2 and remote wakeup signal=1)
+      :switch to state 185;
+      if (fast charging is inactive) then(yes)
+        :switch to state 180;
+        if(GW_trigger=0)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    case(remote mode is enabled)
+      :switch to state 185;
+      if (fast charging is inactive) then(yes)
+        :switch to state 180;
+        if(remote mode is disabled)then(yes)
+          :shutdown;
+          stop
+        endif
+      endif
+    endswitch
+  endif
+endif
+end

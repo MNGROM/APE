@@ -1,0 +1,10 @@
+start
+
+:Input any value;
+if(Minimum value of NN output z >= -0.2?) then(yes)
+:Allowed;
+else(no)
+:Not allowed;
+endif
+
+stop

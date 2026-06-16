@@ -1,0 +1,8 @@
+start
+:indicate experimental data within electronic log book;
+if(data is good/bad?)then(bad)
+:hide bad data;
+:keep bad data in the system;
+stop
+else(good)
+stop

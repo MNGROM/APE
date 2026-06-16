@@ -1,0 +1,47 @@
+start
+
+:Access main inventory screen;
+:Display Edit Attributes button;
+
+:Click Edit Attributes button;
+:Display Edit Attributes screen;
+
+fork
+:All existing item attributes;
+fork again
+:Attribute x department assignments;
+end fork
+
+if(Filter view?) then(yes)
+
+switch(Attribute status)
+case(Active)
+:Active status;
+case(Inactive)
+:Inactive status;
+case(All)
+:All status;
+endswitch
+
+else(no)
+endif
+
+:Edit attributes;
+
+fork
+:Attribute x department assignments;
+fork again
+:Attribute data;
+fork again
+:Attribute active x inactive status;
+fork again
+:Create new attribute;
+end fork
+
+:System validates attribute data;
+:System updates information;
+
+:Click Done button;
+:Back to main inventory screen;
+
+stop

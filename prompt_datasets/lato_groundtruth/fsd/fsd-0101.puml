@@ -1,0 +1,57 @@
+@startuml
+
+start
+
+:System initialization;
+:Network stack supervises connectivity using;
+fork
+:Exponential backoff for retries;
+fork again
+:Keep-alive heartbeats;
+fork again
+:Continuous link-state monitoring;
+end fork
+
+if (Initialization succeeds?) then(yes)
+  if(Link nominal?) then (yes)
+  :RTOS spawns two concurrent tasks managed by priority queues;
+
+  fork
+    :Data reading task;
+      :Iterate through all sensors;
+      :Poll data into ring buffer protected by mutex;
+  fork again
+    :Device status monitoring task;
+    :Continuously assess health via BMS/PMIC;
+  end fork
+
+  else (no)
+  :High-priority ISR triggers controlled device restart;
+   fork
+  :Log errors to non-volatile storage;
+   fork again
+  :Bounded retries prevent lockup;
+   end fork
+  end if
+
+  else(no)
+    :Reinitialization check;
+    :Perform system configuration reset with audit log cleaning/full system reset;
+end if
+
+:Telemetry monitor driven by timer interrupt;
+:Run in strict periodic loop;
+:Package data with CRC;
+:Publish over CAN to central controller;
+
+fork
+:All audit logs structured;
+:Write to ring buffer;
+:Flush under I/O budget constraints;
+fork again
+:Watchdog ensures liveness across concurrent operations;
+end fork
+
+stop
+
+@enduml

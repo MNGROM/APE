@@ -1,0 +1,15 @@
+start
+
+:Entity/reports to be referred to;
+
+fork
+:Inventory items;
+fork again
+:Inventory departments;
+fork again
+:Inventory categories;
+fork again
+:Acquisitions Donors;
+end fork
+
+stop

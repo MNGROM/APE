@@ -1,0 +1,41 @@
+start
+if (slow charging is 1 and front MCU high-voltage detection flag is 0) then(yes)
+  :switch to state 93;
+ if (charging/discharging power-up is active and front MCU high-voltage detection flag is 1) then(yes)
+  :switch to state 95;
+  if (power-up is ready and vehicle charging/discharging mode is 2) then(yes)
+  :switch to state 105;
+
+switch(condition judgement)
+  case(in remote mode)
+    :switch to state 105;
+    if (slow charging is inactive) then
+      :switch to state 28;
+      if (remote mode is closed) then
+          :shutdown;
+      stop
+      endif
+    endif
+
+  case (pet mode request is received)
+    :switch to state 105;
+     if (slow charging is inactive) then
+      :switch to state 28;
+      if (pet mode open request is closed) then
+          :shutdown;
+      stop
+      endif
+    endif
+
+  case (battery SOC is 20) 
+    :switch to state 105;
+    if (SOC reaches 80 and DCDC state is 3) then
+    :shutdown;
+    stop
+    endif
+endswitch
+
+  endif
+endif
+endif
+end

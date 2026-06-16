@@ -1,0 +1,20 @@
+start
+
+:Train Real-time Grid Operators annually;
+fork
+:System restoration;
+fork again
+:Black Start use;
+end fork
+
+if(Simulator available?) then(yes)
+:Conduct simulations;
+fork
+:System shutdowns;
+fork again
+:System restoration;
+end fork
+else(no)
+endif
+
+stop

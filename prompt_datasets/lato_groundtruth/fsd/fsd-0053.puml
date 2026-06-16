@@ -1,0 +1,67 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine within RTOS;
+fork
+:Govern PWM fan speeds;
+fork again
+:Govern liquid-cooling pump duty cycles;
+end fork
+
+:User entry;
+:Initiate sensor fusion routine;
+if (Ambient temperature > preset threshold?) then (yes)
+  :Command HVAC system via CAN to reach setpoint;
+else (no)
+  :Evaluate air quality;
+    if (Degraded?) then (yes)
+      :Activate purifier;
+    else (no)
+    end if    
+    :Assess ambient light;
+    if (Insufficient?) then (yes)
+      :Engage lighting;
+    else (no)
+    end if
+end if
+
+:Security check verify door/window status;
+if (Open?) then (yes)
+  :Dispatch notification;
+else (no)
+  :Advance to user preference check;
+    :Apply custom device profiles/default device profiles;
+end if
+
+:Conditional operations managed within preemptively scheduled task model;
+fork
+  :High-priority ISR handles user instructions from voice/mobile app interfaces;
+fork again
+  :Medium-priority tasks perform periodic device health checks;
+  :Write structured, CRC-protected audit logs to ring buffer;
+  :Flush to non-volatile storage under PMIC-managed I/O budget;
+end fork
+
+:Dedicated telemetry monitor driven by timer interrupts;
+:Run in tight loop;
+:Perform sensor data acquisition and calibration;
+
+fork
+if (Detect fault?) then (yes)
+  :Engage bounded retries with exponential backoff;
+else (no)
+end if
+fork again
+if (Critical out-of-range readings?) then (yes)
+  :Trigger redundant sensor checks;
+  :Initiate controlled system cool-down via FADEC;
+else (no)
+end if
+end fork
+
+:Watchdog timer ensures liveness across all concurrent processes;
+
+stop
+
+@enduml

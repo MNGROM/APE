@@ -1,0 +1,62 @@
+@startuml
+
+start
+
+:Avionics stack (FMS/FADEC) operates on deterministic RTOS;
+
+:Pre-flight mission scheduling sequence managed by high-priority supervisory task;
+:Execute conditional state machine;
+
+if (Weather  conditions suitable?) then (yes)
+  if (Aircraft status nominal?) then (yes)
+    if (Fuel reserves adequate?) then (yes)
+      if (Flight plan validated?) then (yes)
+        if (Crew health confirmed?) then (yes)
+          if (Airspace permit granted?) then (yes)
+            :Fork into concurrent operations;
+            fork
+              :Initiate periodic calibration loop for flight navigation system;
+            fork again
+              :Execute frequency tuning for communication system;
+            end fork
+
+            repeat
+            :Both tasks block;
+            repeat while(Completion) is(no)
+
+            :Second parallel phase;
+            fork
+              :Periodic inspection of flight data recorder;
+            fork again
+              :Status confirmation of sensor system;
+            end fork
+
+            :Guarded by mutexes for shared resource access;
+            :All critical data exchanges over CAN bus are protected with CRC checksums;
+
+          else (no)
+          end if
+        else (no)
+        end if
+      else (no)
+      end if
+    else (no)
+    end if
+  else (no)
+  end if
+else (no)
+end if
+
+:Entire process is monitored by watchdog timer;
+
+if (Any anomalies?) then (yes)
+  :Trigger fault-tolerant strategies;
+  :Initiate immediate data uplink to ground station;
+else (no)
+end if
+
+:All software development and event traces adhere to DO-178C/DO-254 processes;
+
+stop
+
+@enduml

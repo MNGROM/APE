@@ -1,0 +1,47 @@
+start
+
+:Conduct contingency studies;
+:Determine amount and location of Black Start Generation;
+:Verify Black Start units annually;
+
+fork
+:Number;
+fork again
+:Size;
+fork again
+:Availability;
+fork again
+:Location;
+end fork
+
+:Document Cranking Paths;
+:Provide to WECC upon request;
+:Evaluate;
+
+fork
+:Diverse fuel resources;
+fork again
+:Cranking paths;
+fork again
+:Communication;
+fork again
+:Unit capabilities;
+fork again
+:Coordination with neighboring plans;
+end fork
+
+:Coordinate planning process;
+fork
+:With transmission owners;
+fork again
+:With neighboring Balancing Authorities;
+end fork
+
+:Enter into Contracts with qualified generators annually;
+fork
+:RMR;
+fork again
+:Interim Black Start;
+end fork
+
+stop

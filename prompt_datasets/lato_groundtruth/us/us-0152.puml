@@ -1,0 +1,5 @@
+start
+:capture with metadata tool;
+:import metadata;
+:avoid capturing again in DMP;
+stop

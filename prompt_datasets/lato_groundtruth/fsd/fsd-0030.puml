@@ -1,0 +1,62 @@
+@startuml
+
+start
+
+:Embedded control platform employs RTOS;
+:Supervisory finite-state machine scheduled via periodic timer interrupts;
+fork
+  :Orchestrate high-priority ISRs for data acquisition;
+fork again
+  :Orchestrate lower-priority tasks for deferred processing;
+end fork
+
+if (Detect anomalous physiological data?) then (yes)
+fork
+  :Validate signal integrity via CRC check;
+  :Initiate diagnostic state sequence;
+  fork
+    :Confirm electrocardiogram fluctuations;
+  fork again
+    :Classify events;
+  fork again
+    :Assess risk of ventricular tachycardia;
+  end fork
+fork again
+  :Dedicated task synchronized using mutex-protected ring buffer;
+  :Commence high-frequency ECG data logging to non-volatile storage;
+end fork
+
+  :Dispatch two parallel processes managed by priority-based scheduler;
+  fork
+    :High-priority task;
+    :Initiate exponential backoff algorithm;
+    :Transmit alarm notifications to medical staff over CAN bus;
+  fork again
+    :Lower-priority task;
+    :Perform real-time signal processing on collected parameters;
+  end fork
+
+  :Watchdog timer monitors health of concurrent operation;
+
+  :Final arbitration state evaluates all results;
+  if (Activate first aid program?) then (yes)
+    :Trigger first aid program;
+  else (no)
+  end if
+
+  :Asynchronously upload final diagnosis to medical data center via secure channel;
+  :Update patient's electronic medical record;
+
+  if (All anomalies resolved?) then (yes)
+    :Halt monitoring iteration;
+    :Return to low-power standby state managed by PMIC;
+    :Persist all events to structured log for audit and post-analysis;
+  else (no)
+  end if
+
+else (no)
+end if
+
+stop
+
+@enduml

@@ -1,0 +1,62 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine within RTOS;
+fork
+  :Govern PWM-driven fans;
+fork again
+  :Govern liquid-cooling loops;
+end fork
+
+if (Vehicle initialization with sufficient battery charge from BMS?) then (yes)
+  :Spawn concurrent tasks;
+
+  fork
+    :Primary control loop protected by mutex;
+    :Continuously monitor engine temperature via priority queue of sensor readings;
+    if (Threshold exceedance detected?) then (yes)
+      :Command cooling actuators;
+      repeat
+        :Enter polling cycle with exponential backoff;
+      repeat while (Temperature normalizes?) is (no)
+    else (no)
+    end if
+  fork again
+    :Safety monitor task evaluates;
+   fork
+    :Brake system pressure;
+   fork again
+    :Sensor signal integrity;
+   end fork
+    if (Anomaly?) then (yes)
+      :Trigger subordinate check;
+       fork
+        :ABS;
+       fork again
+        :Electronic stability program status;
+       end fork
+      :Authorize continued operational state;
+    else (no)
+    end if
+  end fork
+
+else (no)
+end if
+
+:Periodically execute;
+fork
+  :Sensor fusion;
+fork again
+  :Calibration routines;
+end fork
+:Validate data coherence;
+if (Out-of-range readings?) then (yes)
+  :Engage redundant sensor paths;
+  :Initiate controlled cool-down sequence managed by watchdog;
+else (no)
+end if
+
+stop
+
+@enduml

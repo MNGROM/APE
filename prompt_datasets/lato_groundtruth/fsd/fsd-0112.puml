@@ -1,0 +1,68 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within RTOS;
+:Govern;
+fork
+  :PWM fans;
+fork again
+  :Liquid-cooling loops;
+end fork
+
+if (User presence detected?) then (yes)
+  if (Ambient light sensor reading < preset threshold?) then (yes)
+    :Initiate concurrent task set;
+    :Spawn two primary threads managed by RTOS scheduler using priority queues;
+
+    fork
+      :Activate intelligent lighting module;
+      :Periodic task for real-time light intensity monitoring;
+      :Dynamically adjust brightness;
+      :Evaluate night mode based on system time;
+    fork again
+      :Initialize ambient temperature monitoring via temperature and humidity sensor;
+      if (Over-temperature condition?) then (yes)
+        :Trigger intelligent air conditioning system vthrough CAN message;
+        :Coordinated cooling process;
+      else (no)
+      end if
+    end fork
+
+  else (no)
+  end if
+
+    :Assess user intent for smart curtain control;
+    if (Enabled?) then (yes)
+      :Determine via mutex-protected decision logic;
+      fork
+        if(Execute curtain adjustment?) then(yes)
+        :Automatically modulate opening degree based on outdoor light intensity;
+        else(no)
+        end if
+      fork again
+        :Indoor air purification function;
+        :Initialize air purifier based on processed air quality sensor data;
+      end fork
+    else (no)
+    end if
+else (no)
+end if
+
+fork
+  :Sensor fusion and calibration routines execute in periodic RTOS tasks;
+fork again
+  if (Out-of-range readings?) then (yes)
+    :Engage redundancy protocols;
+     fork
+      :Sensor failover;
+     fork again
+      :Controlled system cool-down path managed by watchdog and PMIC;
+     end fork
+  else (no)
+  end if
+end fork
+
+stop
+
+@enduml

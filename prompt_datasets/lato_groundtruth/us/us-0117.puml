@@ -1,0 +1,6 @@
+start
+if(update dataset properties requires migration?)then(yes)
+:trigger migration process for dataset;
+stop
+else(no)
+stop

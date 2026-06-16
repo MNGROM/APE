@@ -1,0 +1,57 @@
+@startuml
+
+start
+
+:Avionics stack comprises;
+fork
+  :FMS;
+fork again
+  :FADEC;
+end fork
+:Execute on deterministic RTOS;
+
+fork
+:Control law computations realized through high-frequency ISRs;
+:Sample sensor data;
+:Populate ring buffers;
+:Lower-priority task processing;
+
+if (Detect aircraft state abnormality?) then (yes)
+  fork
+  :Schedule dedicated health monitoring task;
+  :Iteratively poll key parameters from protected sensor fusion buffer;
+    if (Values outside defined safety thresholds beyond configured number of cycle) then (yes)
+        :Employ exponential backoff algorithm before escalating fault;
+    else (no)
+    end if
+
+  fork again
+    :Communications manager task under same priority-based RTOS scheduler;
+    :Monitor primary datalink integrity via CRC checks;
+    if (Sustained link interruption?) then (yes)
+      :Trigger activation of redundant transceiver module;
+      if (Main link fails to restore?) then (yes)
+        :Mutex-protected switchover to backup channel;
+      else (no)
+      end if
+    else (no)
+    end if
+  end fork
+
+  if (All parallel fault-handling routines conclude successfully?) then (yes)
+    :Resume nominal operation;
+  else (no)
+    :Declare failsafe state;
+    :Trigger emergency avoidance maneuver;
+  end if
+
+else (no)
+end if
+
+:All event traces comply with DO-178C/DO-254 processes;
+:Critical anomalies initiate fault-tolerant strategies;
+:Prioritized data uplink to ground control station;
+
+stop
+
+@enduml

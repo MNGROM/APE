@@ -1,0 +1,5 @@
+start
+:Manage D Files generation requests;
+:Cache D Files generation requests;
+:Avoid performance issues caused by duplicate requests;
+stop

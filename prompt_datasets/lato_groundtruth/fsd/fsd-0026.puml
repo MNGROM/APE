@@ -1,0 +1,50 @@
+@startuml
+
+start
+
+:Thermal management controller operates as deterministic state machine within RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+end fork
+
+if (Abnormal energy supply(Rail voltage fluctuations > defined threshold for sustained duration with out-of-range ambient temperature)?) then (yes)
+  :Initiate multi-threaded response;
+
+  fork
+    :High-priority task;
+    :Begin real-time power load monitoring;
+    :Command PMIC/BMS to execute backup power switching sequence;
+  fork again
+    :Lower-priority thread synchronized via mutex;
+    :Continuously poll backup power status;
+    :Energy allocation optimization algorithm dispatched from priority queue;
+    :Run deterministically to stabilize supply;
+  fork again
+    :Enter fault diagnosis mode;
+    :Initialize early warning mechanism;
+  fork again
+    :Timer-driven ISR periodically polls equipment status;
+    :Dispatch real-time service reports over CAN bus;
+    :Ensure message integrity with CRC;
+  end fork
+
+  :Detection and optimization completed;
+  :Generate comprehensive energy security service report;
+  :Perform holistic evaluation of energy supply network;
+
+else (no)
+end if
+
+
+:Sensor fusion and calibration routines execute periodically;
+if (Persistent out-of-range readings?) then (yes)
+  :Trigger sensor redundancy protocols;
+  :Engage controlled cool-down path managed by FADEC;
+else (no)
+end if
+
+stop
+
+@enduml

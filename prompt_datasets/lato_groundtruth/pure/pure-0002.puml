@@ -1,0 +1,39 @@
+start
+
+:Demonstrate capability every five years;
+:Submit documentation;;
+:Notify CAISO of test results;
+
+:Testing records;
+fork
+:Include dates;
+fork again
+:Include duration;
+fork again
+:Compliance with requirements;
+end fork
+
+:Units requirments;
+fork
+:Maintain voltage within emergency limits;
+fork again
+:Have isochronous mode governors;
+fork again
+:Adequate transmission capacity;
+fork again
+:Without external assistance;
+:Start and energize transmission paths;
+end fork
+
+:Tests requirments;
+fork
+:Include key operating aids;
+fork again
+:Start-up/synchronizing time limits apply based on unit type;
+fork again
+:Minimum run time duration 10 minutes;
+end fork
+
+:Submit CAISO test energy market schedule;
+
+stop

@@ -1,0 +1,13 @@
+start
+
+:In NLGuidance;
+if(Vector define location at Standoff 1 with offset from target position?) then(yes)
+ if(It oriented on vector perpendicular to tangent relative position vector from vehicle to aim point?) then (yes)
+  :It is inertial position vector for aim point 1;
+  :Compute the vector;
+ else(no)
+ endif
+else(no)
+endif
+
+stop

@@ -1,0 +1,70 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine on RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+end fork
+
+
+:Several prioritized conditions;
+  fork
+    :Power level < Defined threshold;
+  fork again
+    :Battery temperature > safe limit;
+  fork again
+    :High system load state;
+  fork again
+    :CAN bus link abnormalities;
+  fork again
+    :Outdated firmware;
+  fork again
+    :User-selected energy-saving mode;
+  fork again
+    :System time within night-time hours;
+  end fork
+
+if (Any prioritized conditions?) then (yes)
+  :Trigger transition to low-power state;
+  :Enter low-power state;
+  :Initialize two high-priority tasks;
+
+  fork
+    :Data acquisition task;
+    :Cyclically read sensor data into ring buffer;
+  fork again
+    :Logging task;
+    :Record system status to non-volatile storage;
+  end fork
+
+else (no)
+  :Normal operation;
+  fork
+    :Launch energy consumption optimization module;
+    :Cyclically adjust equipment power draw in coordination with PMIC;
+  fork again
+    :Launch performance envelope improvement module;
+    :Dynamically optimize system resource allocation;
+  end fork
+end if
+
+fork
+  :Telemetry monitor task runs in strict periodic loop;
+  :Driven by timer ISR;
+  :Employ mutex-protected communication channel with bounded retries and exponential backoff;
+  :Fault handling;
+fork again
+  :Sensor fusion and calibration routines execute periodically;
+  if (Out-of-range readings?) then (yes)
+    :Trigger redundancy checks;
+    :Initiate controlled cool-down sequence managed by FADEC;
+  else (no)
+  end if
+end fork
+
+stop
+
+@enduml

@@ -1,0 +1,4 @@
+start
+:Use Ubuntu package management;
+: Install Neurohub dependencies into an Ubuntu 10.04 LTS machine;
+stop

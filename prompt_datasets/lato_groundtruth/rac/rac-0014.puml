@@ -1,0 +1,40 @@
+start
+if (fast charging is active) then
+  :enter power-up state;
+  if (high-voltage shutdown request=2 and DCDC state=1) then(yes)
+    :enter state 175;
+    if (DCDC state=0 and power battery relay control is issued) then(yes)
+      :switch to state 185;
+      if(high-voltage shutdown request≠2)then(yes)
+        :switch to state 155;
+        if (fast charging is inactive) then
+          :shutdown;
+          stop
+        endif
+      endif
+    endif
+  else if(high-voltage shutdown request=2 and power battery relay control is issued)then
+    :switch to 185;
+    switch(condition judgement)
+      case(ignition switch=2 and high-voltage shutdown request=0)
+        :switch to state 155;
+        if (ignition switch=0 and fast charging is inactive) then
+          :shutdown;
+          stop
+        endif
+      case(slow charging is active and high-voltage shutdown request=0)
+        :switch to state 155;
+        if (slow charging is inactive and fast charging is inactive) then
+          :shutdown;
+          stop
+        endif
+      case(remote mode is enabled and high-voltage shutdown request=0)
+        :switch to state 155;
+        if (remote mode is disabled and fast charging is inactive) then
+          :shutdown;
+          stop
+        endif
+    endswitch
+  endif
+endif
+end

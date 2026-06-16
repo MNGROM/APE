@@ -1,0 +1,61 @@
+@startuml
+
+start
+
+:System initialization;
+:Thermal management controller implementes as state machine under RTOS;
+
+:Perform sequenced and concurrent system check;
+:Active control of;
+fork
+  :PWM fans;
+fork again
+  :Liquid-cooling pump;
+end fork
+
+fork
+:Primary initialization task validates sensor data integrity via CRC check;
+:Spawn parallel task group;
+
+fork
+  :High-priority task checks motor status;
+fork again
+  :Iterative task monitors temperature sensors using protected ring buffer;
+  repeat
+    :Loop;
+  repeat while (Normal reading from both?) is (no)
+  :Exit group;
+end fork
+
+:Re-evaluate system status;
+if (Nominal?) then (yes)
+  :Initialize subsequent parallel task group;
+  fork
+    :Verify communication module;
+  fork again
+    :Verify storage device;
+  end fork
+else (no)
+end if
+
+if(All checks pass?) then(yes)
+:System inspection complete;
+else(no)
+end if
+
+fork again
+  :Sensor fusion and calibration routines execute as periodic RTOS tasks;
+  if (Out-of-range readings?) then (yes)
+    :Switch to redundant sensors;
+    :Initiate controlled cool-down state managed by high-priority ISR;
+  else (no)
+  end if
+
+fork again
+ :Watchdog timer supervises entire process;
+ :Ensure liveness;
+end fork
+
+stop
+
+@enduml

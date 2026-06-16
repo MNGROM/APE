@@ -1,0 +1,73 @@
+@startuml
+
+start
+
+:TCMS executes on preemptive RTOS;
+:Deterministically orchestrate through priority queues;
+
+fork
+  :Traction;
+fork again
+  :Braking;
+fork again
+  :Door control;
+fork again
+  :Diagnostics functions;
+end fork
+
+if (Route deviation/Track status obstruction detected?) then (yes)
+  fork
+    :Assert emergency braking protocol;
+    :Issue track maintenance request via high-priority task;
+  fork again
+    :Monitoring task using ring buffer for historical operation data;
+    :Perform threshold-based analysis;
+    if (Exceeded?) then (yes)
+      :Trigger non-blocking data optimization routine;
+    else (no)
+    end if
+    :Resume normal scheduling;
+    if (Track abnormalities persist?) then(yes)
+      :Employ exponential backoff strategy;
+      fork
+      :Re-trigger maintenance requests;
+      fork again
+      :Await clearance;
+      end fork
+    else(no)
+    end if
+
+  fork again
+   if(Mismatch between dispatch instructions and actual track topology?) then(yes)
+    :Path planning task recalculates route;
+    :Adjust propulsion parameters via FADEC protected by mutexes;
+   else(no)
+   end if
+  end fork
+
+  :Perform final integrity check;
+  :Validate conditions via;
+  fork
+  :CRC-checked CAN messages;
+  fork again
+  :PMIC/BMS status;
+  end fork
+  :Commit to next scheduling cycle;
+
+else (no)
+end if
+
+fork
+  :Archive all telemetry to non-volatile memory;
+fork again
+  fork
+    :Independent watchdog timers;
+  fork again
+    :Fail-safe paths;
+  end fork
+  :Ensure graceful degradation in compliance with EN 50128/EN 50129 safety standards;
+end fork
+
+stop
+
+@enduml

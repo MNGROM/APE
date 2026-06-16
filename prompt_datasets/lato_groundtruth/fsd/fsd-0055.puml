@@ -1,0 +1,56 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine within RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+end fork
+
+if (System power < 20% and Ambient temperature > 35°C and Network link unstable and Disabled automatic shutdown protection?) then (yes)
+  :Trigger low-power alarm;
+  :Initiate two concurrent high-priority tasks;
+  fork
+    :Cyclically monitor network link status via ring buffer;
+  fork again
+    :Periodically sample ambient temperature;
+  end fork
+
+  if (Network and temperature stability restored?) then (yes)
+    :Resume normal status monitoring;
+  else (no)
+    fork
+    :Dispatch device anomaly report to cloud server via protected CAN bus with CRC;
+    fork again
+    :Execute exponential backoff-based network reconnection routine from dedicated task queue;
+    end fork
+  end if
+
+  if (Conditions remain unmet?) then (yes)
+  fork
+    :Enter low-power standby mode;
+    :Await manual intervention/monitored recovery;
+
+  fork again
+    :Telemetry monitor driven by timer ISR;
+    :Execute periodic sensor fusion and calibration;
+
+  if (Out-of-range readings detected?) then (yes)
+   :Invoke redundancy and controlled cool-down path;
+  else (no)
+  end if
+
+  fork again
+  :All critical sections guarded by mutexes;
+  :Ensure data integrity;
+  end fork
+  else (no)
+  end if
+else (no)
+end if
+
+stop
+
+@enduml

@@ -1,0 +1,49 @@
+@startuml
+
+start
+
+:Power management subsystem operates within safety-critical RTOS;
+:Continuously monitor voltage rails via PMIC and BMS;
+fork
+:Execute hardware protection;
+fork again
+:Execute recovery policies;
+end fork
+
+:In normal operational mode;
+fork
+:Given stable sensor inputs;
+fork again
+:Viable network link;
+fork again
+:Sufficient battery capacity;
+end fork
+
+if (Detect anomalous physiological data?) then (yes)
+    :Initialize parallel processing sequence;
+    :Real-time data analysis task;
+    :Timer-driven ISR periodically polls patient's status;
+
+    :Data validation;
+    :Dispatch two concurrent, priority-queued tasks;
+    fork
+      :Continuous physiological monitoring via ring buffer;
+    fork again
+      :Synchronized cloud transmission over secured wireless link;
+      :CRC and CAN-based integrity checks;
+    end fork
+
+    :Subsequent evaluation of telemetry;
+
+    if (Enter early warning mode?) then (yes)
+      :Mutex-protected routine activates local alarm;
+      :Dispatch emergency notifications to medical staff through redundant channels;
+      :Complete fault-handling process with exponential backoff and staged verification cycles;
+    else (no)
+    end if
+else (no)
+end if
+
+stop
+
+@enduml

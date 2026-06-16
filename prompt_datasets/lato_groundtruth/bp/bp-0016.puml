@@ -1,0 +1,26 @@
+start
+
+:Go to Administration Options window;
+:Click "VMS Settings";
+
+:Open Version Management Systems drop-down list;
+:Select "ClearCase";
+
+:Enter details;
+fork
+:ClearCase Map Drive;
+:Enter drive name;
+note right:"Mdrive" by default;
+fork again
+:VOB Tag Name;
+:Enter VOB name;
+:Enter VOB's folder name;
+fork again
+:View Storage Directory;
+:Enter path to the shared folder;
+note right:Host name must not be written as localhost
+end fork
+
+:Click "Save";
+
+stop

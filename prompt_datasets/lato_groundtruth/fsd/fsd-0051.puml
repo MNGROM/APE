@@ -1,0 +1,69 @@
+@startuml
+
+start
+
+:Thermal management controller operates as state machine on hard real-time RTOS;
+:Orchestrate multi-subsystem response to environmental sensor inputs；
+:Continuously sample sensor fusion ring buffer protected by mutex;
+:Aggregate calibrated data from;
+fork
+  :Temperature sensors;
+fork again
+  :Humidity sensors;
+fork again
+  :Light sensors;
+fork again
+  :Air quality sensors;
+fork again
+  :Occupancy sensors;
+fork again
+  :Contact sensors;
+fork again
+  :Smoke sensors;
+end fork
+
+fork
+:Temperature or humidity > thresholds;
+fork again
+:Room is occupied;
+fork again
+:Windows are closed;
+end fork
+
+if (Detect primary fault condition?) then (yes)
+  :Trigger concurrent mitigation sequence;
+  fork
+    :Command FADEC to activate via PWM-controlled liquid-cooling loops;
+   fork
+   :Air conditioner's cooling;
+   fork again
+   :Dehumidifier;
+   end fork
+  fork again
+    :Monitor watchdog timer to ensure liveness;
+  fork again
+   :Lower-priority task manages air quality;
+   if (CO2 critically high and no smoke detected?) then (yes)
+    :Close smart curtains;
+    :Activate air purifier;
+    repeat
+    :Poll air quality sensor with exponential backoff;
+    repeat while(Concentrations return to safe range) is(no)
+  else (no)
+  end if
+ end fork
+
+else (no)
+end if
+
+:All sensor fusion and calibration routines execute in periodic RTOS tasks;
+if (Out-of-range readings?) then (yes)
+  :Engage redundant sensors;
+  :Initiate controlled, state-managed cool-down path;
+  :Maintain system integrity;
+else (no)
+end if
+
+stop
+
+@enduml

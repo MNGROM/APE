@@ -1,0 +1,8 @@
+start
+split
+   :enter metadata;
+split again
+   :describe an experiment protocol;
+end split
+: cerate file ;
+stop

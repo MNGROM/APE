@@ -1,0 +1,23 @@
+start
+
+:See;
+fork
+:Add Item to Inventory;
+fork again
+:Manage Inventory Items;
+end fork
+
+:Access inventory entry screen;
+:Refer to;
+
+fork
+:Current item data;
+fork again
+:Default price suggestion configuration options;
+end fork
+
+:Show price recommendations;
+:Refer to new item data;
+:Make new price suggestions;
+
+stop

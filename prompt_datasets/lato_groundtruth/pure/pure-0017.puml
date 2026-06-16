@@ -1,0 +1,46 @@
+start
+
+:Enter train number;
+:Leading driver initiate automated request;
+:Register and deregister train number;
+
+if(Require driver enter train number information?) then(yes)
+:Display information entered;
+ if(Confirmation?) then(yes)
+ :Further actions;
+ else(no)
+ endif
+else(no)
+endif
+
+if(Automated request is initiated?) then(yes)
+:Accept/reject train number returned;
+else(no)
+endif
+
+if(ERTMS/ETCS and radio systems available?) then(yes)
+ if(Driver is required to enter train number?) then(yes)
+ :Task be carried out once;
+ :Entered number transmit to radio system;
+ else(no)
+ endif
+else(no)
+endif
+
+:Agree on operating procedures;
+:Data entry can from either system;
+
+if(Train number already register on?) then(yes)
+:Warn driver;
+:Provide override means;
+:Inform previously registered driver;
+else(no)
+endif
+
+if(Change train number?) then(yes)
+:Enter train number;
+:Initiate change/Override automatic change;
+else(no)
+endif
+
+stop

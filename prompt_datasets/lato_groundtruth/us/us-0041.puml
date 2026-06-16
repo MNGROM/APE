@@ -1,0 +1,7 @@
+start
+:Edit Dataset;
+if (Dataset only contains country codes?) then(yes)
+:Add general country names;
+stop
+else(no)
+stop

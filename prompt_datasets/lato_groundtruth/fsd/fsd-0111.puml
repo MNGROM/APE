@@ -1,0 +1,71 @@
+@startuml
+
+start
+
+:Thermal management controller executes as state machine on RTOS;
+:Govern multi-stage cooling strategy for;
+fork
+  :PWM fans;
+fork again
+  :Liquid-cooling loops;
+end fork
+
+if (Out-of-range ambient temperature reading?) then (yes)
+  :Trigger temperature regulation state;
+
+  if (Temperature continues to rise?) then (yes)
+    :High-priority task activates forced-air cooling via PWM fans;
+
+    if (> Critical threshold?) then (yes)
+      :Initiate via protected CAN command;
+      fork
+        :Air conditioning compressor;
+      fork again
+        :Liquid cooling pump;
+      end fork
+      :Watchdog monitors response;
+      :Employ closed-loop control;
+      repeat
+        :Adjust fan duty cycle;
+      repeat while (Temperature re-enters safe operating envelope?) is (no)
+    else (no)
+    end if
+
+  else (no)
+    if (Persistent low-temperature condition?) then (yes)
+  fork
+    :Initialize heater circuit;
+
+  fork again
+    :Monitoring task manages mutex-protected sensor data access to sensor data;
+    :Verify operational status of all thermal control devices;
+  end fork
+    else (no)
+    end if
+  end if
+
+else (no)
+end if
+
+fork
+:Temperature stabilization at preset target;
+:Command all active devices into low-power standby state;
+fork again
+:Telemetry monitor operating from timer ISR;
+:Transmit system status via ring buffer;
+:Implement exponential backoff on communication faults;
+fork again
+if (Persistent faults detected?) then (yes)
+  :Periodic sensor calibration routines invoke;
+  fork
+    :Redundant sensor path;
+  fork again
+    :Controlled cool-down sequence;
+  end fork
+else (no)
+end if
+end fork
+
+stop
+
+@enduml

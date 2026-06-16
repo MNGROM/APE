@@ -1,0 +1,22 @@
+start
+
+:See View Inventory;
+:Navigate to Category;
+
+:Display Edit Category button;
+:Click Edit Category button;
+:Display Category type screen;
+
+if(Unique Item?) then(yes)
+:Display Unique Item screen;
+else(no)
+:Display Stock Item screen;
+endif
+
+:Click Delete Category button;
+:System validates deletion;
+
+:System removes Category;
+:Back to parent Department/Category;
+
+stop

@@ -1,0 +1,4 @@
+start
+: submit a session at BADCAMP;
+:get session evaluated;
+stop

@@ -1,0 +1,13 @@
+start
+
+:Access main inventory screen;
+:Display Add Department button;
+
+:Click Add Department button;
+:Enter Department data;
+
+:System validates data;
+:New Department is added;
+:Back to main inventory screen;
+
+stop

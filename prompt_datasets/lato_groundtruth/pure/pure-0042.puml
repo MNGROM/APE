@@ -1,0 +1,34 @@
+start
+
+:See View Inventory;
+:Navigate to Department/Category;
+
+:Display Move Categories button;
+:Click Move Categories button;
+:Display Move Categories screen;
+
+:Selects target location for moved Categories;
+
+if(Select existing Department/Category?) then(yes)
+:Use existing Department/Category;
+else(no)
+:Create new Category;
+:Select parent Department/Category;
+:Enter new Category data;
+endif
+
+switch(Select move type)
+case(Move)
+:Move selected categories as-is;
+:Make them children of target Department/Category;
+case(Merge)
+:Merge contents;
+:Add to target Department/Category;
+endswitch
+
+:System validates deletion;
+
+:System moves selected Category;
+:Back to parent Department/Category;
+
+stop

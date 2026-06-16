@@ -1,0 +1,22 @@
+start
+
+:Go to Administration Options window;
+:Click "VMS Settings";
+
+:Open Version Management Systems drop-down list;
+:Select "ClearCase";
+
+:Enter details;
+fork
+:ClearCase Map Drive;
+:Enter MVFS's folder name;
+fork again
+:VOB Tag Name;
+:Enter VOB name;
+:Enter VOB's folder name;
+fork again
+:View Storage Directory;
+:Enter creating path;
+end fork
+
+stop

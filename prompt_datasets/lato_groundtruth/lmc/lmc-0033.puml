@@ -1,0 +1,18 @@
+start
+
+:In NLGuidance;
+:Output consistent aim point with static target;
+
+if(Transient is required to maintain counter clockwise loiter?) then(yes)
+:Aim point switching;
+else(no)
+ if(Change with T sample period > (Quantity + Velocity) * T?) then(yes)
+ :Erratic changes in aim point command;
+ stop
+ else(no)
+ endif
+endif
+
+:Output consistent aim point with static target;
+
+stop

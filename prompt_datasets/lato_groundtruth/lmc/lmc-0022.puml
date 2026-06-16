@@ -1,0 +1,9 @@
+start
+
+:In Inner Loop Height Regulator;
+if(Durations > 100 frames?) then(yes)
+:Command translational height accelerations <= 32 ft/sec2;
+else(no)
+endif
+
+stop

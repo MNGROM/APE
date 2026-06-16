@@ -1,0 +1,7 @@
+start
+split
+   :keep logbook entry private;
+split again
+   :share logbook entry with individuals;
+end split
+stop

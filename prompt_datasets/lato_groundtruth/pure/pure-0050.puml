@@ -1,0 +1,37 @@
+start
+
+:Access main inventory screen;
+:Display inventory departments;
+
+:See View Inventory;
+:Drill down to desired existing inventory item;
+:Item detail screen is presented;
+
+:Click Split Item button;
+:Display Item Split screen;
+
+:Split original item;
+:Build list of items;
+:Add item;
+
+repeat
+switch(Way to add item)
+case(Similar attributes)
+:Clone original item;
+case(New item)
+:Select Unique and Stock categories;
+:Same as Add Item to Inventory;
+endswitch
+repeat while(More items?)
+
+:List is complete;
+:Confirm split;
+
+:System validates split;
+:Item information is updated in inventory;
+fork
+:Original(split) item is updated;
+fork again
+:New items are added to inventory maintaining parental history;
+
+stop

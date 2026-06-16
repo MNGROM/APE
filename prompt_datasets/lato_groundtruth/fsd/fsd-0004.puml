@@ -1,0 +1,72 @@
+@startuml
+start
+
+:Integrated avionics stack (FMS/FADEC) executes control laws via;
+fork
+  :High-priority ISRs;
+fork again
+  :Subordinate worker tasks;
+end fork
+
+:Operate within deterministic RTOS for redundancy;
+
+:Engagement of autonomous flight mode;
+:Check of critical states;
+    if(Altitude within safe envelope?) then(yes)
+        if(Ambient temperature nominal?) then(yes)
+            if(Engine status valid via FADEC?) then(yes)
+                if(Fuel reserves sufficient from BMS?) then(yes)
+                    if(Navigation system operational?) then(yes)
+                        if(Communications link stable?) then(yes)
+                            if (Power rail valid as monitored by PMIC?) then(yes)
+:Cconcurrent processing phase;
+:Priority-based scheduler manages several parallel tasks;
+fork
+:Continuous flight trajectory monitor;
+:Update flight plan in real-time;
+fork again
+:Periodic sensor data validation routine;
+:CRC checks;
+fork again
+:Dedicated task;
+:Flight control system status validation;
+fork again
+:Audit logger;
+:Write structured event traces to ring buffer;
+:Low-priority task operating within strict I/O budget constraints;
+:Asynchronously flushed to non-volatile storage;
+fork again
+:Separate telemetry monitor driven by timer interrupt;
+:Run in periodic loop;
+if(Communication faults?) then(yes)
+:Implement bounded retries with exponential backoff strategy;
+else(no)
+end if
+end fork
+
+                            else(no)
+                            endif
+                        else(no)
+                        endif
+                    else(no)
+                    endif
+                else(no)
+                endif
+            else(no)
+            endif
+        else(no)
+        endif
+    else(no)
+    endif
+
+:Entire process is iterative;
+if(Any failure?) then(yes)
+  :Trigger fault-tolerant strategies;
+  :Initiate data uplink to ground station over CAN bus;
+  :Force system re-initialization;
+else(no)
+end if
+
+stop
+
+@enduml

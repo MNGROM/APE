@@ -1,0 +1,8 @@
+start
+:Complete Building Development Project;
+fork
+:Receive posted bond;
+fork again
+:Obtain occupancy;
+fork end
+stop

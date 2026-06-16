@@ -1,0 +1,36 @@
+start
+:Copy the BIAR file;
+:Log in;
+:Open "Promotion Jobs";
+:Click "Import BIAR";
+:"Import BIAR file" window appears;
+:Click "Browse";
+:Select the BIAR file;
+:Click "Copy";
+:Details appears in the "New Job";
+
+if(Other operations?) then (yes)
+
+switch (Promotion Option)
+case (Click "Creat")
+  :Job is created;
+case ("Managing Dependencies" window)
+  :manage dependencies;
+case (Click "Promote")
+  :"Promote - Job Name" window appears;
+  :Confirm login credentials;
+ switch(Option)
+   case (Click "Promote")
+    :The contents are promoted;
+   case (Click "Test Promote")
+    fork
+      :View objects to be promoted;
+    fork again
+      :View status;
+    end fork
+   endswitch
+endswitch
+else (no)
+endif
+
+stop

@@ -1,0 +1,13 @@
+start
+
+:Menu selection;
+
+if(Saved?) then(no)
+:Prompt to save;
+else(yes)
+endif
+
+:Close game;
+:Close main window;
+
+stop

@@ -1,0 +1,4 @@
+start
+:Get dates and times in local timezone;
+:Avoid doing timezone conversion;
+stop

@@ -1,0 +1,22 @@
+start
+
+:Apply user selected time domain processes;
+
+:Process construction requirments;
+fork
+:Chainable;
+
+:Any output can be piped to any input;
+if(Replica?) then(yes)
+:Replica of self;
+else(no)
+:Fourier Transform;
+endif
+
+fork again
+:Repeatable in chain;
+end fork
+
+:No proposed Optional time domain processes;
+
+stop

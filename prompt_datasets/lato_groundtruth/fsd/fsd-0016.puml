@@ -1,0 +1,58 @@
+@startuml
+
+start
+
+:Avionics stack (FMS/FADEC) executes on RTOS；
+:Fault tolerance;
+
+:High-priority ISR triggered by periodic timer;
+:Sample sensor data for control law computation;
+
+if (Aircraft altitude < preset safety value?) then (yes)
+  :Evaluate conditional state machine;
+
+  if (Current airspeed > critical threshold?) then (yes)
+    :Activate automatic deceleration module;
+    :Spawn concurrent,prioritized tasks;
+      fork
+        :Continuous monitoring of air pressure sensor data via ring buffer;
+      fork again
+        :Manage actuator commands protected by mutex;
+      end fork
+  else (no)
+    :Check engine status via BMS/PMIC;
+
+    if (Detect anomaly?) then (yes)
+      :Trigger backup engine initialization sequence;
+      :Concurrently execute tasks;
+    else (no)
+      :Monitor fuel consumption;
+      if (Level < safety threshold?) then (yes)
+        :Issue early warning;
+        :Initiate tasks like repeated fuel tank pressure checks;
+      else (no)
+        :Revert to main control loop;
+        :Perform continuous ambient temperature monitoring;
+      end if
+    end if
+  end if
+
+else (no)
+end if
+
+:Dedicated timer-driven telemetry monitor task;
+fork
+:Manage uplink to ground station;
+fork again
+:Exponential backoff on communication faults;
+fork again
+:Watchdog supervises all tasks;
+end fork
+
+:All software components developed to DO-178C/DO-254 objectives;
+:Implement fault-tolerant strategies;
+:Anomalies trigger predefined recovery actions and secure event tracing;
+
+stop
+
+@enduml

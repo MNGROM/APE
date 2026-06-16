@@ -1,0 +1,58 @@
+@startuml
+
+start
+
+:System initialization;
+:Thermal management controller implements as state machine on RTOS;
+:Query PMIC;
+:Determine power state;
+
+if (Nominal?) then (yes)
+  :Spawn multiple concurrent tasks;
+  :Managed by priority-based RTOS scheduler;
+
+  fork
+    :High-priority task monitors BMS;
+    if (Battery power < defined threshold?) then (yes)
+      :Enter low-power iterate mode;
+      repeat
+        :Poll BMS within tight loop;
+      repeat while (Safe power level restored?) is (no)
+    else (no)
+    end if
+  fork again
+    :Medium-priority tasks handle sensor fusion;
+    :Periodically read temperature sensors via protected ring buffer;
+
+  if (Critical temperature fault signaled via ISR?) then (yes)
+    :Immediately preempt all parallel processing;
+    :Trigger mutex-protected transition to fault processing mode;
+    :Execute controlled cool-down path via;
+    fork
+     :Liquid-cooling loops;
+    fork again
+     :PWM fans;
+    end fork
+  else (no)
+  end if
+
+  fork again
+  :Telemetry monitor task driven by timer interrupts;
+  :Run in periodic loop;
+  :Package data for CAN transmission with CRC;
+  :Implement exponential backoff for communication faults;
+  end fork
+
+  :System health task summarize all detection results;
+  if (All parameters nominal?) then (yes)
+    :Signal FADEC to permit normal operation;
+  else (no)
+    :Use priority queues to dispatch alarms/managed shutdown;
+  end if
+
+else (no)
+end if
+
+stop
+
+@enduml

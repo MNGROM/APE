@@ -1,0 +1,65 @@
+@startuml
+
+start
+
+:Thermal management controller operates as multi-threaded state machine under RTOS;
+fork
+  :Govern PWM fans;
+fork again
+  :Govern liquid-cooling loops;
+end fork
+
+:Primary control task scheduled periodically via timer interrupts;
+:Execute sensor fusion and calibration routine;
+if (Out-of-range sensor readings?) then (yes)
+    :Switch to redundant sensors;
+    :Initiate controlled system cool-down path managed by PMIC and BMS;
+else (no)
+end if
+
+:Core logic predicated on user presence;
+
+if (Ambient temperature > setpoint?) then (yes)
+  if (Occupancy detected?) then (yes)
+    fork
+      :Initialize air conditioner in cooling mode;
+    fork again
+      :Actuate motorized curtains to close;
+    end fork
+
+    if (Temperature deviation persists?) then (yes)
+      :Enter closed-loop adjustment phase;
+      repeat
+      :Modulate air conditioner fan speed using exponential backoff algorithm;
+      repeat while(Setpoint reached?) is(no)
+      :Point active control ceasesl;
+    else (no)
+    end if
+
+  else (no)
+    :In unoccupied home;
+    fork
+      :Close curtains;
+    fork again
+      :Power down HVAC system;
+    end fork
+  end if
+
+else (no)
+  :For heating scenario;
+  if (Temperature < setpoint?) then (yes)
+    fork
+      :Initialize air conditioner in preheating mode;
+    fork again
+      :Open curtains;
+    end fork
+    repeat
+    :Continue periodic detection and adjustment cycle;
+    repeat while(Setpoint achieved) is(no)
+  else (no)
+  end if
+end if
+
+stop
+
+@enduml
