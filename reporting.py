@@ -122,6 +122,13 @@ def read_text_first(*paths: Path) -> str | None:
     return read_text_if_exists(path)
 
 
+def iteration_batch_dirs(iter_dir: Path) -> list[Path]:
+    batch_root = iter_dir / "train_batches"
+    if not batch_root.exists():
+        return []
+    return [path for path in sorted(batch_root.glob("batch_*")) if path.is_dir()]
+
+
 def refresh_iteration_report(iter_dir: Path) -> None:
     if not iter_dir.is_dir():
         return
@@ -141,6 +148,14 @@ def refresh_iteration_report(iter_dir: Path) -> None:
     baseline_gate_summary = read_json_first(iter_dir / "evaluation" / "gate_baseline_summary.json", iter_dir / "baseline_gate_summary.json")
     candidate_summary = read_json_first(iter_dir / "evaluation" / "gate_candidate_summary.json", iter_dir / "candidate_summary.json", iter_dir / "gate_summary.json")
     acceptance = read_json_first(iter_dir / "decision" / "acceptance.json", iter_dir / "prompt_acceptance.json")
+    batch_summaries = [
+        {
+            "label": batch_dir.name,
+            "summary": read_json_if_exists(batch_dir / "evaluation" / "analysis_summary.json") or {},
+            "manifest": read_json_if_exists(batch_dir / "manifest.json") or {},
+        }
+        for batch_dir in iteration_batch_dirs(iter_dir)
+    ]
 
     write_iteration_reports(
         iter_dir=iter_dir,
@@ -152,6 +167,7 @@ def refresh_iteration_report(iter_dir: Path) -> None:
         baseline_gate_summary=baseline_gate_summary,
         candidate_summary=candidate_summary,
         acceptance=acceptance,
+        batch_summaries=batch_summaries,
     )
 
 
@@ -166,11 +182,17 @@ def write_iteration_reports(
     baseline_gate_summary: dict[str, float] | None,
     candidate_summary: dict[str, float] | None,
     acceptance: dict[str, Any] | None,
+    batch_summaries: list[dict[str, Any]] | None = None,
 ) -> None:
     accepted = bool(acceptance and acceptance.get("accepted"))
     acceptance_mode = acceptance.get("acceptance_mode") if acceptance else "not_evaluated"
     rejection_reasons = acceptance.get("rejection_reasons", []) if acceptance else []
 
+    batch_summaries = batch_summaries or []
+    is_epoch_iteration = bool(batch_summaries)
+    before_label = "epoch_before.md" if is_epoch_iteration else "prompt_before.md"
+    after_label = "epoch_after.md" if is_epoch_iteration else "prompt_after.md"
+    candidate_label = "epoch_candidate.md" if is_epoch_iteration else "prompt_candidate.md"
     prompt_lines = [
         f"# Iteration {iteration:03d} Prompt Change",
         "",
@@ -183,14 +205,30 @@ def write_iteration_reports(
     if candidate_prompt is not None:
         prompt_lines.append(f"- chars_candidate: {len(candidate_prompt)}")
     prompt_lines.extend(["", "## Applied Change", ""])
-    applied_diff = prompt_diff(prompt_before, prompt_after, from_label="prompt_before.md", to_label="prompt_after.md")
+    applied_diff = prompt_diff(prompt_before, prompt_after, from_label=before_label, to_label=after_label)
     prompt_lines.append("```diff")
     prompt_lines.append(applied_diff or "# no applied prompt change")
     prompt_lines.append("```")
     if candidate_prompt is not None and not accepted:
         prompt_lines.extend(["", "## Rejected Candidate Diff", "", "```diff"])
-        prompt_lines.append(prompt_diff(prompt_before, candidate_prompt, from_label="prompt_before.md", to_label="prompt_candidate.md") or "# no candidate prompt change")
+        prompt_lines.append(prompt_diff(prompt_before, candidate_prompt, from_label=before_label, to_label=candidate_label) or "# no candidate prompt change")
         prompt_lines.append("```")
+    if batch_summaries:
+        prompt_lines.extend(["", "## Epoch Batches", ""])
+        prompt_lines.extend(["| batch | status | prompt_changed |", "| --- | --- | --- |"])
+        for item in batch_summaries:
+            manifest = item.get("manifest") or {}
+            prompt_lines.append(
+                "| "
+                + " | ".join(
+                    [
+                        str(item.get("label", "-")),
+                        str(manifest.get("status", "-")),
+                        str(manifest.get("prompt_changed", "-")),
+                    ]
+                )
+                + " |"
+            )
     write_text(iter_dir / "reports" / "prompt_change.md", "\n".join(prompt_lines).rstrip() + "\n")
 
     metric_lines = [
@@ -203,10 +241,25 @@ def write_iteration_reports(
         "## Summaries",
         "",
         *metrics_table_header(),
-        metric_row("analysis_current", analysis_summary),
-        metric_row("gate_baseline", baseline_gate_summary),
-        metric_row("gate_candidate", candidate_summary),
     ]
+    if is_epoch_iteration:
+        metric_lines.append(metric_row("epoch_training_aggregate", analysis_summary))
+        for item in batch_summaries:
+            metric_lines.append(metric_row(f"{item.get('label', 'batch')}:analysis_current", item.get("summary")))
+        metric_lines.extend(
+            [
+                metric_row("epoch_gate_baseline", baseline_gate_summary),
+                metric_row("epoch_gate_candidate", candidate_summary),
+            ]
+        )
+    else:
+        metric_lines.extend(
+            [
+                metric_row("analysis_current", analysis_summary),
+                metric_row("gate_baseline", baseline_gate_summary),
+                metric_row("gate_candidate", candidate_summary),
+            ]
+        )
     if acceptance:
         metric_lines.extend(["", "## Deltas", "", *metrics_table_header()])
         metric_lines.append(metric_delta_row("candidate_minus_baseline", metric_deltas(baseline_gate_summary, candidate_summary)))
@@ -279,15 +332,23 @@ def refresh_run_reports(run_dir: Path) -> None:
                     ]
                 )
         if metrics_report and metrics_report.exists():
+            batch_dirs = iteration_batch_dirs(iter_dir)
             summary_path = first_existing(iter_dir / "evaluation" / "analysis_summary.json", iter_dir / "evaluation_summary.json")
             if summary_path and summary_path.exists():
-                metrics_lines.append(metric_row(f"{iter_dir.name}:analysis_current", json.loads(read_text(summary_path))))
+                label = "epoch_training_aggregate" if batch_dirs else "analysis_current"
+                metrics_lines.append(metric_row(f"{iter_dir.name}:{label}", json.loads(read_text(summary_path))))
+            for batch_dir in batch_dirs:
+                batch_summary_path = batch_dir / "evaluation" / "analysis_summary.json"
+                if batch_summary_path.exists():
+                    metrics_lines.append(metric_row(f"{iter_dir.name}:{batch_dir.name}:analysis_current", json.loads(read_text(batch_summary_path))))
             baseline_path = first_existing(iter_dir / "evaluation" / "gate_baseline_summary.json", iter_dir / "baseline_gate_summary.json")
             if baseline_path and baseline_path.exists():
-                metrics_lines.append(metric_row(f"{iter_dir.name}:gate_baseline", json.loads(read_text(baseline_path))))
+                label = "epoch_gate_baseline" if batch_dirs else "gate_baseline"
+                metrics_lines.append(metric_row(f"{iter_dir.name}:{label}", json.loads(read_text(baseline_path))))
             candidate_path = first_existing(iter_dir / "evaluation" / "gate_candidate_summary.json", iter_dir / "candidate_summary.json", iter_dir / "gate_summary.json")
             if candidate_path and candidate_path.exists():
-                metrics_lines.append(metric_row(f"{iter_dir.name}:gate_candidate", json.loads(read_text(candidate_path))))
+                label = "epoch_gate_candidate" if batch_dirs else "gate_candidate"
+                metrics_lines.append(metric_row(f"{iter_dir.name}:{label}", json.loads(read_text(candidate_path))))
 
     best_path = run_dir / "prompt_best.md"
     final_path = run_dir / "prompt_final.md"
