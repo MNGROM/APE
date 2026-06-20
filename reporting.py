@@ -19,6 +19,14 @@ METRIC_KEYS = (
     "node_recall",
     "relation_precision",
     "relation_recall",
+    "llm_node_f1",
+    "llm_relation_f1",
+    "llm_node_precision",
+    "llm_node_recall",
+    "llm_relation_precision",
+    "llm_relation_recall",
+    "llm_element_evaluated",
+    "llm_element_failed",
     "infrastructure_error_rate",
 )
 
