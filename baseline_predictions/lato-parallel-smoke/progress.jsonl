@@ -1,0 +1,16 @@
+{"ts": "2026-06-18T07:50:41+0800", "event": "run_start", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-parallel-smoke", "total_cases": 2, "workers": 2}
+{"ts": "2026-06-18T07:50:41+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 2, "worker_slot": 1}
+{"ts": "2026-06-18T07:50:41+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 2, "worker_slot": 2}
+{"ts": "2026-06-18T07:50:41+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 2, "worker_slot": 1}
+{"ts": "2026-06-18T07:50:41+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 2, "worker_slot": 2}
+{"ts": "2026-06-18T07:50:42+0800", "event": "case_error", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 2, "elapsed_sec": 1.016, "error_type": "TimeoutError"}
+{"ts": "2026-06-18T07:50:42+0800", "event": "case_error", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 2, "elapsed_sec": 1.016, "error_type": "TimeoutError"}
+{"ts": "2026-06-18T07:50:42+0800", "event": "run_end", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-parallel-smoke"}
+{"ts": "2026-06-18T07:51:40+0800", "event": "run_start", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-parallel-smoke", "total_cases": 2, "workers": 2}
+{"ts": "2026-06-18T07:51:40+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 2, "worker_slot": 1}
+{"ts": "2026-06-18T07:51:40+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 2, "worker_slot": 2}
+{"ts": "2026-06-18T07:51:41+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 2, "worker_slot": 1}
+{"ts": "2026-06-18T07:51:41+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 2, "worker_slot": 2}
+{"ts": "2026-06-18T07:51:41+0800", "event": "case_error", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 2, "elapsed_sec": 1.016, "error_type": "TimeoutError"}
+{"ts": "2026-06-18T07:51:42+0800", "event": "case_error", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 2, "elapsed_sec": 1.015, "error_type": "TimeoutError"}
+{"ts": "2026-06-18T07:51:42+0800", "event": "run_end", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-parallel-smoke"}

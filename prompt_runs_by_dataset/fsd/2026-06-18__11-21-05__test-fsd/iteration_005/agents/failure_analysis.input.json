@@ -1,0 +1,198 @@
+{
+  "requirements": [
+    "7.\tThe Rotation Matrix, DCM321, multiplied by the transpose of the Rotation Matrix, DCM321T shall be the Identity (3x3) Matrix.v",
+    "As an Application Administrator , I want to be able to configure the help center URL and topic mappings.",
+    "1. trading information release system: send a query 2. central trading system: implement the query 3. central trading system: structuralize the queried data 4. central trading system: send the data to release",
+    "5.\tCreating Master Data Directly in the System1. In the Modeling area of the Data Warehousing Workbench, choose Info Objects. 2. In the Info Object catalog for characteristics, choose Maintain master data from the context menu of your Info Object Product Group (ZD_PGROUP).3. Choose Execute.4. Choose Create.5. Enter DS10 as Product Group and Computer as the Short description and choose Continue.6. Repeat steps 4 and 5 with the following values:7. Save your entries and return to the Info Object tree.8. Repeat steps 2-7 for the characteristic Channel (ZD_CHAN) with the following values:",
+    "14.\tlog into the LifeCycle Manager tool.To log into the LifeCycle Manager tool, complete the following steps:1. Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager. The LifeCycle Manager login screen appears.2. In the System field, enter the name of the Central Management Server (CMS) on which the LifeCycle Manager tool is installed.3. Enter the user name and password.4. Select the appropriate authentication method from the Authentication drop-down list.The LifeCycle Manager tool supports the following authentication types:• Enterprise authentication - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system. This is the default authentication method.• LDAP authentication - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system.• Windows AD - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system.The LDAP, Windows AD, and other third-party authentication types require a special setup. For information on setting up these authentication types, see the BusinessObjects Enterprise Administrator's Guide.5. Click Log on.",
+    "As a depositor, I want to deposit arbitrarily large files, so that I am not limited in what files I can and cannot deposit.",
+    "8.\tThe autopilot shall change states from STANDBY to TRANSITION when the pilot is not in control (not standby).",
+    "21.\tcreate a new job by copying an existing job.To create a new job by copying an existing job, complete the following steps:1. Log into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, click New Job.3. Click the Copy an Existing Job option. The list of jobs in the PromotionJob folder is displayed4. Select a job from the job list, and click Create. The name, keywords, and description of the job are displayed. You can modify these fields, if required. However, you cannot change the source system.5. In the Save Job in field, browse and select the folder in which you want to save the job, and click Create.A new job is created.",
+    "After the system starts up:\n- If slow charging is active and the front MCU high-voltage detection flag is 0, transition to state 93.\n- If charging/discharging power-up is active while the front MCU high-voltage detection flag reads 1, move to state 95.\n- When power-up readiness is confirmed and the vehicle's charging/discharging mode is set to 2, proceed to state 105.\n\nThen handle these cases:\n1. In remote mode: Go to state 105. If slow charging becomes inactive, shift to state 28. Should remote mode deactivate, initiate shutdown and terminate.\n2. Upon receiving a pet mode request: Enter state 105. If slow charging is inactive, transition to state 28. After processing the pet mode request, perform shutdown and end operations.\n3. When battery SOC hits 20%: Transition to state 105. If slow charging is inactive, switch to state 28. If SOC reaches 80% while DCDC state is 3, execute shutdown and conclude.",
+    "Generator Unit Testing Steps (Minimal Requirements)Step 1: Owners of Voluntary Black Start units must demonstrate capability every five years, submit documentation, and notify the CAISO of test results.Step 2: Testing records must include dates, duration, and compliance with requirements.Step 3: Units must maintain voltage within emergency limits.Step 4: Units must have governors capable of isochronous mode.Step 5: Adequate transmission capacity must be available.Step 6: Units must start and energize transmission paths without external assistance.Step 7: Tests should include key operating aids like telephone communications and SCADA.Step 8: Start-up/synchronizing time limits apply based on unit type (e.g., hydro within 30 minutes).Step 9: Minimum run time duration is 10 minutes.Step 10: Submit a CAISO market schedule for test energy.",
+    "13.\tpromote a job when the source and the destination systems are connected, complete the following steps:1. Connect to the source system.2. Create a new job. You can also copy an existing job.3. Add infoobjects to the job you want to promote. If you do not want to promote all the dependents of the infoobjects, you can use the Manage Dependencies option to select the dependents you want to promote.Note:You can select the type of dependents you want to promote from the Type drop-down list.4. Promote the job.Promoting a job when the source system and the destination system are not connected18 To promote a job when the source and the destination systems are not connected, complete the following steps:1. Connect to the source system, and create a job. You can also copy an existing job.2. Add infoobjects to the job you want to promote. You can use the Manage Dependencies option to select the required dependents.Note:You can select the type of dependents you want to promote from theType drop-down list.3. Export infoobjects with Output to BIAR file as the destination system.4. Import infoobjects from the BIAR file by clicking the Import BIAR tab.5. Promote the job.",
+    "1.\tExceeding sensor limits shall latch an autopilot pullup when the pilot is not in control (not standby) and the system is supported without failures (not apfail).",
+    "As an academicresearcher, I want to the thesis paper of an influential judge or legal thinker to gain insight into how their initial scholarship got started.",
+    "After the system starts up, the process begins by checking the gear position. If the gear is in D or N, the D_S gear mileage parameter is set to 1, and the sequence ends. If the gear is in S, the D_S gear mileage parameter is calculated as S gear nominal mileage divided by D gear nominal mileage, then the process concludes. Additionally, if the vehicle status is 30, switch to driving mode. Next, if the gear is in D or E, set the D_S gear mileage parameter to S gear nominal mileage divided by D gear nominal mileage, and end. Finally, if the gear is in N or R, observe using the D_S gear mileage parameter and terminate the process.",
+    "After the system starts up, if the ignition switch is set to 2, transition to state 30. Then, under that condition:\n- If the ignition switch becomes 0, move to state 49 and exit.\n- If the fast charge Vcc2 is 6, observe the charging gun indicator. Should the charging system command be 4, switch to state 29.\n- If the ignition switch is 0 and Vcc2 is 12, proceed to state 49 and exit.\n- If slow charging is active and the charging system command is 1, transition to state 110. If the command is 4 instead, go to state 29. Also, if the ignition switch is 0 and slow charging is not active, shift to state 49 and exit.\n\nIf remote mode is enabled, switch to state 28. If it's disabled, transition to state 49 and exit.\n\nFor slow charging: if it's active, move to state 110. If it's disabled, switch to state 129 and end.\n\nRegarding fast charging: if active, transition to state 170. If disabled, go to state 189 and end.\n\nFinally, if GW_trigger is 2, switch to state 10. If the battery SOC is 20 and the DCDC state is 1, transition to state 28. If the SOC is 80 and the DCDC state is 3, move to state 49. If the DCDC state is 0 and GW_trigger is 0, exit.",
+    "Verify Receive – The BE shall verify the successful receipt of incoming data from the Correlator. This includes checking for receive errors and determining that all expected data was received, accumulation of error statistics and comparison against tolerances, and reporting of all out of tolerance conditions.",
+    "As a researcher, I want to generate structured citation data, so that so I can cite a file in a publication.",
+    "After the system starts up, if slow charging is active, we enter power-up mode. Then:\n\n1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:\n   a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.\n   b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.\n   c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with CP amplitude at 3000, switch to state 130. If slow charging becomes inactive, shut down and end.\n\n2) When the central control charging/discharging command is 2 and the vehicle isn't in charging/discharging mode, switch to state 110. Then:\n   - If the high-voltage shutdown request flag becomes 2, switch to state 115.\n   - If the flag drops to 0 with CP duty cycle at 88%, switch to state 126.\n   - If the central control command is 1 while charging state is 2, switch to state 130.\n   - If slow charging becomes inactive, shut down and end.",
+    "Input Data Management - The BE shall store input data records in a memory buffer and track buffer locations of all input data until data processing is complete. Report any buffer overflow conditions.",
+    "[RM-002] In the no-fail state, the mid-value shall be the selected value.  Note: a first failure in progress will not affect the method for determining the selected value."
+  ],
+  "predictions": [
+    "@startuml\nstart\n:Multiply Rotation Matrix DCM321 by the transpose of Rotation Matrix DCM321T;\n:Result is the Identity (3x3) Matrix;\n@enduml",
+    "@startuml\nstart\n:Configure help center URL;\n:Configure topic mappings;\nstop\n@enduml",
+    "@startuml\nstart\n:trading information release system: send a query;\n:central trading system: implement the query;\n:central trading system: structuralize the queried data;\n:central trading system: send the data to release;\n@enduml",
+    "@startuml\nstart\n:In the Modeling area of the Data Warehousing Workbench, choose Info Objects;\n:In the Info Object catalog for characteristics, choose Maintain master data from the context menu of your Info Object Product Group (ZD_PGROUP);\n:Choose Execute;\n:Choose Create;\n:Enter DS10 as Product Group and Computer as the Short description and choose Continue;\n:Repeat steps 4 and 5 with the following values;\n:Save your entries and return to the Info Object tree;\n:Repeat steps 2-7 for the characteristic Channel (ZD_CHAN) with the following values;\nstop\n@enduml",
+    "@startuml\nstart\n:Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager;\n:The LifeCycle Manager login screen appears;\n:In the System field, enter the name of the Central Management Server (CMS) on which the LifeCycle Manager tool is installed;\n:Enter the user name and password;\n:Select the appropriate authentication method from the Authentication drop-down list;\nswitch (Authentication type)\ncase (Enterprise authentication)\n  :Requires a user name and a password that are recognized by the BusinessObjects Enterprise system;\ncase (LDAP authentication)\n  :Requires a user name and a password that are recognized by the BusinessObjects Enterprise system;\ncase (Windows AD)\n  :Requires a user name and a password that are recognized by the BusinessObjects Enterprise system;\nendswitch\n:Click Log on;\n@enduml",
+    "@startuml\nstart\n:Select files to deposit;\n:Deposit arbitrarily large files;\n:Not be limited in what files I can and cannot deposit;\nstop\n@enduml",
+    "@startuml\nstart\n:Autopilot state is STANDBY;\nif (Pilot is not in control?) then (yes)\n  :Change autopilot state to TRANSITION;\nelse (no)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:In the \"Promotion Jobs\" home page, click New Job;\n:Click the Copy an Existing Job option;\n:The list of jobs in the PromotionJob folder is displayed;\n:Select a job from the job list;\n:click Create;\n:The name, keywords, and description of the job are displayed;\nif (Modify fields required?) then (yes)\n  :Modify the name, keywords, and description fields;\nelse (no)\nendif\n:In the Save Job in field, browse and select the folder in which you want to save the job;\n:click Create;\n:A new job is created;\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging is active\\nand front MCU high-voltage\\ndetection flag is 0?) then (yes)\n  :Transition to state 93;\nelseif (Charging/discharging power-up is active\\nand front MCU high-voltage\\ndetection flag is 1?) then (yes)\n  :Move to state 95;\nelseif (Power-up readiness is confirmed\\nand vehicle charging/discharging\\nmode is 2?) then (yes)\n  :Proceed to state 105;\nendif\nswitch (Case handling)\ncase (In remote mode)\n  :Go to state 105;\n  if (Slow charging becomes inactive?) then (yes)\n    :Shift to state 28;\n  endif\n  if (Remote mode deactivates?) then (yes)\n    :Initiate shutdown;\n    :Terminate;\n    stop\n  endif\ncase (Upon receiving a pet mode request)\n  :Enter state 105;\n  if (Slow charging is inactive?) then (yes)\n    :Transition to state 28;\n  endif\n  :Perform shutdown;\n  :End operations;\n  stop\ncase (When battery SOC hits 20%)\n  :Transition to state 105;\n  if (Slow charging is inactive?) then (yes)\n    :Switch to state 28;\n  endif\n  if (SOC reaches 80%\\nwhile DCDC state is 3?) then (yes)\n    :Execute shutdown;\n    :Conclude;\n    stop\n  endif\nendswitch\n@enduml",
+    "@startuml\nstart\n:Demonstrate capability every five years;\n:Submit documentation;\n:Notify the CAISO of test results;\n:Include dates in testing records;\n:Include duration in testing records;\n:Include compliance with requirements in testing records;\n:Maintain voltage within emergency limits;\n:Have governors capable of isochronous mode;\n:Ensure adequate transmission capacity is available;\n:Start and energize transmission paths without external assistance;\n:Include telephone communications in tests;\n:Include SCADA in tests;\nswitch (Unit type)\ncase (Hydro)\n :Meet start-up/synchronizing time limits within 30 minutes;\ncase (Other unit types)\n :Meet applicable start-up/synchronizing time limits;\nendswitch\n:Meet minimum run time duration of 10 minutes;\n:Submit a CAISO market schedule for test energy;\nstop\n@enduml",
+    "@startuml\nstart\nif (Are the source and destination systems connected?) then (Yes)\n  :Connect to the source system;\n  :Create a new job;\n  fork\n    :Copy an existing job;\n  end fork\n  :Add infoobjects to the job you want to promote;\n  if (Do you want to promote all dependents of the infoobjects?) then (No)\n    :Use the Manage Dependencies option to select the dependents you want to promote;\n    :Select the type of dependents you want to promote from the Type drop-down list;\n  else (Yes)\n  endif\n  :Promote the job;\nelse (No)\n  :Connect to the source system;\n  :Create a job;\n  fork\n    :Copy an existing job;\n  end fork\n  :Add infoobjects to the job you want to promote;\n  :Use the Manage Dependencies option to select the required dependents;\n  :Select the type of dependents you want to promote from the Type drop-down list;\n  :Export infoobjects with Output to BIAR file as the destination system;\n  :Import infoobjects from the BIAR file by clicking the Import BIAR tab;\n  :Promote the job;\nendif\n@enduml",
+    "@startuml\nstart\nif (Exceeding sensor limits?) then (yes)\n  if (Pilot in control (standby)?) then (no)\n    if (System supported without failures (not apfail)?) then (yes)\n      :Latch an autopilot pullup;\n    endif\n  endif\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Select an influential judge or legal thinker;\n:Access the thesis paper of the selected judge or legal thinker;\n:Read the thesis paper;\n:Gain insight into how their initial scholarship got started;\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\n:Check the gear position;\nif (Gear is in D or N?) then (yes)\n  :Set the D_S gear mileage parameter to 1;\n  :Sequence ends;\nelse (no)\n  if (Gear is in S?) then (yes)\n    :Calculate the D_S gear mileage parameter as S gear nominal mileage divided by D gear nominal mileage;\n    :Process concludes;\n  else (no)\n  endif\nendif\nif (Vehicle status is 30?) then (yes)\n  :Switch to driving mode;\nelse (no)\nendif\nif (Gear is in D or E?) then (yes)\n  :Set the D_S gear mileage parameter to S gear nominal mileage divided by D gear nominal mileage;\n  :End;\nelse (no)\n  if (Gear is in N or R?) then (yes)\n    :Observe using the D_S gear mileage parameter;\n    :Terminate the process;\n  else (no)\n  endif\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Ignition switch is set to 2?) then (Yes)\n  :Transition to state 30;\n  if (Ignition switch becomes 0?) then (Yes)\n    :Move to state 49;\n    :Exit;\n  elseif (Fast charge Vcc2 is 6?) then (Yes)\n    :Observe the charging gun indicator;\n    if (Charging system command is 4?) then (Yes)\n      :Switch to state 29;\n    else (No)\n      stop\n    endif\n  elseif (Ignition switch is 0 and Vcc2 is 12?) then (Yes)\n    :Proceed to state 49;\n    :Exit;\n  elseif (Slow charging is active and charging system command is 1?) then (Yes)\n    :Transition to state 110;\n  elseif (Slow charging is active and charging system command is 4?) then (Yes)\n    :Go to state 29;\n  elseif (Ignition switch is 0 and slow charging is not active?) then (Yes)\n    :Shift to state 49;\n    :Exit;\n  else (No)\n    stop\n  endif\nelse (No)\n  stop\nendif\n\nif (Remote mode is enabled?) then (Yes)\n  :Switch to state 28;\nelse (No)\n  :Transition to state 49;\n  :Exit;\nendif\n\nif (Slow charging is active?) then (Yes)\n  :Move to state 110;\nelse (No)\n  :Switch to state 129;\n  :End;\nendif\n\nif (Fast charging is active?) then (Yes)\n  :Transition to state 170;\nelse (No)\n  :Go to state 189;\n  :End;\nendif\n\nif (GW_trigger is 2?) then (Yes)\n  :Switch to state 10;\nelseif (Battery SOC is 20 and DCDC state is 1?) then (Yes)\n  :Transition to state 28;\nelseif (SOC is 80 and DCDC state is 3?) then (Yes)\n  :Move to state 49;\nelseif (DCDC state is 0 and GW_trigger is 0?) then (Yes)\n  :Exit;\nelse (No)\n  stop\nendif\n@enduml",
+    "@startuml\nstart\n:Verify successful receipt of incoming data from the Correlator;\n:Check for receive errors;\n:Determine that all expected data was received;\n:Accumulation of error statistics;\n:Comparison against tolerances;\nif (Out of tolerance conditions exist?) then (yes)\n  :Reporting of all out of tolerance conditions;\nelse (no)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Select a file;\n:Generate structured citation data;\n:Cite the file in a publication;\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging is active?) then (yes)\n  :Enter power-up mode;\n  switch (Condition?)\n  case (High-voltage shutdown request flag is 2)\n    :Switch to state 115;\n    switch (Condition after switching?)\n    case (Flag drops to 0 with CP duty cycle at 85%)\n      :Switch to state 126;\n    case (BMS self-check counter shows 1)\n      :Switch to state 130;\n    case (Slow charging becomes inactive)\n      :Shut down;\n      end\n    endswitch\n  case (High-voltage shutdown request flag is 2)\n    :Switch to state 115;\n    switch (Condition after switching?)\n    case (Flag drops to 0 with CP duty cycle at 85%)\n      :Switch to state 126;\n    case (Battery pre-heating is required)\n      :Switch to state 130;\n    case (Slow charging becomes inactive)\n      :Shut down;\n      end\n    endswitch\n  case (High-voltage shutdown request flag is 2)\n    :Switch to state 115;\n    switch (Condition after switching?)\n    case (Flag drops to 0 while BMS self-check counter is 1)\n      :Switch to state 126;\n    case (CP duty cycle hits 85% with CP amplitude at 3000)\n      :Switch to state 130;\n    case (Slow charging becomes inactive)\n      :Shut down;\n      end\n    endswitch\n  case (Central control charging/discharging command is 2 and vehicle isn't in charging/discharging mode)\n    :Switch to state 110;\n    switch (Condition?)\n    case (High-voltage shutdown request flag becomes 2)\n      :Switch to state 115;\n    case (Flag drops to 0 with CP duty cycle at 88%)\n      :Switch to state 126;\n    case (Central control command is 1 while charging state is 2)\n      :Switch to state 130;\n    case (Slow charging becomes inactive)\n      :Shut down;\n      end\n    endswitch\n  endswitch\nelse (no)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Store input data records in a memory buffer;\n:Track buffer locations of all input data;\nif (Buffer overflow condition?) then (yes)\n  :Report buffer overflow condition;\nelse (no)\nendif\n:Data processing is complete;\nstop\n@enduml",
+    "@startuml\nstart\nif (In no-fail state?) then (Yes)\n  :Set mid-value as the selected value;\nelseif (First failure in progress?) then (Yes)\n  :Do not affect the method for determining the selected value;\nelse (Other state)\nendif\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n\n:DCM321 * DCM321T;\nif( =Identity (3x3) Matrix.v?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+    "start\n:configure the help center URL and topic mappings;\nstop",
+    "start\n\npartition \"Trading information release system\"{\n  :Send a query;\n}\n\npartition \"Central trading system\"{\n  :Implement the query;\n  :Structuralize queried data;\n  :Send data to release;\n}\n\nstop",
+    "start\n\n:Choose \"Info Objects\";\nrepeat\n:Open characteristics Info Object catalog;\n:Open \"ZD_PGROUP\" context menu;\n:Select \"Maintain master data\";\n:Choose \"Execute\";\n\nrepeat\n    :Choose \"Create\";\n    fork\n    :Enter Product Group;\n    note right:eg.DS10\n    fork again\n    :Enter Short description;\n    note right:eg.Computer\n    end fork\n    :Choose \"Continue\";\nrepeat while (More values?) is (yes) not(no)\n\n:Save entries;\n:Return to Info Object tree;\n\nrepeat while (More values for ZD_CHAN?) is (yes)\n\nstop",
+    "start\n\n:Select \"Start\";\n:Select \"Programs\";\n:Select \"BusinessObjects XI 3.1\";\n:Select \"BusinessObjects Enterprise\";\n:Select \"BusinessObjects LifeCycle Manager\";\n:LifeCycle Manager login screen appears;\n\n:Go to System field;\n:Enter CMS name;\n:Enter username and password;\n\n:Open Authentication drop-down list;\n:Select authentication method;\n\nif(Default method?) then(yes)\n  :Enterprise authentication;\n  :Recognize user name and password;\nelse(no)\nswitch (Other Methods)\ncase(LDAP)\n  :Recognize user name and password;\n  :Special setup;\ncase(Windows AD)\n  :Recognize user name and password;\n  :Special setup;\ncase(other third-party types)\n  :Special setup;\nendswitch\nendif\n\n:Click \"Log on\";\n\nstop",
+    "start\n:deposit arbitrarily large files;\n:Remove restrictions on what files can and cannot be stored;\nstop",
+    "start\n\nif(Pilot is not in control (not standby)?) then(yes)\n:Autopilot change states from STANDBY to TRANSITION;\nelse(no)\nendif\n\nstop",
+    "start\n\n:Log in LifeCycle Manager tool;\n:Go to \"Promotion Jobs\" home page;\n:Click \"New Job\";\n\n:Click \"the Copy an Existing Job\" option;\n:The list of jobs is displayed;\n\n:Select a job from list;\n:Cick \"Create\";\n\n:Information is displayed;\nfork\n:Name;\nfork again\n:Keywords;\nfork again\n:Description;\nend fork\n\nif(Modification?) then(yes)\n:Modify these fields;\nnote right\nCannot change source system\nend note\nelse(no)\nendif\n\n:Go to \"Save Job\" field;\n:Browse and select folder;\n:Click \"Create\";\n:A new job is created;\n\nstop",
+    "start\nif (slow charging is 1 and front MCU high-voltage detection flag is 0) then(yes)\n  :switch to state 93;\n if (charging/discharging power-up is active and front MCU high-voltage detection flag is 1) then(yes)\n  :switch to state 95;\n  if (power-up is ready and vehicle charging/discharging mode is 2) then(yes)\n  :switch to state 105;\n\nswitch(condition judgement)\n  case(in remote mode)\n    :switch to state 105;\n    if (slow charging is inactive) then\n      :switch to state 28;\n      if (remote mode is closed) then\n          :shutdown;\n      stop\n      endif\n    endif\n\n  case (pet mode request is received)\n    :switch to state 105;\n     if (slow charging is inactive) then\n      :switch to state 28;\n      if (pet mode open request is closed) then\n          :shutdown;\n      stop\n      endif\n    endif\n\n  case (battery SOC is 20) \n    :switch to state 105;\n    if (SOC reaches 80 and DCDC state is 3) then\n    :shutdown;\n    stop\n    endif\nendswitch\n\n  endif\nendif\nendif\nend",
+    "start\n\n:Demonstrate capability every five years;\n:Submit documentation;;\n:Notify CAISO of test results;\n\n:Testing records;\nfork\n:Include dates;\nfork again\n:Include duration;\nfork again\n:Compliance with requirements;\nend fork\n\n:Units requirments;\nfork\n:Maintain voltage within emergency limits;\nfork again\n:Have isochronous mode governors;\nfork again\n:Adequate transmission capacity;\nfork again\n:Without external assistance;\n:Start and energize transmission paths;\nend fork\n\n:Tests requirments;\nfork\n:Include key operating aids;\nfork again\n:Start-up/synchronizing time limits apply based on unit type;\nfork again\n:Minimum run time duration 10 minutes;\nend fork\n\n:Submit CAISO test energy market schedule;\n\nstop",
+    "start\n\n:Connect to source system;\n\nif(Have existing job?) then(no)\n:Create a new job; \nelse(yes)\n:copy existing job;\nendif\n\n:Add infoobjects;\n\nif (Promote all Dependencies?) then (yes)\n  :Use \"Manage Dependencies\";\n  :Open Type drop-down list;\n  :Select dependent want to promote;\nelse(no)\nendif\n\nif (Source and the destination systems connected?) then (no)\n  :Export infoobjects with Output to BIAR file;\n  :Click Import BIAR tab;\n  :Infoobjects from the BIAR file are imported;\nelse (yes)\nendif\n\n:Promote the job;\n\nstop",
+    "start\n\nif(Pilot is not in control (not standby)?) then(yes)\n if(System is supported without failures (not apfail)?) then(yes)\n :Exceeding sensor limits latch an autopilot pullup;\n else(no)\n endif\nelse(no)\nendif\n\nstop",
+    "start\n:get thesis paper of influential judge or legal thinker;\n:gain insight into how initial scholarship start;\nstop",
+    "start\nif (gear is D or N) then\n  :set D_S gear mileage parameter to 1;\n  stop\nelse if (gear is S) then\n  :set D_S gear mileage parameter = S gear nominal mileage / D gear nominal mileage;\n  stop\nelse if (vehicle status is 30) then\n  :switch to driving mode;\n  switch(gear check)\n  case(gear is D or E)\n    :set D_S gear mileage parameter = S gear nominal mileage / D gear nominal mileage;\n    stop\n  case(gear is N or R)\n    :observe using D_S gear mileage parameter;\n    stop\n  endswitch\nendif  \nend",
+    "start\nif (ignition switch=2) then(yes)\n  :switch to state 30;\n  if (ignition switch=0) then(yes)\n    :switch to state 49;\n    stop\n  else if (fast charge Vcc2=6) then\n    :observe charging gun indicator;\n    if (charging system command=4)then(yes)\n      :switch to state 29;\n      if(ignition switch=0 and Vcc2=12)then(yes)\n        :switch to state 49;\n        stop;\n      endif\n    endif\n  else if(slow charging is active and charging system command=1)then\n    :switch to state 110;\n    if(charging system command=4)then(yes)\n      :switch to state 29;\n      if(ignition switch=0 and slow charging is inactive)then(yes)\n        :switch to state 49;\n        stop;\n      endif\n    endif\n  endif\nelse if (remote mode enabled) then\n  :switch to state 28;\n  if(remote mode is disabled)(yes)\n    :switch to state 49;\n    stop\n  endif\nelse if (slow charging is active) then\n  :switch to state 110;\n  if(slow charging is inactive)(yes)\n    :switch to state 129;\n    stop\n  endif\nelse if (fast charging is active) then\n  :switch to state 170;\n  if(fast charging is inactive)(yes)\n    :switch to state 189;\n    stop\n  endif\nelse if(GW_trigger=2)then\n  :switch to state 10;\n  if(battery SOC=20 and DCDC state=1)then(yes)\n    :switch to state 28;\n    if(SOC=80 and DCDC state=3)then(yes)\n      :switch to state 49;\n      if(DCDC state=0 and GW_trigger=0)then(yes)\n        stop\n      endif\n    endif\n  endif\nendif\nend",
+    ":Verify successful receipt;\n\nfork\n:Check for receive errors;\nfork again\n:Determine all expected data was received;\nfork again\n:Accumulation of error statistics;\nfork again\n:Comparison against tolerances;\nfork again\n:Report out of tolerance conditions;\nend fork\n\nstop",
+    "start\n:generate structured citation data;\n:cite files in publication;\nstop",
+    "start\nif (slow charging is active) then(yes)\n  :enter power-up mode;\n  if (high-voltage shutdown request charging/discharging flag is 2) then(yes)\n    :switch to state 115;\n    if (flag becomes 0 and CP duty cycle is 85%) then(yes)\n      :switch to state 126;\n      if (BMS self-check counter is 1) then(yes)\n        :switch to state 130;\n        if (slow charging is inactive) then(yes)\n          :shutdown;\n          stop\n        endif\n      else if (battery pre-heating is required) then\n        :switch to state 130;\n        if (slow charging is inactive) then(yes)\n         :shutdown;\n         stop\n        endif\n      endif\n  \n    else if(flag becomes 0 and BMS self-check counter is 1)then\n    :switch to state 126;\n      if (CP duty cycle is 85% and CP amplitude is 3000) then(yes)\n        :switch to state 130;\n        if (slow charging is inactive) then(yes)\n          :shutdown;\n          stop\n        endif\n      endif\n    endif\n\n  else if(central control command is 2 and vehicle is not in charging/discharging mode)then\n    :switch to state 110;\n    if (flag becomes 2) then(yes)\n      :switch to state 115;\n      if(flag becomes 0 and CP duty cycle is 88%)then(yes)\n        :switch to state 126;\n        if(central control command is 2 and charging state is 2)then(yes)\n          :switch to state 130;\n          if (slow charging is inactive) then(yes)\n            :shutdown;\n            stop\n          endif\n        endif  \n      endif\n    endif\n    \n  endif\nendif\nend",
+    "start\n\nrepeat\n:Store input data records in memory buffer;\n:Track buffer locations;\nrepeat while(Data processing is incomplete)\n\n:Report any buffer overflow conditions;\n\nstop",
+    "start\n\n:In no-fail state;\n:Mid-value be selected value;\n\nif(A first failure in progress?) then(yes)\n:Not affect method for determining selected value;\nelse(no)\nendif\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "extra_activity",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

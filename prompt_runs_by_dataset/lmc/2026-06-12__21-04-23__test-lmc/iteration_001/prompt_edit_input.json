@@ -1,0 +1,148 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "",
+    "knowledge": ""
+  },
+  "failure_analysis": {
+    "summary": "The batch mainly fails because the current prompt is almost entirely empty regarding workflow and knowledge, leading the generation model to freely hallucinate speculative implementation steps, omit explicitly stated activities, and flatten required conditional, parallel, and loop structures into simple sequential flows. The model acts as an implementer rather than a faithful translator of the requirement text.",
+    "error_patterns": [
+      {
+        "name": "speculative_extra_activities",
+        "severity": "high",
+        "evidence_case_ids": [
+          "us-0193",
+          "us-0124",
+          "fsd-0098",
+          "fsd-0083"
+        ],
+        "problem": "The model invents UI interactions, system internals, and error-handling steps not present in the input requirement, causing very low node precision and extra wrong relations.",
+        "suggested_prompt_direction": "Instruct the agent to strictly extract activities and conditions only from the provided text and prohibit adding speculative implementation details, UI steps, or error paths not explicitly stated.",
+        "target_sections": [
+          "workflow",
+          "agent task"
+        ]
+      },
+      {
+        "name": "missing_explicit_activities",
+        "severity": "high",
+        "evidence_case_ids": [
+          "fsd-0098",
+          "fsd-0083",
+          "pure-0031",
+          "us-0193",
+          "bp-0010"
+        ],
+        "problem": "The generated diagrams omit activities and conditions that are explicitly mentioned in the requirement, leading to low node recall.",
+        "suggested_prompt_direction": "Add a workflow step requiring the agent to first enumerate all activities and conditions present in the input text before generating the diagram, ensuring every explicit action is mapped to a node.",
+        "target_sections": [
+          "workflow",
+          "input"
+        ]
+      },
+      {
+        "name": "flattened_conditional_branches",
+        "severity": "high",
+        "evidence_case_ids": [
+          "pure-0031",
+          "pure-0022",
+          "bp-0010",
+          "bp-0028"
+        ],
+        "problem": "Explicit alternatives and conditional checks in the requirement are modeled as sequential steps or omitted, losing the branching logic and causing missing or wrong relations.",
+        "suggested_prompt_direction": "Provide knowledge and workflow instructions that require the agent to identify 'if', 'either', 'or', and alternative scenarios in the text and explicitly model them as decision nodes with branching paths.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_parallel_concurrent_flows",
+        "severity": "high",
+        "evidence_case_ids": [
+          "fsd-0098",
+          "fsd-0083",
+          "us-0124",
+          "bp-0010"
+        ],
+        "problem": "Concurrent tasks indicated by 'concurrently', 'parallel', or 'fork' in the requirements are modeled sequentially, missing the required parallel control-flow relations.",
+        "suggested_prompt_direction": "Instruct the agent to detect keywords indicating concurrency and explicitly use PlantUML fork/end fork constructs for parallel activities.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "wrong_or_missing_loops",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "fsd-0083",
+          "pure-0031",
+          "pure-0022"
+        ],
+        "problem": "Looping, retry, or iterative behaviors described in the requirements are either omitted, incorrectly modeled as conditionals, or replaced with speculative loop constructs not grounded in the text.",
+        "suggested_prompt_direction": "Guide the agent to map explicit iterative, retry, or periodic behaviors to PlantUML repeat/while loops, and avoid adding loops where the text does not specify iteration.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "plantuml_syntax_errors",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "fsd-0098",
+          "fsd-0083"
+        ],
+        "problem": "Generated PlantUML code contains syntax errors such as invalid keywords (e.g., 'restart') or malformed arrow syntax, causing compilation failures.",
+        "suggested_prompt_direction": "Add output constraints that restrict the agent to a safe subset of PlantUML activity diagram syntax and explicitly list forbidden or error-prone constructs.",
+        "target_sections": [
+          "output",
+          "knowledge"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not add dataset-specific examples or memorized PlantUML snippets to the prompt.",
+      "Do not copy ground-truth wording verbatim into the prompt.",
+      "Do not instruct the model to add speculative implementation steps just to increase node count.",
+      "Do not hardcode UI or system-specific error handling paths into the prompt instructions."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

@@ -11,16 +11,28 @@
 - `prompt_workspace/prompt_editor.md` 没有告诉 agent 最多只能规划 2 个 section。
 - 实际运行中 agent 可能输出 3 个 section，例如同时修改 `workflow`、`knowledge`、`rule`。
 - 代码会拒绝该输出并写入 `prompt_editor.output.rejected.txt`，导致本轮 evolution 中止。
+- 即使取消 section 数量上限，`revision_plan` 仍要求同一个 section 只能出现一次；当前 `prompt_workspace/prompt_editor.md` 没有明确这一点，agent 可能把同一 section 拆成多条 revision plan item，触发 `Section '...' is planned more than once` 校验失败。
 
 短期处理建议：
 
 - 先取消或显著放宽该限制，让 prompt evolution 能继续走到 `prompt_rewriter` 和 gate。
 - 如果后续仍需要限制，应同时更新 `prompt_workspace/prompt_editor.md`，明确写入最多可修改的 section 数量。
+- 同时需要在 `prompt_workspace/prompt_editor.md` 明确要求：`revision_plan` 中每个 fixed section 最多只能出现一次；若同一 section 有多条修改意图，必须合并到同一个 item 的 `intent` / `change_instruction` 中。
 
 后续更稳妥方案：
 
 - 将 section 数量限制从硬失败改成软约束。
 - 当超出限制时，可让 agent 自我压缩 revision plan，或只拒绝低优先级 section。
+- 在进入严格 schema 校验前增加一个 normalize/merge 步骤，将同 section 的多条 revision plan item 自动合并，减少整轮 evolution 因格式细节报废。
+
+计划中的代码层修复：
+
+- 优先在 `prompt_ops.py` 中新增 `normalize_prompt_revision_plan`，在 `analysis/prompt_editor.py::propose_prompt_revision` 执行严格校验前调用。
+- 合并粒度以 `section` 为键，保留首次出现的 section 顺序。
+- 同一 section 下的多个 `intent` 合并为一个简短列表式意图说明。
+- 同一 section 下的多个 `change_instruction` 合并为一个总指令，要求后续 rewriter 将这些修改整合成该 section 的一次 coherent revision，而不是拆成多个 section item。
+- 合并后再执行现有 `validate_prompt_revision_plan`，因此 invalid section、空 intent、空 change_instruction 等真实 schema 错误仍然会被拒绝。
+- `max_sections_per_edit > 0` 时，先合并重复 section，再按合并后的 section 数量判断是否超限；不静默丢弃 section，避免隐藏实验设置。
 
 ## 2. failure_analysis 输出 schema 校验不足
 
@@ -45,20 +57,26 @@
 
 当前 deterministic parser 主要在 `metrics.py::extract_activity_graph` 中实现，已经支持常见 activity、if/else、switch/case、while、repeat、fork、split、state 和基础 transition。
 
-已知风险：
+已修复：
 
-- `fork end` 没有被作为 fork 结束识别，当前只识别 `end fork`、`endfork`、`end split`、`split end`、`endsplit`。
-- `-[bold]->`、`-[#color]->`、`-[dashed]->` 等 styled arrow 可能被错误解析。
-- `->No;` 这类没有显式 source 的 arrow/branch label 当前基本被忽略。
+- 已增加对 `fork end` 的识别，使其与 `end fork` 等价。
+- 已改进 transition 解析，支持 `-[bold]->`、`-[#color]->`、`-[dashed]->` 等 styled arrow，避免把样式文本吞进 source 或 target。
+- 已处理 `-> label;` 这类无显式 source 的 PlantUML shorthand，将 label 应用于下一条关系。
+- 已为上述语法加入最小 parser 回归测试。
+
+仍需观察的风险：
+
 - 复杂嵌套 fork、条件内 fork、PlantUML shorthand branch 和 merge 语义可能与真实图不一致。
+- `elseif` / `else if` 链式条件目前是近似解析，后续条件可能被挂回最初的 `if` 条件，而不是沿 false/else path 串接到前一个条件。该问题主要影响 relation source/target 的准确性，进而影响 relation precision/recall。
+- 最新 gold parser diagnostics 显示，`rac` 数据集 20 条中有 15 条使用 `elseif`，该风险主要集中在 RAC；`fsd` gold 基本不使用 `elseif`，当前 FSD 低分更可能来自生成 PlantUML 的活动粒度和结构差异。
 - parser 越补越复杂，长期维护成本会上升。
 
-短期修补建议：
+后续建议：
 
-- 增加对 `fork end` 的识别。
-- 改进 transition regex，支持 styled arrow，并避免把样式文本吞进 source。
-- 明确处理 `-> label;` 这类 PlantUML shorthand，至少不应污染节点或关系。
-- 为上述语法加入最小单元测试。
+- 继续补充来自真实 gold/pred PlantUML 的失败样例。
+- 后续如评估 RAC 或全量 LATO，应优先考虑用 RAC gold 增加 `elseif` 链式语义回归测试，再决定是否修改 parser。
+- 增加 parser confidence / unsupported syntax warning。
+- 如复杂语法持续增加，再考虑 LLM extraction fallback。
 
 ## 4. 是否改用 LLM 抽取活动和关系
 
@@ -170,4 +188,3 @@
 - 在 `compare_lato_eval.py` 中复用 `evaluation.is_infrastructure_error`。
 - 异常属于基础设施问题时追加 `infrastructure_error`。
 - summary 中已有 `infrastructure_error_rate` 字段，可直接受益。
-

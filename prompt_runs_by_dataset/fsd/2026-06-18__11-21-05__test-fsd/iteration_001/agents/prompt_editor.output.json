@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Enforce a strict extraction-then-structuring process to prevent hallucination and compression.",
+      "change_instruction": "Add a two-step workflow. Step 1: Extract a minimal, exhaustive list of discrete activities explicitly stated in the text, mapping them 1-to-1 to activity nodes without summarizing or adding implicit steps. Step 2: Construct the control flow strictly among these extracted nodes, using the text's explicit sequencing and conditional logic, without adding or merging nodes."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide clear modeling guidelines to distinguish sequential actions from parallel flows and to correctly structure conditional logic.",
+      "change_instruction": "Add a rule distinguishing sequential actions from concurrent flows: only use `fork`/`join` when the requirement explicitly states simultaneous execution; grammatical lists (e.g., 'enter name and description') or alternative options must be modeled as sequential activities or `if`/`else` branches, not as parallel forks. Add a rule for nested conditional logic: map mutually exclusive conditions (e.g., 'if X, else if Y') using nested `if`/`elseif`/`else` constructs rather than flattening them into sequential or unrelated branches."
+    },
+    {
+      "section": "rule",
+      "intent": "Constrain output strictly to the provided text to prevent hallucinated activities and unsupported control flow edges.",
+      "change_instruction": "Add a strict negative constraint: Do not invent implicit steps, validations, error-handling branches, or system responses unless they are explicitly stated in the requirement. Add a second constraint: Do not add control flow edges that are not directly supported by the requirement's stated sequence or logic; specifically, do not force sequential dependencies between unrelated steps or misroute branches."
+    }
+  ]
+}

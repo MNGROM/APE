@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow does not instruct the model to look for structural cues of concurrency (e.g., lists of simultaneous operations) or to differentiate complex mutually exclusive logic (like switch/case states) from simple if/else, leading to sequential defaults and nested flattening."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks guidance on using PlantUML `switch`/`endswitch` for multi-branch mutually exclusive conditions, fails to provide heuristics for distinguishing cyclic monitoring from standard conditional branching, and does not specify how to handle contextual system states as distinct activity nodes."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rules do not explicitly prohibit treating constraints or limits as sequential actions (which causes extra activities), nor do they mandate preserving contextual system states and operational conditions as distinct nodes (which causes missing activities)."
+    }
+  ]
+}
+```

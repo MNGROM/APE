@@ -1,0 +1,784 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 20
+- syntax_pass_rate: 0.9500
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.3707
+- node_recall: 0.3641
+- node_f1: 0.3674
+- relation_precision: 0.3218
+- relation_recall: 0.3079
+- relation_f1: 0.3147
+- plantuml_compilation_pass_rate: 0.9500
+- llm_element_evaluated: 20.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.7293
+- llm_node_recall: 0.7628
+- llm_node_f1: 0.7307
+- llm_relation_precision: 0.5365
+- llm_relation_recall: 0.5353
+- llm_relation_f1: 0.5130
+
+## Failure Types
+- missing_activity: 20
+- extra_activity: 20
+- missing_or_wrong_relation: 20
+- extra_or_wrong_relation: 20
+- wrong_parallel: 9
+- wrong_loop: 6
+- syntax_error: 1
+
+## Representative Failure Cases
+### fsd-0081
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.3448
+- relation_f1: 0.3125
+- llm_element_status: success
+- llm_node_f1: 0.7188
+- llm_relation_f1: 0.3288
+- missing_nodes:
+  - embedded communications layer validates incoming can frames by
+  - check id
+  - check dlc
+  - check crc
+  - subsequent processing
+  - high-priority telemetry monitor task
+  - scheduled by rtos and triggered by periodic timer interrupt
+  - execute control loop with bounded retries and exponential backoff strategy for fault recovery
+- extra_nodes:
+  - receive incoming can frame
+  - validate can frame (id dlc crc)
+  - frame valid?
+  - discard frame
+  - telemetry monitor task (triggered by periodic timer interrupt)
+  - execute control loop
+  - fault detected?
+  - apply bounded retries with exponential backoff
+- missing_relations:
+  - embedded communications layer validates incoming can frames by -> check id [fork]
+  - embedded communications layer validates incoming can frames by -> check dlc [fork]
+  - embedded communications layer validates incoming can frames by -> check crc [fork]
+  - check id -> enqueue into lock-free multi-producer ring buffers [merge]
+  - check dlc -> enqueue into lock-free multi-producer ring buffers [merge]
+  - check crc -> enqueue into lock-free multi-producer ring buffers [merge]
+  - enqueue into lock-free multi-producer ring buffers -> subsequent processing
+  - subsequent processing -> high-priority telemetry monitor task [fork]
+- input_excerpt:
+  The embedded communications layer validates incoming CAN frames by checking the ID, DLC, and CRC before enqueuing them into lock-free, multi-producer ring buffers for subsequent processing. A high-priority telemetry monitor task, scheduled by the RTOS and triggered by a periodic timer interrupt, executes a control loop with bounded retries and an exponential backoff strategy for fault recovery. Concurrently, a power management task, which interfaces with the BMS and PMIC, monitors the battery state; upon detecting a level below 20%, it checks the charging status. If charging is active, it monitors the FADEC or equivalent system until completion and then notifies the user. If not charging, it
+- generated_excerpt:
+  @startuml skinparam style strictuml skinparam ActivityBackgroundColor #EEF7FF skinparam ActivityBorderColor #336699  title Embedded Communication, RTOS Control, and Power Management System  start  partition "CAN Communication Layer" {     :Receive Incoming CAN Frame;     :Validate CAN Frame (ID, DLC, CRC);     if (Frame Valid?) then (No)         :Discard Frame;         stop     else (Yes)         :Enqueue into Lock-Free\nMulti-Producer Ring Buffer;     endif }  partition "RTOS Scheduled Tasks" {     fork         :Telemetry Monitor Task\n(Triggered by Periodic Timer Interrupt);         repeat             :Execute Control Loop;             if (Fault Detected?) then (Yes)                 :Apply
+### lmc-0036
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.2222
+- llm_element_status: success
+- llm_node_f1: 0.8571
+- llm_relation_f1: 0.4286
+- missing_nodes:
+  - input any value
+  - minimum value of nn output z >= -0.2?
+  - allowed
+  - not allowed
+- extra_nodes:
+  - receive input values
+  - compute nn output z
+  - z >= -0.2 ?
+  - accept output z
+  - clamp/adjust output z to -0.2
+  - return final output z
+- missing_relations:
+  - minimum value of nn output z >= -0.2? -> allowed [yes]
+  - minimum value of nn output z >= -0.2? -> not allowed [no]
+- input_excerpt:
+  2.	The minimum value of the NN output, z, shall always be greater than or equal to -0.2, regardless of the input values.
+- generated_excerpt:
+  @startuml start :Receive input values; :Compute NN output z; if (z >= -0.2 ?) then (Yes)   :Accept output z; else (No)   :Clamp/Adjust output z to -0.2; endif :Return final output z; stop @enduml
+### bp-0023
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1687
+- relation_f1: 0.1714
+- llm_element_status: success
+- llm_node_f1: 0.0000
+- llm_relation_f1: 0.0000
+- missing_nodes:
+  - log in lifecycle manager tool
+  - selection method
+  - case 1
+  - go to promotion jobs home page
+  - select the job want to promote
+  - case 2
+  - right-click
+  - open source and destination systems drop-down lists
+- extra_nodes:
+  - promote a joblog into the lifecycle manager tool
+  - in the promotion jobs home page select the job to promote (alternatively right-click the home page screen and click promote)
+  - select source and destination systems from drop-down lists
+  - enter appropriate value in external change management id field
+  - click edit mappings to create and validate mappings
+  - default option selected
+  - promote job along with inherited application rights
+  - optionally click view security to view security dependencies
+- missing_relations:
+  - log in lifecycle manager tool -> selection method
+  - selection method -> case 1 [case 1]
+  - case 1 -> go to promotion jobs home page
+  - go to promotion jobs home page -> select the job want to promote
+  - selection method -> case 2 [case 2]
+  - case 2 -> right-click
+  - right-click -> click promote
+  - select the job want to promote -> open source and destination systems drop-down lists [merge]
+- input_excerpt:
+  23.	promote a jobLog into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, select the job that you want to promote. You can also right-click the home page screen, and click Promote.3. From the source and the destination systems drop-down lists, select the source and destination systems.Note:Ensure that you have logged into both the source and destination systems before you proceed with the promotion process.4. In the External Change Management ID field, enter the appropriate value, and click Save.5. Click Mappings. Click Edit Mappings if you want to create and validate mappings.6. Click Security Settings, if required. The following options are displayed:• Do not Promote Secur
+- generated_excerpt:
+  @startuml start :Promote a jobLog into the LifeCycle Manager tool; :In the "Promotion Jobs" home page, select the job to promote\n(Alternatively, right-click the home page screen and click Promote); :Select source and destination systems from drop-down lists; note right: Ensure that you have logged into\nboth source and destination systems\nbefore proceeding. :Enter appropriate value in External Change Management ID field; :Click Save; :Click Mappings; :Click Edit Mappings to create and validate mappings; :Click Security Settings (if required); if (Security Settings?) then (Do not Promote Security)   :Default option selected; elseif (Promote Security) then (Promote Security)   :Promote jobs 
+### lmc-0020
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1818
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.6667
+- llm_relation_f1: 0.3750
+- missing_nodes:
+  - in inner loop yaw regulator
+  - command angular yaw accelerations <= 50 deg/sec2
+- extra_nodes:
+  - inner loop yaw regulator commands angular yaw acceleration
+  - is commanded yaw acceleration > 50 deg/sec ?
+  - start frame counter for duration > 50 deg/sec
+  - increment frame counter each frame (100 hz)
+  - limit commanded yaw acceleration to system capability ( 50 deg/sec )
+  - allow commanded yaw acceleration
+  - reset frame counter
+- missing_relations:
+  - in inner loop yaw regulator -> durations > 100 frames?
+  - durations > 100 frames? -> command angular yaw accelerations <= 50 deg/sec2 [yes]
+- input_excerpt:
+  3.	The Inner Loop Yaw Regulator Shall not command angular yaw accelerations greater than the capability of the system (50 deg/sec2) for durations exceeding 100 frames (1 second @ 100 hz).
+- generated_excerpt:
+  @startuml skinparam ActivityBackgroundColor #E8F5E9 skinparam ActivityBorderColor #2E7D32  start  :Inner Loop Yaw Regulator commands angular yaw acceleration;  if (Is commanded yaw acceleration > 50 deg/sec²?) then (Yes)   :Start frame counter for duration > 50 deg/sec²;   :Increment frame counter each frame (100 Hz);      if (Does duration exceed 100 frames (1 second)?) then (Yes)     :Limit commanded yaw acceleration to system capability (≤ 50 deg/sec²);     stop   else (No)     :Allow commanded yaw acceleration;     stop   endif    else (No)   :Reset frame counter;   :Allow commanded yaw acceleration;   stop endif  @enduml
+### bp-0014
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2000
+- relation_f1: 0.1714
+- llm_element_status: success
+- llm_node_f1: 0.7429
+- llm_relation_f1: 0.6154
+- missing_nodes:
+  - select start
+  - select programs
+  - select businessobjects xi 3.1
+  - select businessobjects enterprise
+  - select businessobjects lifecycle manager
+  - go to system field
+  - enter cms name
+  - open authentication drop-down list
+- extra_nodes:
+  - select start > programs > businessobjects xi 3.1 > businessobjects enterprise > businessobjects lifecycle manager
+  - enter the name of the central management server (cms) in the system field
+  - select authentication method from the drop-down list
+  - authentication type
+  - requires user name and password recognized by businessobjects enterprise system (default method)
+  - requires user name and password recognized by businessobjects enterprise system (requires special setup)
+  - requires special setup (see administrator s guide)
+- missing_relations:
+  - select start -> select programs
+  - select programs -> select businessobjects xi 3.1
+  - select businessobjects xi 3.1 -> select businessobjects enterprise
+  - select businessobjects enterprise -> select businessobjects lifecycle manager
+  - lifecycle manager login screen appears -> go to system field
+  - go to system field -> enter cms name
+  - enter cms name -> enter username and password
+  - select authentication method -> default method?
+- input_excerpt:
+  14.	log into the LifeCycle Manager tool.To log into the LifeCycle Manager tool, complete the following steps:1. Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager. The LifeCycle Manager login screen appears.2. In the System field, enter the name of the Central Management Server (CMS) on which the LifeCycle Manager tool is installed.3. Enter the user name and password.4. Select the appropriate authentication method from the Authentication drop-down list.The LifeCycle Manager tool supports the following authentication types:• Enterprise authentication - This authentication type requires a user name and a password that are recognize
+- generated_excerpt:
+  @startuml start :Select Start > Programs > BusinessObjects XI 3.1\n> BusinessObjects Enterprise\n> BusinessObjects LifeCycle Manager; :LifeCycle Manager login screen appears; :Enter the name of the Central Management Server (CMS)\nin the System field; :Enter user name and password; :Select authentication method from the drop-down list; switch (Authentication type) case (Enterprise)   :Requires user name and password recognized\nby BusinessObjects Enterprise system\n(Default method); case (LDAP)   :Requires user name and password recognized\nby BusinessObjects Enterprise system\n(Requires special setup); case (Windows AD)   :Requires user name and password recognized\nby BusinessObjects Enter
+### lmc-0055
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2000
+- relation_f1: 0.2500
+- llm_element_status: success
+- llm_node_f1: 0.8571
+- llm_relation_f1: 0.8571
+- missing_nodes:
+  - dcm321 * dcm321t
+  - allowed
+  - not allowed
+- extra_nodes:
+  - initialize rotation matrix dcm321
+  - compute transpose of rotation matrix dcm321t
+  - multiply dcm321 by dcm321t (dcm321 * dcm321t)
+  - validation passed
+  - validation failed
+- missing_relations:
+  - =identity (3x3) matrix.v? -> allowed [yes]
+  - =identity (3x3) matrix.v? -> not allowed [no]
+- input_excerpt:
+  7.	The Rotation Matrix, DCM321, multiplied by the transpose of the Rotation Matrix, DCM321T shall be the Identity (3x3) Matrix.v
+- generated_excerpt:
+  @startuml start :Initialize Rotation Matrix DCM321; :Compute Transpose of Rotation Matrix DCM321T; :Multiply DCM321 by DCM321T (DCM321 * DCM321T); if (Result == Identity (3x3) Matrix?) then (Yes)   :Validation Passed; else (No)   :Validation Failed; endif stop @enduml
+### lmc-0042
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2500
+- relation_f1: 0.3333
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 1.0000
+- missing_nodes:
+  - < 0.01?
+  - allowed
+  - not allowed
+- extra_nodes:
+  - 2-norm of buminusd < 0.01?
+  - requirement satisfied
+  - requirement violated
+- missing_relations:
+  - < 0.01? -> allowed [yes]
+  - < 0.01? -> not allowed [no]
+- input_excerpt:
+  4.	The 2-norm of the output Buminusd should be less than 0.01.
+- generated_excerpt:
+  @startuml start :Compute 2-norm of Buminusd; if (2-norm of Buminusd < 0.01?) then (Yes)   :Requirement satisfied; else (No)   :Requirement violated; endif stop @enduml
+### bp-0007
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2692
+- relation_f1: 0.1429
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 0.6667
+- missing_nodes:
+  - go to modeling area
+  - choose info provider
+  - info area displays information
+  - transformation
+  - data source
+  - open data source context menu
+  - choose create info package...
+  - enter description
+- extra_nodes:
+  - in the modeling area choose info provider
+  - view transformation and data source in the info area below the info cube sales overview
+  - in the context menu of the data source choose create info package...
+  - enter a description for the info package and choose save
+  - view info package maintenance screen for the scheduler
+  - go to the tab page schedule and choose start
+  - to check the load process choose monitor in the toolbar
+  - select the date and choose execute
+- missing_relations:
+  - go to data warehousing workbench -> go to modeling area
+  - go to modeling area -> choose info provider
+  - choose info provider -> info area displays information
+  - info area displays information -> transformation [fork]
+  - info area displays information -> data source [fork]
+  - transformation -> open data source context menu [merge]
+  - data source -> open data source context menu [merge]
+  - choose create info package... -> enter description
+- input_excerpt:
+  7.	Loading Transaction Data1. Go to the Data Warehousing Workbench; in the Modeling area choose Info Provider. The transformation and the Data source are displayed in the Info Area below the Info Cube Sales Overview.2. In the context menu of the Data source, choose Create Info Package...3. On the next screen, enter a description for the Info Package and choose Save. The Info Package maintenance screen for the scheduler appears.4. Go to the tab page Schedule and choose Start.5. To check the load process, choose Monitor in the toolbar of Info Package maintenance.6. On the next screen, select the date and choose Execute. The monitor for the load process is displayed.7. Select the load process f
+- generated_excerpt:
+  @startuml start :Go to the Data Warehousing Workbench; :In the Modeling area choose Info Provider; :View transformation and Data source\nin the Info Area below the Info Cube Sales Overview; :In the context menu of the Data source,\nchoose Create Info Package...; :Enter a description for the Info Package\nand choose Save; :View Info Package maintenance screen\nfor the scheduler; :Go to the tab page Schedule\nand choose Start; :To check the load process,\nchoose Monitor in the toolbar; :Select the date and choose Execute; :View the monitor for the load process; :Select the load process for your Data source\nfrom the tree at the left of the screen; :Exit the Info Package maintenance screen; :Fr
+### fsd-0009
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3333
+- relation_f1: 0.3030
+- llm_element_status: success
+- llm_node_f1: 0.7368
+- llm_relation_f1: 0.4800
+- missing_nodes:
+  - operating on preemptive rtos
+  - tcms manages via deterministic scheduling
+  - traction
+  - braking
+  - doors
+  - diagnostics
+  - detect acceleration threshold exceedance
+  - high-priority task
+- extra_nodes:
+  - inertial sensor detects vehicle acceleration threshold exceedance
+  - medium-priority task evaluate need for esp intervention
+  - cyclic task (esp) process wheel speed sensor data via ring buffer
+  - cyclic task (esp) calculate individual wheel slip rates
+  - cyclic task (esp) execute real-time braking force distribution algorithm
+  - cyclic task (esp) release mutex for ring buffer
+  - steering assist control task compute target angle via pid control loop
+  - steering assist control task adjust eps output torque via can message with crc checksum
+- missing_relations:
+  - operating on preemptive rtos -> tcms manages via deterministic scheduling
+  - tcms manages via deterministic scheduling -> traction [fork]
+  - tcms manages via deterministic scheduling -> braking [fork]
+  - tcms manages via deterministic scheduling -> doors [fork]
+  - tcms manages via deterministic scheduling -> diagnostics [fork]
+  - traction -> detect acceleration threshold exceedance [merge]
+  - braking -> detect acceleration threshold exceedance [merge]
+  - doors -> detect acceleration threshold exceedance [merge]
+- input_excerpt:
+  Operating on a preemptive RTOS, the Train Control and Monitoring System (TCMS) manages traction, braking, doors, and diagnostics via deterministic scheduling. Upon an inertial sensor detecting a vehicle acceleration threshold exceedance, the system first verifies brake system status via a protected BMS query. If braking pressure is deemed insufficient, a high-priority task immediately commands emergency braking assistance, while a concurrent, medium-priority task evaluates the need for Electronic Stability Program (ESP) intervention. During ESP activation, a cyclic task with a mutex-protected ring buffer processes wheel speed sensor data, calculates individual wheel slip rates, and executes 
+- generated_excerpt:
+  @startuml skinparam ActivityBackgroundColor #EEF7FF skinparam ActivityDiamondBackgroundColor #F9F9F9  title Train Control and Monitoring System (TCMS) - Preemptive RTOS Activity  start  :Inertial Sensor detects\nvehicle acceleration threshold exceedance;  fork   :High-Priority Task:\nVerify brake system status\nvia protected BMS query;      if (Braking pressure\ninsufficient?) then (Yes)     :High-Priority Task:\nCommand emergency\nbraking assistance;   else (No)   endif fork again   :Medium-Priority Task:\nEvaluate need for\nESP intervention;      if (ESP intervention needed?) then (Yes)     :Cyclic Task (ESP):\nAcquire mutex for ring buffer;     :Cyclic Task (ESP):\nProcess wheel speed sen
+### pure-0081
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3448
+- relation_f1: 0.4615
+- llm_element_status: success
+- llm_node_f1: 0.8750
+- llm_relation_f1: 0.8696
+- missing_nodes:
+  - at information window
+  - click close button
+  - dismiss information window
+  - close information window?
+  - history window is displayed?
+  - information window is dismissed
+  - history window remains
+  - close if open
+- extra_nodes:
+  - user clicks close on diagnostic information window?
+  - dismiss diagnostic information window
+  - diagnostic history window remains
+  - diagnostic information window open?
+  - close diagnostic information window
+  - diagnostic history window open?
+  - close diagnostic history window
+  - default end time to current time
+- missing_relations:
+  - at information window -> display diagnostic history window?
+  - click close button -> dismiss information window
+  - close information window? -> history window is displayed? [yes]
+  - history window is displayed? -> information window is dismissed [yes]
+  - information window is dismissed -> history window remains
+  - history window is displayed? -> condition window is closed? [no]
+  - condition window is closed? -> close if open [yes]
+  - close if open -> information window [fork]
+- input_excerpt:
+  1. At the diagnostic information window, the user may click the “Close” button to dismiss the window and make the condition window the current window if the diagnostic history window is not displayed. 2. If the user attempts to close the diagnostic information window and the diagnostic history window is still displayed, the diagnostic information window is dismissed but the diagnostic history window remains. 3. If the condition window is closed, then both the diagnostic information and diagnostic history windows are closed if open. 4. If the user does not specify an end time for the history interval in 3.1.3.2.4.1 Browsing Arbitrary History Intervals (1), it defaults to the current time.
+- generated_excerpt:
+  @startuml start  if (User clicks "Close" on Diagnostic Information Window?) then (Yes)   if (Diagnostic History Window displayed?) then (Yes)     :Dismiss Diagnostic Information Window;     :Diagnostic History Window remains;   else (No)     :Dismiss Diagnostic Information Window;     :Make Condition Window the current window;   endif endif  if (Condition Window is closed?) then (Yes)   if (Diagnostic Information Window open?) then (Yes)     :Close Diagnostic Information Window;   else (No)   endif   if (Diagnostic History Window open?) then (Yes)     :Close Diagnostic History Window;   else (No)   endif endif  if (Browsing Arbitrary History Intervals?) then (Yes)   if (End time for history 
+### fsd-0096
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3529
+- relation_f1: 0.2581
+- llm_element_status: success
+- llm_node_f1: 0.4727
+- llm_relation_f1: 0.1231
+- missing_nodes:
+  - manage via deterministic scheduling and priority queues
+  - traction
+  - braking
+  - door
+  - diagnostics
+  - spawn high-priority task
+  - continuously monitor signal state using crc-protected can bus
+  - recognition fails?
+- extra_nodes:
+  - spawn high-priority task to monitor signal state via crc-protected can bus
+  - attempt signal state acquisition
+  - signal recognition successful?
+  - primary brake initialization successful?
+  - backup brake initialization successful?
+  - immediately trigger alarm isr to notify control center
+  - acquire protected mutex
+  - verify brake module status
+- missing_relations:
+  - tcms executes on preemptive rtos -> manage via deterministic scheduling and priority queues
+  - manage via deterministic scheduling and priority queues -> traction [fork]
+  - manage via deterministic scheduling and priority queues -> braking [fork]
+  - manage via deterministic scheduling and priority queues -> door [fork]
+  - manage via deterministic scheduling and priority queues -> diagnostics [fork]
+  - traction -> approaching signal light detected? [merge]
+  - braking -> approaching signal light detected? [merge]
+  - door -> approaching signal light detected? [merge]
+- input_excerpt:
+  The Train Control and Monitoring System (TCMS), executing on a preemptive RTOS, manages traction, braking, doors, and diagnostics via deterministic scheduling and priority queues. Upon detecting an approaching signal light, a high-priority task is spawned to continuously monitor the signal state using a CRC-protected CAN bus; if recognition fails, the task employs an exponential backoff before retrying the acquisition loop. Concurrently, the system initializes the primary emergency braking module. Should this initialization fail, a deterministic failover process activates the backup brake module. If both primary and backup modules fail, the system immediately triggers an alarm ISR to notify 
+- generated_excerpt:
+  @startuml skinparam ActivityBackgroundColor #F9F9F9 skinparam ActivityDiamondBackgroundColor #E8E8E8  title TCMS: Train Control and Monitoring System - Safety Critical Flow  start  :Initialize TCMS on Preemptive RTOS; note right   Manages traction, braking,   doors, diagnostics via   deterministic scheduling   and priority queues. end note  fork   :Detect approaching signal light;   :Spawn high-priority task to monitor signal state via CRC-protected CAN bus;      repeat     :Attempt signal state acquisition;     -> Recognition fails;     :Apply exponential backoff;   repeat while (Signal recognition successful?) is (No)   -> Yes;    fork again   :Initialize primary emergency braking module; 
+### bp-0021
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3704
+- relation_f1: 0.2143
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 0.6875
+- missing_nodes:
+  - click new job
+  - the list of jobs is displayed
+  - select a job from list
+  - cick create
+  - information is displayed
+  - name
+  - keywords
+  - description
+- extra_nodes:
+  - the list of jobs in the promotionjob folder is displayed
+  - select a job from the job list and click create
+  - the name keywords and description of the job are displayed
+  - modify name keywords or description if required (note cannot change the source system)
+  - in the save job in field browse and select the folder in which you want to save the job
+- missing_relations:
+  - log in lifecycle manager tool -> go to promotion jobs home page
+  - click new job -> click the copy an existing job option
+  - click the copy an existing job option -> the list of jobs is displayed
+  - the list of jobs is displayed -> select a job from list
+  - select a job from list -> cick create
+  - cick create -> information is displayed
+  - information is displayed -> name [fork]
+  - information is displayed -> keywords [fork]
+- input_excerpt:
+  21.	create a new job by copying an existing job.To create a new job by copying an existing job, complete the following steps:1. Log into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, click New Job.3. Click the Copy an Existing Job option. The list of jobs in the PromotionJob folder is displayed4. Select a job from the job list, and click Create. The name, keywords, and description of the job are displayed. You can modify these fields, if required. However, you cannot change the source system.5. In the Save Job in field, browse and select the folder in which you want to save the job, and click Create.A new job is created.
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :In the "Promotion Jobs" home page, click New Job; :Click the Copy an Existing Job option; :The list of jobs in the PromotionJob folder is displayed; :Select a job from the job list, and click Create; :The name, keywords, and description of the job are displayed; :Modify name, keywords, or description if required\n(Note: cannot change the source system); :In the Save Job in field, browse and select the folder\nin which you want to save the job; :Click Create; :A new job is created; stop @enduml
+### pure-0045
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4000
+- relation_f1: 0.4348
+- llm_element_status: success
+- llm_node_f1: 0.7692
+- llm_relation_f1: 0.6383
+- missing_nodes:
+  - display edit attributes screen
+  - all existing item attributes
+  - attribute x department assignments
+  - filter view?
+  - attribute status
+  - active status
+  - inactive status
+  - all status
+- extra_nodes:
+  - system displays the edit attributes screen which displays all existing item attributes and their attribute x department assignments
+  - user filters view by attribute status?
+  - user filters view by attribute status (active inactive all)
+  - user changes attribute x department assignments
+  - user changes attribute data
+  - user creates new attribute
+  - system updates the item attribute information
+  - more edits?
+- missing_relations:
+  - click edit attributes button -> display edit attributes screen
+  - display edit attributes screen -> all existing item attributes [fork]
+  - display edit attributes screen -> attribute x department assignments [fork]
+  - all existing item attributes -> filter view? [merge]
+  - attribute x department assignments -> filter view? [merge]
+  - filter view? -> attribute status [yes]
+  - attribute status -> active status [case active]
+  - attribute status -> inactive status [case inactive]
+- input_excerpt:
+  3. Edit Item Attributes 3.1. User accesses the main inventory screen 3.2. System displays the Edit Attributes button 3.3. User clicks the Edit Attributes button 3.4. System displays the Edit Attributes screen which displays all existing item attributes and their attribute x department assignments 3.5. Optionally, user filters view by attribute status (active, inactive, all) 3.6. User edits attributes 3.6.1. User changes attribute x department assignments 3.6.2. User changes attribute data 3.6.3. User changes attribute active x inactive status 3.6.4. User creates new attribute 3.6.5. System validates the attribute data 3.6.6. System updates the Item Attribute information 3.7. User clicks the 
+- generated_excerpt:
+  @startuml start :User accesses the main inventory screen; :System displays the Edit Attributes button; :User clicks the Edit Attributes button; :System displays the Edit Attributes screen which displays all existing item attributes and their attribute x department assignments; if (User filters view by attribute status?) then (Yes)   :User filters view by attribute status   (active, inactive, all); else (No) endif repeat   :User edits attributes;   fork     :User changes attribute x department assignments;   fork again     :User changes attribute data;   fork again     :User changes attribute active x inactive status;   fork again     :User creates new attribute;   end fork   :System validate
+### pure-0058
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4138
+- relation_f1: 0.1818
+- llm_element_status: success
+- llm_node_f1: 0.9412
+- llm_relation_f1: 0.5946
+- missing_nodes:
+  - open keepass
+  - select open->database
+  - navigate through folders
+  - select database
+  - folder is suitable?
+  - file not found appears
+  - select another folder
+  - password is right?
+- extra_nodes:
+  - user opens keepass and select open->database
+  - user navigates through his folders
+  - user selects a database
+  - folder type suitable for database?
+  - a message file not found appears
+  - user selects another folder
+  - database selected successfully?
+  - master password is correct?
+- missing_relations:
+  - open keepass -> select open->database
+  - select open->database -> navigate through folders
+  - navigate through folders -> select database
+  - select database -> folder is suitable?
+  - folder is suitable? -> file not found appears [no]
+  - file not found appears -> select another folder
+  - select another folder -> navigate through folders [loop]
+  - folder is suitable? -> choose cancel [yes]
+- input_excerpt:
+  1. User opens KeePass and select Open->Database 2. User navigates through his folders 3. User selects a database 4. User types Master Password 5. The main database window opens 3.2.2.2.1 Alternative Data Flow 1 3a. User selects a type of folder non suitable for database 3b. A message “file not found” appears 3c. User selects another folder 3.2.2.2.2 Alternative Data Flow 2 4a. Master Password is wrong 4b. A message “invalid/wrong key” appears 4c. User types another master key 3.2.2.2.3 Alternative Data Flow 3 3. User chooses cancel 4. Exit from KeePass
+- generated_excerpt:
+  @startuml start :User opens KeePass and select Open->Database; repeat   :User navigates through his folders;   :User selects a database;      if (User chooses cancel?) then (Yes)     :Exit from KeePass;     stop   else (No)     if (Folder type suitable for database?) then (No)       :A message "file not found" appears;       :User selects another folder;     else (Yes)     endif   endif repeat while (Database selected successfully?) is (No) ->Yes;  repeat   :User types Master Password;      if (Master Password is correct?) then (No)     :A message "invalid/wrong key" appears;     :User types another master key;   else (Yes)   endif repeat while (Master Password validated?) is (No) ->Yes;  :T
+### rac-0012
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4324
+- relation_f1: 0.3462
+- llm_element_status: success
+- llm_node_f1: 0.9180
+- llm_relation_f1: 0.6389
+- missing_nodes:
+  - charging=1 and front mcu high-voltage detection flag=0
+  - bms-fast charger handshake flag=0 and front mcu high-voltage flag=0
+  - condition judgement
+  - shutdown
+  - high-voltage shutdown request charging/discharging =2
+  - wait 0.8s
+- extra_nodes:
+  - system starts up
+  - charging = 1?
+  - front mcu high-voltage detection flag = 0?
+  - continue
+  - bms-fast charger handshake flag = 0?
+  - front mcu high-voltage flag = 0?
+  - move to state 175
+  - fast charging inactive?
+- missing_relations:
+  - switch to state 153 -> bms-fast charger handshake flag=0 and front mcu high-voltage flag=0
+  - enter state 155 -> condition judgement
+  - condition judgement -> pre-charge failure occurs [case pre-charge failure occurs]
+  - condition judgement -> high-voltage shutdown request charging/discharging =2 [case high-voltage shutdown request charging/discharging =2]
+  - high-voltage shutdown request charging/discharging =2 -> wait 0.8s
+  - wait 0.8s -> switch to state 175
+  - condition judgement -> ignition switch=2 [case ignition switch=2]
+  - stay in state 155 -> high-voltage shutdown request charging/discharging =2
+- input_excerpt:
+  After the system starts up: - If charging is active (charging=1) and the front MCU high-voltage detection flag is 0, transition to state 153. - If the BMS-fast charger handshake flag is 0 and the front MCU high-voltage flag is 0, enter state 155.  While in state 155: 1. If pre-charge failure occurs, move to state 175. If fast charging remains inactive after this, shut down and end the process. 2. If a high-voltage shutdown request (for charging/discharging) is detected (value=2), wait 0.8 seconds before entering state 175. If fast charging is inactive afterward, shut down and end. 3. If the ignition switch status is 2, remain in state 155. If a high-voltage shutdown request (value=2) exists 
+- generated_excerpt:
+  @startuml start  :System starts up;  if (charging = 1?) then (Yes)   if (front MCU high-voltage detection flag = 0?) then (Yes)     :Transition to state 153;     stop   else (No)     :Continue;   endif else (No)   :Continue; endif  if (BMS-fast charger handshake flag = 0?) then (Yes)   if (front MCU high-voltage flag = 0?) then (Yes)     :Enter state 155;   else (No)     stop   endif else (No)   stop endif  repeat   if (pre-charge failure occurs?) then (Yes)     :Move to state 175;     if (fast charging inactive?) then (Yes)       :Shut down;       stop     else (No)       break     endif   elseif (high-voltage shutdown request detected (value=2)?) then (Yes)     :Wait 0.8 seconds;     :Ente
+### fsd-0102
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4364
+- relation_f1: 0.2500
+- llm_element_status: success
+- llm_node_f1: 0.6207
+- llm_relation_f1: 0.3056
+- missing_nodes:
+  - thermal management controller executes as state machine on rtos
+  - govern pwm fans
+  - govern liquid-cooling pumps
+  - high-priority task concurrently activates temperature adjustment module
+  - execute rapid cooling subroutine in controlled loop with exponential backoff
+  - temperature re-enters safe range?
+  - humidity normalized?
+  - run in periodic loop
+- extra_nodes:
+  - rtos state machine execution
+  - high-priority task 1 (temp breach)
+  - activate temperature adjustment module
+  - execute rapid cooling subroutine
+  - wait with exponential backoff
+  - temperature in safe range?
+  - humidity alert triggered?
+  - wait until humidity normalizes
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller executes as state machine on rtos -> govern liquid-cooling pumps [fork]
+  - govern pwm fans -> ambient temperature threshold breach? [merge]
+  - govern liquid-cooling pumps -> ambient temperature threshold breach? [merge]
+  - ambient temperature threshold breach? -> telemetry monitor driven by timer isr [no]
+  - high-priority task concurrently activates temperature adjustment module -> enable fan cooling
+  - temperature continues to rise? -> execute rapid cooling subroutine in controlled loop with exponential backoff [yes]
+  - temperature continues to rise? -> telemetry monitor driven by timer isr [no]
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fans and liquid-cooling pumps. Upon an ambient temperature threshold breach, a high-priority task concurrently activates the temperature adjustment module and enables fan cooling. If the temperature continues to rise, a rapid cooling subroutine executes in a controlled loop with exponential backoff until the temperature re-enters the safe range, at which point the fan is disabled and the adjustment module is halted. Concurrently, a separate high-priority task, triggered by a humidity alert, initializes a humidity monitor and activates the dehumidifier; both are stopped once humidity normalizes. Throughou
+- generated_excerpt:
+  @startuml skinparam style strictuml  start  :RTOS State Machine Execution;  fork     :High-Priority Task 1 (Temp Breach);     if (Ambient temperature threshold breached?) then (yes)         fork             :Activate temperature adjustment module;         fork again             :Enable fan cooling;         end fork         if (Temperature continues to rise?) then (yes)             repeat                 :Execute rapid cooling subroutine;                 :Wait with exponential backoff;             repeat while (Temperature in safe range?) is (no)             ->yes;             :Disable fan;             :Halt adjustment module;         endif     endif  fork again     :High-Priority Task 2 (Hum
+### rac-0005
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4651
+- relation_f1: 0.3750
+- llm_element_status: success
+- llm_node_f1: 0.8333
+- llm_relation_f1: 0.5846
+- missing_nodes:
+  - switch to state 95
+  - condition judgement
+  - in remote mode
+  - remote mode is closed
+  - shutdown
+  - pet mode open request is closed
+- extra_nodes:
+  - system starts up
+  - move to state 95
+  - proceed to state 105
+  - remote mode?
+  - go to state 105
+  - slow charging becomes inactive?
+  - shift to state 28
+  - remote mode deactivates?
+- missing_relations:
+  - switch to state 93 -> charging/discharging power-up is active and front mcu high-voltage detection flag is 1
+  - switch to state 95 -> power-up is ready and vehicle charging/discharging mode is 2
+  - switch to state 105 -> condition judgement
+  - condition judgement -> in remote mode [case in remote mode]
+  - switch to state 28 -> remote mode is closed
+  - condition judgement -> pet mode request is received [case pet mode request is received]
+  - switch to state 28 -> pet mode open request is closed
+  - pet mode open request is closed -> shutdown [yes]
+- input_excerpt:
+  After the system starts up: - If slow charging is active and the front MCU high-voltage detection flag is 0, transition to state 93. - If charging/discharging power-up is active while the front MCU high-voltage detection flag reads 1, move to state 95. - When power-up readiness is confirmed and the vehicle's charging/discharging mode is set to 2, proceed to state 105.  Then handle these cases: 1. In remote mode: Go to state 105. If slow charging becomes inactive, shift to state 28. Should remote mode deactivate, initiate shutdown and terminate. 2. Upon receiving a pet mode request: Enter state 105. If slow charging is inactive, transition to state 28. After processing the pet mode request, p
+- generated_excerpt:
+  @startuml start :System starts up;  if (Slow charging is active\nand front MCU high-voltage detection flag = 0?) then (Yes)   :Transition to state 93; elseif (Charging/discharging power-up is active\nand front MCU high-voltage detection flag = 1?) then (Yes)   :Move to state 95; elseif (Power-up readiness is confirmed\nand vehicle charging/discharging mode = 2?) then (Yes)   :Proceed to state 105; endif  partition "Case Handling" {   if (Remote mode?) then (Yes)     :Go to state 105;     if (Slow charging becomes inactive?) then (Yes)       :Shift to state 28;     endif     if (Remote mode deactivates?) then (Yes)       :Initiate shutdown;       :Terminate;       stop     endif   elseif (Pet
+### pure-0082
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4839
+- relation_f1: 0.1728
+- llm_element_status: success
+- llm_node_f1: 0.8824
+- llm_relation_f1: 0.5882
+- missing_nodes:
+  - presented with main window
+  - open file menu
+  - administrator user?
+  - include (authenticate user)
+  - populate window with disk file data
+  - change configuration?
+  - request confirmation
+  - confirm?
+- extra_nodes:
+  - authenticated as administrator?
+  - authenticate user
+  - user action
+  - populate window with data
+  - request confirmation to save changes
+  - user confirms save?
+  - request name for disk file
+  - user enters file name?
+- missing_relations:
+  - presented with main window -> open file menu
+  - open file menu -> select configure diagnostics menu item
+  - administrator user? -> include (authenticate user) [no]
+  - administrator user? -> have appropriate privilege? [yes]
+  - include (authenticate user) -> have appropriate privilege? [merge]
+  - have appropriate privilege? -> click recall button [no]
+  - display configuration window -> click recall button [merge]
+  - populate window with disk file data -> change configuration?
+- input_excerpt:
+  1. When presented with the main window, the user may select the “Configure Diagnostics” menu item from the menu entitled “File”. 2. If the user has not already been authenticated as the administrator user, include (Authenticate User). 3. If the user has the appropriate privilege, the tool displays the configuration window. 4. The user may click the “Recall” button to read previously saved changes from a disk file or database. 5. The tool populates the window with the data from the disk file. 6. The user makes the desired changes to the configuration and can click the button labeled “Save” to save the changes. Otherwise, the user can click the button labeled “Close”. 7. If the user clicks the
+- generated_excerpt:
+  @startuml start :Select "Configure Diagnostics" from "File" menu; if (Authenticated as administrator?) then (No)   :Authenticate User; else (Yes) endif if (Has appropriate privilege?) then (Yes)   :Display configuration window;      repeat     :User action;     switch ()     case (Click "Recall")       :Read previously saved changes from disk file/database;       :Populate window with data;     case (Click "Save")       :Request confirmation to save changes;       if (User confirms save?) then (Yes)         :Request name for disk file;         if (User enters file name?) then (Yes)           :Save changes to permanent storage;           if (Save operation completed?) then (Yes)             :
+### rac-0007
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5789
+- relation_f1: 0.6538
+- llm_element_status: success
+- llm_node_f1: 0.7222
+- llm_relation_f1: 0.4773
+- missing_nodes:
+  - flag becomes 0 and cp duty cycle is 85
+  - shutdown
+  - flag becomes 0 and bms self-check counter is 1
+  - central control command is 2 and vehicle is not in charging/discharging mode
+  - flag becomes 2
+  - flag becomes 0 and cp duty cycle is 88
+  - central control command is 2 and charging state is 2
+- extra_nodes:
+  - system startup
+  - high-voltage shutdown request flag == 2?
+  - flag drops to 0?
+  - shut down
+  - cp amplitude == 3000?
+  - central control charging/discharging command == 2 and not in charging/discharging mode?
+  - cp duty cycle == 88 ?
+  - central control command == 1?
+- missing_relations:
+  - enter power-up mode -> high-voltage shutdown request charging/discharging flag is 2
+  - switch to state 115 -> flag becomes 0 and cp duty cycle is 85
+  - bms self-check counter is 1 -> battery pre-heating is required [no]
+  - flag becomes 0 and cp duty cycle is 85 -> flag becomes 0 and bms self-check counter is 1 [no]
+  - switch to state 115 -> flag becomes 0 and cp duty cycle is 88
+  - switch to state 126 -> central control command is 2 and charging state is 2
+- input_excerpt:
+  After the system starts up, if slow charging is active, we enter power-up mode. Then:  1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:    a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.    b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.    c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with 
+- generated_excerpt:
+  @startuml start :System Startup; if (Slow charging active?) then (Yes)   :Enter Power-up Mode; else (No)   stop endif  partition "1) High-voltage shutdown request flag == 2" {   if (High-voltage shutdown request flag == 2?) then (Yes)     :Switch to State 115;          partition "1a" {       if (Flag drops to 0?) then (Yes)         if (CP duty cycle == 85%?) then (Yes)           :Switch to State 126;         endif       endif       if (BMS self-check counter == 1?) then (Yes)         :Switch to State 130;       endif       if (Slow charging inactive?) then (Yes)         :Shut down;         stop       endif     }          partition "1b" {       if (Flag drops to 0?) then (Yes)         if (CP 
+### rac-0018
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.8108
+- relation_f1: 0.7419
+- llm_element_status: success
+- llm_node_f1: 0.0000
+- llm_relation_f1: 0.0000
+- missing_nodes:
+  - slow charging is active and front mcu high-voltage detection flag=0
+  - shutdown
+  - condition judgement
+- extra_nodes:
+  - system start up
+  - slow charging active?
+  - front mcu high-voltage detection flag == 0?
+  - shut down and exit
+- missing_relations:
+  - switch to state 95 -> power-up readiness and pre-heating demand exist
+  - front mcu high-voltage flag=1 and charging/discharging power-up=1 -> front mcu high-voltage flag=1 and power-up readiness [no]
+  - switch to state 93 -> condition judgement
+  - condition judgement -> charging/discharging power-up guidance=2 or 3 [case 2]
+  - condition judgement -> vehicle charging/discharging mode=1 [case 3]
+  - condition judgement -> power battery charging demand=2 [case 4]
+  - condition judgement -> battery pre-heating demand=3 [case 5]
+- input_excerpt:
+  After the system starts up, if slow charging is active and the front MCU high-voltage detection flag is 0, it switches to state 93. Then: 1. If the front MCU high-voltage flag is 1 and charging/discharging power-up is 1, the system switches to state 95.    a. If a pre-charge failure occurs, it switches to state 115. Additionally, if slow charging is inactive, the system shuts down and exits.    b. If an AC charging/discharging system fault occurs, it switches to state 115. Also, if slow charging is inactive, it shuts down and exits.    c. If slow charging is inactive, it switches to state 115 and then shuts down and exits. 2. If the DCDC state is 1 and there is no battery pre-heating demand,
+- generated_excerpt:
+  @startuml start :System Start Up; if (Slow charging active?) then (Yes)   if (Front MCU high-voltage detection flag == 0?) then (Yes)     :Switch to state 93;          partition "Condition 1" {       if (Front MCU high-voltage flag == 1\nand charging/discharging power-up == 1?) then (Yes)         :Switch to state 95;         if (Pre-charge failure?) then (Yes)           :Switch to state 115;           if (Slow charging inactive?) then (Yes)             :Shut down and exit;             stop           else (No)           endif         elseif (AC charging/discharging system fault?) then (Yes)           :Switch to state 115;           if (Slow charging inactive?) then (Yes)             :Shut dow
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

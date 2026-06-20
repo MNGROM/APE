@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The generator frequently fails to identify or correctly represent concurrent behaviors, either omitting parallel forks entirely, misplacing them in the control flow, or using sequential steps for actions that should occur simultaneously.",
+      "possible_causes": [
+        "The prompt lacks explicit instructions to identify and model simultaneous or concurrent actions using PlantUML's fork/end fork constructs.",
+        "The generator defaults to a strictly sequential interpretation of requirements, overlooking linguistic cues for parallelism (e.g., 'concurrent', 'alongside', 'simultaneously', lists of independent attributes)."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The predicted diagrams often omit explicit activities, system responses, or intermediate states that are clearly stated in the requirements and present in the ground truth.",
+      "possible_causes": [
+        "The generator tends to compress multiple explicit actions into broad, abstract activity nodes (e.g., combining 'Enter name', 'Enter description', and 'Enter keywords' into a single step).",
+        "The prompt does not sufficiently emphasize the need to preserve all granular behaviors and system responses as distinct activity nodes."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The generator introduces activities or structural nodes that are not supported by the requirements, such as adding artificial loop conditions or unnecessary control gates.",
+      "possible_causes": [
+        "The generator attempts to force complex logic into standard control flow structures (like repeat loops) by inventing placeholder conditions that do not exist in the text.",
+        "Lack of strict constraints in the prompt against hallucinating control logic or synthesizing activities not explicitly mentioned in the source requirement."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "Looping and iterative behaviors (e.g., periodic tasks, retries, persistent cycles) are frequently misrepresented, often replaced by sequential steps or artificial loop conditions.",
+      "possible_causes": [
+        "The prompt does not provide clear mapping rules for translating iterative, periodic, or retry-based language in requirements into PlantUML's repeat/while constructs.",
+        "The generator misinterprets bounded retries or persistent cycles as simple conditional branches rather than iterative loops."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "Control flow relations are frequently omitted or incorrectly structured, such as flattening nested conditional logic or misplacing the exit points for shutdown conditions.",
+      "possible_causes": [
+        "The generator struggles to maintain deep nesting and properly scope conditional branches, leading to prematurely exited or flattened logic paths.",
+        "The prompt lacks guidelines on how to systematically map complex, nested if-else or switch-case logic from natural language into hierarchical PlantUML activity diagrams."
+      ]
+    }
+  ]
+}
+```

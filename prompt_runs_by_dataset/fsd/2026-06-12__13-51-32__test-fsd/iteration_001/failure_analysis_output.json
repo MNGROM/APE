@@ -1,0 +1,52 @@
+```json
+{
+  "summary": "The current prompt lacks guidance on granularity, abstraction level, and faithfulness to the input text. As a result, the model heavily hallucinates unstated steps, over-decomposes simple requirements into complex flowcharts, and introduces speculative conditional logic and loops not present in the original requirement. This leads to massive numbers of extra nodes and relations, completely missing the intended scope of the diagrams.",
+  "error_patterns": [
+    {
+      "name": "over_decomposition",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0065"
+      ],
+      "problem": "The model breaks down a single, straightforward user requirement into a granular step-by-step UI interaction flow (e.g., 'Open App', 'Navigate to Section', 'Select Event'), creating many extra activities and relations that do not exist in the ground truth.",
+      "suggested_prompt_direction": "Instruct the agent to map requirements at the same level of abstraction as the input text without inventing UI navigation steps or operational minutiae unless explicitly stated.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "hallucinated_logic",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0065",
+        "pure-0020"
+      ],
+      "problem": "The model fabricates conditional branches, loops, and error-handling paths that are not mentioned in the input (e.g., 'Findings Available?', 'Device is portable?', 'Wait for services' loop). It acts as a system designer rather than a faithful translator of the requirement.",
+      "suggested_prompt_direction": "Explicitly forbid the addition of conditional logic, loops, or exception handling unless it is clearly described in the input requirement. Emphasize strict faithfulness to the provided text.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "missing_implicit_activities",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "pure-0020"
+      ],
+      "problem": "While the model over-generates in some areas, it misses or rephrases critical activities that are implicitly or explicitly stated in the text (e.g., missing 'Normal services unavailable' as an action, rephrasing 'Use PPT' so it doesn't match, missing the exact phrasing of 'Give audible/visual indication').",
+      "suggested_prompt_direction": "Guide the model to extract activities directly using the phrasing from the input text and to represent stated preconditions or triggers as activity nodes when appropriate.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "PlantUML syntax correctness (already at 100%)",
+    "Adding creative system design or edge-case handling",
+    "Generating detailed UI/UX interaction flows"
+  ]
+}
+```

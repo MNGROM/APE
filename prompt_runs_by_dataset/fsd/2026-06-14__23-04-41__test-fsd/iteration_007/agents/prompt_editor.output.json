@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a structured process to extract activities, map actors, and determine control flow accurately.",
+      "change_instruction": "Add a step-by-step workflow requiring the model to: (1) Identify all explicit actors/systems and assign them to PlantUML partitions; (2) Extract only the activities and actions explicitly stated in the requirement; (3) Determine the control flow strictly between the extracted activities based on explicit sequencing or conditional logic in the text, without inferring unstated steps."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide PlantUML construct guidance for swimlanes and clarify the distinction between parallel forks and conditional branches.",
+      "change_instruction": "Add knowledge instructing the model to use the `partition` keyword to represent distinct actors or systems as swimlanes. Add a rule distinguishing parallel execution from alternative choices: explain that bulleted lists of options, attributes, or available rights represent choices (modeled with `if`/`else`/`elseif`) rather than simultaneous actions (modeled with `fork`/`fork again`), and that `fork` should only be used when the requirement explicitly states actions occur concurrently."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent hallucinated control flow and enforce appropriate abstraction levels.",
+      "change_instruction": "Add strict rules: (1) Do not hallucinate or infer implicit control flows, such as confirmation dialogs, error checks, or standard software behaviors, unless they are explicitly stated in the requirement. (2) Match the granularity of the requirement: do not decompose high-level user stories into assumed sub-steps, and do not oversimplify complex conditional logic—map the flow exactly as described at the level of abstraction provided in the text."
+    }
+  ]
+}
+```

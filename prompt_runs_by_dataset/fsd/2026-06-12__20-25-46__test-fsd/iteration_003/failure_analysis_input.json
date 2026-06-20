@@ -1,0 +1,606 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description.\n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n1. Read the requirement and identify every explicitly stated activity, trigger, condition, task, thread, loop, retry, logging step, and terminal outcome.\n2. Preserve atomic actions as separate activity nodes when the requirement lists them separately; do not merge multiple distinct steps into a single coarse-grained node unless the input clearly groups them as one action.\n3. Do not add speculative implementation steps, UI interactions, or error handling that are not explicitly stated in the requirement.\n4. Identify conditional branches using keywords like 'if', 'optionally', 'either/or', or 'otherwise' and model them explicitly as decision nodes.\n5. Identify concurrent or parallel tasks using keywords like 'simultaneously', 'in parallel', or 'at the same time' and model them using fork constructs.\n6. Identify iterative, polling, or retry logic and model it using loop constructs.\n7. Maintain the sequential order of activities as presented in the requirement unless a branch, loop, or fork is explicitly indicated.\n8. Generate the PlantUML code reflecting the extracted structure.\n\n9. Strictly decompose compound sentences or listed steps into separate, atomic activity nodes. If a sentence contains multiple verbs or sequential actions (e.g., 'go to X and choose Y'), each action must be a distinct node with a sequential control-flow relation between them.\n10. Extract and use the exact actions, goals, and conditions stated in the requirement verbatim, even if they seem high-level. Never invent speculative implementation steps, UI interactions, or error handling to replace or expand upon the stated activities.\n11. When the requirement lists multiple concurrent items, displayed details, or alternative options, model them using fork or switch constructs rather than flattening them into a sequential flow.\n12. Detect explicit system, actor, or component assignments in the requirement and use PlantUML partition constructs to group activities under their respective responsible entities.\n13. Decompose compound conditions joined by 'and'/'or' into separate, sequential or nested decision nodes, preserving the explicit evaluation of each individual condition.\n\n## knowledge\n\nUse 'if/then/else/endif' for conditional branches. Use 'switch/switch/endswitch' for multi-branch choices. Use 'fork/fork again/end fork' only for explicitly concurrent tasks or parallel activities. Use 'repeat/repeat while' for polling, retry, or until-style loops, and 'while/endwhile' for condition-checked loops. Ensure every opened control structure is correctly paired and closed to prevent compilation failures.\n\nUse PlantUML 'partition' constructs to group activities under their explicitly assigned actors, systems, or components. When a requirement lists multiple concurrent items, displayed details, or alternative options, represent them using 'fork/fork again/end fork' or 'switch/switch/endswitch' rather than sequential activities.\n",
+  "evaluation": {
+    "summary": {
+      "count": 10.0,
+      "syntax_pass_rate": 1.0,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.3072239507058683,
+      "node_recall": 0.3238867355727821,
+      "node_f1": 0.30752063610674274,
+      "relation_precision": 0.11997785160575858,
+      "relation_recall": 0.11702865761689292,
+      "relation_f1": 0.11689544369194482,
+      "plantuml_compilation_pass_rate": 1.0,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {
+      "missing_activity": 10,
+      "extra_activity": 10,
+      "missing_or_wrong_relation": 10,
+      "extra_or_wrong_relation": 10
+    },
+    "representative_cases": [
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0050",
+        "input_requirement": "2.\tThe Body Vector Output, Vb, of this Function Shall Equal a 3x1 Vector Product of the 3x3 Rotation Matrix Output, DCM321, times the Input Inertial Vector, Vi.",
+        "gold_plantuml": "start\n\n:Body Vector Output Vb;\nif( =DCM321 * Vi?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:Receive Input Inertial Vector, Vi;\n:Receive 3x3 Rotation Matrix Output, DCM321;\n:Multiply DCM321 by Vi;\n:Set Body Vector Output, Vb, equal to the 3x1 vector product;\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "body vector output vb",
+            "=dcm321 * vi?",
+            "allowed",
+            "not allowed"
+          ],
+          "extra": [
+            "receive input inertial vector vi",
+            "receive 3x3 rotation matrix output dcm321",
+            "multiply dcm321 by vi",
+            "set body vector output vb equal to the 3x1 vector product"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "body vector output vb -> =dcm321 * vi?",
+            "=dcm321 * vi? -> allowed",
+            "allowed -> not allowed"
+          ],
+          "extra": [
+            "receive input inertial vector vi -> receive 3x3 rotation matrix output dcm321",
+            "receive 3x3 rotation matrix output dcm321 -> multiply dcm321 by vi",
+            "multiply dcm321 by vi -> set body vector output vb equal to the 3x1 vector product"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0015",
+        "input_requirement": "15.\tuse the Manage Systems optionTo add a host system, complete the following steps:1. In the \"Administration Options\" window, click Manage Systems.The list of host names, port numbers, display names, and descriptions isdisplayed.2. Click Add.The \"Add System\" dialog box appears.3. Add the host name, port number, display name, and the description inthe appropriate fields.4. Click Add to add the system.The host system is added to the list.",
+        "gold_plantuml": "start\n\n:Go to \"Administration Options\" window;\n:Click \"Manage Syetems\";\n\n:List is displayed;\nfork\n:Host names;\nfork again\n:Port numbers;\nfork again\n:Display names;\nfork again\n:Descriptions;\nend fork\n\n:Click \"Add\";\n:\"Add System\" dialog box appears;\n\n:Add information;\nfork\n:Host name;\nfork again\n:Port number;\nfork again\n:Display name;\nfork again\n:Description;\nend fork\n\n:Click \"Add\";\n:Host system is added;\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\npartition User {\n    :Click Manage Systems;\n}\npartition System {\n    :Display list of host names;\n    :Display port numbers;\n    :Display display names;\n    :Display descriptions;\n}\npartition User {\n    :Click Add;\n}\npartition System {\n    :Show \"Add System\" dialog box;\n}\npartition User {\n    :Add the host name;\n    :Add the port number;\n    :Add the display name;\n    :Add the description;\n    :Click Add to add the system;\n}\npartition System {\n    :Add the host system to the list;\n}\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.15384615384615385,
+          "recall": 0.125,
+          "f1": 0.13793103448275862,
+          "missing": [
+            "go to administration options window",
+            "list is displayed",
+            "host names",
+            "port numbers",
+            "display names",
+            "descriptions",
+            "click add",
+            "add system dialog box appears",
+            "add information",
+            "host name",
+            "port number",
+            "display name",
+            "description",
+            "host system is added"
+          ],
+          "extra": [
+            "display list of host names",
+            "display port numbers",
+            "display display names",
+            "display descriptions",
+            "show add system dialog box",
+            "add the host name",
+            "add the port number",
+            "add the display name",
+            "add the description",
+            "click add to add the system",
+            "add the host system to the list"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.08333333333333333,
+          "recall": 0.06666666666666667,
+          "f1": 0.07407407407407407,
+          "missing": [
+            "go to administration options window -> click manage syetems",
+            "click manage syetems -> list is displayed",
+            "list is displayed -> host names",
+            "host names -> port numbers",
+            "port numbers -> display names",
+            "display names -> descriptions",
+            "click add -> add system dialog box appears",
+            "add system dialog box appears -> add information",
+            "add information -> host name",
+            "host name -> port number",
+            "port number -> display name",
+            "display name -> description",
+            "description -> click add",
+            "click add -> host system is added"
+          ],
+          "extra": [
+            "click manage systems -> display list of host names",
+            "display list of host names -> display port numbers",
+            "display port numbers -> display display names",
+            "display display names -> display descriptions",
+            "click add -> show add system dialog box",
+            "show add system dialog box -> add the host name",
+            "add the host name -> add the port number",
+            "add the port number -> add the display name",
+            "add the display name -> add the description",
+            "add the description -> click add to add the system",
+            "click add to add the system -> add the host system to the list"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0082",
+        "input_requirement": "1. When presented with the main window, the user may select the “Configure Diagnostics” menu item from the menu entitled “File”. 2. If the user has not already been authenticated as the administrator user, include (Authenticate User). 3. If the user has the appropriate privilege, the tool displays the configuration window. 4. The user may click the “Recall” button to read previously saved changes from a disk file or database. 5. The tool populates the window with the data from the disk file. 6. The user makes the desired changes to the configuration and can click the button labeled “Save” to save the changes. Otherwise, the user can click the button labeled “Close”. 7. If the user clicks the button labeled “Save”, the tool will request confirmation to save the changes. 8. If the user confirms, the tool will request a name for the disk file in which to save the modified data to permanent storage. 9. The user will enter a name for the file or cancel the operation. 10. If the user enters a name for the file, the tool will save the changes. If the user cancels the operation, the tool will perform no function. 11. If the tool completes the save operation, the tool will ask the user if the changes are to be relayed to the diagnostic processing for immediate use. 12. If the user confirms the changes are to be relayed to the diagnostic processing, the tool relays the changes if the processing is currently active. Otherwise, the tool does not relay the changes. 13. If the user clicks the button labeled “Close”, the tool will request confirmation for the close and the potential loss of any changes. 14. If the user confirms, the tool will dismiss the configuration window, ignoring any changes and returns the user to the main window. If the user rejects the initial desire to close, the tool will perform no function.",
+        "gold_plantuml": "start\n\n:Presented with main window;\n:Open “File” menu;\n:Select “Configure Diagnostics” menu item;\n\nif(Administrator user?) then(no)\n:Include (Authenticate User);\nelse(yes)\nendif\n\nif(Have appropriate privilege?) then(yes)\n:Display configuration window;\nelse(no)\nendif\n\n:Click “Recall” button;\n:Read previously saved changes from disk file/database;\n:Populate window with disk file data;\n\nif(Change configuration?) then(yes)\n:Click “Save”;\n:Request confirmation;\nif(Confirm?) then(yes)\n:Request permanent storage disk file name;\nswitch(Operation)\ncase(Enter name)\n:Save changes;\n\n:Complete save operation;\n\n:Ask if relay changes to diagnostic processing for immediate use;\n\nif(Confirm relay?) then(yes)\n if(Processing is active?) then(yes)\n  :Relay changes;\n else(no)\n  :Do not relay changes;\n endif\nelse(no)\nendif\n\ncase(Cancel)\n:Perform no function;\nendswitch\nelse(no)\nendif\n\n\nelse(no)\n:Click “Close”;\n:Request confirmation;\n\nfork\n:For close;\nfork again\n:For potential loss of changes;\nend fork\n\nif(Confirm?) then(yes)\nfork\n:Dismiss configuration window;\nfork again\n:Ignore any changes;\nfork again\n:Return main window;\nend fork\n\nelse(no)\n:Perform no function;\nendif\n\nendif\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\npartition User {\n    :Select \"Configure Diagnostics\" menu item from the \"File\" menu;\n}\nif (User has not already been authenticated as the administrator user?) then (Yes)\n    :Authenticate User;\nelse (No)\nendif\nif (User has the appropriate privilege?) then (Yes)\n    partition Tool {\n        :Display the configuration window;\n    }\n    partition User {\n        :Click the \"Recall\" button to read previously saved changes from a disk file or database;\n    }\n    partition Tool {\n        :Populate the window with the data from the disk file;\n    }\n    partition User {\n        :Make the desired changes to the configuration;\n    }\n    switch (User clicks button?)\n    case (Save)\n        partition Tool {\n            :Request confirmation to save the changes;\n        }\n        if (User confirms to save?) then (Yes)\n            partition Tool {\n                :Request a name for the disk file in which to save the modified data to permanent storage;\n            }\n            partition User {\n                :Enter a name for the file or cancel the operation;\n            }\n            if (User enters a name for the file?) then (Yes)\n                partition Tool {\n                    :Save the changes;\n                }\n                if (Tool completes the save operation?) then (Yes)\n                    partition Tool {\n                        :Ask the user if the changes are to be relayed to the diagnostic processing for immediate use;\n                    }\n                    if (User confirms the changes are to be relayed?) then (Yes)\n                        if (Processing is currently active?) then (Yes)\n                            partition Tool {\n                                :Relay the changes;\n                            }\n                        else (No)\n                            partition Tool {\n                                :Do not relay the changes;\n                            }\n                        endif\n                    else (No)\n                    endif\n                else (No)\n                endif\n            else (User cancels the operation)\n                partition Tool {\n                    :Perform no function;\n                }\n            endif\n        else (No)\n        endif\n    case (Close)\n        partition Tool {\n            :Request confirmation for the close and the potential loss of any changes;\n        }\n        if (User confirms?) then (Yes)\n            partition Tool {\n                :Dismiss the configuration window, ignoring any changes;\n                :Return the user to the main window;\n            }\n        else (No)\n            partition Tool {\n                :Perform no function;\n            }\n        endif\n    endswitch\nelse (No)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.2413793103448276,
+          "recall": 0.2,
+          "f1": 0.21875000000000003,
+          "missing": [
+            "presented with main window",
+            "open file menu",
+            "select configure diagnostics menu item",
+            "administrator user?",
+            "include (authenticate user)",
+            "click recall button",
+            "read previously saved changes from disk file/database",
+            "populate window with disk file data",
+            "change configuration?",
+            "click save",
+            "request confirmation",
+            "request confirmation",
+            "confirm?",
+            "confirm?",
+            "request permanent storage disk file name",
+            "operation",
+            "enter name",
+            "complete save operation",
+            "ask if relay changes to diagnostic processing for immediate use",
+            "confirm relay?"
+          ],
+          "extra": [
+            "select configure diagnostics menu item from the file menu",
+            "user has not already been authenticated as the administrator user?",
+            "authenticate user",
+            "click the recall button to read previously saved changes from a disk file or database",
+            "populate the window with the data from the disk file",
+            "make the desired changes to the configuration",
+            "user clicks button?",
+            "save",
+            "request confirmation to save the changes",
+            "user confirms to save?",
+            "request a name for the disk file in which to save the modified data to permanent storage",
+            "enter a name for the file or cancel the operation",
+            "user enters a name for the file?",
+            "tool completes the save operation?",
+            "ask the user if the changes are to be relayed to the diagnostic processing for immediate use",
+            "user confirms the changes are to be relayed?",
+            "processing is currently active?",
+            "close",
+            "request confirmation for the close and the potential loss of any changes",
+            "user confirms?"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.10714285714285714,
+          "recall": 0.08823529411764706,
+          "f1": 0.0967741935483871,
+          "missing": [
+            "presented with main window -> open file menu",
+            "open file menu -> select configure diagnostics menu item",
+            "select configure diagnostics menu item -> administrator user?",
+            "administrator user? -> include (authenticate user)",
+            "include (authenticate user) -> have appropriate privilege?",
+            "display configuration window -> click recall button",
+            "click recall button -> read previously saved changes from disk file/database",
+            "read previously saved changes from disk file/database -> populate window with disk file data",
+            "populate window with disk file data -> change configuration?",
+            "change configuration? -> click save",
+            "click save -> request confirmation",
+            "request confirmation -> confirm?",
+            "confirm? -> request permanent storage disk file name",
+            "request permanent storage disk file name -> operation",
+            "operation -> enter name",
+            "enter name -> save changes",
+            "save changes -> complete save operation",
+            "complete save operation -> ask if relay changes to diagnostic processing for immediate use",
+            "ask if relay changes to diagnostic processing for immediate use -> confirm relay?",
+            "confirm relay? -> processing is active?"
+          ],
+          "extra": [
+            "select configure diagnostics menu item from the file menu -> user has not already been authenticated as the administrator user?",
+            "user has not already been authenticated as the administrator user? -> authenticate user",
+            "authenticate user -> user has the appropriate privilege?",
+            "display the configuration window -> click the recall button to read previously saved changes from a disk file or database",
+            "click the recall button to read previously saved changes from a disk file or database -> populate the window with the data from the disk file",
+            "populate the window with the data from the disk file -> make the desired changes to the configuration",
+            "make the desired changes to the configuration -> user clicks button?",
+            "user clicks button? -> save",
+            "save -> request confirmation to save the changes",
+            "request confirmation to save the changes -> user confirms to save?",
+            "user confirms to save? -> request a name for the disk file in which to save the modified data to permanent storage",
+            "request a name for the disk file in which to save the modified data to permanent storage -> enter a name for the file or cancel the operation",
+            "enter a name for the file or cancel the operation -> user enters a name for the file?",
+            "user enters a name for the file? -> save the changes",
+            "save the changes -> tool completes the save operation?",
+            "tool completes the save operation? -> ask the user if the changes are to be relayed to the diagnostic processing for immediate use",
+            "ask the user if the changes are to be relayed to the diagnostic processing for immediate use -> user confirms the changes are to be relayed?",
+            "user confirms the changes are to be relayed? -> processing is currently active?",
+            "processing is currently active? -> relay the changes",
+            "do not relay the changes -> perform no function"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0129",
+        "input_requirement": "As a researcher, I want to have the details of the workflow plan as well as the execution history and results recorded in Neurohub while executing a workflow",
+        "gold_plantuml": "start\n:execute workflow;\nsplit\n:Get the details of the workflow plan;\nsplit again\n:Get the execution history;\nsplit again\n:Get results recorded in Neurohub;\nend split\nstop",
+        "predicted_plantuml": "@startuml\nstart\npartition Researcher {\n :Execute a workflow;\n fork\n  :Record details of the workflow plan in Neurohub;\n fork again\n  :Record execution history in Neurohub;\n fork again\n  :Record results in Neurohub;\n end fork\n}\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.25,
+          "recall": 0.25,
+          "f1": 0.25,
+          "missing": [
+            "get the details of the workflow plan",
+            "get the execution history",
+            "get results recorded in neurohub"
+          ],
+          "extra": [
+            "record details of the workflow plan in neurohub",
+            "record execution history in neurohub",
+            "record results in neurohub"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "execute workflow -> get the details of the workflow plan",
+            "get the details of the workflow plan -> get the execution history",
+            "get the execution history -> get results recorded in neurohub"
+          ],
+          "extra": [
+            "execute a workflow -> record details of the workflow plan in neurohub",
+            "record details of the workflow plan in neurohub -> record execution history in neurohub",
+            "record execution history in neurohub -> record results in neurohub"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0016",
+        "input_requirement": "12.\tThe sensor shall change states from FAULT to TRANSITION when the autopilot is not requesting support (not request) and limits are not exceeded (not limits).",
+        "gold_plantuml": "start\n\nif(Autopilot is not requesting support (not request)?) then(yes)\n if(Limits are not exceeded (not limits)?) then(yes)\n :Sensor change states from FAULT to TRANSITION;\n else(no)\n endif\nelse(no)\nendif\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:Sensor is in FAULT state;\nif (Autopilot is not requesting support?) then (yes)\n  if (Limits are not exceeded?) then (yes)\n    :Change state to TRANSITION;\n  else (no)\n  endif\nelse (no)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.25,
+          "recall": 0.3333333333333333,
+          "f1": 0.28571428571428575,
+          "missing": [
+            "limits are not exceeded (not limits",
+            "sensor change states from fault to transition"
+          ],
+          "extra": [
+            "sensor is in fault state",
+            "limits are not exceeded?",
+            "change state to transition"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "autopilot is not requesting support (not request -> limits are not exceeded (not limits",
+            "limits are not exceeded (not limits -> sensor change states from fault to transition"
+          ],
+          "extra": [
+            "sensor is in fault state -> autopilot is not requesting support?",
+            "autopilot is not requesting support? -> limits are not exceeded?",
+            "limits are not exceeded? -> change state to transition"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0056",
+        "input_requirement": "As a site administrator, I want to edit any site member profile, so that I can correct problems for members.",
+        "gold_plantuml": "start\n:Edit site member profile;\n:Correct problems;\nstop",
+        "predicted_plantuml": "@startuml\nstart\npartition \"Site Administrator\" {\n  :Select a site member profile;\n  :Edit the site member profile;\n  :Correct problems for the member;\n  :Save the profile changes;\n}\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.25,
+          "recall": 0.5,
+          "f1": 0.3333333333333333,
+          "missing": [
+            "correct problems"
+          ],
+          "extra": [
+            "select a site member profile",
+            "correct problems for the member",
+            "save the profile changes"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "edit site member profile -> correct problems"
+          ],
+          "extra": [
+            "select a site member profile -> edit the site member profile",
+            "edit the site member profile -> correct problems for the member",
+            "correct problems for the member -> save the profile changes"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0026",
+        "input_requirement": "When the event of a Transmission Failure, the following reactions shall be capable of being applied in accordance with a National Value: Option 1: The ETCS trainborne equipment shall immediately command the emergency brake. The failure shall be shown on the DMI. Option 2: The ETCS trainborne equipment shall immediately command the full service brake. The failure shall be shown on the DMI. Option 3: The train may proceed unrestricted to the end of its movement authority. The indication on the DMI shall remain, and the driver shall be informed about the loss of transmission.",
+        "gold_plantuml": "start\n\n:Transmission Failure;\n\nswitch(National Value reactions)\ncase(Option 1)\n:ETCS trainborne equipment command emergency brake;\n:Failure be shown on DMI;\ncase(Option 2)\n:ETCS trainborne equipment command full service brake;\n:Failure be shown on DMI;\ncase(Option 3)\n:Train proceed to authority end;\n:Remain indication on DM;\n:Inform driver about transmission loss;\nendswitch\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:Transmission Failure occurs;\nswitch (In accordance with a National Value)\ncase (Option 1)\n  partition \"ETCS trainborne equipment\" {\n    :Immediately command the emergency brake;\n  }\n  partition \"DMI\" {\n    :Show the failure;\n  }\ncase (Option 2)\n  partition \"ETCS trainborne equipment\" {\n    :Immediately command the full service brake;\n  }\n  partition \"DMI\" {\n    :Show the failure;\n  }\ncase (Option 3)\n  partition \"Train\" {\n    :Proceed unrestricted to the end of its movement authority;\n  }\n  partition \"DMI\" {\n    :Remain the indication;\n  }\n  partition \"Driver\" {\n    :Inform about the loss of transmission;\n  }\nendswitch\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.3333333333333333,
+          "f1": 0.3333333333333333,
+          "missing": [
+            "national value reactions",
+            "etcs trainborne equipment command emergency brake",
+            "failure be shown on dmi",
+            "failure be shown on dmi",
+            "etcs trainborne equipment command full service brake",
+            "train proceed to authority end",
+            "remain indication on dm",
+            "inform driver about transmission loss"
+          ],
+          "extra": [
+            "in accordance with a national value",
+            "immediately command the emergency brake",
+            "show the failure",
+            "show the failure",
+            "immediately command the full service brake",
+            "proceed unrestricted to the end of its movement authority",
+            "remain the indication",
+            "inform about the loss of transmission"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "transmission failure -> national value reactions",
+            "national value reactions -> option 1",
+            "option 1 -> etcs trainborne equipment command emergency brake",
+            "etcs trainborne equipment command emergency brake -> failure be shown on dmi",
+            "failure be shown on dmi -> option 2",
+            "option 2 -> etcs trainborne equipment command full service brake",
+            "etcs trainborne equipment command full service brake -> failure be shown on dmi",
+            "failure be shown on dmi -> option 3",
+            "option 3 -> train proceed to authority end",
+            "train proceed to authority end -> remain indication on dm",
+            "remain indication on dm -> inform driver about transmission loss"
+          ],
+          "extra": [
+            "transmission failure occurs -> in accordance with a national value",
+            "in accordance with a national value -> option 1",
+            "option 1 -> immediately command the emergency brake",
+            "immediately command the emergency brake -> show the failure",
+            "show the failure -> option 2",
+            "option 2 -> immediately command the full service brake",
+            "immediately command the full service brake -> show the failure",
+            "show the failure -> option 3",
+            "option 3 -> proceed unrestricted to the end of its movement authority",
+            "proceed unrestricted to the end of its movement authority -> remain the indication",
+            "remain the indication -> inform about the loss of transmission"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0022",
+        "input_requirement": "22.\tmanage dependencies of an infoobject1. Log into the LifeCycle Manager tool.2. Create a new job. For information on creating a new job, see Creating aNew Job on page 37.3. Add the required infoobjects to the new job.4. In the \"Promotion Jobs\" home page, click Manage Dependencies. The \"Manage Dependencies\" window appears. This window displays the list of infoobjects and their dependents, as shown in the following figure:5. From the Select Dependents drop-down list, select any of the options available to add the dependents to the job. The dependents are displayed on the right side. The dependents are not selected by default; you must explicitly select the dependents you want to promote. For example, if you select All Universes from the Select Dependents drop-down list, then all the universes included in the list of dependentsare automatically selected.6. Click to view the supported filtering options of infoobjects in the drop-down list. Select an option, and click OK. The filtered infoobjects are displayed.7. Click Apply Changes to update the list of dependents.8. Click Apply Changes and Close to save the changes",
+        "gold_plantuml": "start\n\n:Log in LifeCycle Manager tool;\n:Create a new job;\nif (More information?) then(yes)\n:See Creating a New Job on page 37;\nelse(no)\nendif\n\n:Add required infoobjects to new job;\n:Go to \"Promotion Jobs\" home page;\n:Click \"Manage Dependencies\";\n:\"Manage Dependencies\" window appears;\n:List of infoobjects and their dependents is displayed;\n\n:Open Select Dependents drop-down list;\n:Dependents are displayed on the right;\n\nswitch(Selection)\ncase(no)\n :Dependents are not selected;\ncase(All Universes)\n :All universes are automatically selected;\ncase(Other available options)\n :Dependents are added to job;\nendswitch\n\n:Click;\n:View supported filtering options of infoobjects;\n:Select an option;\n:Click \"OK\";\n:Filtered infoobjects are displayed;\n\n:Click \"Apply Changes\";\n:List of dependents is updated;\n\n:Click \"Apply Changes\";\n:Close to save the changes;\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\npartition User {\n    :Log into the LifeCycle Manager tool;\n    :Create a new job;\n    :Add the required infoobjects to the new job;\n    :In the \"Promotion Jobs\" home page, click Manage Dependencies;\n}\npartition System {\n    :The \"Manage Dependencies\" window appears;\n    :Display the list of infoobjects and their dependents;\n}\npartition User {\n    :From the Select Dependents drop-down list, select any of the options available to add the dependents to the job;\n}\npartition System {\n    :The dependents are displayed on the right side;\n}\npartition User {\n    if (Dependents are not selected by default?) then (Yes)\n        :Explicitly select the dependents you want to promote;\n    else (No)\n    endif\n    :Click to view the supported filtering options of infoobjects in the drop-down list;\n    :Select an option;\n    :Click OK;\n}\npartition System {\n    :The filtered infoobjects are displayed;\n}\npartition User {\n    :Click Apply Changes to update the list of dependents;\n    :Click Apply Changes and Close to save the changes;\n}\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.5,
+          "recall": 0.2962962962962963,
+          "f1": 0.37209302325581395,
+          "missing": [
+            "more information?",
+            "see creating a new job on page 37",
+            "go to promotion jobs home page",
+            "click manage dependencies",
+            "list of infoobjects and their dependents is displayed",
+            "open select dependents drop-down list",
+            "selection",
+            "no",
+            "dependents are not selected",
+            "all universes",
+            "all universes are automatically selected",
+            "other available options",
+            "dependents are added to job",
+            "click",
+            "view supported filtering options of infoobjects",
+            "click apply changes",
+            "click apply changes",
+            "list of dependents is updated",
+            "close to save the changes"
+          ],
+          "extra": [
+            "in the promotion jobs home page click manage dependencies",
+            "display the list of infoobjects and their dependents",
+            "from the select dependents drop-down list select any of the options available to add the dependents to the job",
+            "dependents are not selected by default?",
+            "explicitly select the dependents you want to promote",
+            "click to view the supported filtering options of infoobjects in the drop-down list",
+            "click apply changes to update the list of dependents",
+            "click apply changes and close to save the changes"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.2,
+          "recall": 0.11538461538461539,
+          "f1": 0.14634146341463417,
+          "missing": [
+            "create a new job -> more information?",
+            "more information? -> see creating a new job on page 37",
+            "see creating a new job on page 37 -> add required infoobjects to new job",
+            "add required infoobjects to new job -> go to promotion jobs home page",
+            "go to promotion jobs home page -> click manage dependencies",
+            "click manage dependencies -> manage dependencies window appears",
+            "manage dependencies window appears -> list of infoobjects and their dependents is displayed",
+            "list of infoobjects and their dependents is displayed -> open select dependents drop-down list",
+            "open select dependents drop-down list -> dependents are displayed on the right",
+            "dependents are displayed on the right -> selection",
+            "selection -> no",
+            "no -> dependents are not selected",
+            "dependents are not selected -> all universes",
+            "all universes -> all universes are automatically selected",
+            "all universes are automatically selected -> other available options",
+            "other available options -> dependents are added to job",
+            "dependents are added to job -> click",
+            "click -> view supported filtering options of infoobjects",
+            "view supported filtering options of infoobjects -> select an option",
+            "filtered infoobjects are displayed -> click apply changes"
+          ],
+          "extra": [
+            "create a new job -> add the required infoobjects to the new job",
+            "add the required infoobjects to the new job -> in the promotion jobs home page click manage dependencies",
+            "in the promotion jobs home page click manage dependencies -> the manage dependencies window appears",
+            "the manage dependencies window appears -> display the list of infoobjects and their dependents",
+            "display the list of infoobjects and their dependents -> from the select dependents drop-down list select any of the options available to add the dependents to the job",
+            "from the select dependents drop-down list select any of the options available to add the dependents to the job -> the dependents are displayed on the right side",
+            "the dependents are displayed on the right side -> dependents are not selected by default?",
+            "dependents are not selected by default? -> explicitly select the dependents you want to promote",
+            "explicitly select the dependents you want to promote -> click to view the supported filtering options of infoobjects in the drop-down list",
+            "click to view the supported filtering options of infoobjects in the drop-down list -> select an option",
+            "the filtered infoobjects are displayed -> click apply changes to update the list of dependents",
+            "click apply changes to update the list of dependents -> click apply changes and close to save the changes"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      }
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

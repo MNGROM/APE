@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Prevent false-positive parallelism by enforcing a default sequential/single-node treatment for lists, and ensure all explicit actions are extracted before control-flow mapping.",
+      "change_instruction": "Revise Step 1 to establish a strict default: any list of items, attributes, parameters, or sequential UI steps MUST be grouped into a single descriptive activity node or connected sequentially unless an explicit concurrency keyword (e.g., 'simultaneously', 'in parallel', 'concurrently') is present in the exact same sentence. Add a new step between Step 1 and Step 2 requiring the model to explicitly list all extracted activities and verify a 1-to-1 mapping to explicit actions in the requirement, preventing collapsed or omitted steps."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Strengthen the boundary between true concurrency and non-concurrent lists/options, and ensure explicit concurrency cues reliably trigger fork/join.",
+      "change_instruction": "Revise the concurrency modeling rule to state that fork/join blocks are strictly prohibited for comma-separated lists, 'and'-joined attributes, configuration options, or alternative choices unless the sentence contains an explicit concurrency keyword. Add that when an explicit concurrency keyword is present, it triggers a mandatory fork/join block for the joined actions. Explicitly exclude 'and' used for sequential UI steps (e.g., 'enter name and description') from triggering fork/join."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent collapsing distinct actions into broad nodes and prohibit inventing speculative logic or redundant nodes.",
+      "change_instruction": "Revise the granularity rule to state that every distinct action verb or state transition explicitly stated in the requirement MUST map to a distinct activity node; abstracting multiple specified actions into a single broad node is prohibited. Add a strict constraint: do not infer implicit system interactions, UI responses, or speculative logic (such as adding 'No' branches or 'else' conditions) unless the requirement text explicitly states the alternative or failure condition."
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+```json
+{
+  "summary": "The batch primarily fails due to a severe activity granularity mismatch and poor control-flow modeling. The model consistently over-decomposes requirements into inferred, overly granular steps (causing extra activities and relations) while failing to capture the explicit structural control-flow (branches, switches, parallel forks) and exact phrasing from the text (causing missing activities and relations).",
+  "error_patterns": [
+    {
+      "name": "activity_granularity_mismatch",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0050",
+        "us-0056",
+        "bp-0015",
+        "lmc-0016"
+      ],
+      "problem": "The model splits single explicit actions into multiple inferred sub-steps (e.g., 'Edit profile' into 'Select member -> Open profile -> Edit details -> Save') or adds assumed initial states (e.g., 'Sensor is in FAULT state'), resulting in extra activities and missing the exact required activities.",
+      "suggested_prompt_direction": "Strengthen the rule on strict grounding to prohibit inferring unstated sub-steps or initial states. Emphasize mapping one explicit requirement action to exactly one activity node, preserving the original phrasing.",
+      "target_sections": [
+        "rule",
+        "workflow"
+      ]
+    },
+    {
+      "name": "missing_control_flow_structures",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0015",
+        "us-0129",
+        "bp-0022",
+        "pure-0082"
+      ],
+      "problem": "The model defaults to linear sequential flows even when the text describes concurrent actions (fork/join) or alternative cases (switch/case). For example, parallel lists of items are serialized, and alternative drop-down options are merged into a single activity.",
+      "suggested_prompt_direction": "Enhance the workflow step for identifying control-flow to explicitly instruct the model to look for keywords indicating concurrency (e.g., 'as well as', 'and' between independent actions) and alternative choices (e.g., 'select from options'), and map them to fork/join and switch/case structures respectively.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "flattened_conditional_logic",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "lmc-0050",
+        "rac-0013",
+        "pure-0082"
+      ],
+      "problem": "Conditional checks and their resulting system responses are often merged into single activity nodes or modeled incorrectly (e.g., using fork for mutually exclusive conditions). The model fails to separate the condition (as a branch node) from the resulting action.",
+      "suggested_prompt_direction": "Instruct the model to separate conditional checks (if/else, switch) from the resulting activities. Conditions should be modeled as branch/decision nodes, and the subsequent actions should be distinct activity nodes within the appropriate branch.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0022",
+        "pure-0082",
+        "rac-0013"
+      ],
+      "problem": "Because activities are over-decomposed and control-flow structures are omitted, the relations between the correct gold activities are entirely missing. The generated relations connect the wrong, overly granular nodes in a flat sequence.",
+      "suggested_prompt_direction": "Addressing the activity granularity and control-flow structure issues will inherently fix the relation errors. Additionally, advise the model to establish relations based on the identified structural boundaries (forks, switches) rather than simple textual succession.",
+      "target_sections": [
+        "workflow"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not simply instruct the model to 'generate more activities' or 'generate fewer activities' without addressing the structural decomposition logic."
+  ]
+}
+```

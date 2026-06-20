@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "knowledge",
+      "intent": "Resolve the conflict between strict concurrency cues and the need to model grouped items as parallel structures, while preventing over-application.",
+      "change_instruction": "Revise item (4) to add a specific exception: use `fork`/`join` for lists of attributes, options, or grouped items that represent independent properties or simultaneous display states. Retain the restriction that `fork`/`join` must NOT be used for sequential UI steps, alternative choices (where only one option is taken), or sequential actions."
+    },
+    {
+      "section": "rule",
+      "intent": "Align the negative constraints with the updated knowledge on parallel structures, and add a strict constraint against inventing sub-steps.",
+      "change_instruction": "Revise rule (1) to remove the blanket prohibition on `fork`/`join` for attribute listings and alternative options; replace it with a prohibition against using `fork`/`join` for mutually exclusive alternative choices or sequential UI steps. Add a new rule explicitly prohibiting the decomposition of high-level goals into assumed sub-steps (e.g., inferring 'select file', 'play audio' from 'identify whales') unless those sub-steps are explicitly stated in the text."
+    },
+    {
+      "section": "workflow",
+      "intent": "Ensure structural elements like swimlanes/partitions are preserved and nested conditional logic is correctly mapped.",
+      "change_instruction": "Update Step 1 to include the identification and preservation of structural elements such as swimlanes or partitions mentioned in the requirement. Update Step 2 to include a sub-step for analyzing nested 'if-then' or state-dependent logic, requiring the use of nested PlantUML control structures rather than flattening them into sequential or independent branches."
+    }
+  ]
+}

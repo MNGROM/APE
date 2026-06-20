@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Read the input requirement and identify the explicitly stated activities and their sequence.\n2. Extract activities using the exact phrasing from the input text. Represent stated preconditions or triggers as activity nodes when appropriate.\n3. Map the requirement at the same level of abstraction as the input text. Do not invent UI navigation steps, operational minutiae, or background processes unless explicitly stated.\n4. Do not add conditional branches, loops, or exception handling paths unless they are clearly described in the input requirement. Act as a faithful translator of the text, not a system designer.\n5. Generate the corresponding PlantUML activity diagram code."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Strict faithfulness to the input text is required. Over-decomposition of simple requirements into granular UI interaction flows is a common error to avoid. Similarly, fabricating speculative conditional logic, loops, or error-handling paths that are not present in the original requirement is forbidden. Preserve the exact phrasing of activities from the input to ensure critical steps are not missed or improperly rephrased."
+    }
+  ],
+  "rationale": "The edits directly address the three identified error patterns by adding explicit workflow steps and knowledge constraints: preventing over-decomposition by enforcing the input's abstraction level, forbidding hallucinated logic by restricting unmentioned conditionals/loops, and mitigating missing implicit activities by requiring exact phrasing extraction and representing stated triggers as nodes.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

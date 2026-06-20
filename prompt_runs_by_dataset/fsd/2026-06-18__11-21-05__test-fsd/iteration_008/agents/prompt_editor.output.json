@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Allow fork/join for independent concurrent actions in lists while preventing false-positive parallelism for non-concurrent lists.",
+      "change_instruction": "Revise Step 3 to qualify the prohibition on lists. Change the instruction so that grammatical lists of items, attributes, or options must NOT be interpreted as concurrent flows UNLESS the listed items represent independent actions that can occur without depending on each other's completion. When a list contains independent actions, model them using fork/join. Lists of static attributes, alternative choices, or sequential UI steps must remain sequential or if/else branches."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Align the knowledge section's concurrency rules with the revised workflow and clarify switch/case triggers.",
+      "change_instruction": "Revise the knowledge bullet on concurrent flows to match the workflow exception: enumerations or lists of independent actions that can execute without mutual dependency must be modeled with fork/join. Retain the exclusion for lists of static attributes, alternative options, and sequential steps. Additionally, revise the conditional logic bullet to explicitly state the textual cue for switch/case: use switch/endswitch when the requirement evaluates a single variable or entity against multiple distinct, discrete values (e.g., 'depending on [state]', 'based on [type]'), whereas if/elseif is for boolean or overlapping conditions."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent the model from forcing explicit else/stop branches when logic should implicitly continue, and ensure independent listed actions are not compressed.",
+      "change_instruction": "Add a rule prohibiting the addition of explicit else/stop branches for conditions where the requirement does not specify an alternative terminating action; if an if-branch represents a conditional step that does not alter the main flow upon failure, the flow must implicitly continue or merge, rather than terminating with a stop. Also, revise the rule against compressing actions to explicitly include independent actions extracted from lists, ensuring they are not compressed into a single sequential node."
+    }
+  ]
+}

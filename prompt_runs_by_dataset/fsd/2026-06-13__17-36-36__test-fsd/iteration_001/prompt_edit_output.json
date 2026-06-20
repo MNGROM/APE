@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Use switch/endswitch when the requirement describes mutually exclusive alternatives or choices based on a single variable (e.g., 'either A or B', 'select X or Y'). Use if/else for conditional logic with true/false guards. Use fork/endfork only for concurrent parallel actions that happen simultaneously. Each explicit action described in the requirement should correspond to exactly one activity node; do not decompose a single stated action into multiple inferred sub-steps."
+    },
+    {
+      "section": "rule",
+      "operation": "append",
+      "content": "Do not invent steps not explicitly stated in the requirement (e.g., validation, saving, UI display). Do not decompose a single stated action into multiple inferred sub-actions."
+    }
+  ],
+  "rationale": "The knowledge edit addresses the control-flow knowledge gap (switch vs. if/fork) and the activity granularity gap (1 explicit action = 1 node), which are the root causes of missing/wrong and extra relations. The rule edit adds strict grounding constraints to prevent hallucinated implementation steps and over-decomposition, directly targeting the extra_activity and missing_activity failure patterns.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

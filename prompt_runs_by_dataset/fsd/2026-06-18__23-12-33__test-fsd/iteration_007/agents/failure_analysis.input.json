@@ -1,0 +1,170 @@
+{
+  "requirements": [
+    "As a camp administrator, I want to be able to delete tasks/activities I scheduled, so that I can keep the schedule clean of unneeded activities.",
+    "As a DAMS manager, I want to know, via the preservation manager, of all files for which the checksum has changed since last registered.",
+    "4.\tCreating Transformations0 Creating Transformations for Master Data of Characteristic \"Product\"1. You are in the Modeling functional area of the Data Warehousing Workbench.2. Choose Data sources.3. From the toolbar in the right screen area, choose Choose Source System.4. In the menu option File, select the source system with the technical name PC_FILE. A hierarchical tree of the Data sources for this source system is displayed. The Data sources are structured semantically by application component. 5. Select Create application component... from the context menu at the root node of the Data source tree.6. On the next screen, enter a technical name and a description for the application component. The application component is used to group your Data sources for this scenario.7. In the context menu of your application component, choose Create Data source. 8. Enter the required data on the next screen.9. Choose Transfer. The Data source maintenance screen appears. 10. Enter the required data on the tab page General Info .",
+    "5.\tCreating Master Data Directly in the System1. In the Modeling area of the Data Warehousing Workbench, choose Info Objects. 2. In the Info Object catalog for characteristics, choose Maintain master data from the context menu of your Info Object Product Group (ZD_PGROUP).3. Choose Execute.4. Choose Create.5. Enter DS10 as Product Group and Computer as the Short description and choose Continue.6. Repeat steps 4 and 5 with the following values:7. Save your entries and return to the Info Object tree.8. Repeat steps 2-7 for the characteristic Channel (ZD_CHAN) with the following values:",
+    "After the system starts up, if slow charging is active, we enter power-up mode. Then:\n\n1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:\n   a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.\n   b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.\n   c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with CP amplitude at 3000, switch to state 130. If slow charging becomes inactive, shut down and end.\n\n2) When the central control charging/discharging command is 2 and the vehicle isn't in charging/discharging mode, switch to state 110. Then:\n   - If the high-voltage shutdown request flag becomes 2, switch to state 115.\n   - If the flag drops to 0 with CP duty cycle at 88%, switch to state 126.\n   - If the central control command is 1 while charging state is 2, switch to state 130.\n   - If slow charging becomes inactive, shut down and end.",
+    "2.\tWhen the determinant of B(inv(Wp’)B’ is > 1e-12 as indicated by ridge_on set to False, the inversion of the B(inv(Wp’)B’ matrix should be accurate to 12 digits precision in that each element in the check output matrix is within a 1e-12 tolerance with respect to the elements of a 3x3 identity matrix.",
+    "8.\tThe determinant of the Rotation Matrix, |DCM321|, shall be equal to 1.0.",
+    "6.\tLoading Master Data forCharacteristic \"Product\"Go to the Data Warehousing Workbench;in the Modeling area choose Info Provider. The attributes and texts are displayed with transformation and Data source in your Info Area below the characteristic Product.3. Perform the following steps, rst for the attributes of the characteristic and then for the texts of the characteristic.4. From the context menu of the Data source, choose Create Info Package...5. On the next screen, enter a description for the Info Package and choose Save. The Info Package maintenance screen for the scheduler appears.6. Go to the tab page Schedule and choose Start.7. To check the load process, choose Monitor in the toolbar of the Info Package maintenance screen.8 On the next screen, select the date and choose Execute. The monitor for the load process is displayed.9 Select the load process for your Data source from the tree at the left of the screen.",
+    "After the system starts up:\n- If slow charging is active (state 1) and the charging/discharging system is powered up, switch to state 95.\n- If the vehicle charging/discharging mode is 2 and the system is powered up, switch to state 105. Then, while in state 105:\n  1) If the high-voltage shutdown value is 3 or 4, switch to state 115. If slow charging becomes inactive during this, shut down and end the process.\n  2) If a high-voltage shutdown request (value 3) occurs while the ignition is on (position 2), return to state 105. If the ignition turns off (position 0), switch to state 115. If slow charging becomes inactive, shut down and end.\n  3) If a pre-charge failure happens, switch to state 115. If slow charging becomes inactive, shut down and end.\n  4) If an AC discharge system fault occurs, switch to state 115. If slow charging becomes inactive, shut down and end.\n  5) If slow charging becomes inactive, switch to state 115, then shut down and end.",
+    "2. Edit Category 2.1. User navigates to a Category (see View Inventory) 2.2. System displays the Edit Category button 2.3. User clicks the Edit Category button 2.4. System displays the appropriate screen for the Category type 2.4.1. Unique Item 2.4.2. Stock Item 2.5. User edits Category data 2.6. System validates the Category data 2.7. System updates the Category information 2.8. User is taken back to the Category screen",
+    "12.\tSet granular application rights to various functions within LifeCycleManager.1. Log into CMC and select Applications.2. Double-click LifeCycle Manager.3. Click User Security, and select Administrators.The View Security tab is enabled.4. Select the rights you want to set.You can set the following rights:• Create a job• Edit a job• Promote a job• Export a BIAR file• Edit a BIAR file• Delete a job• Rollback a job• Use Administration options• Edit Connections properties• Use Version Management System5. Click OK.",
+    "Verify Receive – The BE shall verify the successful receipt of incoming data from the Correlator. This includes checking for receive errors and determining that all expected data was received, accumulation of error statistics and comparison against tolerances, and reporting of all out of tolerance conditions.",
+    "After the system starts up, if slow charging is active and the front MCU initialization is 0, it enters state 82. From there:\n- When the BMS counter reaches 1 with a battery pre-heating demand of 3, the system transitions to state 126. If slow charging becomes inactive afterward, it shuts down and exits.\n- If a pre-charge failure occurs, the system moves to state 126. Should slow charging be inactive at that point, it shuts down and exits.\n- If slow charging deactivates, the system switches to state 126 before shutting down and exiting.\n- For AC charging/discharging system faults, the system waits through a 10-second timeout before shifting to state 126. If slow charging is inactive following this transition, it shuts down and exits.",
+    "Roll Autopilot shall engage when the pilot selects the autopilot engage switch in the cockpit and disengage when the switch is deselected. When not engaged, the command to the roll actuator shall be zero.",
+    "3.\tNLGuidance shall compute the inertial position vector for aim point 2, defining the location at Standoff 2 with an offset from the target position, and oriented on a vector perpendicular to the tangent relative position vector from the vehicle to the corresponding aim point.",
+    "After the system starts up, the process begins by checking the gear position. If the gear is in D or N, the D_S gear mileage parameter is set to 1, and the sequence ends. If the gear is in S, the D_S gear mileage parameter is calculated as S gear nominal mileage divided by D gear nominal mileage, then the process concludes. Additionally, if the vehicle status is 30, switch to driving mode. Next, if the gear is in D or E, set the D_S gear mileage parameter to S gear nominal mileage divided by D gear nominal mileage, and end. Finally, if the gear is in N or R, observe using the D_S gear mileage parameter and terminate the process."
+  ],
+  "predictions": [
+    "@startuml\nstart\n:Select scheduled task/activity;\nswitch (Choose deletion target)\ncase (Task)\n:Delete task;\ncase (Activity)\n:Delete activity;\nendswitch\n:Update schedule;\nstop\n@enduml",
+    "@startuml\nstart\n:Request files with changed checksums from preservation manager;\n:Retrieve all registered files;\nfork\n  :Get current checksum;\nfork again\n  :Get last registered checksum;\nend fork\n:Compare current checksum with last registered checksum;\nif (Checksum changed since last registered?) then (Yes)\n  :Include file in results;\nelse (No)\n  :Exclude file from results;\nendif\n:Present all files with changed checksums to DAMS manager;\nstop\n@enduml",
+    "@startuml\nstart\n:You are in the Modeling functional area\\nof the Data Warehousing Workbench;\n:Choose Data sources;\n:From the toolbar in the right screen area,\\nchoose Choose Source System;\n:In the menu option File,\\nselect the source system with the technical name PC_FILE;\n:A hierarchical tree of the Data sources\\nfor this source system is displayed;\n:The Data sources are structured\\nsemantically by application component;\n:Select Create application component...\\nfrom the context menu at the root node\\nof the Data source tree;\nfork\n:Enter a technical name for\\nthe application component;\nfork again\n:Enter a description for\\nthe application component;\nend fork\n:The application component is used to\\ngroup your Data sources for this scenario;\n:In the context menu of your\\napplication component,\\nchoose Create Data source;\n:Enter the required data on the next screen;\n:Choose Transfer;\n:The Data source maintenance screen appears;\n:Enter the required data on the\\ntab page General Info;\nstop\n@enduml",
+    "@startuml\nstart\n:Choose Info Objects\\nin the Modeling area of\\nthe Data Warehousing Workbench;\nrepeat\n  :Choose Maintain master data\\nfrom the context menu of\\nthe Info Object;\n  :Choose Execute;\n  repeat\n    :Choose Create;\n    :Enter Product Group\\nand Short description\\nand choose Continue;\n  repeat while (More values to enter?) is (yes)\n  ->no;\n  :Save your entries\\nand return to the Info Object tree;\nrepeat while (Another characteristic to maintain?) is (yes)\n->no;\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging is active?) then (yes)\n  :Enter power-up mode;\n  switch (High-voltage shutdown request flag?)\n  case (2)\n    :Switch to state 115;\n    switch (Condition after switching to state 115?)\n    case (Flag drops to 0 with CP duty cycle at 85%)\n      :Switch to state 126;\n    case (BMS self-check counter shows 1)\n      :Switch to state 130;\n    case (Slow charging becomes inactive)\n      :Shut down and end;\n      stop\n    endswitch\n  case (Central control charging/discharging command is 2 and vehicle isn't in charging/discharging mode)\n    :Switch to state 110;\n    if (High-voltage shutdown request flag becomes 2?) then (yes)\n      :Switch to state 115;\n    elseif (Flag drops to 0 with CP duty cycle at 88%?) then (yes)\n      :Switch to state 126;\n    elseif (Central control command is 1 while charging state is 2?) then (yes)\n      :Switch to state 130;\n    elseif (Slow charging becomes inactive?) then (yes)\n      :Shut down and end;\n      stop\n    endif\n  endswitch\nendif\n@enduml",
+    "@startuml\nstart\n:Check determinant of B(inv(Wp'))B';\nif (Determinant > 1e-12?) then (Yes)\n  :Set ridge_on to False;\n  :Invert B(inv(Wp'))B' matrix;\n  :Compute check output matrix;\n  :Verify each element in check output matrix is within 1e-12 tolerance of 3x3 identity matrix;\nelse (No)\nendif\n@enduml",
+    "@startuml\nstart\n:Calculate determinant of the Rotation Matrix |DCM321|;\nif (Is |DCM321| equal to 1.0?) then (yes)\n  :Pass;\nelse (no)\n  :Fail;\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Go to the Data Warehousing Workbench;\n:In the Modeling area choose Info Provider;\n:The attributes and texts are displayed with transformation and Data source in your Info Area below the characteristic Product;\n\nrepeat\n  :From the context menu of the Data source, choose Create Info Package...;\n  :On the next screen, enter a description for the Info Package;\n  :Choose Save;\n  :The Info Package maintenance screen for the scheduler appears;\n  :Go to the tab page Schedule;\n  :Choose Start;\n  :To check the load process, choose Monitor in the toolbar of the Info Package maintenance screen;\n  :On the next screen, select the date;\n  :Choose Execute;\n  :The monitor for the load process is displayed;\n  :Select the load process for your Data source from the tree at the left of the screen;\n\n  repeat while (Perform steps for attributes and texts of the characteristic?) is (Yes)\n->No;\n\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging is active (state 1)\\nand charging/discharging system is powered up?) then (yes)\n  :Switch to state 95;\nelse (no)\n  if (Vehicle charging/discharging mode is 2\\nand system is powered up?) then (yes)\n    :Switch to state 105;\n    repeat\n      if (High-voltage shutdown value is 3 or 4?) then (yes)\n        :Switch to state 115;\n        if (Slow charging becomes inactive?) then (yes)\n          :Shut down and end the process;\n          stop\n        endif\n      elseif (High-voltage shutdown request (value 3) occurs\\nand ignition is on (position 2)?) then (yes)\n        :Return to state 105;\n        if (Slow charging becomes inactive?) then (yes)\n          :Shut down and end;\n          stop\n        endif\n      elseif (Ignition turns off (position 0)?) then (yes)\n        :Switch to state 115;\n        if (Slow charging becomes inactive?) then (yes)\n          :Shut down and end;\n          stop\n        endif\n      elseif (Pre-charge failure happens?) then (yes)\n        :Switch to state 115;\n        if (Slow charging becomes inactive?) then (yes)\n          :Shut down and end;\n          stop\n        endif\n      elseif (AC discharge system fault occurs?) then (yes)\n        :Switch to state 115;\n        if (Slow charging becomes inactive?) then (yes)\n          :Shut down and end;\n          stop\n        endif\n      elseif (Slow charging becomes inactive?) then (yes)\n        :Switch to state 115;\n        :Shut down and end;\n        stop\n      endif\n    repeat while (Remain in state 105) is (yes)\n    ->no;\n  endif\nendif\n@enduml",
+    "@startuml\nstart\n:Navigate to a Category;\n:System displays the Edit Category button;\n:User clicks the Edit Category button;\nswitch (Category type)\ncase (Unique Item)\n  :Display screen for Unique Item;\ncase (Stock Item)\n  :Display screen for Stock Item;\nendswitch\n:User edits Category data;\n:System validates the Category data;\n:System updates the Category information;\n:User is taken back to the Category screen;\n@enduml",
+    "@startuml\nstart\n:Log into CMC;\n:Select Applications;\n:Double-click LifeCycle Manager;\n:Click User Security;\n:Select Administrators;\n:View Security tab is enabled;\nfork\n:Set Create a job right;\nfork again\n:Set Edit a job right;\nfork again\n:Set Promote a job right;\nfork again\n:Set Export a BIAR file right;\nfork again\n:Set Edit a BIAR file right;\nfork again\n:Set Delete a job right;\nfork again\n:Set Rollback a job right;\nfork again\n:Set Use Administration options right;\nfork again\n:Set Edit Connections properties right;\nfork again\n:Set Use Version Management System right;\nend fork\n:Click OK;\n@enduml",
+    "@startuml\nstart\n:Verify successful receipt of incoming data from Correlator;\n:Check for receive errors;\n:Determine that all expected data was received;\nfork\n  :Accumulate error statistics;\nfork again\n  :Compare against tolerances;\nend fork\nif (Out of tolerance conditions exist?) then (yes)\n  :Report all out of tolerance conditions;\nelse (no)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging is active?\\nand Front MCU initialization is 0?) then (yes)\n  :Enter state 82;\n  switch (Trigger condition?)\n  case (BMS counter reaches 1\\nwith battery pre-heating demand of 3)\n    :Transition to state 126;\n    if (Slow charging becomes inactive?) then (yes)\n      :Shut down and exit;\n      stop\n    else (no)\n    endif\n  case (Pre-charge failure occurs)\n    :Move to state 126;\n    if (Slow charging is inactive?) then (yes)\n      :Shut down and exit;\n      stop\n    else (no)\n    endif\n  case (Slow charging deactivates)\n    :Switch to state 126;\n    :Shut down and exit;\n    stop\n  case (AC charging/discharging system fault)\n    :Wait through 10-second timeout;\n    :Shift to state 126;\n    if (Slow charging is inactive?) then (yes)\n      :Shut down and exit;\n      stop\n    else (no)\n    endif\n  endswitch\nelse (no)\nendif\n@enduml",
+    "@startuml\nstart\n:Select autopilot engage switch in cockpit;\nif (Autopilot engage switch selected?) then (yes)\n  :Engage Roll Autopilot;\n  :Command roll actuator;\nelse (no)\n  :Disengage Roll Autopilot;\n  :Set command to roll actuator to zero;\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Compute inertial position vector for aim point 2;\n:Define the location at Standoff 2 with an offset from the target position;\n:Orient on a vector perpendicular to the tangent relative position vector from the vehicle to the corresponding aim point;\nstop\n@enduml",
+    "@startuml\nstart\n:Check the gear position;\nif (Gear in D or N?) then (yes)\n  :Set D_S gear mileage parameter to 1;\nelse (no)\n  if (Gear in S?) then (yes)\n    :Calculate D_S gear mileage parameter as S gear nominal mileage divided by D gear nominal mileage;\n  endif\nendif\nif (Vehicle status is 30?) then (yes)\n  :Switch to driving mode;\nendif\nif (Gear in D or E?) then (yes)\n  :Set D_S gear mileage parameter to S gear nominal mileage divided by D gear nominal mileage;\nelse (no)\n  if (Gear in N or R?) then (yes)\n    :Observe using the D_S gear mileage parameter;\n  endif\nendif\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n:Delete scheduled tasks/activities;\n:Keep schedule clean of unneeded activities;\nstop",
+    "start\n:Get all files that checksum has changed since last registered;\nstop",
+    "start\n\n:Choose \"Data sources\";\n:Open the toolbar on the right;\n:Choose \"Choose Source System\";\n\n:Choose the menu option File;\n:Select source system with technical name PC_FILE;\n:The hierarchical tree is displayed;\n\nnote right\n  Data sources are structured semantically\n  by application component\nend note\n\n:Open context menu;\n:Select \"Create application component...\";\n\n:Enter technical name and description;\nnote right:Group Data sources\n\n:Open context menu;\n:Choose \"Create Data source\";\n\n:Click \"Transfer\";\n:The Data source maintenance screen appears;\n:Find the tab page General Info;\n:Enter the required data;\n\nstop",
+    "start\n\n:Choose \"Info Objects\";\nrepeat\n:Open characteristics Info Object catalog;\n:Open \"ZD_PGROUP\" context menu;\n:Select \"Maintain master data\";\n:Choose \"Execute\";\n\nrepeat\n    :Choose \"Create\";\n    fork\n    :Enter Product Group;\n    note right:eg.DS10\n    fork again\n    :Enter Short description;\n    note right:eg.Computer\n    end fork\n    :Choose \"Continue\";\nrepeat while (More values?) is (yes) not(no)\n\n:Save entries;\n:Return to Info Object tree;\n\nrepeat while (More values for ZD_CHAN?) is (yes)\n\nstop",
+    "start\nif (slow charging is active) then\n  :enter power-up mode;\n  if (high-voltage shutdown request charging/discharging is 2 and BMS self-check counter is 0) then\n    :switch to state 127;\n    if (slow charging is inactive and front MCU collateral shutdown request flag is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    else if (slow charging is inactive) then\n      :issue 2.2s timeout warning;\n      :switch to state 128;\n      :enter shutdown state;\n      stop\n    else if (slow charging is inactive and BMS self-check counter is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend",
+    "start\n\n:Ridge_on set to False;\n:Determinant of B(inv(Wp’)B’> 1e-12;\n:Each element with respect to 3x3 identity matrix elements < 1e-12 tolerance;\n:B(inv(Wp’)B’matrix inversion be accurate to 12 digits precision;\n\nstop",
+    "start\n\n:Determinant of Rotation Matrix |DCM321|;\nif( =10?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+    "start\n\n:Go to Data Warehousing Workbench;\n:Go to Modeling area;\n:Choose \"Info Provider\";\n\n:Info Area displays information;\nfork\n  :Transformation;\nfork again\n  :Data source;\nfork again\n  :Attributes;\nfork again\n  :Texts;\nend fork\n\nrepeat\n    :Open Data source context menu;\n    :Choose \"Create InfoPackage...\";\n    \n    :Enter description;\n    :Choose \"Save\";\n    :The Info Package maintenance screen appears;\n\n    :Go to tab page Schedule;\n    :Choose \"Start\";\n\n    :Open the toolbar;\n    :Choose \"Monitor\";\n    :Check the load process;\n\n    :Select date;\n    :Choose \"Execute\";\n\n    :The monitor is displayed;\n    :Select load process from left tree;\nrepeat while (The texts are completed?) is (no)\n\nstop",
+    "start\nif (slow charging state is 1 and charging/discharging power-up is ready) then\n  :switch to state 95;\n if (vehicle charging/discharging mode is 2 and power-up is ready) then\n  :switch to state 105;\n  switch(condition judgement) \n  case (high-voltage shutdown charging/discharging value is 3 or 4)\n    :switch to state 115;\n     if (slow charging?) then(no)\n     :shutdown;\n     stop\n     end if\n  case (high-voltage shutdown request is 3 and ignition switch is 2)\n    :switch to state 105;\n    if(ignition switch becomes 0) then\n    :switch to state 115;\n     if (slow charging?) then(no)\n          :shutdown;\n     stop\n     end if\n    end if\n  case (pre-charge failure occurs)\n    :switch to state 115;\n    if (slow charging?) then(no)\n         :shut down;\n     stop\n     end if\n  case (AC discharge system fault occurs)\n    :switch to state 115;\n    if (slow charging?) then(no)\n         :shutdown;\n     stop\n     end if\n  case (slow charging is inactive)\n   :switch to state 115;\n    if (slow charging?) then(no)\n         :shutdown;\n     stop\n     end if\n  endswitch\n  end if\n  end if\n  end",
+    "start\n\n:See View Inventory;\n:Navigate to Category;\n\n:Display Edit Category button;\n:Click Edit Category button;\n:Display Category type screen;\n\nif(Unique Item?) then(yes)\n:Display Unique Item screen;\nelse(no)\n:Display Stock Item screen;\nendif\n\n:Edit Category data;\n:System validates data;\n\n:System updates information;\n:Back to Category screen;\n\nstop",
+    "start\n\n:Log in to CMC;\n:Select \"Applications\";\n\n:Double-click \"LifeCycle Manager\";\n\n:Click \"User Security\";\n:Select \"Administrators\";\n:View Security tab is enabled;\n\n:Select rights;\n\nfork\nif (Create a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Edit a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Promote a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Export a BIAR file?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Edit a BIAR file?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Delete a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Rollback a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Use Administration options?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Edit Connections properties?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Use Version Management System?) then (yes)\n  :Set;\nelse (no)\nendif\nendfork\n\n:Click \"OK\";\n\nstop",
+    ":Verify successful receipt;\n\nfork\n:Check for receive errors;\nfork again\n:Determine all expected data was received;\nfork again\n:Accumulation of error statistics;\nfork again\n:Comparison against tolerances;\nfork again\n:Report out of tolerance conditions;\nend fork\n\nstop",
+    "start\nif (slow charging is active and front MCU initialization=0) then\n  :enter state 82;\n  if (BMS counter=1 and battery pre-heating demand=3) then\n    :switch to state 126;\n    if (slow charging is inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (pre-charge failure occurs) then\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (slow charging is inactive) then\n    :switch to state 126;\n    :shutdown;\n    stop\n  else if (AC charging/discharging system fault) then\n    while(after 10s)\n    endwhile\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend",
+    "start\n\n:In cockpit;\nswitch(Autopilot engage switch)\ncase(Select)\n:Roll Autopilot engage;\ncase(Deselect)\n:Roll Autopilot disengage;\n:Command to roll actuator be zero;\nendswitch\n\nstop",
+    "start\n\n:In NLGuidance;\nif(Vector define location at Standoff 2 with offset from target position?) then(yes)\n if(It oriented on vector perpendicular to tangent relative position vector from vehicle to aim point?) then (yes)\n  :It is inertial position vector for aim point 2;\n  :Compute the vector;\n else(no)\n endif\nelse(no)\nendif\n\nstop",
+    "start\nif (gear is D or N) then\n  :set D_S gear mileage parameter to 1;\n  stop\nelse if (gear is S) then\n  :set D_S gear mileage parameter = S gear nominal mileage / D gear nominal mileage;\n  stop\nelse if (vehicle status is 30) then\n  :switch to driving mode;\n  switch(gear check)\n  case(gear is D or E)\n    :set D_S gear mileage parameter = S gear nominal mileage / D gear nominal mileage;\n    stop\n  case(gear is N or R)\n    :observe using D_S gear mileage parameter;\n    stop\n  endswitch\nendif  \nend"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

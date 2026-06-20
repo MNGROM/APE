@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Identify the primary system or actor mentioned in the requirement and represent it as an initial contextual activity node right after the start node.\n2. Decompose compound actions and lists of items (e.g., 'name, description, and keywords') into separate, sequential activity nodes. Do not merge multi-step or multi-item requirements into a single monolithic node.\n3. Identify concurrent or parallel actions in the requirement and map them to PlantUML fork/fork again/end fork constructs.\n4. Faithfully translate the explicit flow described in the text. Do not add assumed validation logic, error handling, or nested decision structures unless explicitly stated in the requirement."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Granularity: Every distinct action or item in a list must become its own activity node. Parallelism: When the requirement describes actions that can occur concurrently or simultaneously, use fork/fork again/end fork to represent them. Faithfulness: Only model the control flow explicitly stated in the text; avoid fabricating implicit logic, error handling, or nested conditions."
+    }
+  ],
+  "rationale": "The edits address the high-severity issues of missing granular decomposition and missing parallel fork/join constructs, the medium-severity issue of over-interpreting implicit logic, and the low-severity issue of missing contextual entry nodes. The workflow section is updated with explicit steps, and the knowledge section is appended with general rules to enforce granularity, parallelism, and faithfulness.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

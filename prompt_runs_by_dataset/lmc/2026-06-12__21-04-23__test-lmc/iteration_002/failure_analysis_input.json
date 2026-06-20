@@ -1,0 +1,755 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description.\n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n1. Read the requirement and extract every explicitly stated activity, trigger, condition, task, thread, loop, retry, logging step, and terminal outcome. List them before diagramming.\n2. Map each extracted atomic action to a separate activity node, preserving the order stated in the text unless a branch, loop, or concurrent path is explicitly indicated.\n3. Identify conditional keywords (e.g., 'if', 'either', 'or', 'otherwise') and model them as decision nodes with branching paths.\n4. Identify concurrency keywords (e.g., 'concurrently', 'parallel', 'simultaneously') and model them using fork/end fork structures.\n5. Identify iteration keywords (e.g., 'repeat', 'retry', 'until', 'loop', 'periodically') and model them using repeat/repeat while structures.\n6. Do not add speculative implementation steps, UI interactions, system internals, or error-handling paths that are not explicitly stated in the requirement.\n7. Generate the PlantUML code strictly reflecting the extracted elements and their control-flow relations.\n\n## knowledge\n\nUse only standard PlantUML activity diagram syntax. Use 'if/then/else/endif' for conditional branches. Use 'fork/fork again/end fork' for explicitly concurrent tasks. Use 'repeat/repeat while' for polling, retry, or until-style loops. Ensure every opened control structure is properly closed. Do not use invalid or non-standard keywords such as 'restart'. Keep arrow syntax simple and valid, avoiding malformed connectors.\n",
+  "evaluation": {
+    "summary": {
+      "count": 10.0,
+      "syntax_pass_rate": 1.0,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.44185714285714284,
+      "node_recall": 0.45238871635610767,
+      "node_f1": 0.41811951766767547,
+      "relation_precision": 0.2167215192713241,
+      "relation_recall": 0.18631381868148209,
+      "relation_f1": 0.19662784948028808,
+      "plantuml_compilation_pass_rate": 1.0,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {
+      "missing_activity": 9,
+      "extra_activity": 10,
+      "missing_or_wrong_relation": 10,
+      "extra_or_wrong_relation": 10,
+      "wrong_loop": 3,
+      "wrong_parallel": 1
+    },
+    "representative_cases": [
+      {
+        "dataset": "pure",
+        "case_id": "pure-0061",
+        "input_requirement": "1. User opens KeePass 2. User types a password, user name, URL, word of notes, title or group that exist in the database 3. The list of data related to search word are appeared in the main window 3.5.2.2 Alternative Data Flows 3.5.2.2.1 Alternative Data Flow 1 2. User types two or more words in the search field 3. Nothing appears in the main window 3.5.2.2.2 Alternative Data Flow 2 2. User does not type anything 3. Nothing appears in the main window 3.5.2.2.3 Alternative Data Flow 3 2a. User types part or even just one character of password, user name, URL, word of notes, title or group 3.5.2.2.4 Alternative Data Flow 4 2. User types data not related with the database 3. Nothing appears in the main window",
+        "gold_plantuml": "start\n\n:Open KeePass;\n\n:Information can be input;\nfork\n:Password;\nfork again\n:User name;\nfork again\n:URL;\nfork again\n:Word of notes;\nfork again\n:Title;\nfork again\n:Group;\nend fork\n\nswitch(Input)\ncase(Existing)\n:List of data related are appeared;\ncase(Two or more words)\n:Nothing appears;\ncase(No input)\n:Nothing appears;\ncase(Part or one character)\n if(Found?) then(yes)\n :List of data related are appeared;\n else(no)\n :Nothing appears;\n endif\ncase(Not related input)\n:Nothing appears;\nendswitch\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:User opens KeePass;\nif (User input type?) then (Two or more words)\n  :User types two or more words in the search field;\n  :Nothing appears in the main window;\nelseif (Nothing?) then (User does not type anything)\n  :Nothing appears in the main window;\nelseif (Partial match?) then (User types part or just one character of password, user name, URL, word of notes, title or group)\n  :The list of data related to search word are appeared in the main window;\nelseif (No match?) then (User types data not related with the database)\n  :Nothing appears in the main window;\nelse (Exact match)\n  :User types a password, user name, URL, word of notes, title or group that exist in the database;\n  :The list of data related to search word are appeared in the main window;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "open keepass",
+            "information can be input",
+            "password",
+            "user name",
+            "url",
+            "word of notes",
+            "title",
+            "group",
+            "input",
+            "existing",
+            "list of data related are appeared",
+            "list of data related are appeared",
+            "two or more words",
+            "nothing appears",
+            "nothing appears",
+            "nothing appears",
+            "nothing appears",
+            "no input",
+            "part or one character",
+            "found?"
+          ],
+          "extra": [
+            "user opens keepass",
+            "user input type?",
+            "user types two or more words in the search field",
+            "nothing appears in the main window",
+            "nothing appears in the main window",
+            "nothing appears in the main window",
+            "nothing?",
+            "partial match?",
+            "the list of data related to search word are appeared in the main window",
+            "the list of data related to search word are appeared in the main window",
+            "no match?",
+            "user types a password user name url word of notes title or group that exist in the database"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "open keepass -> information can be input",
+            "information can be input -> password",
+            "password -> user name",
+            "user name -> url",
+            "url -> word of notes",
+            "word of notes -> title",
+            "title -> group",
+            "group -> input",
+            "input -> existing",
+            "existing -> list of data related are appeared",
+            "list of data related are appeared -> two or more words",
+            "two or more words -> nothing appears",
+            "nothing appears -> no input",
+            "no input -> nothing appears",
+            "nothing appears -> part or one character",
+            "part or one character -> found?",
+            "found? -> list of data related are appeared",
+            "list of data related are appeared -> nothing appears",
+            "nothing appears -> not related input",
+            "not related input -> nothing appears"
+          ],
+          "extra": [
+            "user opens keepass -> user input type?",
+            "user input type? -> user types two or more words in the search field",
+            "user types two or more words in the search field -> nothing appears in the main window",
+            "nothing appears in the main window -> nothing?",
+            "nothing? -> nothing appears in the main window",
+            "nothing appears in the main window -> partial match?",
+            "partial match? -> the list of data related to search word are appeared in the main window",
+            "the list of data related to search word are appeared in the main window -> no match?",
+            "no match? -> nothing appears in the main window",
+            "nothing appears in the main window -> user types a password user name url word of notes title or group that exist in the database",
+            "user types a password user name url word of notes title or group that exist in the database -> the list of data related to search word are appeared in the main window"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0052",
+        "input_requirement": "As a corporatesponsor, I want to display my logo on a corporate sponsors page, so that others see the company's support of Scrum.",
+        "gold_plantuml": "start\n:Display logo on sponsors page;\n:Get company support of Scrum;\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:Corporate sponsor requests to display logo;\n:Submit company logo;\nif (Logo meets display criteria?) then (yes)\n  :Display logo on corporate sponsors page;\n  :Others see the company's support of Scrum;\nelse (no)\n  :Reject logo submission;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.16666666666666666,
+          "recall": 0.5,
+          "f1": 0.25,
+          "missing": [
+            "get company support of scrum"
+          ],
+          "extra": [
+            "corporate sponsor requests to display logo",
+            "submit company logo",
+            "logo meets display criteria?",
+            "others see the company s support of scrum",
+            "reject logo submission"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "display logo on sponsors page -> get company support of scrum"
+          ],
+          "extra": [
+            "corporate sponsor requests to display logo -> submit company logo",
+            "submit company logo -> logo meets display criteria?",
+            "logo meets display criteria? -> display logo on corporate sponsors page",
+            "display logo on corporate sponsors page -> others see the company s support of scrum",
+            "others see the company s support of scrum -> reject logo submission"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0023",
+        "input_requirement": "23.\tpromote a jobLog into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, select the job that you want to promote. You can also right-click the home page screen, and click Promote.3. From the source and the destination systems drop-down lists, select the source and destination systems.Note:Ensure that you have logged into both the source and destination systems before you proceed with the promotion process.4. In the External Change Management ID field, enter the appropriate value, and click Save.5. Click Mappings. Click Edit Mappings if you want to create and validate mappings.6. Click Security Settings, if required. The following options are displayed:• Do not Promote Security - This is the default option.• Promote Security - Use this option to promote jobs along with theassociated security rights.• Include application rights - This option is enabled only if you select Promote Security. If the objects in the job inherit any application rights, the job is promoted along with these rights. You can also click View Security to view the security dependencies of the infoobjects in the job.7. Click Test Promote to ensure that there is no conflict between CUIDs in the source and destination systems. The promotion details are displayed. The first column displays the objects to be promoted, and the second column displays the promotion status. The LifeCycle Manager tool classifies the selected objects into users, groups, universes, and so on.Note:Running the Test Promote feature does not commit any infoobjects for promotion. The result of a test promote can be any of the following:• Overwritten - The infoobject in the destination is overwritten by the infoobject in the source system.• Mapped - The following infoobject types are mapped to the destination system: folders, users, user groups, and custom roles. An infoobject is mapped to the destination system and promoted only if the Security option is enabled. Otherwise, the infoobject is not promoted.• Copied - The infoobject in the source system is copied to the destination system.• Dropped - The infoobject is not promoted from the source system to the destination system.• Warning - The infoobject in the destination system is the newer version and you can remove the infoobject from the Job. However, if you want to promote, the infoobject gets promoted.8. Click Schedule Job if you want to schedule the job promotion.9. Click Promote.",
+        "gold_plantuml": "start\n\n:Log in LifeCycle Manager tool;\nswitch(Selection method)\ncase(1)\n:Go to \"Promotion Jobs\" home page;\n:Select the job want to promote;\ncase(2)\n:Right-click;\n:Click \"Promote\";\nendswitch\n\n:Open source and destination systems drop-down lists;\n:Select source and destination systems;\n\nif(Have logged into both source and destination systems) then(no)\nstop\nelse(yes)\nendif\n\n:Go to External Change Management ID field;\n:Enter appropriate value;\n:Click \"Save\";\n\n:Click \"Mappings\";\nif(Create and validate mappings) then(yes)\n:Click \"Edit Mappings\";\nelse(no)\nendif\n\nif(See Security Settings?) then(yes)\n:Click \"Security Settings\";\n:Options are displayed;\nfork\n:\"Do not Promote Security\";\nnote right:Default option\nfork again\n:\"Promote Security\";\n:Promote jobs along with associated security rights;\nfork again\n:\"Include application rights\";\n\nif (Select \"Promote Security\"?) then(yes)\n:The option is enabled;\n  if(Objects inherit any application rights?) then(yes)\n  :Job is promoted along with these rights;\n  else(no)\n  endif\nelse(no)\nendif\nend fork\n\nif(Click \"View Security\"?) then(yes)\n:View infoobjects security dependencies;\nelse(no)\nendif\nendif\n\n:Click \"Test Promote\";\n:Ensure no conflict between CUIDs in the source and destination systems;\n:Promotion details are displayed;\n\nfork\n:First column;\n:Objects to be promoted;\nfork again\n:Second column;\n:Promotion status;\nend fork\n\n:LifeCycle Manager tool classifies selected objects;\n\n:Run Test Promote feature;\n:Commit no infoobjects for promotion;\n\nswitch(Results)\ncase(Overwritten)\n :Infoobject in destination is overwritten by infoobject in source system;\ncase(Mapped)\n :Infoobject types;\n fork\n :Folders,\n fork again\n :Users;\n fork again\n :User groups;\n fork again\n :Custom roles;\n end fork\n\n if(Security option is enabled?) then(yes)\n :Infoobject is mapped to destination system and promoted;\n else(no)\n :Infoobject is not promoted;\n endif\ncase(Copied)\n :Infoobject in source system is copied to destination system;\ncase(Dropped)\n :Infoobject is not promoted from source system to destination system;\ncase(Warning)\n :Infoobject in destination system is the newer version;\n :Remove infoobject from Job;\nif(Promote?) then(yes)\n :Infoobject gets promoted;\nelse(no)\nendif\nendswitch\n\nif(Schedule job promotion?) then(yes)\n:Click \"Schedule Job\";\nelse(no)\nendif\n\n:Click \"Promote\";\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:Promote a jobLog into the LifeCycle Manager tool;\n:Select the job to promote from the \"Promotion Jobs\" home page;\n:Select source and destination systems from drop-down lists;\n:Enter appropriate value in the External Change Management ID field;\n:Click Save;\n:Click Mappings;\nif (Want to create and validate mappings?) then (Yes)\n  :Click Edit Mappings;\nelse (No)\nendif\nif (Security Settings required?) then (Yes)\n  :Click Security Settings;\n  if (Promote Security?) then (Yes)\n    :Select Promote Security;\n    if (Include application rights?) then (Yes)\n      :Select Include application rights;\n    else (No)\n    endif\n  else (No)\n    :Select Do not Promote Security;\n  endif\n  :Click View Security to view security dependencies;\nelse (No)\nendif\n:Click Test Promote;\n:View promotion details and status;\nif (Promotion status?) then (Overwritten)\n  :Infoobject in destination is overwritten by source;\nelseif (Mapped) then (Mapped)\n  if (Security option enabled?) then (Yes)\n    :Infoobject is mapped to destination and promoted;\n  else (No)\n    :Infoobject is not promoted;\n  endif\nelseif (Copied) then (Copied)\n  :Infoobject in source is copied to destination;\nelseif (Dropped) then (Dropped)\n  :Infoobject is not promoted;\nelseif (Warning) then (Warning)\n  if (Want to promote anyway?) then (Yes)\n    :Infoobject gets promoted;\n  else (No)\n    :Remove the infoobject from the Job;\n  endif\nendif\nif (Want to schedule the job promotion?) then (Yes)\n  :Click Schedule Job;\nelse (No)\nendif\n:Click Promote;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.22857142857142856,
+          "recall": 0.38095238095238093,
+          "f1": 0.2857142857142857,
+          "missing": [
+            "log in lifecycle manager tool",
+            "selection method",
+            "1",
+            "go to promotion jobs home page",
+            "select the job want to promote",
+            "2",
+            "right-click",
+            "select source and destination systems",
+            "have logged into both source and destination systems",
+            "go to external change management id field",
+            "enter appropriate value",
+            "see security settings?",
+            "options are displayed"
+          ],
+          "extra": [
+            "promote a joblog into the lifecycle manager tool",
+            "select the job to promote from the promotion jobs home page",
+            "enter appropriate value in the external change management id field",
+            "security settings required?",
+            "promote security?",
+            "select promote security",
+            "include application rights?",
+            "select include application rights",
+            "click view security to view security dependencies",
+            "click test promote",
+            "view promotion details and status",
+            "promotion status?",
+            "infoobject in destination is overwritten by source",
+            "mapped",
+            "security option enabled?",
+            "infoobject is mapped to destination and promoted",
+            "infoobject is not promoted",
+            "infoobject is not promoted",
+            "copied",
+            "infoobject in source is copied to destination"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.14705882352941177,
+          "recall": 0.25,
+          "f1": 0.18518518518518517,
+          "missing": [
+            "log in lifecycle manager tool -> selection method",
+            "selection method -> 1",
+            "1 -> go to promotion jobs home page",
+            "go to promotion jobs home page -> select the job want to promote",
+            "select the job want to promote -> 2",
+            "2 -> right-click",
+            "right-click -> click promote",
+            "click promote -> open source and destination systems drop-down lists",
+            "open source and destination systems drop-down lists -> select source and destination systems",
+            "select source and destination systems -> have logged into both source and destination systems",
+            "have logged into both source and destination systems -> go to external change management id field",
+            "go to external change management id field -> enter appropriate value",
+            "enter appropriate value -> click save",
+            "click security settings -> options are displayed",
+            "options are displayed -> do not promote security"
+          ],
+          "extra": [
+            "promote a joblog into the lifecycle manager tool -> select the job to promote from the promotion jobs home page",
+            "select the job to promote from the promotion jobs home page -> select source and destination systems from drop-down lists",
+            "select source and destination systems from drop-down lists -> enter appropriate value in the external change management id field",
+            "enter appropriate value in the external change management id field -> click save",
+            "click security settings -> promote security?",
+            "promote security? -> select promote security",
+            "select promote security -> include application rights?",
+            "include application rights? -> select include application rights",
+            "select include application rights -> select do not promote security",
+            "select do not promote security -> click view security to view security dependencies",
+            "click view security to view security dependencies -> click test promote",
+            "click test promote -> view promotion details and status",
+            "view promotion details and status -> promotion status?",
+            "promotion status? -> infoobject in destination is overwritten by source",
+            "infoobject in destination is overwritten by source -> mapped",
+            "mapped -> security option enabled?",
+            "security option enabled? -> infoobject is mapped to destination and promoted",
+            "infoobject is mapped to destination and promoted -> infoobject is not promoted",
+            "infoobject is not promoted -> copied",
+            "copied -> infoobject in source is copied to destination"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "fsd",
+        "case_id": "fsd-0009",
+        "input_requirement": "Operating on a preemptive RTOS, the Train Control and Monitoring System (TCMS) manages traction, braking, doors, and diagnostics via deterministic scheduling. Upon an inertial sensor detecting a vehicle acceleration threshold exceedance, the system first verifies brake system status via a protected BMS query. If braking pressure is deemed insufficient, a high-priority task immediately commands emergency braking assistance, while a concurrent, medium-priority task evaluates the need for Electronic Stability Program (ESP) intervention. During ESP activation, a cyclic task with a mutex-protected ring buffer processes wheel speed sensor data, calculates individual wheel slip rates, and executes a real-time braking force distribution algorithm. Post-ESP, if a steering angle sensor indicates an anomaly, a steering assist control task is activated; this task periodically samples the steering angle sensor, computes a target angle via a PID control loop, and adjusts the Electronic Power Steering system's output torque through a CAN message with a CRC checksum. Finally, a state evaluation task assesses overall vehicle stability, triggering a layered deactivation of control modules. Concurrently, a low-priority telemetry task, driven by a timer ISR, transmits data with an exponential backoff retry mechanism on communication faults, archiving to non-volatile memory. Independent watchdogs and PMIC-monitored fail-safe paths ensure graceful degradation in compliance with EN 50128/EN 50129 safety standards.",
+        "gold_plantuml": "@startuml\n\nstart\n\n:Operating on preemptive RTOS;\n:TCMS manages via deterministic scheduling;\nfork\n:Traction;\nfork again\n:Braking;\nfork again\n:Doors;\nfork again\n:Diagnostics;\nend fork\n\n:Detect acceleration threshold exceedance;\n:Verify brake system status via protected BMS query;\n\nif (Braking pressure insufficient?) then (yes)\n  fork\n    :High-priority task;\n    :Command emergency braking assistance immediately;\n  fork again\n    :Medium-priority task;\n    :Evaluate need for ESP intervention;\n  end fork\nelse(no)\nend if\n\nif (ESP activated?) then (yes)\n  :Cyclic task with mutex-protected ring buffer;\n  fork\n    :Process wheel speed sensor data;\n  fork again\n    :Calculate individual wheel slip rates;\n  fork again\n    :Execute real-time braking force distribution algorithm;\n  end fork\nelse (no)\nend if\n\nif (Steering angle sensor indicates anomaly?) then (yes)\n  :Activate steering assist control task;\n  :Periodically sample steering angle sensor;\n  :Compute target angle via PID control loop;\n  :Electronic Power Steering system's output torque;\nelse (no)\nend if\n\nfork\n :State evaluation task;\n :Assess overall vehicle stability;\n :Trigger layered deactivation of control modules;\nfork again\n  :Low-priority telemetry task driven by timer ISR;\n  :Transmit data with exponential backoff retry mechanism on communication faults;\n  :Archive to non-volatile memory;\nend fork\n\nfork\n:Independent watchdogs;\nfork again\n:PMIC-monitored fail-safe paths;\nend fork\n:Ensure graceful degradation;\n\nstop\n\n@enduml",
+        "predicted_plantuml": "@startuml\nstart\n:Detect vehicle acceleration threshold exceedance via inertial sensor;\n:Verify brake system status via protected BMS query;\nif (Braking pressure insufficient?) then (yes)\n  fork\n    :Command emergency braking assistance (high-priority task);\n  fork again\n    :Evaluate need for ESP intervention (medium-priority task);\n    if (ESP activation required?) then (yes)\n      repeat\n        :Process wheel speed sensor data via mutex-protected ring buffer;\n        :Calculate individual wheel slip rates;\n        :Execute real-time braking force distribution algorithm;\n      repeat while (ESP cyclic task active?) is (yes)\n      ->no;\n    endif;\n  end fork\n  if (Steering angle sensor indicates anomaly?) then (yes)\n    :Activate steering assist control task;\n    repeat\n      :Periodically sample steering angle sensor;\n      :Compute target angle via PID control loop;\n      :Adjust Electronic Power Steering system output torque via CAN message with CRC checksum;\n    repeat while (Steering assist active?) is (yes)\n    ->no;\n  endif;\n  :Assess overall vehicle stability (state evaluation task);\n  :Trigger layered deactivation of control modules;\n  fork\n    :Transmit telemetry data (low-priority task driven by timer ISR);\n    if (Communication fault?) then (yes)\n      repeat\n        :Retry transmission with exponential backoff;\n      repeat while (Transmission successful?) is (no)\n      ->yes;\n    endif;\n    :Archive data to non-volatile memory;\n  fork again\n    :Ensure graceful degradation via independent watchdogs and PMIC-monitored fail-safe paths (EN 50128/EN 50129);\n  end fork\nelse (no)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.4166666666666667,
+          "recall": 0.3125,
+          "f1": 0.35714285714285715,
+          "missing": [
+            "operating on preemptive rtos",
+            "tcms manages via deterministic scheduling",
+            "traction",
+            "braking",
+            "doors",
+            "diagnostics",
+            "detect acceleration threshold exceedance",
+            "high-priority task",
+            "command emergency braking assistance immediately",
+            "medium-priority task",
+            "evaluate need for esp intervention",
+            "esp activated?",
+            "cyclic task with mutex-protected ring buffer",
+            "process wheel speed sensor data",
+            "electronic power steering system s output torque",
+            "state evaluation task",
+            "assess overall vehicle stability",
+            "low-priority telemetry task driven by timer isr",
+            "transmit data with exponential backoff retry mechanism on communication faults",
+            "independent watchdogs"
+          ],
+          "extra": [
+            "detect vehicle acceleration threshold exceedance via inertial sensor",
+            "command emergency braking assistance (high-priority task)",
+            "evaluate need for esp intervention (medium-priority task)",
+            "esp activation required?",
+            "process wheel speed sensor data via mutex-protected ring buffer",
+            "esp cyclic task active?",
+            "adjust electronic power steering system output torque via can message with crc checksum",
+            "steering assist active?",
+            "assess overall vehicle stability (state evaluation task)",
+            "transmit telemetry data (low-priority task driven by timer isr)",
+            "communication fault?",
+            "retry transmission with exponential backoff",
+            "transmission successful?",
+            "ensure graceful degradation via independent watchdogs and pmic-monitored fail-safe paths (en 50128/en 50129)"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.30434782608695654,
+          "recall": 0.22580645161290322,
+          "f1": 0.25925925925925924,
+          "missing": [
+            "operating on preemptive rtos -> tcms manages via deterministic scheduling",
+            "tcms manages via deterministic scheduling -> traction",
+            "traction -> braking",
+            "braking -> doors",
+            "doors -> diagnostics",
+            "diagnostics -> detect acceleration threshold exceedance",
+            "braking pressure insufficient? -> high-priority task",
+            "high-priority task -> command emergency braking assistance immediately",
+            "command emergency braking assistance immediately -> medium-priority task",
+            "medium-priority task -> evaluate need for esp intervention",
+            "evaluate need for esp intervention -> esp activated?",
+            "esp activated? -> cyclic task with mutex-protected ring buffer",
+            "cyclic task with mutex-protected ring buffer -> process wheel speed sensor data",
+            "process wheel speed sensor data -> calculate individual wheel slip rates",
+            "execute real-time braking force distribution algorithm -> steering angle sensor indicates anomaly?",
+            "compute target angle via pid control loop -> electronic power steering system s output torque",
+            "electronic power steering system s output torque -> state evaluation task",
+            "state evaluation task -> assess overall vehicle stability",
+            "trigger layered deactivation of control modules -> low-priority telemetry task driven by timer isr",
+            "low-priority telemetry task driven by timer isr -> transmit data with exponential backoff retry mechanism on communication faults"
+          ],
+          "extra": [
+            "braking pressure insufficient? -> command emergency braking assistance (high-priority task)",
+            "command emergency braking assistance (high-priority task) -> evaluate need for esp intervention (medium-priority task)",
+            "evaluate need for esp intervention (medium-priority task) -> esp activation required?",
+            "esp activation required? -> process wheel speed sensor data via mutex-protected ring buffer",
+            "process wheel speed sensor data via mutex-protected ring buffer -> calculate individual wheel slip rates",
+            "execute real-time braking force distribution algorithm -> esp cyclic task active?",
+            "esp cyclic task active? -> steering angle sensor indicates anomaly?",
+            "compute target angle via pid control loop -> adjust electronic power steering system output torque via can message with crc checksum",
+            "adjust electronic power steering system output torque via can message with crc checksum -> steering assist active?",
+            "steering assist active? -> assess overall vehicle stability (state evaluation task)",
+            "trigger layered deactivation of control modules -> transmit telemetry data (low-priority task driven by timer isr)",
+            "transmit telemetry data (low-priority task driven by timer isr) -> communication fault?",
+            "communication fault? -> retry transmission with exponential backoff",
+            "retry transmission with exponential backoff -> transmission successful?",
+            "transmission successful? -> archive data to non-volatile memory",
+            "archive data to non-volatile memory -> ensure graceful degradation via independent watchdogs and pmic-monitored fail-safe paths (en 50128/en 50129)"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation",
+          "wrong_loop"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0019",
+        "input_requirement": "Shunting group members (except the driver) can activate the Link Assurance Signal (LAS). Only one member may transmit LAS at a time. Maintenance modes for LAS activation: Mode 1: Continuous button press required. Mode 2: Periodic button press required (timeout deactivates LAS). LAS is an intermittent tone (800–850 Hz, 1 sec on / 2 sec off). LAS is interrupted upon receiving a Shunting Emergency Call.",
+        "gold_plantuml": "start\n\n:Group members (not driver) initiate LAS;\n\nif(One member transmits?) then(no)\n:Not allowed;\nelse(yes)\n switch(Maintenance mode)\n case(Mode 1)\n :Continuous button press;\n case(Mode 2)\n :Periodic button press;\n if(Timeout?) then(yes)\n :Deactivate LAS;\n else(no)\n endif\nendswitch\n\n:Intermittent tone;\nfork\n:800–850 Hz;\nfork again\n:1s on / 2s off;\nend fork\n\nif(Receive Shunting Emergency Call?) then(yes)\n:LAS is interrupted;\nelse(no)\nendif\nendif\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:Activate Link Assurance Signal (LAS);\nif (Maintenance Mode?) then (Mode 1: Continuous)\n  repeat\n    :Require continuous button press;\n    :Transmit LAS intermittent tone\n    (800-850 Hz, 1 sec on / 2 sec off);\n  repeat while (Button continuously pressed?) is (yes)\n  ->no;\nelse (Mode 2: Periodic)\n  repeat\n    :Require periodic button press;\n    :Transmit LAS intermittent tone\n    (800-850 Hz, 1 sec on / 2 sec off);\n  repeat while (Periodic button press before timeout?) is (yes)\n  ->no;\nendif\n:Deactivate LAS;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.5714285714285714,
+          "recall": 0.26666666666666666,
+          "f1": 0.36363636363636365,
+          "missing": [
+            "group members (not driver) initiate las",
+            "one member transmits?",
+            "not allowed",
+            "mode 1",
+            "mode 2",
+            "timeout?",
+            "intermittent tone",
+            "800-850 hz",
+            "1s on / 2s off",
+            "receive shunting emergency call?",
+            "las is interrupted"
+          ],
+          "extra": [
+            "activate link assurance signal (las)",
+            "button continuously pressed?",
+            "periodic button press before timeout?"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "group members (not driver) initiate las -> one member transmits?",
+            "one member transmits? -> not allowed",
+            "not allowed -> maintenance mode",
+            "maintenance mode -> mode 1",
+            "mode 1 -> continuous button press",
+            "continuous button press -> mode 2",
+            "mode 2 -> periodic button press",
+            "periodic button press -> timeout?",
+            "timeout? -> deactivate las",
+            "deactivate las -> intermittent tone",
+            "intermittent tone -> 800-850 hz",
+            "800-850 hz -> 1s on / 2s off",
+            "1s on / 2s off -> receive shunting emergency call?",
+            "receive shunting emergency call? -> las is interrupted"
+          ],
+          "extra": [
+            "activate link assurance signal (las) -> maintenance mode?",
+            "maintenance mode? -> require continuous button press",
+            "require continuous button press -> button continuously pressed?",
+            "button continuously pressed? -> require periodic button press",
+            "require periodic button press -> periodic button press before timeout?",
+            "periodic button press before timeout? -> deactivate las"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation",
+          "wrong_loop"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0005",
+        "input_requirement": "After the system starts up:\n- If slow charging is active and the front MCU high-voltage detection flag is 0, transition to state 93.\n- If charging/discharging power-up is active while the front MCU high-voltage detection flag reads 1, move to state 95.\n- When power-up readiness is confirmed and the vehicle's charging/discharging mode is set to 2, proceed to state 105.\n\nThen handle these cases:\n1. In remote mode: Go to state 105. If slow charging becomes inactive, shift to state 28. Should remote mode deactivate, initiate shutdown and terminate.\n2. Upon receiving a pet mode request: Enter state 105. If slow charging is inactive, transition to state 28. After processing the pet mode request, perform shutdown and end operations.\n3. When battery SOC hits 20%: Transition to state 105. If slow charging is inactive, switch to state 28. If SOC reaches 80% while DCDC state is 3, execute shutdown and conclude.",
+        "gold_plantuml": "start\nif (slow charging is 1 and front MCU high-voltage detection flag is 0) then(yes)\n  :switch to state 93;\n if (charging/discharging power-up is active and front MCU high-voltage detection flag is 1) then(yes)\n  :switch to state 95;\n  if (power-up is ready and vehicle charging/discharging mode is 2) then(yes)\n  :switch to state 105;\n\nswitch(condition judgement)\n  case(in remote mode)\n    :switch to state 105;\n    if (slow charging is inactive) then\n      :switch to state 28;\n      if (remote mode is closed) then\n          :shutdown;\n      stop\n      endif\n    endif\n\n  case (pet mode request is received)\n    :switch to state 105;\n     if (slow charging is inactive) then\n      :switch to state 28;\n      if (pet mode open request is closed) then\n          :shutdown;\n      stop\n      endif\n    endif\n\n  case (battery SOC is 20) \n    :switch to state 105;\n    if (SOC reaches 80 and DCDC state is 3) then\n    :shutdown;\n    stop\n    endif\nendswitch\n\n  endif\nendif\nendif\nend",
+        "predicted_plantuml": "@startuml\nstart\n:System startup;\n\nif (Slow charging active\\nand front MCU high-voltage detection flag = 0?) then (Yes)\n  :Transition to state 93;\nelse (No)\n  if (Charging/discharging power-up active\\nand front MCU high-voltage detection flag = 1?) then (Yes)\n    :Transition to state 95;\n  else (No)\n    if (Power-up readiness confirmed\\nand vehicle charging/discharging mode = 2?) then (Yes)\n      :Transition to state 105;\n    else (No)\n    endif\n  endif\nendif\n\nif (Remote mode?) then (Yes)\n  :Go to state 105;\n  if (Slow charging becomes inactive?) then (Yes)\n    :Shift to state 28;\n  else (No)\n  endif\n  if (Remote mode deactivates?) then (Yes)\n    :Initiate shutdown;\n    stop\n  else (No)\n  endif\nelseif (Pet mode request received?) then (Yes)\n  :Enter state 105;\n  if (Slow charging inactive?) then (Yes)\n    :Transition to state 28;\n  else (No)\n  endif\n  :Process pet mode request;\n  :Perform shutdown;\n  stop\nelseif (Battery SOC hits 20%?) then (Yes)\n  :Transition to state 105;\n  if (Slow charging inactive?) then (Yes)\n    :Switch to state 28;\n  else (No)\n  endif\n  if (SOC reaches 80%\\nand DCDC state is 3?) then (Yes)\n    :Execute shutdown;\n    stop\n  else (No)\n  endif\nelse (No)\nendif\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.44,
+          "recall": 0.4782608695652174,
+          "f1": 0.4583333333333333,
+          "missing": [
+            "switch to state 93",
+            "switch to state 95",
+            "switch to state 105",
+            "switch to state 105",
+            "switch to state 105",
+            "switch to state 105",
+            "condition judgement",
+            "remote mode is closed",
+            "shutdown",
+            "shutdown",
+            "shutdown",
+            "pet mode open request is closed"
+          ],
+          "extra": [
+            "system startup",
+            "transition to state 93",
+            "transition to state 95",
+            "transition to state 105",
+            "transition to state 105",
+            "go to state 105",
+            "slow charging becomes inactive?",
+            "remote mode deactivates?",
+            "initiate shutdown",
+            "enter state 105",
+            "transition to state 28",
+            "process pet mode request",
+            "perform shutdown",
+            "execute shutdown"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.2916666666666667,
+          "recall": 0.3181818181818182,
+          "f1": 0.30434782608695654,
+          "missing": [
+            "switch to state 95 -> power-up is ready and vehicle charging/discharging mode is 2",
+            "power-up is ready and vehicle charging/discharging mode is 2 -> switch to state 105",
+            "switch to state 105 -> condition judgement",
+            "condition judgement -> in remote mode",
+            "in remote mode -> switch to state 105",
+            "switch to state 105 -> slow charging is inactive",
+            "switch to state 105 -> slow charging is inactive",
+            "switch to state 28 -> remote mode is closed",
+            "remote mode is closed -> shutdown",
+            "shutdown -> pet mode request is received",
+            "pet mode request is received -> switch to state 105",
+            "switch to state 28 -> pet mode open request is closed",
+            "pet mode open request is closed -> shutdown",
+            "shutdown -> battery soc is 20",
+            "battery soc is 20 -> switch to state 105"
+          ],
+          "extra": [
+            "system startup -> slow charging active and front mcu high-voltage detection flag = 0?",
+            "transition to state 95 -> power-up readiness confirmed and vehicle charging/discharging mode = 2?",
+            "power-up readiness confirmed and vehicle charging/discharging mode = 2? -> transition to state 105",
+            "transition to state 105 -> remote mode?",
+            "remote mode? -> go to state 105",
+            "go to state 105 -> slow charging becomes inactive?",
+            "shift to state 28 -> remote mode deactivates?",
+            "remote mode deactivates? -> initiate shutdown",
+            "initiate shutdown -> pet mode request received?",
+            "pet mode request received? -> enter state 105",
+            "enter state 105 -> slow charging inactive?",
+            "slow charging inactive? -> transition to state 28",
+            "transition to state 28 -> process pet mode request",
+            "process pet mode request -> perform shutdown",
+            "perform shutdown -> battery soc hits 20 ?",
+            "battery soc hits 20 ? -> transition to state 105",
+            "transition to state 105 -> slow charging inactive?"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0007",
+        "input_requirement": "7.\tLoading Transaction Data1. Go to the Data Warehousing Workbench; in the Modeling area choose Info Provider. The transformation and the Data source are displayed in the Info Area below the Info Cube Sales Overview.2. In the context menu of the Data source, choose Create Info Package...3. On the next screen, enter a description for the Info Package and choose Save. The Info Package maintenance screen for the scheduler appears.4. Go to the tab page Schedule and choose Start.5. To check the load process, choose Monitor in the toolbar of Info Package maintenance.6. On the next screen, select the date and choose Execute. The monitor for the load process is displayed.7. Select the load process for your Data source from the tree at the left of the screen.8. Exit the Info Package maintenance screen.9. From the context menu of the Data source, choose Create Data Transfer Process.... The system displays a generated description, the type, source and target of the data transfer process.10. Choose Continue.11. The data transfer process maintenance screen appears.12. Go to tab page Extraction and select extraction mode Full.13. Activate the data transfer process.14. Go to tab page Execute and choose Execute.",
+        "gold_plantuml": "start\n\n:Go to Data Warehousing Workbench;\n:Go to Modeling area;\n:Choose \"Info Provider\";\n\n:Info Area displays information;\nfork\n  :Transformation;\nfork again\n  :Data source;\nend fork\n\n:Open Data source context menu;\n:Choose \"Create Info Package...\";\n\n:Enter description;\n:Choose \"Save\";\n:The Info Package maintenance screen appears;\n\n:Go to tab page Schedule;\n:Choose \"Start\";\n\n:Open the toolbar;\n:Choose \"Monitor\";\n:Check the load process;\n\n:Select date;\n:Choose \"Execute\";\n\n:The monitor is displayed;\n:Select load process from left tree;\n\n:Exit Info Package maintenance;\n\n:Open Data Source context menu;\n:Choose \"Create Data Transfer Process...\";\n:Information is displayed;\n\nfork\n:Description;\nfork again\n:Type;\nfork again\n:Source;\nfork again\n:Target;\nend fork\n\n:Choose \"Continue\";\n\n:Data Transfer Process maintenance screen appears;\n:Go to tab page Extraction;\n:Select extraction mode \"Full\";\n\n:Activate data transfer process;\n\n:Go to tab page Execute;\n:Choose \"Execute\";\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:Go to the Data Warehousing Workbench;\n:In the Modeling area choose Info Provider;\n:View transformation and Data source in the Info Area below the Info Cube Sales Overview;\n:In the context menu of the Data source, choose Create Info Package...;\n:Enter a description for the Info Package;\n:Choose Save;\n:View Info Package maintenance screen for the scheduler;\n:Go to the tab page Schedule;\n:Choose Start;\n:Choose Monitor in the toolbar of Info Package maintenance;\n:Select the date;\n:Choose Execute;\n:View the monitor for the load process;\n:Select the load process for your Data source from the tree at the left of the screen;\n:Exit the Info Package maintenance screen;\n:From the context menu of the Data source, choose Create Data Transfer Process...;\n:View generated description, type, source and target of the data transfer process;\n:Choose Continue;\n:View data transfer process maintenance screen;\n:Go to tab page Extraction;\n:Select extraction mode Full;\n:Activate the data transfer process;\n:Go to tab page Execute;\n:Choose Execute;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.5833333333333334,
+          "recall": 0.4,
+          "f1": 0.4745762711864407,
+          "missing": [
+            "go to modeling area",
+            "choose info provider",
+            "info area displays information",
+            "transformation",
+            "data source",
+            "open data source context menu",
+            "open data source context menu",
+            "choose create info package...",
+            "enter description",
+            "open the toolbar",
+            "choose monitor",
+            "check the load process",
+            "the monitor is displayed",
+            "select load process from left tree",
+            "exit info package maintenance",
+            "choose create data transfer process...",
+            "information is displayed",
+            "description",
+            "type",
+            "source"
+          ],
+          "extra": [
+            "in the modeling area choose info provider",
+            "view transformation and data source in the info area below the info cube sales overview",
+            "in the context menu of the data source choose create info package...",
+            "enter a description for the info package",
+            "view info package maintenance screen for the scheduler",
+            "choose monitor in the toolbar of info package maintenance",
+            "view the monitor for the load process",
+            "select the load process for your data source from the tree at the left of the screen",
+            "from the context menu of the data source choose create data transfer process...",
+            "view generated description type source and target of the data transfer process"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.34782608695652173,
+          "recall": 0.23529411764705882,
+          "f1": 0.28070175438596484,
+          "missing": [
+            "go to data warehousing workbench -> go to modeling area",
+            "go to modeling area -> choose info provider",
+            "choose info provider -> info area displays information",
+            "info area displays information -> transformation",
+            "transformation -> data source",
+            "data source -> open data source context menu",
+            "open data source context menu -> choose create info package...",
+            "choose create info package... -> enter description",
+            "enter description -> choose save",
+            "choose save -> the info package maintenance screen appears",
+            "the info package maintenance screen appears -> go to tab page schedule",
+            "choose start -> open the toolbar",
+            "open the toolbar -> choose monitor",
+            "choose monitor -> check the load process",
+            "check the load process -> select date",
+            "choose execute -> the monitor is displayed",
+            "the monitor is displayed -> select load process from left tree",
+            "select load process from left tree -> exit info package maintenance",
+            "exit info package maintenance -> open data source context menu",
+            "open data source context menu -> choose create data transfer process..."
+          ],
+          "extra": [
+            "go to the data warehousing workbench -> in the modeling area choose info provider",
+            "in the modeling area choose info provider -> view transformation and data source in the info area below the info cube sales overview",
+            "view transformation and data source in the info area below the info cube sales overview -> in the context menu of the data source choose create info package...",
+            "in the context menu of the data source choose create info package... -> enter a description for the info package",
+            "enter a description for the info package -> choose save",
+            "choose save -> view info package maintenance screen for the scheduler",
+            "view info package maintenance screen for the scheduler -> go to the tab page schedule",
+            "choose start -> choose monitor in the toolbar of info package maintenance",
+            "choose monitor in the toolbar of info package maintenance -> select the date",
+            "choose execute -> view the monitor for the load process",
+            "view the monitor for the load process -> select the load process for your data source from the tree at the left of the screen",
+            "select the load process for your data source from the tree at the left of the screen -> exit the info package maintenance screen",
+            "exit the info package maintenance screen -> from the context menu of the data source choose create data transfer process...",
+            "from the context menu of the data source choose create data transfer process... -> view generated description type source and target of the data transfer process",
+            "view generated description type source and target of the data transfer process -> choose continue"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0007",
+        "input_requirement": "After the system starts up, if slow charging is active, we enter power-up mode. Then:\n\n1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:\n   a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.\n   b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.\n   c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with CP amplitude at 3000, switch to state 130. If slow charging becomes inactive, shut down and end.\n\n2) When the central control charging/discharging command is 2 and the vehicle isn't in charging/discharging mode, switch to state 110. Then:\n   - If the high-voltage shutdown request flag becomes 2, switch to state 115.\n   - If the flag drops to 0 with CP duty cycle at 88%, switch to state 126.\n   - If the central control command is 1 while charging state is 2, switch to state 130.\n   - If slow charging becomes inactive, shut down and end.",
+        "gold_plantuml": "start\nif (slow charging is active) then(yes)\n  :enter power-up mode;\n  if (high-voltage shutdown request charging/discharging flag is 2) then(yes)\n    :switch to state 115;\n    if (flag becomes 0 and CP duty cycle is 85%) then(yes)\n      :switch to state 126;\n      if (BMS self-check counter is 1) then(yes)\n        :switch to state 130;\n        if (slow charging is inactive) then(yes)\n          :shutdown;\n          stop\n        endif\n      else if (battery pre-heating is required) then\n        :switch to state 130;\n        if (slow charging is inactive) then(yes)\n         :shutdown;\n         stop\n        endif\n      endif\n  \n    else if(flag becomes 0 and BMS self-check counter is 1)then\n    :switch to state 126;\n      if (CP duty cycle is 85% and CP amplitude is 3000) then(yes)\n        :switch to state 130;\n        if (slow charging is inactive) then(yes)\n          :shutdown;\n          stop\n        endif\n      endif\n    endif\n\n  else if(central control command is 2 and vehicle is not in charging/discharging mode)then\n    :switch to state 110;\n    if (flag becomes 2) then(yes)\n      :switch to state 115;\n      if(flag becomes 0 and CP duty cycle is 88%)then(yes)\n        :switch to state 126;\n        if(central control command is 2 and charging state is 2)then(yes)\n          :switch to state 130;\n          if (slow charging is inactive) then(yes)\n            :shutdown;\n            stop\n          endif\n        endif  \n      endif\n    endif\n    \n  endif\nendif\nend",
+        "predicted_plantuml": "@startuml\nstart\n:System starts up;\nif (Slow charging is active?) then (yes)\n  :Enter power-up mode;\n  \n  if (High-voltage shutdown request flag is 2?) then (yes)\n    :Switch to state 115;\n    \n    if (Condition after state 115?) then (Flag drops to 0 with CP duty cycle at 85%)\n      :Switch to state 126;\n    elseif (BMS self-check counter is 1?) then (yes)\n      :Switch to state 130;\n    elseif (Slow charging becomes inactive?) then (yes)\n      :Shut down;\n      end\n    endif\n    \n  elseif (Central control charging/discharging command is 2\\nand vehicle isn't in charging/discharging mode?) then (yes)\n    :Switch to state 110;\n    \n    if (Condition after state 110?) then (High-voltage shutdown request flag becomes 2)\n      :Switch to state 115;\n    elseif (Flag drops to 0 with CP duty cycle at 88%?) then (yes)\n      :Switch to state 126;\n    elseif (Central control command is 1\\nand charging state is 2?) then (yes)\n      :Switch to state 130;\n    elseif (Slow charging becomes inactive?) then (yes)\n      :Shut down;\n      end\n    endif\n    \n  endif\n  \nelse (no)\nendif\nend\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.7619047619047619,
+          "recall": 0.5333333333333333,
+          "f1": 0.6274509803921569,
+          "missing": [
+            "high-voltage shutdown request charging/discharging flag is 2",
+            "flag becomes 0 and cp duty cycle is 85",
+            "switch to state 126",
+            "switch to state 130",
+            "switch to state 130",
+            "slow charging is inactive",
+            "slow charging is inactive",
+            "shutdown",
+            "shutdown",
+            "battery pre-heating is required",
+            "flag becomes 0 and bms self-check counter is 1",
+            "cp duty cycle is 85 and cp amplitude is 3000",
+            "flag becomes 2",
+            "flag becomes 0 and cp duty cycle is 88"
+          ],
+          "extra": [
+            "system starts up",
+            "high-voltage shutdown request flag is 2?",
+            "condition after state 115?",
+            "condition after state 110?",
+            "flag drops to 0 with cp duty cycle at 88 ?"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.55,
+          "recall": 0.3793103448275862,
+          "f1": 0.4489795918367347,
+          "missing": [
+            "enter power-up mode -> high-voltage shutdown request charging/discharging flag is 2",
+            "high-voltage shutdown request charging/discharging flag is 2 -> switch to state 115",
+            "switch to state 115 -> flag becomes 0 and cp duty cycle is 85",
+            "flag becomes 0 and cp duty cycle is 85 -> switch to state 126",
+            "switch to state 130 -> slow charging is inactive",
+            "switch to state 130 -> slow charging is inactive",
+            "slow charging is inactive -> shutdown",
+            "slow charging is inactive -> shutdown",
+            "shutdown -> battery pre-heating is required",
+            "battery pre-heating is required -> switch to state 130",
+            "shutdown -> flag becomes 0 and bms self-check counter is 1",
+            "flag becomes 0 and bms self-check counter is 1 -> switch to state 126",
+            "switch to state 126 -> cp duty cycle is 85 and cp amplitude is 3000",
+            "cp duty cycle is 85 and cp amplitude is 3000 -> switch to state 130",
+            "switch to state 110 -> flag becomes 2",
+            "flag becomes 2 -> switch to state 115",
+            "switch to state 115 -> flag becomes 0 and cp duty cycle is 88",
+            "flag becomes 0 and cp duty cycle is 88 -> switch to state 126"
+          ],
+          "extra": [
+            "system starts up -> slow charging is active?",
+            "enter power-up mode -> high-voltage shutdown request flag is 2?",
+            "high-voltage shutdown request flag is 2? -> switch to state 115",
+            "switch to state 115 -> condition after state 115?",
+            "condition after state 115? -> switch to state 126",
+            "switch to state 110 -> condition after state 110?",
+            "condition after state 110? -> switch to state 115",
+            "switch to state 115 -> flag drops to 0 with cp duty cycle at 88 ?",
+            "flag drops to 0 with cp duty cycle at 88 ? -> switch to state 126"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      }
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

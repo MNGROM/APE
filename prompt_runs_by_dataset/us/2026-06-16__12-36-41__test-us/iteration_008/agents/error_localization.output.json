@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow does not enforce an explicit, ordered extraction of parallelism and loops before constructing the control flow, allowing the generator to default to a strictly sequential interpretation and overlook linguistic cues for simultaneous actions or iterative behaviors."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks sufficient emphasis on preserving all granular behaviors and system responses as distinct activity nodes, and it does not provide clear mapping rules for translating bounded retries or persistent cycles into PlantUML repeat/while constructs."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section lacks strict constraints against hallucinating placeholder loop conditions or control logic not explicitly stated in the text, and it does not adequately address how to systematically map and preserve deeply nested conditional logic without flattening it."
+    }
+  ]
+}
+```

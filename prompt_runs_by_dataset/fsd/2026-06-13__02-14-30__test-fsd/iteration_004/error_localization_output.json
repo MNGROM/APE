@@ -1,0 +1,73 @@
+```json
+{
+  "summary": "The most useful repairs target the workflow and knowledge sections. The workflow section needs stronger procedural guidance to decompose compound/parallel actions and actively identify simultaneous items, while the knowledge section needs reusable modeling principles for parallel fork decomposition, conditional exit modeling, and strict grounding against hallucinated implementations.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "hallucinated_implementation",
+        "over_compressed_activities",
+        "missing_parallel_decomposition",
+        "flattened_conditional_logic"
+      ],
+      "section_problem": "The workflow does not sufficiently enforce strict grounding against inferring unstated steps, and it lacks explicit procedural steps for decomposing lists of simultaneous actions into parallel forks or handling complex conditional exit logic.",
+      "edit_intent": "Strengthen the extraction step to strictly prohibit inferring unstated UI interactions or validations, and add explicit steps to decompose compound phrases/lists into distinct activities and to map simultaneous items to fork/end fork constructs.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "us-0169",
+        "lmc-0040",
+        "lmc-0052",
+        "bp-0019",
+        "pure-0023",
+        "bp-0026"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "hallucinated_implementation",
+        "missing_parallel_decomposition",
+        "flattened_conditional_logic"
+      ],
+      "section_problem": "The knowledge section lacks reusable modeling principles for decomposing parallel lists into fork/end fork blocks, modeling ongoing states with independent exit conditions, and clearly delineating the boundary between mapping control flow and inferring unstated steps.",
+      "edit_intent": "Add concise modeling principles for parallel fork decomposition, conditional exit modeling (using if/else for independent exit conditions), and strict grounding (prohibiting invented conditional checks or validations unless explicitly stated).",
+      "knowledge_gap_ids": [
+        "parallel_fork_decomposition",
+        "conditional_exit_modeling",
+        "strict_grounding_vs_inference"
+      ],
+      "evidence_case_ids": [
+        "us-0169",
+        "lmc-0040",
+        "bp-0019",
+        "pure-0023",
+        "bp-0026"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The agent's role and scope are correctly defined; the failures stem from procedural and modeling gaps, not an incorrect role definition."
+    },
+    {
+      "section": "input",
+      "reason": "The input specification is adequate; the issue is how the agent processes the requirement, not how it reads it."
+    },
+    {
+      "section": "output",
+      "reason": "The output format constraint (PlantUML only) is appropriate; the errors are structural and semantic within the PlantUML, not format violations."
+    },
+    {
+      "section": "rule",
+      "reason": "While a hard rule against hallucination could help, the constraints limit edits to 2 sections. The workflow and knowledge sections provide a more robust and generalizable foundation for the required repairs than adding isolated negative constraints."
+    }
+  ]
+}
+```

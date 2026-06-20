@@ -1,0 +1,635 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 20
+- syntax_pass_rate: 1.0000
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.5241
+- node_recall: 0.5609
+- node_f1: 0.5419
+- relation_precision: 0.3672
+- relation_recall: 0.3450
+- relation_f1: 0.3557
+- plantuml_compilation_pass_rate: 1.0000
+- llm_element_evaluated: 20.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.7464
+- llm_node_recall: 0.7742
+- llm_node_f1: 0.7485
+- llm_relation_precision: 0.5187
+- llm_relation_recall: 0.5281
+- llm_relation_f1: 0.5116
+
+## Failure Types
+- extra_activity: 18
+- missing_or_wrong_relation: 18
+- extra_or_wrong_relation: 18
+- missing_activity: 15
+- wrong_parallel: 6
+- wrong_loop: 1
+
+## Representative Failure Cases
+### lmc-0040
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1818
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.8000
+- llm_relation_f1: 0.6667
+- missing_nodes:
+  - determinant of b(inv(wp )b > 1e-12
+  - each element with respect to 3x3 identity matrix elements < 1e-12 tolerance
+  - b(inv(wp )b matrix inversion be accurate to 12 digits precision
+- extra_nodes:
+  - check determinant of b(inv(wp ))b
+  - determinant > 1e-12?
+  - invert b(inv(wp ))b matrix
+  - check output matrix elements against 3x3 identity matrix
+  - each element within 1e-12 tolerance?
+  - inversion accurate to 12 digits precision
+- missing_relations:
+  - ridge_on set to false -> determinant of b(inv(wp )b > 1e-12
+  - determinant of b(inv(wp )b > 1e-12 -> each element with respect to 3x3 identity matrix elements < 1e-12 tolerance
+  - each element with respect to 3x3 identity matrix elements < 1e-12 tolerance -> b(inv(wp )b matrix inversion be accurate to 12 digits precision
+- input_excerpt:
+  2.	When the determinant of B(inv(Wp’)B’ is > 1e-12 as indicated by ridge_on set to False, the inversion of the B(inv(Wp’)B’ matrix should be accurate to 12 digits precision in that each element in the check output matrix is within a 1e-12 tolerance with respect to the elements of a 3x3 identity matrix.
+- generated_excerpt:
+  @startuml start :Check determinant of B(inv(Wp'))B'; if (determinant > 1e-12?) then (Yes)   :Set ridge_on to False;   :Invert B(inv(Wp'))B' matrix;   :Check output matrix elements against 3x3 identity matrix;   if (each element within 1e-12 tolerance?) then (Yes)     :Inversion accurate to 12 digits precision;   else (No)   endif else (No) endif stop @enduml
+### rac-0008
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1935
+- relation_f1: 0.0513
+- llm_element_status: success
+- llm_node_f1: 0.4865
+- llm_relation_f1: 0.2083
+- missing_nodes:
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - switch to state 127
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - switch to state 128
+  - shutdown
+  - issue 2.2s timeout warning
+  - enter shutdown state
+  - slow charging is inactive and bms self-check counter is 1
+- extra_nodes:
+  - system starts up
+  - high-voltage shutdown request flag is 2?
+  - switch to state 115
+  - condition?
+  - switch to state 126
+  - bms self-check counter shows 1?
+  - switch to state 130
+  - shut down
+- missing_relations:
+  - enter power-up mode -> high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0 -> switch to state 127 [yes]
+  - switch to state 127 -> slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1 -> switch to state 128 [yes]
+  - switch to state 128 -> shutdown
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1 -> slow charging is inactive [no]
+  - slow charging is inactive -> issue 2.2s timeout warning [yes]
+  - issue 2.2s timeout warning -> switch to state 128
+- input_excerpt:
+  After the system starts up, if slow charging is active, we enter power-up mode. Then:  1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:    a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.    b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.    c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with 
+- generated_excerpt:
+  @startuml start :System starts up; if (Slow charging is active?) then (yes)   :Enter power-up mode;   if (High-voltage shutdown request flag is 2?) then (yes)     :Switch to state 115;     if (Condition?) then (Flag drops to 0 with CP duty cycle at 85%)       :Switch to state 126;       if (BMS self-check counter shows 1?) then (yes)         :Switch to state 130;       endif       if (Slow charging becomes inactive?) then (yes)         :Shut down;         end       endif     elseif (Flag drops to 0 with CP duty cycle at 85%)       :Switch to state 126;       if (Battery pre-heating is required?) then (yes)         :Switch to state 130;       endif       if (Slow charging becomes inactive?) t
+### pure-0006
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2000
+- relation_f1: 0.1818
+- llm_element_status: success
+- llm_node_f1: 0.2857
+- llm_relation_f1: 0.1250
+- missing_nodes:
+  - system restoration
+  - black start use
+  - simulator available?
+  - conduct simulations
+  - system shutdowns
+- extra_nodes:
+  - train real-time grid operators annually on system restoration
+  - conduct simulations of system shutdowns when a simulator becomes available
+  - conduct simulations of restoration when a simulator becomes available
+- missing_relations:
+  - train real-time grid operators annually -> black start use [fork]
+  - system restoration -> simulator available? [merge]
+  - black start use -> simulator available? [merge]
+  - simulator available? -> conduct simulations [yes]
+  - conduct simulations -> system shutdowns [fork]
+  - conduct simulations -> system restoration [fork]
+  - system shutdowns -> simulator available? [merge]
+- input_excerpt:
+  [Training Steps]Step 1: Train Real-time Grid Operators annually on system restoration and Black Start use.Step 2: Conduct simulations of system shutdowns and restoration when a simulator becomes available.
+- generated_excerpt:
+  @startuml start :Train Real-time Grid Operators annually on system restoration; :Train Real-time Grid Operators annually on Black Start use; :Conduct simulations of system shutdowns when a simulator becomes available; :Conduct simulations of restoration when a simulator becomes available; stop @enduml
+### pure-0023
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3750
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.8000
+- llm_relation_f1: 0.0769
+- missing_nodes:
+  - receive through track-to-train transmission
+  - movement authority
+  - all other necessary information
+  - trainborne equipment active?
+  - remain in full supervision
+  - exit full supervision
+- extra_nodes:
+  - receive movement authority through track-to-train transmission
+  - receive all other necessary information through track-to-train transmission
+  - condition
+  - trainborne equipment is not active any longer
+- missing_relations:
+  - receive through track-to-train transmission -> movement authority [fork]
+  - receive through track-to-train transmission -> all other necessary information [fork]
+  - movement authority -> transfer to full supervision automatically [merge]
+  - all other necessary information -> transfer to full supervision automatically [merge]
+  - transfer to full supervision automatically -> trainborne equipment active?
+  - trainborne equipment active? -> remain in full supervision [yes]
+  - trainborne equipment active? -> exit full supervision [no]
+  - remain in full supervision -> shunting is selected?
+- input_excerpt:
+  Transferring to Full Supervision shall occur automatically when a movement authority and all other necessary information is received through track-to-train transmission. The trainborne equipment shall remain in Full Supervision until the trainborne equipment is not active any longer, when Shunting is selected, or when Partial Supervision information is received.
+- generated_excerpt:
+  @startuml start :Receive movement authority through track-to-train transmission; :Receive all other necessary information through track-to-train transmission; :Transfer to Full Supervision automatically; switch (Condition) case (Trainborne equipment is not active any longer) case (Shunting is selected) case (Partial Supervision information is received) endswitch stop @enduml
+### pure-0066
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3846
+- relation_f1: 0.2759
+- llm_element_status: success
+- llm_node_f1: 0.8000
+- llm_relation_f1: 0.3429
+- missing_nodes:
+  - open keepass
+  - select to add an entry
+  - leave all fields empty?
+  - fill 1-9 fields as needed
+  - selection
+  - new entry is added
+- extra_nodes:
+  - user opens keepass
+  - user selects to add an entry
+  - user action?
+  - user fills in the form as many fields as he wants from 1 to 9
+  - form details?
+  - user leaves all fields empty
+  - user selects ok
+  - the new entry is added in the selected group
+- missing_relations:
+  - select to add an entry -> leave all fields empty?
+  - leave all fields empty? -> fill 1-9 fields as needed [no]
+  - fill 1-9 fields as needed -> fills in password field?
+  - fills in password field? -> selection [no]
+  - selection -> new entry is added [case ok]
+  - selection -> help file/url field features/autotype is opened [case help]
+  - selection -> main window opens [case cancel]
+  - new entry is added -> leave all fields empty? [merge]
+- input_excerpt:
+  1. User opens KeePass and selects to add an entry 2. User fills in the form, as many fields as he wants, from 1 to 9 3. User selects OK 5. The new entry is added in the selected group 3.10.2.2 Alternative Data Flows 3.10.2.2.1 Alternative Data Flow 1 2a. User fills in the password field 2b. The repeat password field is not identical with the password field 2c. A message appears “the repeated password must be identical with the password 3.10.2.2.2 Alternative Data Flow 2 2a. User leaves all fields empty 3.10.2.2.3 Alternative Data Flow 3 3. User selects help 4. The help file or URL field features or Autotype is opened 3.10.2.2.4 Alternative Data Flow 4 3. User selects cancel 4. The main windo
+- generated_excerpt:
+  @startuml start :User opens KeePass; :User selects to add an entry; if (User action?) then (Fills in the form)   :User fills in the form, as many fields as he wants, from 1 to 9;   if (Form details?) then (Fills in the password field)     :User fills in the password field;     :The repeat password field is not identical with the password field;     :A message appears "the repeated password must be identical with the password";   elseif (Leaves all fields empty) then     :User leaves all fields empty;   endif   :User selects OK;   :The new entry is added in the selected group; elseif (Selects help) then (Selects help)   :User selects help;   :The help file or URL field features or Autotype is
+### lmc-0033
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4000
+- relation_f1: 0.1333
+- llm_element_status: success
+- llm_node_f1: 0.5263
+- llm_relation_f1: 0.3636
+- missing_nodes:
+  - in nlguidance
+  - transient is required to maintain counter clockwise loiter?
+  - change with t sample period > (quantity + velocity) * t?
+- extra_nodes:
+  - output transient behavior to maintain a counter clockwise loiter
+  - output aim point without appreciable transient behavior
+  - is transient behavior appreciable?
+  - change in magnitude of output over one frame of execution with t sample period
+  - calculate combined velocity of target plus velocity of vehicle multiplied by t
+  - change in magnitude does not exceed combined velocity multiplied by t
+- missing_relations:
+  - in nlguidance -> output consistent aim point with static target
+  - output consistent aim point with static target -> transient is required to maintain counter clockwise loiter?
+  - transient is required to maintain counter clockwise loiter? -> aim point switching [yes]
+  - transient is required to maintain counter clockwise loiter? -> change with t sample period > (quantity + velocity) * t? [no]
+  - change with t sample period > (quantity + velocity) * t? -> erratic changes in aim point command [yes]
+  - change with t sample period > (quantity + velocity) * t? -> output consistent aim point with static target [no]
+- input_excerpt:
+  6.	NLGuidance shall output consistent aim point with a static target without appreciable transient behavior in the command generation other than aim point switching where a transient is required to maintain a counter clockwise loiter (ref requirement 3).  Appreciable transient behavior is defined as erratic changes in the aim point command, beyond the following specific tolerance: a.	The change in the magnitude of the output over one frame of execution with T sample period shall not exceed the quantity of the combined velocity of the target plus the velocity of the vehicle multiplied by T.
+- generated_excerpt:
+  @startuml start :Output consistent aim point with a static target; if (Is aim point switching occurring?) then (yes)     :Output transient behavior to maintain a counter clockwise loiter; else (no)     :Output aim point without appreciable transient behavior;     if (Is transient behavior appreciable?) then (yes)         :Erratic changes in aim point command exceed tolerance;         stop     else (no)         :Change in magnitude of output over one frame of execution with T sample period;         :Calculate combined velocity of target plus velocity of vehicle multiplied by T;         :Change in magnitude does not exceed combined velocity multiplied by T;     endif endif stop @enduml
+### bp-0021
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4000
+- relation_f1: 0.1818
+- llm_element_status: success
+- llm_node_f1: 0.8000
+- llm_relation_f1: 0.7027
+- missing_nodes:
+  - click new job
+  - the list of jobs is displayed
+  - cick create
+  - information is displayed
+  - name
+  - keywords
+  - description
+  - modification?
+- extra_nodes:
+  - the list of jobs in the promotionjob folder is displayed
+  - the name of the job is displayed
+  - the keywords of the job are displayed
+  - the description of the job is displayed
+  - modify these fields required?
+  - modify the name keywords and description fields
+  - in the save job in field browse and select the folder in which you want to save the job
+- missing_relations:
+  - log in lifecycle manager tool -> go to promotion jobs home page
+  - click new job -> click the copy an existing job option
+  - click the copy an existing job option -> the list of jobs is displayed
+  - the list of jobs is displayed -> select a job from list
+  - select a job from list -> cick create
+  - cick create -> information is displayed
+  - information is displayed -> name [fork]
+  - information is displayed -> keywords [fork]
+- input_excerpt:
+  21.	create a new job by copying an existing job.To create a new job by copying an existing job, complete the following steps:1. Log into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, click New Job.3. Click the Copy an Existing Job option. The list of jobs in the PromotionJob folder is displayed4. Select a job from the job list, and click Create. The name, keywords, and description of the job are displayed. You can modify these fields, if required. However, you cannot change the source system.5. In the Save Job in field, browse and select the folder in which you want to save the job, and click Create.A new job is created.
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :In the "Promotion Jobs" home page, click New Job; :Click the Copy an Existing Job option; :The list of jobs in the PromotionJob folder is displayed; :Select a job from the job list; :click Create; :The name of the job is displayed; :The keywords of the job are displayed; :The description of the job is displayed; if (Modify these fields required?) then (yes)   :Modify the name, keywords, and description fields; else (no) endif; :In the Save Job in field, browse and select the folder in which you want to save the job; :click Create; :A new job is created; @enduml
+### bp-0026
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4242
+- relation_f1: 0.3636
+- llm_element_status: success
+- llm_node_f1: 0.6667
+- llm_relation_f1: 0.4286
+- missing_nodes:
+  - open the promote window
+  - click mappings
+  - edited in source system?
+  - edited is displayed
+  - created using universes?
+  - cannot be mapped
+  - use connections mappings
+  - proceed with mapping
+- extra_nodes:
+  - click mappings in the promote window
+  - the tab displays the list of properties and their values
+  - the crystal report mappings tab appears
+  - requirement?
+  - click save
+  - click promote
+- missing_relations:
+  - open the promote window -> click mappings
+  - edit crystal report properties tab appears -> modify appropriate fields
+  - click apply -> edited in source system?
+  - edited in source system? -> edited is displayed [yes]
+  - edited in source system? -> created using universes? [no]
+  - edited is displayed -> created using universes? [merge]
+  - created using universes? -> cannot be mapped [yes]
+  - cannot be mapped -> use connections mappings
+- input_excerpt:
+  26.	modify the properties of a Crystal report1. In the "Promote" window, click Mappings.2. Click Crystal Report Mappings.The list of Crystal reports in the source system is displayed.3. Select the required Crystal report, and click Edit Crystal Report Properties. The "Edit Crystal Report Properties" tab appears, as shown in the following figure: This tab displays the list of properties and their values.4. Modify the appropriate fields, and click Apply. The Crystal Report Mappings tab appears.Note:• If you edit a Crystal report in the source system, the following message is displayed beside the Crystal report: edited• A Crystal Report created using Universes cannot be mapped in the Crystal Re
+- generated_excerpt:
+  @startuml start :Click Mappings in the "Promote" window; :Click Crystal Report Mappings; :The list of Crystal reports in the source system is displayed; :Select the required Crystal report; :Click Edit Crystal Report Properties; :The "Edit Crystal Report Properties" tab appears; :The tab displays the list of properties and their values; :Modify the appropriate fields; :Click Apply; :The Crystal Report Mappings tab appears; if (Requirement?) then (Save)   :Click Save; elseif (Requirement?) then (Promote)   :Click Promote; endif stop @enduml
+### bp-0019
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4324
+- relation_f1: 0.1905
+- llm_element_status: success
+- llm_node_f1: 0.9565
+- llm_relation_f1: 0.4000
+- missing_nodes:
+  - click new job
+  - enter information
+  - enter name
+  - enter description
+  - enter keywords
+  - go to save job field
+  - browse and select folder
+  - open drop-downlists
+- extra_nodes:
+  - enter the name for the job in the appropriate field
+  - enter the description for the job in the appropriate field
+  - enter the keywords for the job in the appropriate field
+  - in the save job in field browse and select the folder in which you want to save the job
+  - select the source system from the drop-down list
+  - select the destination system from the drop-down list
+  - is the name of the system displayed in the drop-down list?
+  - click the login to a new cms option
+- missing_relations:
+  - log in lifecycle manager tool -> go to promotion jobs home page
+  - click new job -> new job window appears
+  - new job window appears -> enter information
+  - enter information -> enter name [fork]
+  - enter information -> enter description [fork]
+  - enter information -> enter keywords [fork]
+  - enter name -> go to save job field [merge]
+  - enter description -> go to save job field [merge]
+- input_excerpt:
+  19.	create a new job by using the LifeCycle Manager tool1. Log into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, click New Job. The "New Job"window appears .3. Enter the name, description, and keywords for the job in the appropriatefields.4. In the Save Job in field, browse and select the folder in which you wantto save the job.5. Select the source system and the destination system from the drop-downlists.If the name of the system is not displayed in the drop-down list, click theLogin to a new CMS option. A new window is launched. Enter the nameof the system along with the user name and password.6. Click Create.
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :In the "Promotion Jobs" home page, click New Job; :The "New Job" window appears; :Enter the name for the job in the appropriate field; :Enter the description for the job in the appropriate field; :Enter the keywords for the job in the appropriate field; :In the Save Job in field, browse and select the folder in which you want to save the job; :Select the source system from the drop-down list; :Select the destination system from the drop-down list; if (Is the name of the system displayed in the drop-down list?) then (No)   :Click the Login to a new CMS option;   :A new window is launched;   :Enter the name of the system;   :Enter the user
+### pure-0058
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4444
+- relation_f1: 0.4138
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 0.9189
+- missing_nodes:
+  - open keepass
+  - select open->database
+  - navigate through folders
+  - select database
+  - folder is suitable?
+  - file not found appears
+  - select another folder
+  - password is right?
+- extra_nodes:
+  - user opens keepass and select open->database
+  - user navigates through his folders
+  - user selects a database
+  - folder suitable for database?
+  - a message file not found appears
+  - user selects another folder
+  - master password is correct?
+- missing_relations:
+  - open keepass -> select open->database
+  - select open->database -> navigate through folders
+  - navigate through folders -> select database
+  - folder is suitable? -> file not found appears [no]
+  - file not found appears -> select another folder
+  - select another folder -> navigate through folders [loop]
+  - folder is suitable? -> choose cancel [yes]
+  - exit from keepass -> type master password
+- input_excerpt:
+  1. User opens KeePass and select Open->Database 2. User navigates through his folders 3. User selects a database 4. User types Master Password 5. The main database window opens 3.2.2.2.1 Alternative Data Flow 1 3a. User selects a type of folder non suitable for database 3b. A message “file not found” appears 3c. User selects another folder 3.2.2.2.2 Alternative Data Flow 2 4a. Master Password is wrong 4b. A message “invalid/wrong key” appears 4c. User types another master key 3.2.2.2.3 Alternative Data Flow 3 3. User chooses cancel 4. Exit from KeePass
+- generated_excerpt:
+  @startuml start :User opens KeePass and select Open->Database; :User navigates through his folders; if (User chooses cancel?) then (yes)   :Exit from KeePass;   stop else (no)   :User selects a database;   if (Folder suitable for database?) then (no)     :A message "file not found" appears;     :User selects another folder;   else (yes)     :User types Master Password;     if (Master Password is correct?) then (no)       :A message "invalid/wrong key" appears;       :User types another master key;     else (yes)       :The main database window opens;     endif   endif endif stop @enduml
+### bp-0023
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4946
+- relation_f1: 0.4320
+- llm_element_status: success
+- llm_node_f1: 0.0000
+- llm_relation_f1: 0.0000
+- missing_nodes:
+  - log in lifecycle manager tool
+  - selection method
+  - go to promotion jobs home page
+  - select the job want to promote
+  - right-click
+  - open source and destination systems drop-down lists
+  - select source and destination systems
+  - have logged into both source and destination systems
+- extra_nodes:
+  - select the job that you want to promote in the promotion jobs home page
+  - right-click the home page screen
+  - select the source system from the source system drop-down list
+  - select the destination system from the destination system drop-down list
+  - security settings required?
+  - security option
+  - select do not promote security
+  - select include application rights
+- missing_relations:
+  - log in lifecycle manager tool -> selection method
+  - selection method -> go to promotion jobs home page [case 1]
+  - selection method -> right-click [case 2]
+  - right-click -> click promote
+  - select the job want to promote -> open source and destination systems drop-down lists [merge]
+  - click promote -> open source and destination systems drop-down lists [merge]
+  - open source and destination systems drop-down lists -> select source and destination systems
+  - select source and destination systems -> have logged into both source and destination systems
+- input_excerpt:
+  23.	promote a jobLog into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, select the job that you want to promote. You can also right-click the home page screen, and click Promote.3. From the source and the destination systems drop-down lists, select the source and destination systems.Note:Ensure that you have logged into both the source and destination systems before you proceed with the promotion process.4. In the External Change Management ID field, enter the appropriate value, and click Save.5. Click Mappings. Click Edit Mappings if you want to create and validate mappings.6. Click Security Settings, if required. The following options are displayed:• Do not Promote Secur
+- generated_excerpt:
+  @startuml start :Select the job that you want to promote in the "Promotion Jobs" home page; fork   :Right-click the home page screen;   :Click Promote; end fork :Select the source system from the source system drop-down list; :Select the destination system from the destination system drop-down list; :Enter the appropriate value in the External Change Management ID field; :Click Save; :Click Mappings; if (Want to create and validate mappings?) then (Yes)   :Click Edit Mappings; else (No) endif if (Security Settings required?) then (Yes)   :Click Security Settings;   switch (Security option)   case (Do not Promote Security)     :Select Do not Promote Security;   case (Promote Security)     :Se
+### us-0169
+- dataset: us
+- failure_types: extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.5000
+- llm_relation_f1: 0.0000
+- extra_nodes:
+  - select enum value to update
+  - select target enum value
+- input_excerpt:
+  As a user, I want backend changes for bulk updating one enum value to another.
+- generated_excerpt:
+  @startuml start :Select enum value to update; :Select target enum value; :Perform bulk update of enum value to target; stop @enduml
+### lmc-0052
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.3333
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 1.0000
+- missing_nodes:
+  - not invertible
+  - invertible
+- extra_nodes:
+  - matrix is not invertible
+  - matrix is invertible
+- missing_relations:
+  - theta = +/- pi/2 radians? -> not invertible [yes]
+  - theta = +/- pi/2 radians? -> invertible [no]
+- input_excerpt:
+  4.	The Rotation Matrix, DCM321, shall be invertible with the exception of the case where theta = +/- pi/2 radians.
+- generated_excerpt:
+  @startuml start :Invert Rotation Matrix DCM321; if (theta = +/- pi/2 radians?) then (yes)   :Matrix is not invertible; else (no)   :Matrix is invertible; endif stop @enduml
+### us-0129
+- dataset: us
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5714
+- relation_f1: 0.2222
+- llm_element_status: success
+- llm_node_f1: 0.9091
+- llm_relation_f1: 0.3333
+- missing_nodes:
+  - execute workflow
+  - get the execution history
+- extra_nodes:
+  - record execution history in neurohub
+- missing_relations:
+  - execute workflow -> get the details of the workflow plan [fork]
+  - execute workflow -> get the execution history [fork]
+  - get the details of the workflow plan -> get the execution history [merge]
+  - get the execution history -> get results recorded in neurohub [merge]
+- input_excerpt:
+  As a researcher, I want to have the details of the workflow plan as well as the execution history and results recorded in Neurohub while executing a workflow
+- generated_excerpt:
+  @startuml start :View details of the workflow plan; fork :Record execution history in Neurohub; fork again :Record results in Neurohub; end fork stop @enduml
+### rac-0017
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6154
+- relation_f1: 0.5455
+- llm_element_status: success
+- llm_node_f1: 0.7333
+- llm_relation_f1: 0.5806
+- missing_nodes:
+  - shutdown
+  - after 10s
+- extra_nodes:
+  - system starts up
+  - condition
+  - transition to state 126
+  - shut down and exit
+  - move to state 126
+  - slow charging deactivates
+  - wait through 10-second timeout
+  - shift to state 126
+- missing_relations:
+  - enter state 82 -> bms counter=1 and battery pre-heating demand=3
+  - bms counter=1 and battery pre-heating demand=3 -> pre-charge failure occurs [no]
+  - pre-charge failure occurs -> slow charging is inactive [no]
+  - slow charging is inactive -> ac charging/discharging system fault [no]
+  - ac charging/discharging system fault -> after 10s [yes]
+  - after 10s -> switch to state 126
+- input_excerpt:
+  After the system starts up, if slow charging is active and the front MCU initialization is 0, it enters state 82. From there: - When the BMS counter reaches 1 with a battery pre-heating demand of 3, the system transitions to state 126. If slow charging becomes inactive afterward, it shuts down and exits. - If a pre-charge failure occurs, the system moves to state 126. Should slow charging be inactive at that point, it shuts down and exits. - If slow charging deactivates, the system switches to state 126 before shutting down and exiting. - For AC charging/discharging system faults, the system waits through a 10-second timeout before shifting to state 126. If slow charging is inactive followin
+- generated_excerpt:
+  @startuml start :System starts up; if (slow charging is active and front MCU initialization is 0?) then (yes)   :Enter state 82;   switch (condition)   case (BMS counter reaches 1 with battery pre-heating demand of 3)     :Transition to state 126;     if (slow charging becomes inactive?) then (yes)       :Shut down and exit;       stop     endif   case (pre-charge failure occurs)     :Move to state 126;     if (slow charging is inactive?) then (yes)       :Shut down and exit;       stop     endif   case (slow charging deactivates)     :Switch to state 126;     :Shut down and exit;     stop   case (AC charging/discharging system faults)     :Wait through 10-second timeout;     :Shift to state
+### rac-0020
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7407
+- relation_f1: 0.5301
+- llm_element_status: success
+- llm_node_f1: 0.8788
+- llm_relation_f1: 0.5474
+- missing_nodes:
+  - remote mode is disabled
+  - shutdown
+  - slow charging is inactive
+  - fast charging is inactive
+  - battery soc=20
+  - condition judgement
+  - ignition switch=0
+  - remote mode is enabled
+- extra_nodes:
+  - system starts up
+  - shut down and exit
+  - soc is 20?
+  - shut down and end
+- missing_relations:
+  - switch to remote power-up state -> remote mode is disabled
+  - switch to state 28 -> gw_trigger=0 and dcdc state=3
+  - remote mode enabled -> slow charging active [no]
+  - switch to slow charging power-up state -> slow charging is inactive
+  - slow charging active -> fast charging active [no]
+  - switch to fast charging power-up state -> fast charging is inactive
+  - fast charging active -> gw_trigger=2 [no]
+  - switch to state 10 -> battery soc=20
+- input_excerpt:
+  After the system starts up, the following steps occur:  First, for remote mode handling: if remote mode is enabled, switch to the remote power-up state; if disabled, switch to state 49. Then, if GW_trigger equals 2 and battery SOC is 20, switch to state 28; if GW_trigger equals 0 and DCDC state is 3, shut down and exit.  Next, for slow charging handling: if slow charging is active, switch to the slow charging power-up state; if inactive, switch to state 129. Then, if GW_trigger equals 2 and SOC is 20, switch to state 28; if GW_trigger equals 0 and DCDC state is 3, shut down and exit.  Then, for fast charging handling: if fast charging is active, switch to the fast charging power-up state; if
+- generated_excerpt:
+  @startuml start :System starts up; if (Remote mode enabled?) then (yes)   :Switch to remote power-up state; else (no)   :Switch to state 49; endif if (GW_trigger equals 2 and battery SOC is 20?) then (yes)   :Switch to state 28; else (no)   if (GW_trigger equals 0 and DCDC state is 3?) then (yes)     :Shut down and exit;     stop   else (no)   endif endif if (Slow charging active?) then (yes)   :Switch to slow charging power-up state; else (no)   :Switch to state 129; endif if (GW_trigger equals 2 and SOC is 20?) then (yes)   :Switch to state 28; else (no)   if (GW_trigger equals 0 and DCDC state is 3?) then (yes)     :Shut down and exit;     stop   else (no)   endif endif if (Fast charging 
+### rac-0019
+- dataset: rac
+- failure_types: extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7541
+- relation_f1: 0.6024
+- llm_element_status: success
+- llm_node_f1: 0.9189
+- llm_relation_f1: 0.6809
+- missing_nodes:
+  - remote mode is disabled
+  - slow charging is inactive
+  - fast charging is inactive
+  - switch to state 189
+- extra_nodes:
+  - system starts up
+  - move to state 49
+  - exit
+  - proceed to state 49
+  - slow charging is active and charging system command is 4?
+  - go to state 29
+  - transition to state 49
+  - move to state 110
+- missing_relations:
+  - fast charge vcc2=6 -> slow charging is active and charging system command=1 [no]
+  - charging system command=4 -> fast charge vcc2=6 [merge]
+  - switch to state 29 -> ignition switch=0 and vcc2=12
+  - ignition switch=0 and vcc2=12 -> charging system command=4 [merge]
+  - slow charging is active and charging system command=1 -> remote mode enabled [no]
+  - switch to state 110 -> charging system command=4
+  - charging system command=4 -> slow charging is active and charging system command=1 [merge]
+  - switch to state 29 -> ignition switch=0 and slow charging is inactive
+- input_excerpt:
+  After the system starts up, if the ignition switch is set to 2, transition to state 30. Then, under that condition: - If the ignition switch becomes 0, move to state 49 and exit. - If the fast charge Vcc2 is 6, observe the charging gun indicator. Should the charging system command be 4, switch to state 29. - If the ignition switch is 0 and Vcc2 is 12, proceed to state 49 and exit. - If slow charging is active and the charging system command is 1, transition to state 110. If the command is 4 instead, go to state 29. Also, if the ignition switch is 0 and slow charging is not active, shift to state 49 and exit.  If remote mode is enabled, switch to state 28. If it's disabled, transition to stat
+- generated_excerpt:
+  @startuml start :System starts up; if (Ignition switch is set to 2?) then (Yes)   :Transition to state 30;   if (Ignition switch becomes 0?) then (Yes)     :Move to state 49;     :Exit;   elseif (Fast charge Vcc2 is 6?) then (Yes)     :Observe the charging gun indicator;     if (Charging system command is 4?) then (Yes)       :Switch to state 29;     else (No)       stop     endif   elseif (Ignition switch is 0 and Vcc2 is 12?) then (Yes)     :Proceed to state 49;     :Exit;   elseif (Slow charging is active and charging system command is 1?) then (Yes)     :Transition to state 110;   elseif (Slow charging is active and charging system command is 4?) then (Yes)     :Go to state 29;   elseif 
+### lmc-0011
+- dataset: lmc
+- failure_types: extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.8571
+- relation_f1: 0.5000
+- llm_element_status: success
+- llm_node_f1: 0.9091
+- llm_relation_f1: 0.8571
+- extra_nodes:
+  - change state to transition
+- missing_relations:
+  - sensor data is good? -> autopilot change states from pullup to transition [yes]
+- input_excerpt:
+  7.	The autopilot shall change states from PULLUP to TRANSITION when the system is supported and sensor data is good.
+- generated_excerpt:
+  @startuml start :Autopilot state is PULLUP; if (System is supported?) then (yes)   if (Sensor data is good?) then (yes)     :Change state to TRANSITION;   else (no)   endif else (no) endif stop @enduml
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

@@ -1,0 +1,188 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "",
+    "knowledge": "",
+    "rule": ""
+  },
+  "failure_analysis": {
+    "summary": "The batch primarily fails due to a severe activity granularity mismatch and a lack of control-flow modeling. The prompt provides no guidance on how to decompose requirements into appropriately sized activities or how to map textual conditions, alternatives, and concurrent actions into PlantUML control-flow structures (if/switch/fork). Consequently, the model either over-compresses or over-decomposes actions and flattens conditional logic into linear sequences.",
+    "error_patterns": [
+      {
+        "name": "extra_activity",
+        "severity": "high",
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055"
+        ],
+        "problem": "The model hallucinates implementation details and over-decomposes high-level requirements into granular UI/system steps that are not present in the input text.",
+        "suggested_prompt_direction": "Instruct the model to strictly ground activities in the explicit statements of the requirement and avoid inferring unstated UI interactions or system internals.",
+        "target_sections": [
+          "rule",
+          "workflow"
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0010",
+          "pure-0046",
+          "pure-0078"
+        ],
+        "problem": "The model fails to break down compound actions into the discrete steps expected by the gold standard, often merging multiple distinct actions or omitting structural elements like decision/switch labels.",
+        "suggested_prompt_direction": "Guide the model to decompose compound sentences into concise, discrete activities and to explicitly represent structural nodes (like switch/case labels) as distinct activities.",
+        "target_sections": [
+          "workflow",
+          "rule"
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0010",
+          "bp-0028",
+          "pure-0046",
+          "pure-0078"
+        ],
+        "problem": "The model fails to identify conditional branches, mutually exclusive choices, and parallel executions, instead representing them as linear sequences or using incorrect control-flow constructs (e.g., if/else instead of switch/fork).",
+        "suggested_prompt_direction": "Provide explicit mapping rules from textual cues to PlantUML control-flow structures (e.g., 'if/then' to if/else, 'either/or' or distinct cases to switch, 'simultaneously' to fork) and require the model to reason about control flow before generating code.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "us-0098",
+          "pure-0046"
+        ],
+        "problem": "The model introduces spurious relations, such as adding loops or linearly sequencing actions that should be parallel or structurally nested under decision branches.",
+        "suggested_prompt_direction": "Emphasize strict adherence to the requirement's explicit sequencing and avoid adding assumed transitions or loops not supported by the text.",
+        "target_sections": [
+          "rule"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML into the prompt.",
+      "Do not add dataset-specific examples or memorized answers.",
+      "Do not attempt to fix syntax errors, as the compilation pass rate is already 100%."
+    ]
+  },
+  "error_localization": {
+    "summary": "The primary failures stem from a lack of procedural and structural guidance, as the workflow, knowledge, and rule sections are currently empty. The model lacks instructions on how to decompose requirements into activities and how to map textual conditions to PlantUML control-flow structures. The most impactful repair targets the workflow section to enforce extraction and control-flow reasoning, supported by the knowledge section for UML/PlantUML mappings.",
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "priority": "high",
+        "failure_patterns": [
+          "extra_activity",
+          "missing_activity",
+          "missing_or_wrong_relation"
+        ],
+        "section_problem": "The workflow section is empty, providing no step-by-step procedure for decomposing requirements into discrete activities or reasoning about control-flow before generating code.",
+        "edit_intent": "Introduce a mandatory generation procedure that first extracts and grounds discrete activities from the text, then explicitly reasons about control-flow (branches, parallelism) based on textual cues, and finally generates the PlantUML code.",
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055",
+          "bp-0010",
+          "pure-0046",
+          "pure-0078",
+          "bp-0028"
+        ]
+      },
+      {
+        "section": "knowledge",
+        "priority": "high",
+        "failure_patterns": [
+          "missing_or_wrong_relation"
+        ],
+        "section_problem": "The knowledge section is empty, leaving the model without reusable mappings from natural language control-flow cues to the correct PlantUML constructs (e.g., if/else, switch, fork).",
+        "edit_intent": "Provide explicit mapping rules from textual cues to PlantUML control-flow structures (e.g., 'if/then' to if/else, 'either/or' to switch, 'simultaneously' to fork) to prevent flattening or misrepresenting conditional and parallel logic.",
+        "evidence_case_ids": [
+          "bp-0010",
+          "bp-0028",
+          "pure-0046",
+          "pure-0078"
+        ]
+      },
+      {
+        "section": "rule",
+        "priority": "medium",
+        "failure_patterns": [
+          "extra_activity",
+          "extra_or_wrong_relation"
+        ],
+        "section_problem": "The rule section is empty, failing to constrain the model from hallucinating unstated implementation details or adding spurious relations and loops.",
+        "edit_intent": "Add concise hard constraints to strictly ground activities and relations in explicit requirement statements, prohibiting inferred UI steps, system internals, and unsupported transitions or loops.",
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055",
+          "pure-0046"
+        ]
+      }
+    ],
+    "recommended_edit_sections": [
+      "workflow",
+      "knowledge"
+    ],
+    "do_not_edit_sections": [
+      {
+        "section": "output",
+        "reason": "The syntax error rate is already 0%, indicating that the current output formatting and PlantUML-only constraints are sufficient and do not contribute to the observed structural and granularity failures."
+      },
+      {
+        "section": "agent task",
+        "reason": "The overall role and scope are correctly defined; the issue is a lack of operational 'how-to' guidance rather than a misdefined agent identity."
+      },
+      {
+        "section": "input",
+        "reason": "The input specification is adequate; the failure lies in processing and modeling the text, not in how the text is read or interpreted initially."
+      }
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge",
+      "rule"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

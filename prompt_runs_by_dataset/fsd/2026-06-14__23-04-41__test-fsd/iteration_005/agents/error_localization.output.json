@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process to constrain the model. This absence leads to hallucinated control flow and over-decomposition, as the model defaults to speculative system design instead of strictly extracting and mapping only the explicitly stated activities at their original level of abstraction."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks guidance on PlantUML structural features (like partitions/swimlanes) for representing actors and system boundaries, causing missing structural constructs. It also lacks semantic mapping rules to translate state-change requirements into appropriate conditional activity flows, leading to wrong diagram types for state requirements."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, failing to enforce strict constraints against inventing unstated control-flow logic (e.g., validation checks, error handling) and speculative sub-step decomposition. It also lacks a rule to enforce preserving the original requirement's level of abstraction."
+    }
+  ]
+}
+```

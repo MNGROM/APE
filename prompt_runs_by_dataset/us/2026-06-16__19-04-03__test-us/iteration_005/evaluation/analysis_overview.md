@@ -1,0 +1,40 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 15
+- syntax_pass_rate: 0.8667
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.5229
+- node_recall: 0.4673
+- node_f1: 0.4935
+- relation_precision: 0.4044
+- relation_recall: 0.3711
+- relation_f1: 0.3870
+- plantuml_compilation_pass_rate: 1.0000
+- llm_element_evaluated: 15.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.9115
+- llm_node_recall: 0.8295
+- llm_node_f1: 0.8591
+- llm_relation_precision: 0.6979
+- llm_relation_recall: 0.5954
+- llm_relation_f1: 0.6171
+
+## Failure Types
+- missing_activity: 15
+- extra_activity: 14
+- extra_or_wrong_relation: 14
+- missing_or_wrong_relation: 13
+- wrong_parallel: 5
+- wrong_loop: 4
+- syntax_error: 2
+
+## Representative Failure Cases
+- none
+
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

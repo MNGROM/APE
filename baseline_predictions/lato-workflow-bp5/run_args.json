@@ -1,0 +1,14 @@
+{
+  "datasets_dir": "prompt_datasets\\lato",
+  "test_dataset": "bp",
+  "max_test_cases": 5,
+  "test_sample_strategy": "prefix",
+  "sample_seed": 13,
+  "lato_repo": "..\\LATO",
+  "lato_config": "..\\LATO\\src\\utils\\args.yaml",
+  "lato_model": "deepseek",
+  "lato_examples_dir": "..\\LATO\\examples\\lato",
+  "datasets": {
+    "bp": 5
+  }
+}

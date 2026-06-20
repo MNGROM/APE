@@ -1,0 +1,112 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "",
+    "knowledge": ""
+  },
+  "failure_analysis": {
+    "summary": "The current prompt is entirely devoid of structural and semantic guidance, leading to three major batch-level failure patterns: 1) Severe activity granularity mismatch, where the model either concatenates multiple actions into single nodes or hallucinates/over-decomposes actions not present in the text; 2) Complete omission of PlantUML control flow constructs (fork, switch, if/else, partition), causing the model to flatten all logic into a single linear sequence; 3) Failure to faithfully extract activities from the text, instead inferring implied steps or merging actor names with actions.",
+    "error_patterns": [
+      {
+        "name": "activity_granularity_mismatch",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0007",
+          "us-0153",
+          "us-0216",
+          "pure-0010"
+        ],
+        "problem": "The model fails to decompose requirements into atomic activities. It frequently merges multiple sequential steps into a single node (e.g., combining 'Go to Workbench', 'Go to Modeling area', and 'Choose Info Provider' into one node) or over-decomposes a single user story into an exaggerated multi-step implementation (e.g., turning 'identify the number of whales' into 9 hallucinated steps).",
+        "suggested_prompt_direction": "Instruct the agent to decompose the requirement into fine-grained, atomic actions where each node represents exactly one distinct action or step. Explicitly warn against merging multiple sequential steps into one node and against hallucinating implementation details not stated in the input.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_control_flow_constructs",
+        "severity": "high",
+        "evidence_case_ids": [
+          "pure-0030",
+          "bp-0023",
+          "lmc-0011",
+          "lmc-0038"
+        ],
+        "problem": "The model outputs purely linear sequences and completely ignores PlantUML's structural constructs (fork/fork again/end fork for parallelism, switch/case for alternative paths, if/else for conditionals) even when the input text explicitly describes parallel items, alternative choices, or conditional logic.",
+        "suggested_prompt_direction": "Provide explicit rules and examples for mapping textual patterns to PlantUML control flow constructs. E.g., map 'and' or listed items to 'fork', map 'or' or 'alternatively' to 'switch', and map 'if/when' to 'if/else'.",
+        "target_sections": [
+          "knowledge",
+          "workflow"
+        ]
+      },
+      {
+        "name": "actor_action_conflation",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "pure-0010"
+        ],
+        "problem": "The model conflates the actor/system context with the action itself, merging them into a single activity node (e.g., 'Central Trading System: Give out the successful trade information') instead of separating the context into a partition and the action into the activity node.",
+        "suggested_prompt_direction": "Instruct the agent to separate actors, systems, or roles from the actions they perform. Guide it to use PlantUML 'partition' blocks for actors/systems and keep the activity nodes focused solely on the action verb and object.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "unfaithful_activity_generation",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "us-0153",
+          "us-0216",
+          "lmc-0011"
+        ],
+        "problem": "The model generates activities that are not explicitly stated in the input requirement but are inferred or hallucinated (e.g., 'Schedule regular reporting cycle', 'Upload audio file to Zooniverse', 'Remain in PULLUP'). It acts as an implementation generator rather than a faithful extractor of the given requirement.",
+        "suggested_prompt_direction": "Emphasize strict faithfulness to the input text. Instruct the agent to only create activity nodes for actions explicitly mentioned or directly and minimally implied by the requirement, without adding assumed preconditions, postconditions, or implementation steps.",
+        "target_sections": [
+          "agent task",
+          "workflow"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Syntax correctness or PlantUML compilation (already at 100% pass rate).",
+      "Adding unnecessary styling, titles, or skinparam directives not present in the ground truth."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

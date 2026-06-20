@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Add a step for identifying and modeling loops, and a step for handling termination conditions and early exits.",
+      "change_instruction": "Add a workflow step between the current Step 1 and Step 2 requiring the model to identify linguistic cues for repetition, retry, or corrective actions (e.g., 'retry', 're-enter', 'repeat until') and map them to `while` or `repeat` loop constructs. Also add a step requiring the model to explicitly identify and route termination conditions and early exits (e.g., 'exit', 'cancel', 'stop') to `stop` nodes, rather than leaving them disconnected or misrouted."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide heuristics for loop modeling and clarify the boundary between concurrent execution and grammatical lists.",
+      "change_instruction": "Add a concise rule explaining that linguistic cues of repetition or retry (e.g., 'retry', 're-enter', 'repeat until') must be modeled using `while` or `repeat` loops, not one-time sequential branches. Furthermore, qualify the existing concurrency rule by explicitly stating that grammatical lists of attributes or fields (e.g., 'enter name, address, and phone') must be modeled as sequential activities or a single activity, and that `fork`/`join` is strictly reserved for requirements using explicit concurrency cues (e.g., 'simultaneously', 'concurrently')."
+    },
+    {
+      "section": "rule",
+      "intent": "Resolve the contradiction causing over-decomposition and add a prohibition against dropping alternative flows.",
+      "change_instruction": "Revise the rule 'Preserve granular UI elements, data entry fields, and intermediate system states as distinct activity nodes; do not compress them into broad abstract activities' by adding the qualification: 'only when these elements are explicitly detailed as separate actions in the text; do not decompose a single stated action into multiple assumed sub-steps or add unmentioned decision nodes.' Additionally, add a new rule: 'Do not omit or oversimplify explicitly stated alternative flows, edge-case paths, or distinct behaviors; all requirement-specified options must be represented.'"
+    }
+  ]
+}

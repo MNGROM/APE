@@ -75,13 +75,13 @@ def extract_json_object(text: str) -> dict[str, Any] | None:
     return None
 
 
-def validate_prompt_edit_payload(payload: dict[str, Any], *, max_sections: int) -> tuple[bool, list[str]]:
+def validate_prompt_edit_payload(payload: dict[str, Any], *, max_sections: int | None) -> tuple[bool, list[str]]:
     errors: list[str] = []
     edits = payload.get("edits")
     if not isinstance(edits, list) or not edits:
         errors.append("Payload must contain a non-empty edits list")
         return False, errors
-    if len(edits) > max_sections:
+    if max_sections is not None and max_sections > 0 and len(edits) > max_sections:
         errors.append(f"At most {max_sections} sections may be modified")
 
     edited_sections: set[str] = set()
@@ -106,13 +106,71 @@ def validate_prompt_edit_payload(payload: dict[str, Any], *, max_sections: int) 
     return not errors, errors
 
 
-def validate_prompt_revision_plan(payload: dict[str, Any], *, max_sections: int) -> tuple[bool, list[str]]:
+def normalize_prompt_revision_plan(payload: dict[str, Any]) -> dict[str, Any]:
+    revision_plan = payload.get("revision_plan")
+    if not isinstance(revision_plan, list):
+        return payload
+
+    normalized_plan: list[dict[str, Any]] = []
+    section_to_item: dict[str, dict[str, Any]] = {}
+
+    for item in revision_plan:
+        if not isinstance(item, dict):
+            normalized_plan.append(item)
+            continue
+
+        section = str(item.get("section") or "").strip().lower()
+        if section not in SECTION_NAMES:
+            normalized_plan.append(item)
+            continue
+
+        intent = item.get("intent")
+        change_instruction = item.get("change_instruction")
+        intent_text = str(intent).strip() if isinstance(intent, str) else ""
+        instruction_text = str(change_instruction).strip() if isinstance(change_instruction, str) else ""
+
+        if section not in section_to_item:
+            merged_item = dict(item)
+            merged_item["section"] = section
+            section_to_item[section] = merged_item
+            normalized_plan.append(merged_item)
+            continue
+
+        merged_item = section_to_item[section]
+        existing_intent = str(merged_item.get("intent") or "").strip()
+        existing_instruction = str(merged_item.get("change_instruction") or "").strip()
+
+        if intent_text:
+            merged_item["intent"] = _merge_revision_texts(existing_intent, intent_text, label="Combined intent")
+        if instruction_text:
+            merged_item["change_instruction"] = _merge_revision_texts(
+                existing_instruction,
+                instruction_text,
+                label="Combine these requested changes into one coherent section revision",
+            )
+
+    normalized_payload = dict(payload)
+    normalized_payload["revision_plan"] = normalized_plan
+    return normalized_payload
+
+
+def _merge_revision_texts(existing: str, new: str, *, label: str) -> str:
+    if not existing:
+        return new
+    if new in existing:
+        return existing
+    if existing.startswith(label + ":"):
+        return f"{existing}; {new}"
+    return f"{label}: {existing}; {new}"
+
+
+def validate_prompt_revision_plan(payload: dict[str, Any], *, max_sections: int | None) -> tuple[bool, list[str]]:
     errors: list[str] = []
     revision_plan = payload.get("revision_plan")
     if not isinstance(revision_plan, list) or not revision_plan:
         errors.append("Payload must contain a non-empty revision_plan list")
         return False, errors
-    if len(revision_plan) > max_sections:
+    if max_sections is not None and max_sections > 0 and len(revision_plan) > max_sections:
         errors.append(f"At most {max_sections} sections may be revised")
 
     planned_sections: set[str] = set()
@@ -169,7 +227,7 @@ def validate_prompt_candidate(candidate: str) -> tuple[bool, list[str]]:
     return not errors, errors
 
 
-def apply_prompt_edit_payload(prompt: str, payload: dict[str, Any], *, max_sections: int) -> tuple[str | None, list[str]]:
+def apply_prompt_edit_payload(prompt: str, payload: dict[str, Any], *, max_sections: int | None) -> tuple[str | None, list[str]]:
     ok, errors = validate_prompt_edit_payload(payload, max_sections=max_sections)
     if not ok:
         return None, errors

@@ -1,0 +1,51 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Prevent over-literal translation of conditions and UI states into activity nodes.",
+      "change_instruction": "Modify Step 1 to instruct the model to first abstract conditional checks, conversational phrases, and descriptive UI states into control flow logic (e.g., branch guards) rather than mapping them as individual activity nodes. Add a sub-step explicitly requiring the model to distinguish actual user/system actions from descriptive conditions before node creation."
+    },
+    {
+      "section": "workflow",
+      "intent": "Recognize structural cues (lists of items/attributes) as parallel actions.",
+      "change_instruction": "Update Step 3 to explicitly instruct the model to scan for structural cues—such as comma-separated lists of attributes, items, or simultaneous displays/updates—and map them to `fork`/`end fork` structures, rather than defaulting to sequential serialization."
+    },
+    {
+      "section": "workflow",
+      "intent": "Capture implicit overarching actions and cross-references.",
+      "change_instruction": "Add a new step after Step 1 requiring the model to identify implicit overarching actions (e.g., a leading verb applying to a subsequent list) and cross-references (e.g., 'see X') as distinct activity nodes before constructing the control flow."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Expand fork/end fork triggers to include structural cues.",
+      "change_instruction": "Revise Rule 1 to include structural cues (comma-separated or bulleted lists of attributes, items, or simultaneous displays/updates) alongside positive linguistic cues as triggers for `fork`/`end fork` blocks."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Guide mapping of discrete mutually exclusive states to switch/case.",
+      "change_instruction": "Expand Rule 2 to explicitly mention that discrete mutually exclusive states (e.g., 'select/deselect', 'on/off') must be mapped to `switch`/`case` structures."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Clarify that implicit conditions should be branch guards, not activity nodes.",
+      "change_instruction": "Update Rule 3 to clarify that implicit conditions (e.g., 'if needed', 'optional') must be represented as guard conditions on branching constructs (`if`/`else`), and explicitly forbid representing them as separate activity nodes."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Add guidance for inferring implicit overarching actions and cross-references.",
+      "change_instruction": "Add a new rule stating that implicit overarching actions (such as a leading verb applying to a list of items) and cross-references (e.g., 'see X') must be inferred and represented as distinct activity nodes."
+    },
+    {
+      "section": "rule",
+      "intent": "Forbid turning conditional checks and descriptive UI states into activity nodes.",
+      "change_instruction": "Add a new rule explicitly prohibiting the creation of activity nodes for conditional checks, conversational phrases, or descriptive UI states (e.g., 'Is modification required?', 'The list is displayed') that should instead be abstracted as branch guards or control flow logic."
+    },
+    {
+      "section": "rule",
+      "intent": "Distinguish optional actions from repeated/looping actions.",
+      "change_instruction": "Update Rule 4 to explicitly state that optional or conditional steps (e.g., 'optionally', 'if needed') must be modeled using `if`/`else` branches, and strictly forbid representing them as `repeat`/`while` loops."
+    }
+  ]
+}
+```

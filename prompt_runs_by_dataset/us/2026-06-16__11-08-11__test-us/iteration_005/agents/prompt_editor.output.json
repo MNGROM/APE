@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Establish a structured analysis process to identify structural patterns before code generation.",
+      "change_instruction": "Add a multi-step workflow requiring the model to: (1) Identify explicit repetition cues (e.g., 'repeat steps X-Y') and map them to loop boundaries; (2) Identify lists of items/attributes within a single step and flag them for parallel decomposition; (3) Identify mutually exclusive choices vs. optional behaviors vs. concurrent actions; (4) Abstract the identified actions into concise, imperative verb phrases; (5) Generate the PlantUML code based on this structural analysis."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide explicit mapping rules from natural language patterns to UML control flow constructs and abstraction techniques.",
+      "change_instruction": "Add knowledge entries that define: (1) Abstraction: Activity nodes must use concise, imperative verb phrases (e.g., 'Evaluate') rather than copying verbatim text. (2) Concurrency: Lists of items or attributes evaluated/processed together map to `fork`/`fork again`/`end fork` blocks. (3) Mutually exclusive alternatives map to `switch`/`case` or `if`/`else` constructs, NOT `fork`. (4) Optional behaviors indicated by modal verbs ('can', 'optionally') map to `if`/`else` conditional branches, NOT sequential or parallel steps. (5) Explicit repetition instructions map to `repeat`/`repeat while` loops at the correct nesting scope."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce strict constraints against common structural and transcription errors.",
+      "change_instruction": "Add rules that strictly prohibit: (1) Verbatim copying of requirement sentences into activity nodes; nodes must be abstracted. (2) Using `fork` for mutually exclusive choices or optional actions. (3) Using sequential flows or nested `if` blocks where a `switch`/`case` is appropriate for distinct alternatives. (4) Flattening explicit repetition instructions into single-pass sequential steps; they must be modeled as `repeat` loops. (5) Treating compound lists of attributes as single activity nodes; they must be decomposed into parallel branches."
+    }
+  ]
+}
+```

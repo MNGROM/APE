@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a structured process to extract activities and control-flow accurately from the requirement.",
+      "change_instruction": "Add a multi-step workflow requiring the model to: 1) Extract explicit activities/actions from the requirement at a 1-to-1 sentence/clause level without summarizing; 2) Identify and label control-flow structures (concurrency, alternatives, conditionals) explicitly mentioned in the text; 3) Map the extracted activities and identified structures to PlantUML constructs; 4) Assemble the final diagram strictly based on the mapped components, adding no unstated steps."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Equip the model with PlantUML syntax for parallelism and alternatives, and textual cues for recognizing them.",
+      "change_instruction": "Add a knowledge section detailing: 1) PlantUML syntax for concurrency (`fork`/`end fork`, `fork again`) and alternatives (`switch`/`endswitch`, `case`/`endswitch`, `if`/`elseif`/`else`/`endif`); 2) Textual cues that indicate parallelism (e.g., 'concurrently', 'simultaneously', 'at the same time', 'separate task') and alternatives (e.g., 'if...else', 'in case of', 'alternatively', mutually exclusive options)."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent hallucinated control flow and granularity mismatches by enforcing strict adherence to the requirement.",
+      "change_instruction": "Add a rule section containing: 1) A strict faithfulness rule: 'Do not infer, add, or fabricate any control-flow logic, corrective actions, or operational steps not explicitly stated in the requirement'; 2) A granularity rule: 'Maintain a 1-to-1 mapping between explicit actions in the requirement and activity nodes—do not compress multiple steps into one, nor decompose a single step into sub-actions'; 3) A completeness rule: 'Preserve all alternative paths and parallel branches exactly as described, without collapsing them into linear sequences or simplified blocks.'"
+    }
+  ]
+}
+```

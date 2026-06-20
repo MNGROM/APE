@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction predominantly introduces false_positive_parallel by using fork/join for non-concurrent lists, attributes, options, or sequential steps. For example, it models sequential validation checks (ID, DLC, CRC), attribute lists, or UI options as concurrent forks, whereas the ground truth uses fork/join only for genuinely simultaneous tasks (e.g., concurrent RTOS tasks).",
+      "possible_causes": [
+        "The prompt lacks clear guidance on distinguishing true concurrency (simultaneous execution, e.g., 'concurrently', 'parallel') from mere enumeration or sequential lists of items/attributes.",
+        "The generator defaults to fork/join as a visual grouping mechanism for related items rather than strictly reserving it for concurrent control flows."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction frequently omits explicit activities, states, or system behaviors described in the requirements, collapsing multiple actions into broad or abstract nodes.",
+      "possible_causes": [
+        "The prompt does not sufficiently enforce that every explicit action or state transition in the requirement must be preserved as a distinct activity node.",
+        "The generator tends to summarize or abstract detailed steps (e.g., specific CAN frame checks, individual state transitions) into single high-level activities, losing granularity."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction adds unsupported activities, often by decomposing single requirement statements into multiple inferred sub-steps or by inventing decision logic that isn't explicitly stated.",
+      "possible_causes": [
+        "The prompt allows too much interpretive freedom, causing the generator to hallucinate sub-actions or break down atomic requirements into unstated procedural steps.",
+        "For constraint-based requirements, the generator incorrectly models enforcement or remediation logic (e.g., clamping values) that is not specified in the text."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction omits or misrepresents control-flow relations, particularly failing to capture conditional nesting, switch/case structures, and proper loop boundaries as specified.",
+      "possible_causes": [
+        "The prompt provides insufficient guidance on mapping complex conditional logic (e.g., nested if-else, switch-case) from natural language to PlantUML control structures.",
+        "The generator struggles to align the scope of loops and conditions with the requirement text, leading to incorrect branching or missing alternative flows."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction introduces unsupported or incorrect control-flow relations, such as forcing sequential dependencies between independent conditions or adding unnecessary loops and branches.",
+      "possible_causes": [
+        "The generator imposes a rigid top-to-bottom sequential execution model even when the requirement describes independent or parallel conditions.",
+        "Misinterpretation of requirement phrasing leads to adding structural connections (e.g., repeat loops, extra if-guards) where simple linear flows or switches are correct."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction mishandles repeated, periodic, retry, or loop behavior, often by misplacing loop boundaries, using incorrect loop types (repeat vs. while), or omitting required loops.",
+      "possible_causes": [
+        "The prompt lacks specific instructions on how to map various forms of iterative behavior (e.g., 'every 30 seconds', 'exponential backoff', 'continuously scans') to the correct PlantUML loop constructs.",
+        "The generator fails to identify the correct start and end conditions for loops, resulting in loops that are either too broad or too narrow compared to the ground truth."
+      ]
+    }
+  ]
+}
+```

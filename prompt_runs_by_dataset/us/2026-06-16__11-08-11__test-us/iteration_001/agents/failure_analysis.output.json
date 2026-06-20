@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "missing_activity",
+      "problem": "The prediction frequently omits explicit behaviors, actions, or states described in the requirements and present in the ground truth.",
+      "possible_causes": [
+        "The prompt may not strongly enforce that every explicit action in the requirement must be mapped to a distinct activity node.",
+        "The generator tends to summarize or compress multiple steps into single nodes, losing granular behaviors (e.g., omitting 'Govern PWM fans' or 'Enter name and description')."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces activities, states, or processing steps that are not stated in or implied by the requirements.",
+      "possible_causes": [
+        "The prompt lacks constraints preventing the model from hallucinating inferred steps or adding 'helpful' intermediate logic (e.g., adding 'Reject output / Enforce constraint' for a purely declarative rule).",
+        "The model defaults to a standard procedural decomposition rather than strictly adhering to the provided text."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "Control-flow relations between activities are omitted or incorrectly structured compared to the ground truth.",
+      "possible_causes": [
+        "The prompt fails to guide the model on how to map complex natural language connectives (e.g., 'if... otherwise', 'while', 'subsequently') into precise PlantUML control flow (e.g., if/else, while loops).",
+        "The model struggles to maintain the correct nesting and scope of conditional branches, leading to flattened or misplaced relationships."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds unsupported or incorrect control-flow transitions between nodes.",
+      "possible_causes": [
+        "The model forces sequential flow where the requirement implies conditional or alternative paths (e.g., treating alternative UI interactions as sequential steps).",
+        "Lack of explicit instructions to validate every transition against the source text, causing the model to 'wire' nodes together based on assumed procedural logic."
+      ]
+    },
+    {
+      "name": "wrong_parallel",
+      "problem": "Concurrent or parallel behaviors are incorrectly modeled, often misplacing the fork/end fork boundaries or failing to represent concurrency.",
+      "possible_causes": [
+        "The prompt does not provide clear heuristics for identifying the exact scope and boundaries of parallel blocks from textual requirements.",
+        "The model misinterprets sequential or conditionally related tasks as concurrent, or groups unrelated concurrent tasks under the wrong fork block."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "Repeated, periodic, or retry behaviors are incorrectly represented in the diagram structure.",
+      "possible_causes": [
+        "The prompt lacks specific guidance on mapping iterative phrases (e.g., 'periodic loop', 'exponential backoff', 'retry') to PlantUML loop constructs (repeat, while).",
+        "The model misplaces loop boundaries or represents asynchronous/periodic background processes as standard inline loops rather than separate concurrent or nested flows."
+      ]
+    }
+  ]
+}
+```

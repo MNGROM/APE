@@ -1,0 +1,124 @@
+```json
+{
+  "summary": "The batch primarily fails due to severe activity granularity mismatch and poor control-flow modeling. The model tends to merge multiple explicit actions into single, coarse-grained activities (missing activities) while inventing unstated actions or using non-standard phrasing (extra activities). It also struggles significantly with control-flow, frequently misapplying switch/case for conditional logic, omitting necessary decision nodes, and failing to decompose sequential steps, leading to missing or wrong relations.",
+  "error_patterns": [
+    {
+      "name": "activity_granularity_mismatch",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0014",
+        "bp-0007",
+        "bp-0023"
+      ],
+      "problem": "The model merges multiple explicitly stated sequential actions into a single activity node (e.g., combining a multi-step menu navigation or multi-field form entry into one line), causing both missing activities and missing relations.",
+      "suggested_prompt_direction": "Strengthen the rule that every distinct action verb or step explicitly listed in the requirement must map to its own activity node, and prohibit collapsing sequential steps into a single summary node.",
+      "target_sections": [
+        "rule",
+        "workflow"
+      ]
+    },
+    {
+      "name": "missing_decision_nodes",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0011",
+        "lmc-0038",
+        "lmc-0056",
+        "rac-0012"
+      ],
+      "problem": "The model omits explicit decision/condition nodes (if/else) when the requirement states conditional logic (e.g., 'if X then Y', 'shall never exceed'), treating the condition as a mere activity or merging it with the action.",
+      "suggested_prompt_direction": "Instruct the model to explicitly extract conditional phrases (e.g., 'if', 'when', 'unless') and model them as if/else decision nodes, rather than embedding them within activity labels.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "misapplied_switch_for_conditionals",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0038",
+        "rac-0004"
+      ],
+      "problem": "The model uses PlantUML switch/case for boolean or binary conditional logic (e.g., true/false, yes/no outcomes) instead of if/else, contradicting UML activity diagram semantics and the existing prompt knowledge.",
+      "suggested_prompt_direction": "Reinforce the distinction between if/else and switch/case, explicitly stating that binary or boolean conditions must use if/else, and switch/case is reserved only for mutually exclusive multi-branch enumerations.",
+      "target_sections": [
+        "knowledge"
+      ]
+    },
+    {
+      "name": "inferred_unstated_activities",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "lmc-0038",
+        "lmc-0056",
+        "rac-0012"
+      ],
+      "problem": "The model invents activities not explicitly stated in the requirement (e.g., 'Calculate the determinant', 'System starts up', 'Compute absolute error'), violating the strict grounding rule.",
+      "suggested_prompt_direction": "Emphasize strict grounding by prohibiting the invention of computational, preparatory, or contextual steps that are not explicitly described as actions in the requirement text.",
+      "target_sections": [
+        "rule"
+      ]
+    },
+    {
+      "name": "syntax_and_nesting_errors",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "bp-0014",
+        "rac-0012",
+        "rac-0004"
+      ],
+      "problem": "Generated PlantUML contains structural errors such as mismatched if/endif and switch/endswitch blocks, or invalid nesting, causing compilation failures.",
+      "suggested_prompt_direction": "Add a workflow step requiring the model to mentally or explicitly track opening and closing tags for control structures to ensure every if, switch, and fork is properly closed before ending the diagram.",
+      "target_sections": [
+        "workflow",
+        "output"
+      ]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "if_vs_switch_distinction",
+      "related_failure_patterns": [
+        "misapplied_switch_for_conditionals"
+      ],
+      "evidence_case_ids": [
+        "lmc-0038",
+        "rac-0004"
+      ],
+      "gap": "The prompt does not clearly enough define the boundary between if/else and switch/case, leading the model to use switch for simple boolean conditions.",
+      "suggested_knowledge": "Use 'if/else' for binary or boolean conditional logic (yes/no, true/false). Use 'switch/case' only when the requirement explicitly lists three or more mutually exclusive alternative paths or enumerated categories."
+    },
+    {
+      "id": "modeling_conditions_as_decisions",
+      "related_failure_patterns": [
+        "missing_decision_nodes"
+      ],
+      "evidence_case_ids": [
+        "lmc-0011",
+        "lmc-0038",
+        "lmc-0056"
+      ],
+      "gap": "The prompt lacks guidance on how to handle requirement statements that specify constraints or conditions (e.g., 'shall be equal to', 'if and only if'), which must be modeled as decision nodes rather than action nodes.",
+      "suggested_knowledge": "When a requirement specifies a condition, constraint, or validation (e.g., 'if X', 'when Y', 'shall be Z'), model it as an if/else decision node where the condition is the branch guard, and the subsequent actions are the outcomes."
+    },
+    {
+      "id": "fork_for_parallel_information",
+      "related_failure_patterns": [
+        "activity_granularity_mismatch"
+      ],
+      "evidence_case_ids": [
+        "bp-0007",
+        "bp-0023"
+      ],
+      "gap": "The prompt does not explain how to model scenarios where a single action results in multiple independent pieces of information being displayed or available simultaneously.",
+      "suggested_knowledge": "When a requirement states that multiple items are displayed, listed, or available at the same time as a result of a single action, use a fork/end fork to represent these as parallel independent activities."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not attempt to fix infrastructure or provider errors via prompt changes."
+  ]
+}
+```

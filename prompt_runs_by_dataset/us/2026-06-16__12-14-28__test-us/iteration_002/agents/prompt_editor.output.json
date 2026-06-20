@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "knowledge",
+      "intent": "Add guidance for switch/case constructs and improve identification of implicit parallel behaviors.",
+      "change_instruction": "Add a rule explaining that multi-case decision points with mutually exclusive alternatives (e.g., selecting from a list of distinct options) should be mapped to `switch`/`case`/`endswitch` constructs rather than `if/elseif`. Expand the concurrency rule to include implicit linguistic cues for parallelism, such as 'displayed lists', 'multiple options presented', or 'simultaneous actions', explicitly mapping them to `fork`/`fork again`/`end fork` blocks."
+    },
+    {
+      "section": "workflow",
+      "intent": "Introduce activity granularity assessment and structural validation steps.",
+      "change_instruction": "Add a step between activity extraction and control flow identification to assess activity granularity, instructing the model to group closely related clauses into single composite actions and avoid splitting single logical actions. Add a final step for structural validation requiring the model to verify that all PlantUML blocks (if/endif, fork/end fork, repeat/endrepeat, switch/endswitch) are properly nested and closed to prevent syntax errors."
+    },
+    {
+      "section": "rule",
+      "intent": "Allow implicit concurrent system behaviors and clarify loop vs. conditional branching.",
+      "change_instruction": "Relax the prohibition on inferring implementation steps specifically for concurrent system behaviors, allowing the model to infer parallelism when the requirement implies simultaneous display or execution. Add a rule distinguishing loops from conditional branches: if an action simply returns to a previous step upon failure or as an alternative (e.g., 'retry', 're-enter'), model it as a conditional branch (`if`/`else`) leading back to the prior action, rather than a `repeat`/`while` loop, unless the requirement describes a continuous iterative process."
+    }
+  ]
+}
+```

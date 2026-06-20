@@ -1,0 +1,67 @@
+```json
+{
+  "summary": "The batch primarily fails due to three interrelated issues: (1) activities are over-merged, collapsing multiple distinct actions into single nodes; (2) fork/parallel structures are replaced with switch/case, misrepresenting coexisting items as mutually exclusive alternatives; (3) compound conditions are flattened into single decision nodes instead of nested if structures. These cause cascading missing/extra activity and relation errors.",
+  "error_patterns": [
+    {
+      "name": "activity_granularity_too_coarse",
+      "severity": "high",
+      "evidence_case_ids": ["bp-0007", "bp-0023", "pure-0030"],
+      "problem": "Multiple distinct actions explicitly stated in the requirement are merged into a single activity node. The prompt's instruction to not decompose a single action over-regularizes, causing the model to also merge separate sequential actions that appear in the same sentence or clause.",
+      "suggested_prompt_direction": "Clarify that each distinct action or state change mentioned in the requirement should become its own activity node. Distinguish 'do not split one action' from 'do not merge multiple actions'.",
+      "target_sections": ["workflow", "rule"]
+    },
+    {
+      "name": "fork_vs_switch_confusion",
+      "severity": "high",
+      "evidence_case_ids": ["pure-0030", "bp-0007", "bp-0023"],
+      "problem": "Items that coexist, are displayed together, or occur in parallel are modeled as mutually exclusive switch/case branches instead of fork/end fork parallel structures. The current knowledge only mentions fork for 'concurrent or parallel actions' but does not cover coexisting or jointly displayed items.",
+      "suggested_prompt_direction": "Extend the fork guidance to cover cases where the requirement lists multiple items that are displayed, exist, or occur together rather than as alternatives.",
+      "target_sections": ["knowledge"]
+    },
+    {
+      "name": "condition_merging_nesting",
+      "severity": "medium",
+      "evidence_case_ids": ["lmc-0011", "rac-0004", "rac-0020"],
+      "problem": "Compound conditions (e.g., 'when A and B') are merged into a single decision node instead of being decomposed into nested if structures. Complex nested control flow from the requirement is flattened, losing the sequential guard structure.",
+      "suggested_prompt_direction": "Guide the model to decompose compound conditions into nested if/endif structures when the requirement states multiple sequential guards, and to preserve nested conditional hierarchy as stated.",
+      "target_sections": ["workflow", "knowledge"]
+    },
+    {
+      "name": "extra_invented_activities",
+      "severity": "medium",
+      "evidence_case_ids": ["lmc-0038", "rac-0004", "rac-0020"],
+      "problem": "Activities not stated in the requirement are invented, such as calculation steps, section-heading labels treated as actions, or contextual phrases treated as activity nodes. The current rule against adding steps is not strong enough to prevent paraphrasing or inference.",
+      "suggested_prompt_direction": "Strengthen the grounding rule: an activity node must correspond to an explicit action or state change stated in the requirement. Do not invent intermediate steps, and do not treat section headings or contextual clauses as activities.",
+      "target_sections": ["rule"]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "fork_for_coprresent_items",
+      "related_failure_patterns": ["fork_vs_switch_confusion"],
+      "evidence_case_ids": ["pure-0030", "bp-0007", "bp-0023"],
+      "gap": "The prompt does not explain that fork/end fork should be used when the requirement lists multiple items that are displayed, exist, or occur together (not as mutually exclusive choices).",
+      "suggested_knowledge": "Use fork/end fork when the requirement lists multiple items that coexist, are displayed together, or occur jointly (e.g., 'the following are displayed: A, B, C' or 'A, B, and C are shown'). Use switch/case only when the requirement describes a choice among mutually exclusive alternatives based on a single discriminant."
+    },
+    {
+      "id": "nested_condition_decomposition",
+      "related_failure_patterns": ["condition_merging_nesting"],
+      "evidence_case_ids": ["lmc-0011", "rac-0004", "rac-0020"],
+      "gap": "The prompt does not explain how to represent compound or sequential guard conditions in the activity diagram.",
+      "suggested_knowledge": "When the requirement states multiple conditions that must be checked sequentially (e.g., 'when A and B'), represent each condition as a separate nested if/endif node rather than merging them into a single compound condition. Preserve the nesting order as implied by the requirement text."
+    },
+    {
+      "id": "partition_swimlane_usage",
+      "related_failure_patterns": ["activity_granularity_too_coarse"],
+      "evidence_case_ids": ["pure-0010"],
+      "gap": "The prompt does not mention when or how to use PlantUML partitions or swimlanes to represent organizational or system boundaries mentioned in the requirement.",
+      "suggested_knowledge": "When the requirement names distinct systems, components, or organizational roles responsible for actions, use PlantUML partition blocks to group the activities belonging to each responsible entity."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML diagrams into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not over-specify activity labels to match gold wording exactly; focus on preserving distinct actions from the requirement."
+  ]
+}
+```

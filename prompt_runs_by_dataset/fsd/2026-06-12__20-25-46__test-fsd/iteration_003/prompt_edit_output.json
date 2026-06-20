@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "append",
+      "content": "14. Use the exact noun and verb phrases from the requirement verbatim as activity labels. Do not paraphrase, summarize, elaborate, or reword the text (e.g., if the requirement says 'Correct problems for the member', do not simplify it to 'Correct problems').\n15. Do not add speculative implementation steps, assumed pre-conditions, UI navigation, post-action saves, or any actions not explicitly stated in the requirement text.\n16. Only use PlantUML partition constructs when the requirement explicitly and unambiguously assigns activities to named actors, systems, or components. Do not infer or assign actors if the requirement does not specify them."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Only use PlantUML partition constructs when the requirement explicitly and unambiguously assigns activities to named actors, systems, or components. Do not infer or assign actors if the requirement does not specify them. When the requirement lists multiple concurrently displayed items or alternative options, represent them using 'fork/fork again/end fork' or 'switch/switch/endswitch' rather than sequential activities. Model any optional or conditional hints (e.g., 'if more information') as explicit decision nodes."
+    }
+  ],
+  "rationale": "The edits target the highest-severity failure patterns: paraphrased activity labels, speculative implementation steps, and overuse of partition constructs. Appending to 'workflow' reinforces verbatim extraction, prohibits speculative steps, and restricts partition use. Appending to 'knowledge' reinforces partition restrictions and addresses missing/flattened control structures for concurrent items and conditional hints.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

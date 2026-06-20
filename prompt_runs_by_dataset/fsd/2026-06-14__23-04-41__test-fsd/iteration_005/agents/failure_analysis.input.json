@@ -1,0 +1,96 @@
+{
+  "requirements": [
+    "7.\tThe Rotation Matrix, DCM321, multiplied by the transpose of the Rotation Matrix, DCM321T shall be the Identity (3x3) Matrix.v",
+    "As an Application Administrator , I want to be able to configure the help center URL and topic mappings.",
+    "As a researcher, I want to generate structured citation data, so that so I can cite a file in a publication.",
+    "1. trading information release system: send a query 2. central trading system: implement the query 3. central trading system: structuralize the queried data 4. central trading system: send the data to release",
+    "As a depositor, I want to deposit arbitrarily large files, so that I am not limited in what files I can and cannot deposit.",
+    "8.\tThe autopilot shall change states from STANDBY to TRANSITION when the pilot is not in control (not standby).",
+    "As an academicresearcher, I want to the thesis paper of an influential judge or legal thinker to gain insight into how their initial scholarship got started.",
+    "14.\tlog into the LifeCycle Manager tool.To log into the LifeCycle Manager tool, complete the following steps:1. Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager. The LifeCycle Manager login screen appears.2. In the System field, enter the name of the Central Management Server (CMS) on which the LifeCycle Manager tool is installed.3. Enter the user name and password.4. Select the appropriate authentication method from the Authentication drop-down list.The LifeCycle Manager tool supports the following authentication types:• Enterprise authentication - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system. This is the default authentication method.• LDAP authentication - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system.• Windows AD - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system.The LDAP, Windows AD, and other third-party authentication types require a special setup. For information on setting up these authentication types, see the BusinessObjects Enterprise Administrator's Guide.5. Click Log on."
+  ],
+  "predictions": [
+    "@startuml\nskinparam style strictuml\n\nstart\n\n:Initialize Rotation Matrix DCM321;\n:Compute Transpose of Rotation Matrix DCM321T;\n\n:Calculate Product = DCM321 * DCM321T;\n\n:Compare Product with Identity (3x3) Matrix;\n\nif (Product == Identity Matrix?) then (Yes)\n  :Validation Passed;\n  stop\nelse (No)\n  :Validation Failed;\n  stop\nendif\n\n@enduml",
+    "@startuml\nskinparam style strictuml\n\nstart\n\n:Application Administrator logs into the system;\n\n:Navigate to Help Center Configuration;\n\n:Enter/Update Help Center Base URL;\n\n:Define Topic Mappings;\nnote right\n  Map specific topics\n  to corresponding\n  help center sections\nend note\n\n:Save Configuration;\n\nif (Configuration Valid?) then (Yes)\n  :Apply Configuration;\n  :Display Success Message;\nelse (No)\n  :Display Validation Error;\n  :Return to Configuration Form;\n  stop\nendif\n\nstop\n\n@enduml",
+    "@startuml\nskinparam style strictuml\n\nstart\n\n:Researcher requests citation generation;\n:Select file to cite;\n\n:Choose citation format (e.g., APA, MLA, Chicago);\n\n:Retrieve file metadata (title, author, date, DOI, etc.);\n\nif (Is metadata complete?) then (yes)\n  :Format metadata into structured citation;\n  :Generate citation output;\n  :Display citation to researcher;\n  :Researcher copies citation;\nelse (no)\n  :Prompt researcher to provide missing metadata;\n  :Receive updated metadata;\n  :Format metadata into structured citation;\n  :Generate citation output;\n  :Display citation to researcher;\n  :Researcher copies citation;\nendif\n\n:Use citation in publication;\n\nstop\n\n@enduml",
+    "@startuml\nstart\n:trading information release system: send a query;\n:central trading system: implement the query;\n:central trading system: structuralize the queried data;\n:central trading system: send the data to release;\nstop\n@enduml",
+    "@startuml\nstart\n:Depositor initiates file deposit;\n:Select file(s) for deposit;\nif (Is file size within standard limits?) then (Yes)\n  :Upload file via standard process;\nelse (No - Arbitrarily large file)\n  :Initiate resumable/large file upload protocol;\n  :Split file into chunks;\n  :Upload chunks sequentially;\n  while (More chunks to upload?) is (Yes)\n    :Upload next chunk;\n    if (Chunk upload successful?) then (Yes)\n      :Mark chunk as completed;\n    else (No)\n      :Retry chunk upload;\n    endif\n  endwhile (No)\n  :Reassemble chunks on server;\nendif\n:Verify file integrity;\n:Generate deposit confirmation;\n:Notify depositor of successful deposit;\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\nstate \"STANDBY\" as STANDBY\nstate \"TRANSITION\" as TRANSITION\n\nSTANDBY --> TRANSITION : [Pilot is not in control]\n@enduml",
+    "@startuml\nstart\n:Visit academic research portal;\n:Search for influential judge or legal thinker;\n:Select target individual;\n:Navigate to profile or bibliography;\n:Locate thesis paper;\nif (Thesis paper available digitally?) then (Yes)\n  :Download or view digital copy;\nelse (No)\n  :Submit interlibrary loan request;\n  :Wait for physical copy retrieval;\n  :Access physical copy;\nendif\n:Read thesis paper;\n:Analyze initial scholarship and early ideas;\n:Gain insight into origins of their legal thought;\nstop\n@enduml",
+    "@startuml\nstart\n:Select Start > Programs > BusinessObjects XI 3.1\\n> BusinessObjects Enterprise > BusinessObjects LifeCycle Manager;\n:LifeCycle Manager login screen appears;\n:Enter the name of the Central Management Server (CMS)\\nin the System field;\n:Enter the user name and password;\n:Select the appropriate authentication method\\nfrom the Authentication drop-down list;\nswitch (Authentication type)\ncase (Enterprise)\n  :Requires user name and password recognized\\nby BusinessObjects Enterprise system\\n(Default authentication method);\ncase (LDAP)\n  :Requires user name and password recognized\\nby BusinessObjects Enterprise system\\n(Requires special setup);\ncase (Windows AD)\n  :Requires user name and password recognized\\nby BusinessObjects Enterprise system\\n(Requires special setup);\ncase (Other third-party)\n  :Requires special setup\\n(See Administrator's Guide);\nendswitch\n:Click Log on;\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n\n:DCM321 * DCM321T;\nif( =Identity (3x3) Matrix.v?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+    "start\n:configure the help center URL and topic mappings;\nstop",
+    "start\n:generate structured citation data;\n:cite files in publication;\nstop",
+    "start\n\npartition \"Trading information release system\"{\n  :Send a query;\n}\n\npartition \"Central trading system\"{\n  :Implement the query;\n  :Structuralize queried data;\n  :Send data to release;\n}\n\nstop",
+    "start\n:deposit arbitrarily large files;\n:Remove restrictions on what files can and cannot be stored;\nstop",
+    "start\n\nif(Pilot is not in control (not standby)?) then(yes)\n:Autopilot change states from STANDBY to TRANSITION;\nelse(no)\nendif\n\nstop",
+    "start\n:get thesis paper of influential judge or legal thinker;\n:gain insight into how initial scholarship start;\nstop",
+    "start\n\n:Select \"Start\";\n:Select \"Programs\";\n:Select \"BusinessObjects XI 3.1\";\n:Select \"BusinessObjects Enterprise\";\n:Select \"BusinessObjects LifeCycle Manager\";\n:LifeCycle Manager login screen appears;\n\n:Go to System field;\n:Enter CMS name;\n:Enter username and password;\n\n:Open Authentication drop-down list;\n:Select authentication method;\n\nif(Default method?) then(yes)\n  :Enterprise authentication;\n  :Recognize user name and password;\nelse(no)\nswitch (Other Methods)\ncase(LDAP)\n  :Recognize user name and password;\n  :Special setup;\ncase(Windows AD)\n  :Recognize user name and password;\n  :Special setup;\ncase(other third-party types)\n  :Special setup;\nendswitch\nendif\n\n:Click \"Log on\";\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

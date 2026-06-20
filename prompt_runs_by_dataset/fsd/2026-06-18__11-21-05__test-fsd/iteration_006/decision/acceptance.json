@@ -1,0 +1,93 @@
+{
+  "accepted": false,
+  "metric_deltas": {
+    "plantuml_compilation_pass_rate": 0.0,
+    "node_f1": -0.040433953126354116,
+    "relation_f1": 0.055424612776564464,
+    "infrastructure_error_rate": 0.0
+  },
+  "compile_delta": 0.0,
+  "node_delta": -0.040433953126354116,
+  "relation_delta": 0.055424612776564464,
+  "infrastructure_delta": 0.0,
+  "min_compile_delta": -0.05,
+  "min_node_delta": -0.02,
+  "min_relation_delta": -0.01,
+  "relation_accept_delta": 0.01,
+  "node_accept_delta": 0.02,
+  "compile_accept_delta": 0.05,
+  "safety_gate": {
+    "compile_not_significantly_worse": true,
+    "node_not_significantly_worse": false,
+    "relation_not_significantly_worse": true,
+    "semantic_metrics_not_both_down": true,
+    "infrastructure_delta_ok": true,
+    "prompt_size_ok": true
+  },
+  "benefit_gate": {
+    "relation_improved": true,
+    "node_improved": false,
+    "compile_improved_without_semantic_regression": false
+  },
+  "bootstrap_gate": {
+    "is_first_iteration": false,
+    "node_improved": false,
+    "relation_improved": true,
+    "infrastructure_delta_ok": true,
+    "prompt_chars_ok": true
+  },
+  "standard_accept": false,
+  "bootstrap_accept": false,
+  "acceptance_mode": "rejected",
+  "rejection_reasons": [
+    "standard_safety_gate",
+    "bootstrap_gate"
+  ],
+  "acceptance_policy": "standard: accept when every safety gate passes and at least one metric benefit gate passes; iteration 1 bootstrap: accept when node_f1 and relation_f1 both improve enough, infrastructure is not worse, and prompt size is ok",
+  "prompt_chars_before": 3907,
+  "prompt_chars_candidate": 5281,
+  "prompt_growth_ratio": 1.3516764781162016,
+  "max_prompt_growth_ratio": 6.0,
+  "max_prompt_chars": 9000,
+  "prompt_size_ok": true,
+  "baseline_summary": {
+    "count": 10.0,
+    "syntax_pass_rate": 1.0,
+    "infrastructure_error_rate": 0.0,
+    "node_precision": 0.5924761904761905,
+    "node_recall": 0.5374408924408924,
+    "node_f1": 0.563618228936664,
+    "relation_precision": 0.4489576174058933,
+    "relation_recall": 0.44141085363911453,
+    "relation_f1": 0.4451522523350912,
+    "plantuml_compilation_pass_rate": 1.0,
+    "llm_element_evaluated": 10.0,
+    "llm_element_failed": 0.0,
+    "llm_node_precision": 0.85756,
+    "llm_node_recall": 0.73885,
+    "llm_node_f1": 0.7636000000000001,
+    "llm_relation_precision": 0.5768,
+    "llm_relation_recall": 0.48099,
+    "llm_relation_f1": 0.51558
+  },
+  "candidate_summary": {
+    "count": 10.0,
+    "syntax_pass_rate": 1.0,
+    "infrastructure_error_rate": 0.0,
+    "node_precision": 0.5574393939393939,
+    "node_recall": 0.4928954378954379,
+    "node_f1": 0.5231842758103099,
+    "relation_precision": 0.48637144464730675,
+    "relation_recall": 0.515637044115305,
+    "relation_f1": 0.5005768651116557,
+    "plantuml_compilation_pass_rate": 1.0,
+    "llm_element_evaluated": 10.0,
+    "llm_element_failed": 0.0,
+    "llm_node_precision": 0.8531000000000001,
+    "llm_node_recall": 0.77888,
+    "llm_node_f1": 0.80582,
+    "llm_relation_precision": 0.6829799999999999,
+    "llm_relation_recall": 0.596,
+    "llm_relation_f1": 0.62373
+  }
+}

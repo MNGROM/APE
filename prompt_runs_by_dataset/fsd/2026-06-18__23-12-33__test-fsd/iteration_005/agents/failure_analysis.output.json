@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction consistently fails to use fork/join for concurrent or independent items, instead representing them as sequential steps or switch branches (false_negative_parallel).",
+      "possible_causes": [
+        "The prompt lacks explicit instructions to identify concurrent, simultaneous, or independent attributes/items in a list and model them with fork/join.",
+        "The generator defaults to sequential or alternative (switch) control flow when encountering lists of items (e.g., name/keywords/description, error checking steps, record fields, unit requirements), missing the independence implied by the requirement."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction frequently flattens nested conditional logic into sequential or mutually exclusive branches, misrepresenting the true control flow (e.g., using elseif/switch where nested if is required).",
+      "possible_causes": [
+        "The prompt does not adequately guide the model to preserve the hierarchical nesting of conditions described in requirements (e.g., state machines with sub-conditions).",
+        "The generator tends to linearize complex conditional branches for simplicity, losing the correct dependency and flow structure."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces speculative or decomposed activities that are not explicitly stated in the requirements, such as adding user role nodes, UI interaction steps, or unnecessary condition checks.",
+      "possible_causes": [
+        "The prompt may not emphasize strictly adhering to the explicit actions in the requirement, causing the model to hallucinate common UI steps (e.g., 'Select a file', 'Display data') or decompose single actions into multiple assumed steps.",
+        "The generator over-interprets actor mentions or implicit prerequisites as distinct activity nodes."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction omits explicit behaviors or outcomes stated in the requirement, often collapsing multiple actions into one or dropping secondary effects.",
+      "possible_causes": [
+        "The generator prioritizes the main control-flow shape and overlooks secondary actions or outcomes mentioned in the text.",
+        "The prompt lacks guidance on ensuring complete coverage of all explicitly stated actions before finalizing the diagram."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds incorrect control flow edges, such as placing actions in a sequential dependency when they should be independent, or prematurely terminating branches with 'stop'.",
+      "possible_causes": [
+        "The generator assumes a strict sequential execution order by default, inserting edges where none are specified.",
+        "Misinterpretation of conditional outcomes as terminal states leads to unnecessary 'stop' nodes and fragmented diagram flow."
+      ]
+    }
+  ]
+}
+```

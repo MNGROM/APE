@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Add explicit steps for identifying and mapping loop constructs, and separate the identification of mutually exclusive conditions from parallel ones.",
+      "change_instruction": "Insert a new workflow step after identifying actions/decisions to specifically scan for cyclic, periodic, or repetitive keywords (e.g., 'repeat', 'until', 'periodically', 'cyclically') and map them to repeat/while structures. Modify the existing parallelism scanning step to explicitly instruct the model to first distinguish mutually exclusive alternative conditions (mapped to switch/case or if/elseif/else) from true concurrent tasks (mapped to fork/end fork) before constructing the control flow."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide explicit mapping rules for loop constructs and multi-branch mutually exclusive conditions, and address the preservation of secondary conditions.",
+      "change_instruction": "Add a rule explaining that cyclic, periodic, or repeated behaviors indicated by keywords like 'repeat', 'until', 'periodically', or 'cyclically' must be mapped to PlantUML `repeat`/`while` loops. Add a rule clarifying that multi-branch mutually exclusive conditions (e.g., evaluating a variable against multiple distinct values) should be modeled using `switch`/`case`, not `fork`. Add a rule emphasizing that secondary checks, fallback conditions, and specific timeout/counter values must be explicitly preserved as separate activity nodes or conditional branches to prevent missing activities."
+    },
+    {
+      "section": "rule",
+      "intent": "Prohibit misrepresenting loops and over-decomposing actions, and strengthen constraints against hallucinated control flows.",
+      "change_instruction": "Add a strict rule prohibiting the representation of cyclic, periodic, or repeated behaviors as sequential or conditional flows instead of `repeat`/`while` loops. Add a rule prohibiting the misplacement of loop boundaries (looping the wrong set of activities or missing the correct exit condition). Add a rule explicitly forbidding the over-decomposition of a single stated action into multiple redundant activity nodes. Strengthen the existing rule against inferred implicit flows to explicitly prohibit hallucinating error handling, loops, or recovery steps not stated in the text."
+    }
+  ]
+}
+```

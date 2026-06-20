@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section's implicit concurrency check relies on broad structural cues (e.g., 'AND', 'independent actors') without providing strict negative boundaries for UI tabs, sequential entry patterns, or alternative options, leading to false-positive parallelism. It also lacks sufficiently explicit positive cues for true concurrent execution, leading to false-negative parallelism. Additionally, while it mandates preserving nested conditional logic, it fails to prevent the mis-sequencing of mutually exclusive conditions or the incorrect loop boundaries for retry logic, which directly causes flattened relations and misplaced loops."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section attempts to define fork/join usage but includes vague positive cues (e.g., 'parallel data entries joined by AND') that conflict with the rule against sequential UI steps, causing the model to treat sequential UI inputs or tab options as concurrent. It also lacks guidance on preventing the over-fragmentation of activity nodes (e.g., splitting 'Enter username and password' into two nodes), which cascades into incorrect parallel and sequential relations."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section's prohibition against fork/join for 'sequential UI steps' and 'enumerations' is too abstract to prevent false-positive parallelism for UI tabs or alternative options. It also lacks a rule constraining the granularity of activity extraction to prevent over-fragmenting compound actions, and lacks explicit rules distinguishing true retry loops from alternative exception-handling flows."
+    }
+  ]
+}
+```

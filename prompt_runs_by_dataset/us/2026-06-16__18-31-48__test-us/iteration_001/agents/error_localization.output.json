@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for the model to extract and map explicit activities before constructing control flows. This absence leads the model to hallucinate implicit steps (extra_activity) and collapse distinct explicit actions into generalized nodes (missing_activity)."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking essential PlantUML syntax guidance and modeling patterns. This causes failures in modeling concurrency (wrong_parallel) due to missing fork/end fork patterns, failures in representing temporal logic (wrong_loop) due to missing loop/delay patterns, and a tendency to use default error-handling templates (extra_activity)."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, failing to constrain the model's behavior. Without strict negative constraints, the model invents unstated error-handling or validation branches (extra_activity) and creates invalid transitions from prematurely stopped parallel branches (extra_or_wrong_relation)."
+    }
+  ]
+}
+```

@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1 explicitly instructs the model to group lists of attributes, parameters, or properties into a single activity node, which directly conflicts with the need to decompose concurrent attributes or simultaneous actions into separate parallel branches. Step 2 lacks guidance on decomposing compound concurrent actions into fork/join structures, causing the model to default to sequential flows for 'and'-joined clauses."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The concurrency modeling rule explicitly excludes comma-separated lists and attributes from fork/join usage, forcing them into single nodes or sequential flows. This directly causes false-negative parallelism when such lists represent simultaneous system behaviors. Additionally, it lacks positive cues for identifying concurrent semantic intent in 'and'-joined clauses or multi-threaded task descriptions, while also failing to prevent false-positive parallelism for sequentially dependent steps in RTOS/multi-threaded contexts."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The granularity rule does not instruct the model to exhaustively preserve all explicitly mentioned actions or decompose compound steps into separate activities when they represent concurrent behaviors, allowing the model to overly compress distinct specified actions. The convergence rule does not adequately prevent premature 'stop' statements within conditional branches, leading to unsupported control-flow terminations."
+    }
+  ]
+}
+```

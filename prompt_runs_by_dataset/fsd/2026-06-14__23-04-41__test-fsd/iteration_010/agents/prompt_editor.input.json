@@ -1,0 +1,54 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "over_specification_and_hallucination",
+        "problem": "The generator consistently adds numerous activities, decisions, and UI-level interactions that are not stated in or implied by the requirements, resulting in low node precision (extra_activity) and low relation precision (extra_or_wrong_relation).",
+        "possible_causes": [
+          "The prompt lacks a strict constraint to map only explicitly stated behaviors, causing the LLM to invent plausible but unrequired steps.",
+          "The prompt may implicitly encourage detailed, end-to-end user journeys, leading the generator to fill in gaps with speculative UI actions (e.g., 'User opens the application', 'Click zoom in (+) button')."
+        ]
+      },
+      {
+        "name": "requirement_abstraction_mismatch",
+        "problem": "The generator decomposes high-level requirements into granular steps, failing to preserve the original abstract activities as single nodes, which causes ground-truth activities to be missed or fragmented (missing_activity).",
+        "possible_causes": [
+          "The prompt does not instruct the generator to preserve the requirement's original phrasing or level of abstraction for activity nodes.",
+          "The generator defaults to a procedural programming mindset (extracting features, validating formats) rather than a requirements-modeling mindset."
+        ]
+      },
+      {
+        "name": "incorrect_parallelization",
+        "problem": "The generator misinterprets listed options, attributes, or sequential configurations as concurrent parallel flows, resulting in wrong_parallel and extra_or_wrong_relation errors.",
+        "possible_causes": [
+          "The prompt fails to distinguish between enumerating alternative choices/attributes (e.g., 'ResearcherID or ORCID', 'XML or CSV') and true concurrent execution.",
+          "The generator over-indexes on the presence of 'and' or comma-separated lists in the requirement, automatically mapping them to `fork/fork again` blocks without semantic validation."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is missing, providing no step-by-step process to guide the LLM from requirement parsing to diagram generation. This absence forces the LLM into an unconstrained generation process, causing it to invent speculative steps, decompose high-level requirements into granular programming procedures, and misinterpret textual lists as parallel flows."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is missing, leaving the LLM without domain-specific modeling guidance on how to map natural language constructs to UML activity diagram semantics. This leads to a failure to distinguish between alternative choices/attributes and true concurrent execution, and a lack of understanding of how to preserve the requirement's original level of abstraction."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is missing, resulting in no strict constraints against hallucination or over-specification. Without explicit rules to map only explicitly stated behaviors and to preserve original phrasing, the LLM defaults to inventing plausible but unrequired UI actions and procedural steps."
+      }
+    ]
+  }
+}

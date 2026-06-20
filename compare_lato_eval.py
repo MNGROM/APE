@@ -24,16 +24,17 @@ from config import (
     DEFAULT_THINKING_TYPE,
     optional_bool,
 )
+from element_extraction import extract_graph_for_metrics
 from llm import LLMClient
 from llm_element_metrics import check_plantuml_compilation, disabled_llm_metrics, evaluate_llm_elements
 from metrics import (
+    ActivityGraph,
     DEFAULT_EMBEDDING_MODEL,
     EvaluationRecord,
     classify_failures,
     compute_metric,
-    extract_relations,
     format_summary,
-    iter_semantic_elements,
+    extract_activity_graph,
     summarize_records,
     validate_plantuml,
 )
@@ -136,21 +137,46 @@ def evaluate_generated(
     case: Case,
     generated: str,
     args: argparse.Namespace,
+    llm_client: LLMClient,
     method_dir: Path,
     method: str,
 ) -> EvaluationRecord:
     generated_plantuml = extract_plantuml(generated, wrap_if_needed=False)
     syntax = validate_plantuml(generated, args.plantuml_jar, timeout=args.plantuml_compile_timeout)
+    metric_failure_types: list[str] = []
+    try:
+        gold_graph = extract_graph_for_metrics(
+            case.gold_plantuml,
+            args=args,
+            llm_client=llm_client,
+            state_dir=method_dir,
+            phase=method,
+            role="gold",
+            retry_context={"dataset": case.dataset, "case_id": case.case_id},
+        )
+        pred_graph = extract_graph_for_metrics(
+            generated_plantuml,
+            args=args,
+            llm_client=llm_client,
+            state_dir=method_dir,
+            phase=method,
+            role="prediction",
+            retry_context={"dataset": case.dataset, "case_id": case.case_id},
+        )
+    except Exception:
+        gold_graph = extract_activity_graph(case.gold_plantuml)
+        pred_graph = ActivityGraph(nodes=[], relations=[])
+        metric_failure_types.append("element_extraction_error")
     node_metrics = compute_metric(
-        iter_semantic_elements(case.gold_plantuml),
-        iter_semantic_elements(generated),
+        gold_graph.nodes,
+        pred_graph.nodes,
         threshold=args.node_match_threshold,
         matcher=args.metric_matcher,
         embedding_model=args.semantic_embedding_model,
     )
     relation_metrics = compute_metric(
-        extract_relations(case.gold_plantuml),
-        extract_relations(generated),
+        gold_graph.relations,
+        pred_graph.relations,
         threshold=args.relation_match_threshold,
         matcher=args.metric_matcher,
         embedding_model=args.semantic_embedding_model,
@@ -188,6 +214,7 @@ def evaluate_generated(
     failure_types = classify_failures(syntax, node_metrics, relation_metrics)
     if llm_element_metrics.status == "error":
         failure_types.append("llm_element_judge_error")
+    failure_types.extend(item for item in metric_failure_types if item not in failure_types)
 
     return EvaluationRecord(
         dataset=case.dataset,
@@ -234,6 +261,7 @@ def run_method(
                 case=case,
                 generated=generated,
                 args=args,
+                llm_client=llm_client,
                 method_dir=method_dir,
                 method=method,
             )
@@ -244,15 +272,16 @@ def run_method(
             )
             empty = ""
             syntax = validate_plantuml(empty, args.plantuml_jar, timeout=args.plantuml_compile_timeout)
+            gold_graph = extract_activity_graph(case.gold_plantuml)
             node_metrics = compute_metric(
-                iter_semantic_elements(case.gold_plantuml),
+                gold_graph.nodes,
                 [],
                 threshold=args.node_match_threshold,
                 matcher=args.metric_matcher,
                 embedding_model=args.semantic_embedding_model,
             )
             relation_metrics = compute_metric(
-                extract_relations(case.gold_plantuml),
+                gold_graph.relations,
                 [],
                 threshold=args.relation_match_threshold,
                 matcher=args.metric_matcher,
@@ -350,6 +379,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--relation-match-threshold", type=float, default=0.85)
     parser.add_argument("--semantic-embedding-model", default=DEFAULT_EMBEDDING_MODEL)
     parser.add_argument("--metric-matcher", choices=["embedding", "difflib"], default="embedding")
+    parser.add_argument("--element-extractor", choices=["rule", "llm", "auto"], default=os.environ.get("APE_ELEMENT_EXTRACTOR", "llm"))
+    parser.add_argument("--element-extraction-temperature", type=float, default=0.0)
+    parser.add_argument("--element-extraction-max-tokens", type=int, default=4096)
+    parser.add_argument("--element-extraction-max-retries", type=int, default=3)
+    parser.add_argument("--element-extraction-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_ELEMENT_EXTRACTION_THINKING_TYPE", "inherit"))
     parser.add_argument("--llm-element-metrics", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--llm-judge-model", default=os.environ.get("ZHIPU_LLM_JUDGE_MODEL", os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL)))
     parser.add_argument("--llm-judge-api-key", default=os.environ.get("ZHIPU_LLM_JUDGE_API_KEY", os.environ.get("ZHIPU_LLM_API_KEY", "")))
@@ -366,6 +400,8 @@ def build_parser() -> argparse.ArgumentParser:
 def normalize_inherited_modes(args: argparse.Namespace) -> None:
     if args.generation_thinking == "inherit":
         args.generation_thinking = args.thinking
+    if args.element_extraction_thinking == "inherit":
+        args.element_extraction_thinking = args.thinking
     if args.llm_judge_thinking == "inherit":
         args.llm_judge_thinking = args.thinking
 
@@ -377,6 +413,8 @@ def main() -> None:
 
     if not args.mock_with_gold and not args.api_key:
         raise RuntimeError("ZHIPU_LLM_API_KEY is required unless --mock-with-gold is used.")
+    if args.element_extractor == "llm" and not args.api_key:
+        raise RuntimeError("ZHIPU_LLM_API_KEY is required when --element-extractor llm is used.")
     if args.llm_element_metrics and not args.llm_judge_api_key:
         raise RuntimeError("LLM judge API key is required when --llm-element-metrics is enabled.")
 

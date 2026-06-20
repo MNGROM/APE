@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section does not instruct the model to identify concurrent behaviors or decompose them into parallel forks, causing it to default to sequential interpretation. It also lacks a step to enforce 1-to-1 mapping of individual actions to activity nodes, allowing the model to over-condense multiple distinct actions into single broad nodes."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section tells the model when NOT to use fork/end fork (for mutually exclusive actions) but fails to provide positive linguistic cues or patterns for identifying true parallelism (e.g., comma-separated lists, 'concurrently', simultaneous system tasks). It also lacks guidance on maintaining fine-grained activity granularity for distinct UI interactions or system responses."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section lacks strict constraints against hallucinating implicit error handling or alternative flows not present in the text, leading to fabricated control flow. It also lacks explicit structural patterns for modeling alternative or exception flows as conditional branches, causing the model to misrepresent them as loops or misplace them in the main sequence."
+    }
+  ]
+}
+```

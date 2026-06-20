@@ -1,0 +1,79 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract activities strictly from explicit actions in the requirement, grouping lists of attributes, parameters, or properties into a single descriptive activity node *unless* they are joined by explicit concurrency cues (e.g., 'simultaneously', 'in parallel') or represent simultaneous system behaviors (e.g., 'Close window and display statistics'). In those specific cases, decompose the compound step into separate activities for parallel branching.\nStep 2: Decompose any identified concurrent compound steps into separate activities before constructing control-flow.\nStep 3: Construct control-flow by connecting the extracted activities, mapping mutually exclusive conditions to switch/if/elseif structures and explicit concurrency keywords to fork/join blocks.",
+    "knowledge": "- Concurrency modeling: Comma-separated lists or 'and'-joined clauses must be decomposed into fork/join blocks *only* when accompanied by explicit concurrency cues or when describing simultaneous system behaviors (e.g., 'Close window and display statistics'). Explicitly exclude comma-separated lists that represent sequential UI steps, configuration options, or sequentially dependent steps in multi-threaded contexts from fork/join usage; these must remain single activity nodes or sequential flows.\n- Loop modeling: Map iterative cues (e.g., 'repeat', 'retry', 'periodically', 'cyclically') to repeat/while loops, ensuring the loop boundary strictly wraps only the iterative portion and does not enclose non-iterative parallel blocks.",
+    "rule": "- Granularity rule: Do not infer implicit system interactions or UI responses unless explicitly stated in the text; do not collapse multiple distinct specified actions into one broad node, especially if they represent simultaneous actions or concurrent behaviors explicitly described in the requirement.\n- Convergence rule: All fork/join branches and switch/case paths must merge before reaching a stop node; 'stop' nodes must not be placed inside conditional branches unless the requirement explicitly states an immediate process termination for that specific branch. Instead, conditional paths must merge."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The model predominantly produces false_positive_parallel errors, incorrectly using fork/join for non-concurrent lists, attributes, options, or sequential steps. It also exhibits false_negative_parallel errors by missing fork/join when requirements clearly state concurrent, simultaneous, or parallel actions.",
+        "possible_causes": [
+          "The prompt lacks clear guidance on when to use fork/join versus switch/case or if/else, causing the model to treat any list of items (e.g., authentication types, key figures, attributes) as concurrent tasks.",
+          "The model fails to recognize explicit concurrency keywords (e.g., 'concurrently', 'simultaneously', 'parallel') and misses the need for parallel constructs when they are required.",
+          "Sequential steps or descriptive attributes (like entering a name and description) are misinterpreted as parallel operations."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction frequently omits explicit behaviors, states, or actions described in the requirements, collapsing multiple steps into broad or abstract activity nodes.",
+        "possible_causes": [
+          "The prompt does not sufficiently emphasize the need to map every explicit action or state transition from the requirement into a distinct activity node.",
+          "The model prioritizes establishing the high-level control-flow shape over preserving granular behavioral details, leading to the omission of intermediate steps, conditions, or specific system states."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction introduces activities or states that are not supported by the requirement text, often adding speculative logic or redundant nodes.",
+        "possible_causes": [
+          "The model hallucinates control logic (e.g., adding 'No' branches or 'else' conditions) where the requirement only specifies affirmative actions.",
+          "The prompt does not constrain the model to strictly adhere to the provided text, allowing it to infer or invent steps that seem plausible but are not explicitly required."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction omits or misrepresents control-flow relations, frequently flattening nested conditional logic or misinterpreting the structural hierarchy of the requirements.",
+        "possible_causes": [
+          "The model struggles to parse deeply nested or hierarchical requirement structures (e.g., sub-steps within a conditional state), flattening them into sequential or sibling nodes instead of preserving the correct nesting.",
+          "The prompt lacks instructions on how to map complex conditional dependencies and state-dependent transitions into appropriate PlantUML control-flow constructs."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction adds unsupported or incorrect control-flow relations, often by forcing sequential dependencies where none exist or misrouting transitions.",
+        "possible_causes": [
+          "The model incorrectly assumes sequential execution for independent or alternative paths, creating false dependencies.",
+          "Misinterpretation of the requirement's logic leads to incorrect branching or looping connections that do not align with the specified flow."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The prediction mishandles repeated, periodic, retry, or loop behavior, either by omitting required loops or by misplacing loop boundaries.",
+        "possible_causes": [
+          "The model fails to identify explicit loop indicators in the text (e.g., 'repeat', 'periodically', 'until', 'tight loop') and represents iterative processes as single-pass actions.",
+          "When loops are identified, the model struggles to correctly place the repeat condition or to encapsulate the right set of activities within the loop body."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "Step 1's grouping heuristic and Step 3's concurrency mapping are insufficient for preventing false-positive parallelism; the workflow allows lists, attributes, and sequential steps to trigger fork/join blocks instead of being grouped into single nodes or sequential flows. Additionally, the workflow lacks a distinct step for verifying that all explicitly stated actions are extracted, which contributes to missing activities."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The concurrency modeling rule is failing to prevent false positives for non-concurrent lists, attributes, and sequential steps, while also failing to trigger false negatives when explicit concurrency keywords are present. The exclusions for sequential UI steps and configuration options are not strong enough, and the positive cues for true concurrency are not being effectively recognized by the model."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The granularity rule does not adequately enforce the preservation of every explicit action as a distinct node, allowing the model to collapse multiple steps into broad abstract nodes. Furthermore, it lacks a strict constraint against inventing speculative logic or redundant nodes, which leads to extra activities and extra/wrong relations."
+      }
+    ]
+  }
+}

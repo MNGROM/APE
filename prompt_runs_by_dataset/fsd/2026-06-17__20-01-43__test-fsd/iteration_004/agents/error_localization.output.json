@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks reusable modeling guidance for loop constructs (while/repeat), criteria for choosing if/elseif over switch for non-mutually-exclusive conditions, and strategies for merging common predecessor activities to avoid duplication. It also lacks explicit cues for identifying parallel behaviors from text."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section does not include steps for identifying retry/loop patterns, concurrent/parallel actions, or shared predecessor nodes, causing the model to default to purely sequential or improperly branched flows."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section prohibits adding activities but does not explicitly address the duplication of shared-prefix activities across switch branches, which results in extra activity nodes."
+    }
+  ]
+}
+```

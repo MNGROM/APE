@@ -1,0 +1,46 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "diagram_type_mismatch",
+        "problem": "The generator selects the wrong UML diagram type, such as producing a state diagram instead of an activity diagram, or misapplying activity diagram syntax for state logic.",
+        "possible_causes": [
+          "The prompt does not explicitly constrain the output to be an activity diagram using `start`/`stop` and action nodes.",
+          "Keywords like 'states' or 'switch to' in the requirements mislead the generator into using state machine syntax instead of activity flow logic."
+        ]
+      },
+      {
+        "name": "over_specification_and_hallucination",
+        "problem": "The generator invents detailed steps, conditions, and flows not present in the requirements, treating implicit or high-level goals as explicit procedural instructions.",
+        "possible_causes": [
+          "The prompt lacks instructions to strictly adhere to explicitly stated requirements without inferring or adding implementation details.",
+          "The generator attempts to 'fill in the blanks' for user stories or brief requirements, creating speculative logic instead of abstract goal representation."
+        ]
+      },
+      {
+        "name": "incorrect_control_flow_construct",
+        "problem": "The generator misinterprets the requirement's logic structure, using `fork` for mutually exclusive alternatives or failing to use `switch`/`case` for distinct conditional branches.",
+        "possible_causes": [
+          "The prompt does not provide clear mapping rules from requirement structures (like alternative flows or distinct cases) to PlantUML control flow nodes (e.g., using `switch` instead of `fork`).",
+          "The generator defaults to `fork`/`end fork` when it encounters multiple listed items or paths, failing to distinguish parallel execution from conditional branching."
+        ]
+      },
+      {
+        "name": "granularity_mismatch",
+        "problem": "The generator either splits unified actions into overly granular steps or compresses multiple explicit actions into broad, abstract nodes.",
+        "possible_causes": [
+          "The prompt lacks guidance on maintaining the granularity specified in the text, causing the generator to arbitrarily split or merge actions.",
+          "The generator treats UI interactions or multi-part steps as separate activities rather than a single logical action, or conversely, summarizes explicit sequences into vague goals."
+        ]
+      }
+    ]
+  }
+}

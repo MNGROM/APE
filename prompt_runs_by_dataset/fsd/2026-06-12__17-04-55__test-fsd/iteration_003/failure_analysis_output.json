@@ -1,0 +1,62 @@
+```json
+{
+  "summary": "The current prompt fails to guide the model in decomposing compound actions into granular activities and representing parallel actions using fork/join constructs. The model consistently merges multi-step or parallel requirements into single, monolithic activity nodes, resulting in severe structural divergence from the ground truth and zero relation recall.",
+  "error_patterns": [
+    {
+      "name": "missing_granular_decomposition",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0031",
+        "bp-0019"
+      ],
+      "problem": "The model merges compound requirements into single activity nodes instead of breaking them down into sequential steps. For example, in bp-0019, 'Enter the name, description, and keywords' is generated as one node, whereas the ground truth separates them into three distinct nodes. Similarly, 'Select source and destination system' is merged into one node instead of two. This leads to missing activities and incorrect relation flows.",
+      "suggested_prompt_direction": "Instruct the agent to decompose compound actions and lists of items (e.g., 'name, description, and keywords') into separate, sequential activity nodes in the diagram.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "missing_parallel_fork_join",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0019"
+      ],
+      "problem": "The model fails to identify and represent parallel actions using PlantUML's fork/fork again/end fork syntax. In bp-0019, entering name, description, and keywords should be modeled as parallel activities within a fork/join block, but the model generated them as a single merged sequential node.",
+      "suggested_prompt_direction": "Add explicit instructions and examples for identifying concurrent or parallel actions in the requirement and mapping them to PlantUML fork/fork again/end fork constructs.",
+      "target_sections": [
+        "knowledge",
+        "workflow"
+      ]
+    },
+    {
+      "name": "over_interpreting_implicit_logic",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "lmc-0031"
+      ],
+      "problem": "The model fabricates complex control flow that is not explicitly stated in the requirement. In lmc-0031, it creates a nested if-else structure to sequentially check Aim Point #1 and #2, including an error handling branch, whereas the requirement simply states to select an aim point that results in a counter-clockwise loiter. The ground truth uses a much simpler flow based on the explicit textual cues.",
+      "suggested_prompt_direction": "Instruct the agent to faithfully translate the explicit flow described in the text without adding assumed validation logic, error handling, or nested decision structures unless explicitly stated in the requirement.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "missing_contextual_entry_node",
+      "severity": "low",
+      "evidence_case_ids": [
+        "lmc-0031"
+      ],
+      "problem": "The model omits contextual entry activities that establish the subject or system, such as 'In NLGuidance' in lmc-0031, jumping straight into the core actions instead.",
+      "suggested_prompt_direction": "Guide the agent to identify the primary system or actor mentioned in the requirement and represent it as an initial contextual activity node right after the start node.",
+      "target_sections": [
+        "workflow"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "PlantUML syntax correctness, as the compilation pass rate is already 100%."
+  ]
+}
+```

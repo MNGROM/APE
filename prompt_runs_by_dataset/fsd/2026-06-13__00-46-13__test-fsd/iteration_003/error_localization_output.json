@@ -1,0 +1,78 @@
+```json
+{
+  "summary": "The primary failures stem from a lack of procedural and structural guidance, causing the model to over-decompose requirements into UI-level steps and miss key control-flow constructs like parallelism and conditional branching. The empty workflow and knowledge sections are the most critical areas to repair, with rule providing necessary hard constraints to prevent granularity mismatch.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "activity_granularity_mismatch",
+        "missing_parallel_decomposition",
+        "missing_conditional_branching",
+        "wrong_control_flow_relations"
+      ],
+      "section_problem": "The workflow section is currently empty, providing no step-by-step procedure for extracting activities at the correct abstraction level or reasoning about control-flow logic before generating code.",
+      "edit_intent": "Introduce a two-step reasoning process: first, extract abstract activities strictly grounded in explicit requirement statements; second, identify and map control-flow constructs (conditionals, parallelism) and sequence them based on the requirement's logic.",
+      "evidence_case_ids": [
+        "us-0056",
+        "lmc-0050",
+        "bp-0015",
+        "us-0129",
+        "lmc-0016",
+        "bp-0022",
+        "rac-0013",
+        "pure-0082"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_parallel_decomposition",
+        "missing_conditional_branching"
+      ],
+      "section_problem": "The knowledge section is empty, leaving the model without reusable structural patterns for modeling concurrent actions or conditional logic in PlantUML.",
+      "edit_intent": "Provide PlantUML modeling patterns for parallel decomposition (fork/fork again/end fork) and conditional branching (if/else/endif, switch/case/endswitch) to guide correct construct selection.",
+      "evidence_case_ids": [
+        "us-0129",
+        "bp-0015",
+        "lmc-0050",
+        "lmc-0016",
+        "bp-0022"
+      ]
+    },
+    {
+      "section": "rule",
+      "priority": "medium",
+      "failure_patterns": [
+        "activity_granularity_mismatch"
+      ],
+      "section_problem": "The rule section is empty, failing to constrain the model from inventing low-level UI interactions or sub-steps not explicitly stated in the requirement.",
+      "edit_intent": "Add a hard constraint requiring activities to be strictly grounded in explicit requirement statements, prohibiting assumed low-level interactions or over-decomposition.",
+      "evidence_case_ids": [
+        "us-0056",
+        "lmc-0050",
+        "bp-0015"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The current agent task correctly defines the role and scope; the granularity and control-flow issues are procedural and structural, not a problem with the overall role definition."
+    },
+    {
+      "section": "input",
+      "reason": "The input section accurately describes the input format; the failure is in how the model processes the text, not how it reads it."
+    },
+    {
+      "section": "output",
+      "reason": "The output section correctly mandates PlantUML only; the errors are in the diagram's structural content and activity abstraction, not the output format."
+    }
+  ]
+}
+```

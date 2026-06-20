@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Identify all actions, decisions, and constraints from the text.\n2. Abstract and summarize verbose UI text, descriptions, and notes into concise, action-oriented behavioral steps; explicitly exclude static text, descriptive clauses, and non-behavioral notes from being mapped to activity nodes.\n3. Enforce a 1-to-1 mapping of explicitly stated actions, UI interactions, and system responses to individual activity nodes, prohibiting summarization or merging of distinct steps.\n4. Extract and map parallel and iterative behaviors: Before constructing the main sequential or conditional control flow, identify and map parallel behaviors (to `fork`/`end fork`) and iterative behaviors (to `repeat`/`while`) as a distinct, mandatory phase. Explicitly list out concurrent actions and iterative actions with their linguistic cues as intermediate output before diagramming.\n5. Scan for cyclic, periodic, or repetitive keywords (e.g., 'repeat', 'until', 'periodically', 'cyclically') and map them to `repeat`/`while` structures.\n6. Scan for linguistic cues of parallelism and alternative conditions; explicitly distinguish mutually exclusive alternative conditions (mapped to `switch`/`case` or `if`/`elseif`/`else`) from true concurrent tasks (identified by positive cues like 'concurrently', 'simultaneously', 'at the same time', or comma-separated lists of simultaneous tasks, and mapped to `fork`/`end fork`) before constructing the control flow.\n7. Classify each condition as either a high-level constraint (mapped directly to a single decision branch) or a procedural step (requiring intermediate actions).\n8. Determine the exact nesting hierarchy of control structures before writing code.\n9. Generate PlantUML code strictly following the mapped hierarchy without adding or flattening levels.",
+    "knowledge": "1. Use `fork`/`end fork` ONLY for explicitly stated true parallel execution, identified by positive linguistic cues such as simultaneous system tasks, comma-separated lists of concurrent displays/updates, and explicit words like 'concurrently', 'simultaneously', or 'at the same time'.\n2. Use `switch`/`case` for evaluating a single variable against multiple distinct values, and `if`/`else` for evaluating boolean conditions or independent variables.\n3. Map implicit natural language conditions (e.g., 'if needed', 'optional', 'can') directly to explicit branching constructs rather than omitting them.\n4. High-level constraints or validations should be modeled as single decision points, not decomposed into multi-step procedural activities.\n5. Distinct UI interactions, system responses, and descriptive clauses mentioned in the text must be represented as separate activity nodes to maintain fine-grained granularity.\n6. Cyclic, periodic, or repeated behaviors indicated by keywords like 'repeat', 'until', 'periodically', or 'cyclically' must be mapped to PlantUML `repeat`/`while` loops.\n7. Multi-branch mutually exclusive conditions (e.g., evaluating a variable against multiple distinct values) should be modeled using `switch`/`case`, not `fork`.\n8. Secondary checks, fallback conditions, and specific timeout/counter values must be explicitly preserved as separate activity nodes or conditional branches to prevent missing activities.\n9. Background constraints, prerequisites, and role requirements (e.g., 'must be performed by an expert') must be modeled as executable decision nodes (conditional guards) in the flow, not treated as static annotations or ignored.\n10. Lists of independent attributes, UI fields, or simultaneous system responses must be preserved as separate, fine-grained activity nodes and not compressed into a single node.\n11. Bounded retries (e.g., 'retry up to N times') and persistent cycles (e.g., 'continuously', 'keeps doing') must be mapped into PlantUML `repeat`/`while` loops with appropriate exit conditions based strictly on the text.",
+    "rule": "1. Do NOT decompose simple conditional checks into intermediate processing steps (e.g., do not add 'compute' or 'receive' nodes before a validation if the requirement only specifies the validation).\n2. ALWAYS preserve the exact nesting depth of control structures as identified in the text (e.g., `switch` inside `if`, `if` inside `repeat`).\n3. NEVER use `fork`/`end fork` for independent, alternative, or mutually exclusive actions.\n4. NEVER omit optional paths or contextual checks—every user choice or conditional step must be represented as a branch.\n5. NEVER introduce decision branches, loops, or error handling not explicitly stated in the text (explicitly prohibit hallucinating error handling, loops, or recovery steps not stated in the text).\n6. Alternative flows, exception handling, and recovery steps (e.g., 'select another folder') MUST be modeled as linear paths within if/else or switch conditional branches; explicitly forbid representing them as loops or incorrectly placing them in the main sequential flow.\n7. NEVER represent cyclic, periodic, or repeated behaviors as sequential or conditional flows instead of `repeat`/`while` loops.\n8. NEVER misplace loop boundaries (e.g., looping the wrong set of activities or missing the correct exit condition).\n9. NEVER over-decompose a single stated action into multiple redundant activity nodes.\n10. NEVER use verbatim UI text, descriptive clauses, or static notes as activity node labels; they MUST be abstracted into behavioral actions.\n11. NEVER represent explicitly concurrent tasks as sequential steps.\n12. NEVER misrepresent loop exit conditions (e.g., incorrect exit criteria or missing exit conditions).\n13. NEVER invent placeholder loop conditions or control logic not explicitly stated in the text (e.g., do not add 'retry' loops if only a simple check is requested).\n14. NEVER flatten nested conditional logic; if/else or switch/case structures identified as nested in the text MUST remain nested in the PlantUML code."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "flattened_parallelism",
+        "problem": "The model frequently fails to represent concurrent behaviors using PlantUML's fork/end fork construct, instead representing them as sequential steps or omitting them entirely.",
+        "possible_causes": [
+          "The prompt may not explicitly instruct the model to identify concurrent keywords (e.g., 'concurrent', 'parallel', 'while') and map them to fork/end fork blocks.",
+          "The model defaults to a strictly sequential interpretation of actions unless strongly guided otherwise."
+        ]
+      },
+      {
+        "name": "granularity_mismatch",
+        "problem": "The model either consolidates multiple explicit requirement steps into single, high-level activities (missing nodes) or hallucinates decision nodes for implicit conditions (extra nodes).",
+        "possible_causes": [
+          "The prompt lacks clear guidance on the expected level of granularity, leading the model to summarize procedural steps rather than enumerating them.",
+          "The model over-zealously converts descriptive text into conditional logic (if/switch) even when the ground truth treats them as sequential actions."
+        ]
+      },
+      {
+        "name": "misaligned_control_flow",
+        "problem": "The model misinterprets the structural relationship between actions, such as placing parallel tasks inside loops instead of outside, or incorrectly nesting conditional blocks.",
+        "possible_causes": [
+          "The prompt does not adequately enforce structural decomposition, causing the model to tangle independent concurrent paths with iterative or conditional paths.",
+          "The model struggles to correctly scope the boundaries of loops and parallel blocks when translating complex, nested natural language requirements."
+        ]
+      },
+      {
+        "name": "syntax_errors_in_complex_structures",
+        "problem": "Generated PlantUML contains syntax errors, particularly when combining nested forks, loops, and conditional statements.",
+        "possible_causes": [
+          "The prompt does not provide sufficient examples or constraints on how to properly nest and terminate complex PlantUML control structures (e.g., matching repeat/repeat while with fork/end fork).",
+          "The model loses track of open blocks in long, complex diagrams, resulting in invalid PlantUML syntax."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow does not enforce a strict separation between identifying structural boundaries (forks, loops, conditions) and placing activities within them, causing the model to tangle independent concurrent paths with iterative/conditional paths and misalign control flow. It also lacks a step to validate the correct termination and nesting of blocks, leading to syntax errors in complex structures."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section lacks concrete PlantUML syntax templates or examples for correctly nesting and terminating complex structures (like fork inside repeat), which causes syntax errors. It also does not provide sufficient negative constraints to prevent the model from converting descriptive text into hallucinated conditional logic, leading to granularity mismatches with extra nodes."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rules section lacks an explicit prohibition against representing concurrent tasks sequentially, failing to counteract the model's sequential default. It also lacks a rule enforcing the matching and proper termination of open PlantUML blocks (fork/end fork, repeat/repeat while) to prevent syntax errors in complex, nested diagrams."
+      }
+    ]
+  }
+}

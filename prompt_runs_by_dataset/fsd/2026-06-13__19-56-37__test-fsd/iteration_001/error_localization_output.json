@@ -1,0 +1,62 @@
+```json
+{
+  "summary": "Although the current batch has no failures, the prompt is highly fragile due to empty workflow, knowledge, and rule sections. The most critical repairs are adding reusable PlantUML/UML modeling concepts to 'knowledge' and procedural extraction/generation steps to 'workflow' to prevent future control-flow and granularity errors.",
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_or_wrong_relation",
+        "wrong_loop",
+        "wrong_parallel",
+        "missing_activity",
+        "extra_activity"
+      ],
+      "section_problem": "The section is currently empty, providing no reusable UML/PlantUML syntax or modeling principles for control flow constructs or activity granularity.",
+      "edit_intent": "Add concise, reusable PlantUML syntax guidelines for control flow (if/else, fork/join, while) and define the expected granularity for extracting activities from text.",
+      "knowledge_gap_ids": [
+        "uml_control_flow_constructs",
+        "activity_extraction_granularity"
+      ],
+      "evidence_case_ids": []
+    },
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_or_wrong_relation",
+        "missing_activity",
+        "extra_activity"
+      ],
+      "section_problem": "The section is currently empty, giving the agent no procedural guidance on how to move from reading the requirement to generating the PlantUML code.",
+      "edit_intent": "Define a step-by-step procedure requiring the agent to first extract activities at the correct granularity, then reason about the control flow (branches, loops, parallelism), and finally generate the PlantUML code.",
+      "knowledge_gap_ids": [
+        "activity_extraction_granularity"
+      ],
+      "evidence_case_ids": []
+    }
+  ],
+  "recommended_edit_sections": [
+    "knowledge",
+    "workflow"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The current task description accurately defines the role and scope; the fragility stems from missing procedural and domain knowledge, not an ill-defined task."
+    },
+    {
+      "section": "input",
+      "reason": "The input specification correctly identifies the input format; no changes are needed here."
+    },
+    {
+      "section": "output",
+      "reason": "The output specification correctly mandates PlantUML code only; the fragility is due to missing generation guidance, not incorrect output formatting rules."
+    },
+    {
+      "section": "rule",
+      "reason": "While rules could enforce constraints, the primary issue is the complete absence of foundational modeling knowledge and procedural steps, which belongs in 'knowledge' and 'workflow'. Adding rules before establishing this foundation would be premature and less effective."
+    }
+  ]
+}
+```

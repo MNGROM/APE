@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "over_decomposition_of_simple_conditions",
+        "problem": "The generator decomposes single logical conditions or states into multi-step procedural flows, adding unsupported activities and control flow.",
+        "possible_causes": [
+          "The prompt may implicitly encourage an imperative, procedural style of modeling rather than a declarative, state-based style.",
+          "Lack of explicit instruction to map requirement conditions directly to diagram guards/conditions without inventing intermediate calculation or verification steps."
+        ]
+      },
+      {
+        "name": "incorrect_parallel_decomposition",
+        "problem": "The generator fails to correctly identify and structure concurrent behaviors, either missing parallel forks entirely or placing sequential logic inside parallel branches.",
+        "possible_causes": [
+          "The prompt lacks clear guidance on how to map concurrent requirements (e.g., 'concurrently', 'separate task') to PlantUML fork/end fork constructs.",
+          "The generator defaults to a sequential flow and treats parallel sub-tasks as sequential steps or nested forks rather than sibling branches."
+        ]
+      },
+      {
+        "name": "loop_misrepresentation",
+        "problem": "The generator struggles with repeated, periodic, or delayed behaviors, often misrepresenting them as conditional branches or adding unnecessary loop structures.",
+        "possible_causes": [
+          "The prompt does not provide explicit mapping rules for translating temporal requirements (e.g., 'waits through a 10-second timeout', 'periodic task') into PlantUML repeat/while loops.",
+          "The generator conflates waiting/timeouts with standard if/else conditional logic instead of loop constructs."
+        ]
+      },
+      {
+        "name": "missing_high_level_abstractions",
+        "problem": "The generator omits explicitly stated high-level activities or architectural components, focusing only on low-level procedural steps.",
+        "possible_causes": [
+          "The prompt may bias the generator towards modeling fine-grained actions while ignoring broader system-level states or governing components.",
+          "Lack of instruction to ensure all noun-phrase activities and system states from the requirement are preserved as distinct nodes in the diagram."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is empty, providing no step-by-step process for the generator to follow. This absence fails to guide the generator to first identify high-level abstractions and system states before detailing procedural steps, and does not enforce a declarative, state-based modeling approach over an imperative one, leading to over-decomposition and missing high-level activities."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is empty, lacking essential mapping rules from requirement constructs to PlantUML syntax. This causes the generator to guess how to handle concurrency, temporal behaviors, and conditions, resulting in missing or incorrect parallel forks, loop misrepresentation (e.g., confusing timeouts with if/else branches), and the invention of intermediate procedural steps instead of using guards."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is empty, missing critical constraints to prevent common generation errors. Without explicit rules prohibiting the invention of intermediate calculation/verification steps and enforcing the preservation of explicitly stated high-level components, the generator defaults to fine-grained, sequential, procedural logic."
+      }
+    ]
+  }
+}

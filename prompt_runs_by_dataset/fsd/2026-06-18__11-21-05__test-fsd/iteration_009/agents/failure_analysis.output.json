@@ -1,0 +1,45 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction frequently misidentifies parallelism. It predominantly introduces false_positive_parallel by using fork/join for non-concurrent items such as alternative choices (e.g., text/image/video), sequential attributes, or list items (e.g., name/description/keywords). It also exhibits false_negative_parallel by missing fork/join when the requirement explicitly describes concurrent actions or simultaneous data entry.",
+      "possible_causes": [
+        "The prompt lacks clear guidance on distinguishing true concurrent execution (simultaneous, independent actions) from sequential steps, alternative options, or grouped attributes.",
+        "The generator may be over-applying fork/join to any bulleted list or comma-separated enumeration in the text, regardless of whether the items represent parallel flows."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction frequently omits explicit behaviors, system responses, or intermediate states described in the requirements, often collapsing multiple actions into a single vague node.",
+      "possible_causes": [
+        "The prompt may not emphasize the need to preserve all explicitly mentioned actions and system reactions as distinct activity nodes.",
+        "The generator may be summarizing or abstracting detailed steps instead of faithfully translating each behavioral step into the diagram."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces unsupported activities, often by splitting a single requirement into redundant sub-actions or by hallucinating steps not stated in the text.",
+      "possible_causes": [
+        "The prompt may not strictly constrain the generator to only use activities directly supported by the source text, leading to over-interpretation or decomposition of simple statements."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction frequently omits or misrepresents control-flow relations, particularly failing to model nested conditions as nested if/switch structures and missing conditional guards for transitions.",
+      "possible_causes": [
+        "The prompt lacks specific instructions on how to map complex conditional logic (e.g., nested preconditions, state-dependent guards) into proper PlantUML control-flow nesting.",
+        "The generator defaults to flat sequential or linear branching structures when the requirement implies hierarchical or deeply nested decision logic."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds unsupported or incorrect control-flow relations, often by forcing sequential dependencies between independent actions or misinterpreting the branching structure of mutually exclusive conditions.",
+      "possible_causes": [
+        "The generator may struggle to correctly identify the boundaries of alternative paths versus sequential steps, leading to incorrect edges between nodes.",
+        "Lack of explicit guidance on modeling mutually exclusive choices versus sequential flows causes the generator to arbitrarily connect nodes."
+      ]
+    }
+  ]
+}
+```

@@ -1,0 +1,80 @@
+```json
+{
+  "summary": "The current prompt is almost entirely empty regarding workflow and knowledge, leading to massive hallucination and structural failures. The agent over-specifies simple requirements by inventing UI interactions and validation steps, fails to use correct PlantUML control flow constructs (like switch/case), and does not decompose compound actions into granular nodes. The strict node-matching evaluation penalizes these verbose, hallucinated, and improperly structured outputs heavily.",
+  "error_patterns": [
+    {
+      "name": "over_specification_hallucination",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0092",
+        "lmc-0055"
+      ],
+      "problem": "The agent invents detailed UI interactions, system validations, and error handling that are not present in the input requirement. For simple user stories, it hallucinates steps like 'System validates input', 'System displays success message', and 'Owner corrects input' instead of sticking to the stated requirement.",
+      "suggested_prompt_direction": "Instruct the agent to strictly extract activities only from the provided text and explicitly forbid inventing or inferring unstated steps, UI interactions, or system validations.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "missing_switch_construct",
+      "severity": "high",
+      "evidence_case_ids": [
+        "pure-0078",
+        "bp-0028"
+      ],
+      "problem": "When the requirement describes multiple mutually exclusive cases (e.g., 'If expanding... If contracting...' or 'Select either File System or FTP'), the agent uses if/else or fork constructs instead of the correct PlantUML `switch`/`case`/`endswitch` construct for alternative paths.",
+      "suggested_prompt_direction": "Provide explicit knowledge on PlantUML control flow constructs, specifically instructing the use of `switch`/`case`/`endswitch` for modeling mutually exclusive alternative paths.",
+      "target_sections": [
+        "knowledge"
+      ]
+    },
+    {
+      "name": "insufficient_node_granularity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0048",
+        "pure-0046",
+        "bp-0010"
+      ],
+      "problem": "The agent merges multiple distinct actions into a single verbose activity node (e.g., 'Pilot sets heading hold reference via cockpit control' instead of separate 'Pilot uses cockpit control' and 'Set heading hold reference' nodes). This results in missing nodes and incorrect relation flows.",
+      "suggested_prompt_direction": "Instruct the agent to decompose requirements into fine-grained, single-action activity nodes. Each verb phrase or distinct action in the text should become its own separate activity node.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "incorrect_parallel_fork_usage",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "bp-0010",
+        "pure-0046"
+      ],
+      "problem": "The agent uses `fork`/`end fork` to model alternative choices or sequential enumerations (like sorting increasing vs. decreasing, or listing screen contents) rather than using it strictly for concurrent parallel actions.",
+      "suggested_prompt_direction": "Clarify the semantic meaning of PlantUML `fork` as strictly for concurrent parallel activities, and differentiate it from `switch` (alternatives) or sequential flows.",
+      "target_sections": [
+        "knowledge"
+      ]
+    },
+    {
+      "name": "plantuml_syntax_errors",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "bp-0010"
+      ],
+      "problem": "The agent occasionally generates invalid PlantUML syntax, such as using `or` outside of a `fork` block, leading to compilation failures.",
+      "suggested_prompt_direction": "Reinforce strict PlantUML syntax rules in the knowledge section, particularly around the correct structure and allowed keywords for control flow blocks.",
+      "target_sections": [
+        "knowledge"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Generating verbose, descriptive activity labels that combine multiple actions into one node.",
+    "Inventing implicit system behaviors, error handling, or UI steps not present in the source text.",
+    "Using if/else or fork blocks for mutually exclusive alternative paths instead of switch/case."
+  ]
+}
+```

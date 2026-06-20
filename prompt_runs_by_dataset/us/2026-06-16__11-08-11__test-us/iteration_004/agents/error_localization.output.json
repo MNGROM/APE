@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for the model to systematically extract activities, identify control-flow patterns (like loops, parallelism, and conditionals), and map them to PlantUML constructs. This absence causes the model to default to linear, sequential generation, leading to wrong loops, wrong parallel structures, and missing or misstructured relations."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking reusable mapping guidance from linguistic cues (e.g., 'until', 'concurrently', 'if-then') to their corresponding PlantUML constructs (e.g., 'repeat'/'while', 'fork'/'end fork', 'if'/'else'). This deficit causes the model to fail to recognize and correctly represent loops, parallelism, and complex nested conditional logic."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, missing strict constraints to prevent the model from hallucinating speculative activities (like unmentioned 'else' branches or failure paths) and to enforce that all explicitly stated actions, state changes, and conditional behaviors must be modeled as nodes rather than ignored or treated as non-actionable notes. This results in extra activities and missing activities."
+    }
+  ]
+}
+```

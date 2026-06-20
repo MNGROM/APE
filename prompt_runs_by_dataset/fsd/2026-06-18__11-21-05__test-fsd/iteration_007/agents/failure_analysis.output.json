@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "extra_activity",
+      "problem": "The generator frequently hallucinates activities, UI details, or granular sub-steps that are not present in the requirements or ground truth.",
+      "possible_causes": [
+        "The prompt may encourage over-decomposition of high-level requirements into assumed sub-actions (e.g., breaking a single verification step into 9 parallel element checks).",
+        "The generator might be treating descriptive text, system responses, or UI labels as explicit action nodes rather than context."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "Key activities, states, and conditions explicitly stated in the requirements are often omitted or overly compressed in the prediction.",
+      "possible_causes": [
+        "The generator may be collapsing multiple explicit actions or conditional branches into a single broad node to simplify the diagram.",
+        "The prompt may lack instructions to preserve all specified behaviors and state transitions without abstraction."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The generator frequently introduces incorrect control-flow structures, such as forcing sequential steps into parallel forks or adding unsupported conditional branches.",
+      "possible_causes": [
+        "The prompt may not provide clear guidelines on when to use `fork`/`end fork` versus sequential flows, leading to misinterpretation of lists as concurrent tasks.",
+        "The generator might be defaulting to `if/elseif` chains for mutually exclusive cases where `switch`/`case` is more appropriate, or vice versa, distorting the intended logic."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "Critical control-flow relations, such as nested conditions, early terminations, or proper loop continuations, are often misrepresented or dropped.",
+      "possible_causes": [
+        "The generator struggles to map complex, nested requirement logic (e.g., state machines with multiple levels of conditions) into correct PlantUML nesting.",
+        "The prompt may not emphasize the importance of maintaining the exact topological flow and early exits (e.g., `stop` within branches) as specified in the requirements."
+      ]
+    },
+    {
+      "name": "wrong_parallel",
+      "problem": "The generator misinterprets sequential or alternative behaviors as concurrent parallel flows.",
+      "possible_causes": [
+        "Lists of items (e.g., rights to set, attributes to enter) are being translated into `fork` blocks instead of being recognized as sequential or alternative choices.",
+        "Lack of explicit prompt rules distinguishing between concurrent execution and sequential enumeration of options."
+      ]
+    }
+  ]
+}
+```

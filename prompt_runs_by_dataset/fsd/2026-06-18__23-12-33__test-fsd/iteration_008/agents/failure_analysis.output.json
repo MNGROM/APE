@@ -1,0 +1,47 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction frequently introduces fork/join blocks for non-concurrent lists of attributes, options, or sequential steps (false_positive_parallel), while also occasionally missing fork/join when the requirement clearly states concurrent actions (false_negative_parallel).",
+      "possible_causes": [
+        "The prompt lacks clear guidance on distinguishing true concurrent execution (simultaneous, parallel actions) from mere enumeration of attributes, parameters, or sequential UI steps, leading the model to render any list as a fork/join.",
+        "The model is not instructed to look for explicit concurrency keywords (e.g., 'simultaneously', 'concurrent', 'independently') before applying parallel constructs, resulting in false positives.",
+        "For false negatives, the prompt may fail to emphasize that lists of distinct, simultaneous operational actions (e.g., 'conduct tests', 'determine when', 'test units') should be modeled as parallel branches."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction hallucinates activities, decision branches, or UI interactions that are not stated in the requirements, such as adding 'Enter a technical name', 'Notify archivist', or 'Adjust design'.",
+      "possible_causes": [
+        "The prompt does not strictly enforce that all activity nodes must be derived directly from the source text, allowing the model to infer or invent implied steps.",
+        "The model attempts to over-specify abstract requirements (like user stories) by generating speculative implementation details or error-handling paths not present in the input."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "Explicit behaviors, states, or steps described in the requirements are omitted or overly compressed into a single node in the prediction.",
+      "possible_causes": [
+        "The prompt may encourage summarization or abstraction, causing the model to collapse multiple distinct actions into one broad activity node.",
+        "The model prioritizes establishing the high-level control-flow shape over preserving all granular steps mentioned in the requirement."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction introduces incorrect control-flow paths, such as adding conditional checks for unconditional statements, or structuring sequential steps as parallel/alternative flows.",
+      "possible_causes": [
+        "The model defaults to wrapping requirements in conditional logic (if/else) even when the text states facts or unconditional actions, leading to spurious control-flow branches.",
+        "Misinterpretation of structural descriptions (e.g., lists of attributes or sequential UI steps) as alternative or parallel control flows."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction omits required control-flow logic, such as missing conditional guards, flattening nested if/switch structures, or failing to represent state transitions accurately.",
+      "possible_causes": [
+        "The prompt lacks guidance on how to map complex conditional logic and nested state machines from natural language into PlantUML control structures.",
+        "The model struggles to correctly sequence dependent conditions and state transitions, often linearizing them or dropping the nested relationships."
+      ]
+    }
+  ]
+}
+```

@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract distinct actions: Identify every distinct action verb or step explicitly stated in the requirement and map each to its own activity node; do not collapse sequential steps into a single summary node. 2. Identify conditional logic: Locate conditional phrases (e.g., 'if', 'when', 'unless', 'shall be') and model them as if/else decision nodes with the condition as the branch guard, rather than embedding them within activity labels. 3. Track structural nesting: Mentally track opening and closing tags for every control structure (if/endif, switch/endswitch, fork/end fork) to ensure all blocks are properly balanced and closed before ending the diagram."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Use 'if/else' for binary or boolean conditional logic (yes/no, true/false outcomes). Use 'switch/case' only when the requirement explicitly lists three or more mutually exclusive alternative paths or enumerated categories. When a requirement specifies a condition, constraint, or validation (e.g., 'if X', 'when Y', 'shall be Z'), model it as an if/else decision node where the condition is the branch guard, and the subsequent actions are the outcomes."
+    }
+  ],
+  "rationale": "The workflow edit addresses the empty workflow section by providing procedural guidance to extract distinct actions (fixing granularity mismatch), identify conditional phrases as decision nodes (fixing missing decision nodes), and track structural nesting (fixing syntax errors). The knowledge edit addresses the identified knowledge gaps by clarifying the boundary between if/else and switch/case, and establishing the principle that conditions must be modeled as decision nodes.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}
+```

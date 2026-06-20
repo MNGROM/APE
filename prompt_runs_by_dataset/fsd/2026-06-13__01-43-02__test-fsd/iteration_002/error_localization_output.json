@@ -1,0 +1,72 @@
+```json
+{
+  "summary": "The primary failures stem from the model over-decomposing requirements into inferred implementation steps and failing to faithfully map requirement text to control-flow structures. The most effective repair targets are the workflow, which needs stronger extraction and mapping guidance, and the rule section, which needs stricter grounding and anti-serialization constraints.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_activity",
+        "missing_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      "section_problem": "The current workflow instructs the model to 'extract activities' and 'identify control-flow' but fails to prevent decomposition into unstated sub-steps, doesn't enforce preserving exact phrasing, and lacks guidance on using linguistic markers to identify concurrency and alternatives.",
+      "edit_intent": "Revise the workflow to enforce a 1:1 mapping from clauses to activities (preventing decomposition), mandate exact phrasing for labels, and add an explicit step to identify linguistic markers for concurrency/alternatives before determining control-flow.",
+      "evidence_case_ids": [
+        "us-0216",
+        "lmc-0038",
+        "bp-0023",
+        "lmc-0011",
+        "pure-0030",
+        "bp-0007",
+        "pure-0010",
+        "rac-0004"
+      ]
+    },
+    {
+      "section": "rule",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_activity",
+        "missing_activity",
+        "extra_or_wrong_relation"
+      ],
+      "section_problem": "The existing strict grounding and anti-serialization rules are too abstract to prevent the model from inferring UI interactions, implementation details, and artificial sequential dependencies between independent actions.",
+      "edit_intent": "Strengthen the strict grounding rule to explicitly prohibit inferring UI steps, system responses, or implementation details. Add a hard rule enforcing exact phrasing from the source text for activity labels and explicitly prohibit flattening alternative paths into linear sequences.",
+      "evidence_case_ids": [
+        "us-0216",
+        "lmc-0038",
+        "bp-0023",
+        "lmc-0011",
+        "pure-0030",
+        "bp-0007",
+        "pure-0010",
+        "rac-0004"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "rule"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The current task definition correctly scopes the agent as a UML activity diagram code generation agent; the failure is in execution guidance, not role definition."
+    },
+    {
+      "section": "input",
+      "reason": "The input section accurately describes the input format; the errors occur in how that input is processed, not how it is defined."
+    },
+    {
+      "section": "output",
+      "reason": "The output section correctly mandates PlantUML code only, and the failure analysis notes a 100% compilation pass rate, meaning output formatting is not the issue."
+    },
+    {
+      "section": "knowledge",
+      "reason": "While knowledge could hold UML/PlantUML modeling patterns, the constraints prefer general rules, and the current failures are better addressed by direct procedural constraints in workflow and rule."
+    }
+  ]
+}
+```

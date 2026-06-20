@@ -1,0 +1,69 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract a complete and granular, exhaustive list of discrete activities explicitly stated in the text, mapping them 1-to-1 to activity nodes. Extract only activities explicitly stated as actions in the text. A single stated action must remain a single node, and multiple distinct actions must remain distinct nodes, prohibiting both decomposition into assumed sub-steps and compression of multiple actions into one.\nStep 2: Identify iterative or repetitive behaviors triggered by textual cues (e.g., 'repeat', 'every', 'until', 'while') and structural elements such as distinct actors or systems. Map these iterative cues to `repeat`/`while` constructs and distinct actors/systems to `partition` blocks.\nStep 3: Construct the control flow strictly among these extracted nodes, using the text's explicit sequencing and conditional logic, without adding or merging nodes. Identify explicit linguistic cues (e.g., 'simultaneously', 'at the same time', 'concurrently') for simultaneous execution, and construct parallel flows using `fork`/`join` for those cases. Grammatical lists of items, attributes, or options must NOT be interpreted as concurrent flows UNLESS the listed items represent independent actions that can occur without depending on each other's completion; when a list contains such independent actions, model them using `fork`/`join`. Lists of static attributes, alternative choices, or sequential UI steps must remain sequential or `if`/`else` branches.",
+    "knowledge": "- Map iterative keywords (e.g., 'repeat', 'until', 'while') to PlantUML `repeat`/`while` loop constructs rather than linearized sequences. When distinct actors or systems are mentioned, their actions should be enclosed in `partition` blocks named after the actor/system to preserve behavioral boundaries.\n- Distinguish sequential actions from concurrent flows: `fork`/`join` must be used when the text explicitly states simultaneous execution OR when enumerations or lists contain independent actions that can execute without mutual dependency. Lists of static attributes, alternative options, and sequential steps must not be modeled with `fork`/`join`. Mutually exclusive alternatives must be modeled as sequential activities or `if`/`else` branches.\n- Map nested conditional logic: use `switch`/`endswitch` constructs when the requirement evaluates a single variable or entity against multiple distinct, discrete values (e.g., 'depending on [state]', 'based on [type]'). Use `if`/`elseif`/`else` constructs for boolean or overlapping conditions, preserving the exact nesting and topological structure without flattening. When the requirement specifies an early termination or exit from a branch, model it using a `stop` node within that branch rather than forcing the flow to merge back.",
+    "rule": "- Do not invent implicit steps, validations, error-handling branches, or system responses unless they are explicitly stated in the requirement; specifically, prohibit inventing user actions, validations, or interactions for high-level requirements (like user stories) when the text only states a goal—the model must only model what is explicitly detailed without filling in assumed interactions. Additionally, explicitly prohibit compressing multiple explicitly stated actions, conditional branches, or independent actions extracted from lists into a single broad abstract node; all specified behaviors, conditional outcomes, and state transitions must be preserved as distinct nodes without abstraction.\n- Do not add control flow edges that are not directly supported by the requirement's stated sequence or logic; specifically, do not force sequential dependencies between unrelated steps or misroute branches.\n- Do not decompose a single stated action into multiple assumed sub-steps unless those sub-steps are explicitly detailed as distinct actions in the text; specifically, prohibit decomposing a single stated action into multiple granular sub-steps (e.g., breaking a single verification step into multiple parallel element checks) unless explicitly detailed.\n- Preserve granular UI elements, data entry fields, and intermediate system states as distinct activity nodes; do not compress them into broad abstract activities.\n- Preserve all alternative paths, error checks, and specific conditional outcomes explicitly stated in the text; do not drop these activities in favor of only representing the main success path.\n- When distinct actors or systems are mentioned in the requirement, their corresponding activities must be grouped into `partition` blocks; do not omit these structural boundaries.\n- Do not add explicit `else`/`stop` branches for conditions where the requirement does not specify an alternative terminating action; if an `if`-branch represents a conditional step that does not alter the main flow upon failure, the flow must implicitly continue or merge, rather than terminating with a `stop`."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The prediction frequently misidentifies parallelism. It predominantly introduces false_positive_parallel by using fork/join for non-concurrent items such as alternative choices (e.g., text/image/video), sequential attributes, or list items (e.g., name/description/keywords). It also exhibits false_negative_parallel by missing fork/join when the requirement explicitly describes concurrent actions or simultaneous data entry.",
+        "possible_causes": [
+          "The prompt lacks clear guidance on distinguishing true concurrent execution (simultaneous, independent actions) from sequential steps, alternative options, or grouped attributes.",
+          "The generator may be over-applying fork/join to any bulleted list or comma-separated enumeration in the text, regardless of whether the items represent parallel flows."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction frequently omits explicit behaviors, system responses, or intermediate states described in the requirements, often collapsing multiple actions into a single vague node.",
+        "possible_causes": [
+          "The prompt may not emphasize the need to preserve all explicitly mentioned actions and system reactions as distinct activity nodes.",
+          "The generator may be summarizing or abstracting detailed steps instead of faithfully translating each behavioral step into the diagram."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction introduces unsupported activities, often by splitting a single requirement into redundant sub-actions or by hallucinating steps not stated in the text.",
+        "possible_causes": [
+          "The prompt may not strictly constrain the generator to only use activities directly supported by the source text, leading to over-interpretation or decomposition of simple statements."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction frequently omits or misrepresents control-flow relations, particularly failing to model nested conditions as nested if/switch structures and missing conditional guards for transitions.",
+        "possible_causes": [
+          "The prompt lacks specific instructions on how to map complex conditional logic (e.g., nested preconditions, state-dependent guards) into proper PlantUML control-flow nesting.",
+          "The generator defaults to flat sequential or linear branching structures when the requirement implies hierarchical or deeply nested decision logic."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction adds unsupported or incorrect control-flow relations, often by forcing sequential dependencies between independent actions or misinterpreting the branching structure of mutually exclusive conditions.",
+        "possible_causes": [
+          "The generator may struggle to correctly identify the boundaries of alternative paths versus sequential steps, leading to incorrect edges between nodes.",
+          "Lack of explicit guidance on modeling mutually exclusive choices versus sequential flows causes the generator to arbitrarily connect nodes."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "Step 3 provides insufficient boundaries against false-positive parallelism by allowing fork/join for lists of 'independent actions' without strictly defining independence, leading to over-application on alternative choices or grouped attributes. It also lacks explicit positive cues for true concurrency beyond 'simultaneously'/'concurrently', contributing to false-negative parallelism. Additionally, the control flow construction step does not adequately enforce the mapping of nested conditional logic or conditional guards, leading to missing or wrong relations."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section's rule for fork/join permits modeling enumerations or lists containing 'independent actions' as concurrent, which directly causes false-positive parallelism when the generator misjudges alternative options or sequential attributes as independent. It also lacks sufficient positive textual cues for true concurrency, causing false negatives. Furthermore, it provides insufficient guidance on translating complex conditional logic and state-dependent guards into properly nested PlantUML structures, resulting in missing or incorrect relations."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section lacks an explicit prohibition against modeling alternative choices or mutually exclusive options as parallel flows, failing to prevent false-positive parallelism. It also does not strictly enforce the preservation of all explicitly stated system responses and intermediate states as distinct nodes, allowing them to be collapsed into vague abstractions (missing_activity). Finally, it lacks a specific rule against forcing sequential dependencies between independent actions or misrouting mutually exclusive branches, leading to extra or wrong relations."
+      }
+    ]
+  }
+}

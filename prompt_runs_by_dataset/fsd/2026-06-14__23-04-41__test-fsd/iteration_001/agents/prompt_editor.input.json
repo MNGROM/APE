@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "hallucinated_control_flow",
+        "problem": "The generator fabricates decision branches, loops, and error-handling paths that are not specified in the requirements, leading to extra activities and incorrect relations.",
+        "possible_causes": [
+          "The prompt may implicitly encourage the model to make the diagram 'complete' by adding standard UI/UX error handling (e.g., input validation) even when the requirement is a simple declarative statement.",
+          "The model over-interprets user stories, converting the 'so that' clause into a conditional check rather than a simple goal."
+        ]
+      },
+      {
+        "name": "missing_parallel_fork",
+        "problem": "The generator fails to identify and model concurrent or parallel behaviors, representing them sequentially instead.",
+        "possible_causes": [
+          "The prompt lacks instructions to identify lists of simultaneous actions, alternative targets, or concurrent data entries and model them using PlantUML fork/end fork constructs.",
+          "The model defaults to a strictly sequential activity flow when encountering comma-separated lists or multiple simultaneous options."
+        ]
+      },
+      {
+        "name": "over_specification_of_activities",
+        "problem": "The generator decomposes high-level requirements into granular, multi-step interactions that are not present in the source text.",
+        "possible_causes": [
+          "The prompt does not constrain the generator to strictly use the activities described in the text, allowing it to infer unstated sub-steps.",
+          "The model applies common knowledge of how a system works (e.g., profile editing workflows) rather than adhering strictly to the provided requirement."
+        ]
+      },
+      {
+        "name": "missing_conditional_and_optional_paths",
+        "problem": "The generator omits explicit conditional logic and optional steps that are clearly defined in the requirements.",
+        "possible_causes": [
+          "The prompt fails to instruct the model to actively extract and map conditional keywords (e.g., 'if', 'optional', 'if available') into PlantUML if/else or switch/case blocks.",
+          "The model flattens conditional logic into a single sequential path to simplify the diagram, losing required behavioral constraints."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is empty, providing no step-by-step process for the model to first extract activities strictly from the text before constructing control flow. This absence allows the model to conflate extraction with diagramming, leading to hallucinated control flows and over-specified activities as it invents unstated sub-steps and error paths."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is empty, lacking specific guidance on PlantUML constructs for parallel behaviors (fork/end fork) and conditional logic (if/else, switch/case). Without this, the model defaults to sequential flows, missing parallel forks and conditional/optional paths, and fails to recognize linguistic cues for concurrency and conditionals."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is empty, missing critical constraints to prevent the model from fabricating unspecified logic. It needs strict rules to prohibit adding unstated error-handling paths, over-decomposing high-level requirements, and over-interpreting clauses, ensuring the output strictly adheres to the provided text."
+      }
+    ]
+  }
+}

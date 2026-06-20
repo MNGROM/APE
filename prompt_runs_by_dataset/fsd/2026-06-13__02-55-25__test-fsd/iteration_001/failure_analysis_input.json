@@ -1,0 +1,754 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description. \n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n## knowledge\n\n## rule\n",
+  "evaluation": {
+    "summary": {
+      "count": 20.0,
+      "syntax_pass_rate": 0.95,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.1879588042113397,
+      "node_recall": 0.17993637853692201,
+      "node_f1": 0.17555975074201996,
+      "relation_precision": 0.11177576047141265,
+      "relation_recall": 0.10981382987694348,
+      "relation_f1": 0.10942148187501308,
+      "plantuml_compilation_pass_rate": 0.95,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {
+      "missing_activity": 19,
+      "extra_activity": 20,
+      "missing_or_wrong_relation": 20,
+      "extra_or_wrong_relation": 20,
+      "wrong_loop": 1,
+      "syntax_error": 1
+    },
+    "representative_cases": [
+      {
+        "dataset": "pure",
+        "case_id": "pure-0012",
+        "input_requirement": "5.2.2.1 It shall be possible for the driver to initiate a call to any of the following types of controller with a minimum of driver action being required (eg a single keystroke): (M) primary controller; secondary controller; power supply controller. 5.2.2.2 If the radio system cannot give a unique identity for a given type of controller, the identity could be obtained using external systems as defined in 11.4.7. (I) 5.2.2.3 Once an appropriate destination has been obtained, the radio shall attempt to establish a call to this destination. The functional identity shall be displayed to the controller. (M) 5.2.2.3i The functional identity includes the following: − the train number, if available; (M) − the engine number, if no train number is available; (M) − the coach number of the leading cab, if neither a train number nor an engine number is available. (O) 5.2.2.4 An audible and visual indication shall be provided to the driver that the call is proceeding. (M) 5.2.2.5 When the call is connected to the controller, an audible and visual indication is to be provided to the driver. The call shall be connected to the loudspeaker at the pre-set value. (M) 5.2.2.6 The functional identity of the connected party, if available, shall be displayed to the driver. (M) 5.2.2.7 If the functional identity of the connected party contains an alphanumeric description, this shall also be displayed. (M) 5.2.2.8 If the system is not able to connect the call, an audible and visual indication shall be provided to the driver that the call was not received by the controller. This shall also indicate if the called party was busy or if the network could not connect the call. (M)",
+        "gold_plantuml": "start\n\n:Initiate call to controller;\nfork\n:Primary controller;\nfork again\n:Secondary controller;\nfork again\n:Power supply controller;\nend fork\n\nif(Unique identity?) then(no)\n:Use external systems to obtain;\nelse(yes)\nendif\n\n:Obtain appropriate destination;\n:Attempt to establish call to destination;\n:Functional identity be displayed;\n\nif(Train number available?) then(yes)\n:Train number;\nelse(no)\n  if(Engine number available?) then(yes)\n  :Engine number;\n  else(no)\n  :Coach number of leading cab;\n  endif\nendif\n\n:Call is proceeding;\nif(Audible and visual indication?) then(yes)\n:Provide to driver;\nelse(no)\nendif\n\n:Call is connected;\n:Provide driver audible and visual indication;\n:Connect call to loudspeaker at pre-set value;\n\nif(Connected party functional identity available?) then(yes)\n:Display to driver;\n  if(An alphanumeric description?) then(yes)\n  :Display;\n  else(no)\n  endif\nelse(no)\nendif\n\nif(System connect call?) then(no)\n:Provide driver audible and visual indication;\n:Show call was not received;\n:Indicate busy/network could not connect;\nelse(yes)\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nskinparam style strictuml\n\nstart\n\n:Driver initiates call (single keystroke)\nto Primary, Secondary, or Power Supply Controller;\n\nif (Radio system provides unique identity?) then (No)\n  :Obtain identity using external systems\n  (as defined in 11.4.7);\nelse (Yes)\nendif\n\n:Determine functional identity to display to controller:\n  if (Train number available?) then (Yes)\n    :Use Train Number;\n  elseif (Engine number available?) then (Yes)\n    :Use Engine Number;\n  else (No)\n    :Use Coach Number of leading cab;\n  endif;\n\n:Attempt to establish call to destination;\n\n:Provide audible and visual indication\nthat call is proceeding;\n\nif (Call connected?) then (Yes)\n  :Provide audible and visual indication\n  that call is connected;\n  :Connect call to loudspeaker at pre-set value;\n  \n  if (Functional identity of connected party available?) then (Yes)\n    :Display functional identity to driver;\n    if (Identity contains alphanumeric description?) then (Yes)\n      :Display alphanumeric description to driver;\n    else (No)\n    endif;\n  else (No)\n  endif;\n  \nelse (No - Call Failed)\n  :Provide audible and visual indication\n  that call was not received;\n  if (Called party busy?) then (Yes)\n    :Indicate called party is busy;\n  elseif (Network could not connect?) then (Yes)\n    :Indicate network connection failure;\n  else (Other failure)\n  endif;\nendif\n\nstop\n@enduml",
+        "syntax": {
+          "passed": false,
+          "errors": [
+            "ERROR"
+          ]
+        },
+        "plantuml_compilation": {
+          "passed": false,
+          "errors": [
+            "ERROR",
+            "Some diagram description contains errors"
+          ]
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.47058823529411764,
+          "recall": 0.2857142857142857,
+          "f1": 0.35555555555555557,
+          "missing": [
+            "initiate call to controller",
+            "primary controller",
+            "secondary controller",
+            "power supply controller",
+            "unique identity?",
+            "use external systems to obtain",
+            "obtain appropriate destination",
+            "functional identity be displayed",
+            "call is proceeding",
+            "audible and visual indication?",
+            "provide to driver",
+            "provide driver audible and visual indication",
+            "provide driver audible and visual indication",
+            "connected party functional identity available?",
+            "display to driver",
+            "an alphanumeric description?",
+            "display",
+            "system connect call?",
+            "show call was not received",
+            "indicate busy/network could not connect"
+          ],
+          "extra": [
+            "radio system provides unique identity?",
+            "functional identity of connected party available?",
+            "display functional identity to driver",
+            "identity contains alphanumeric description?",
+            "display alphanumeric description to driver",
+            "called party busy?",
+            "indicate called party is busy",
+            "network could not connect?",
+            "indicate network connection failure"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.25,
+          "recall": 0.14814814814814814,
+          "f1": 0.18604651162790697,
+          "missing": [
+            "initiate call to controller -> primary controller",
+            "primary controller -> secondary controller",
+            "secondary controller -> power supply controller",
+            "power supply controller -> unique identity?",
+            "unique identity? -> use external systems to obtain",
+            "use external systems to obtain -> obtain appropriate destination",
+            "obtain appropriate destination -> attempt to establish call to destination",
+            "attempt to establish call to destination -> functional identity be displayed",
+            "functional identity be displayed -> train number available?",
+            "coach number of leading cab -> call is proceeding",
+            "call is proceeding -> audible and visual indication?",
+            "audible and visual indication? -> provide to driver",
+            "provide to driver -> call is connected",
+            "call is connected -> provide driver audible and visual indication",
+            "provide driver audible and visual indication -> connect call to loudspeaker at pre-set value",
+            "connect call to loudspeaker at pre-set value -> connected party functional identity available?",
+            "connected party functional identity available? -> display to driver",
+            "display to driver -> an alphanumeric description?",
+            "an alphanumeric description? -> display",
+            "display -> system connect call?"
+          ],
+          "extra": [
+            "radio system provides unique identity? -> train number available?",
+            "use coach number of leading cab -> attempt to establish call to destination",
+            "attempt to establish call to destination -> call connected?",
+            "call connected? -> connect call to loudspeaker at pre-set value",
+            "connect call to loudspeaker at pre-set value -> functional identity of connected party available?",
+            "functional identity of connected party available? -> display functional identity to driver",
+            "display functional identity to driver -> identity contains alphanumeric description?",
+            "identity contains alphanumeric description? -> display alphanumeric description to driver",
+            "display alphanumeric description to driver -> called party busy?",
+            "called party busy? -> indicate called party is busy",
+            "indicate called party is busy -> network could not connect?",
+            "network could not connect? -> indicate network connection failure"
+          ]
+        },
+        "failure_types": [
+          "syntax_error",
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0055",
+        "input_requirement": "7.\tThe Rotation Matrix, DCM321, multiplied by the transpose of the Rotation Matrix, DCM321T shall be the Identity (3x3) Matrix.v",
+        "gold_plantuml": "start\n\n:DCM321 * DCM321T;\nif( =Identity (3x3) Matrix.v?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Initialize Rotation Matrix DCM321;\n:Compute Transpose of Rotation Matrix DCM321T;\n:Multiply DCM321 by DCM321T;\nif (Result == Identity (3x3) Matrix?) then (Yes)\n  :Validation Passed;\nelse (No)\n  :Validation Failed;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "dcm321 * dcm321t",
+            "=identity (3x3",
+            "allowed",
+            "not allowed"
+          ],
+          "extra": [
+            "initialize rotation matrix dcm321",
+            "compute transpose of rotation matrix dcm321t",
+            "multiply dcm321 by dcm321t",
+            "result == identity (3x3",
+            "validation passed",
+            "validation failed"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "dcm321 * dcm321t -> =identity (3x3",
+            "=identity (3x3 -> allowed",
+            "allowed -> not allowed"
+          ],
+          "extra": [
+            "initialize rotation matrix dcm321 -> compute transpose of rotation matrix dcm321t",
+            "compute transpose of rotation matrix dcm321t -> multiply dcm321 by dcm321t",
+            "multiply dcm321 by dcm321t -> result == identity (3x3",
+            "result == identity (3x3 -> validation passed",
+            "validation passed -> validation failed"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0078",
+        "input_requirement": "1. The user selects a period of time within the displayed viewing period over which to expand or contract in time. 2. The tool expands or contracts the selected period. If expanding, the selected period becomes the new viewing period. If contracting, the new viewing period becomes twice as long as the selected period and encloses it.",
+        "gold_plantuml": "start\n\n:Selects period within displayed period; \n\nswitch(Operation)\ncase(Expand)\n:Selected period becomes new viewing period;\ncase(Contract)\n:New viewing period becomes twice;\n:Encloses selected period;\nendswitch\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:The user selects a period of time\nwithin the displayed viewing period;\nif (Expanding?) then (Yes)\n  :The selected period becomes\n  the new viewing period;\nelse (No - Contracting)\n  :The new viewing period becomes\n  twice as long as the selected period\n  and encloses it;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "selects period within displayed period",
+            "operation",
+            "expand",
+            "selected period becomes new viewing period",
+            "contract",
+            "new viewing period becomes twice",
+            "encloses selected period"
+          ],
+          "extra": [
+            "expanding?"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "selects period within displayed period -> operation",
+            "operation -> expand",
+            "expand -> selected period becomes new viewing period",
+            "selected period becomes new viewing period -> contract",
+            "contract -> new viewing period becomes twice",
+            "new viewing period becomes twice -> encloses selected period"
+          ],
+          "extra": []
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0098",
+        "input_requirement": "As an Owner, I want to edit my profile, so that that it is updated with new information.",
+        "gold_plantuml": "start\n:Edit profile;\n:Upload new information;\nstop",
+        "generated_plantuml": "@startuml\nskinparam style strictuml\n\nstart\n:Owner selects \"Edit Profile\";\n:System displays current profile information;\n:Owner modifies profile fields;\n:Owner clicks \"Save\";\n:System validates input;\nif (Valid input?) then (yes)\n  :System updates profile;\n  :System displays success message;\nelse (no)\n  :System displays error message;\n  :Owner corrects input;\n  stop\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "edit profile",
+            "upload new information"
+          ],
+          "extra": [
+            "owner selects edit profile",
+            "system displays current profile information",
+            "owner modifies profile fields",
+            "owner clicks save",
+            "system validates input",
+            "valid input?",
+            "system updates profile",
+            "system displays success message",
+            "system displays error message",
+            "owner corrects input"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "edit profile -> upload new information"
+          ],
+          "extra": [
+            "owner selects edit profile -> system displays current profile information",
+            "system displays current profile information -> owner modifies profile fields",
+            "owner modifies profile fields -> owner clicks save",
+            "owner clicks save -> system validates input",
+            "system validates input -> valid input?",
+            "valid input? -> system updates profile",
+            "system updates profile -> system displays success message",
+            "system displays success message -> system displays error message",
+            "system displays error message -> owner corrects input"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0048",
+        "input_requirement": "Requirement\tWhen heading hold mode becomes the active mode the heading hold reference shall be set by the pilot via a cockpit control.",
+        "gold_plantuml": "start\n\n:Requirement When heading hold mode becomes active;\n:Pilot uses cockpit control;\n:Set heading hold reference;\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Heading hold mode becomes the active mode;\n:Pilot sets heading hold reference via cockpit control;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "requirement when heading hold mode becomes active",
+            "pilot uses cockpit control",
+            "set heading hold reference"
+          ],
+          "extra": [
+            "heading hold mode becomes the active mode",
+            "pilot sets heading hold reference via cockpit control"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "requirement when heading hold mode becomes active -> pilot uses cockpit control",
+            "pilot uses cockpit control -> set heading hold reference"
+          ],
+          "extra": [
+            "heading hold mode becomes the active mode -> pilot sets heading hold reference via cockpit control"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0092",
+        "input_requirement": "As a Consumer, I want to know full details of how the data package schema has changed, so that that I can adjust my scripts to handle it.",
+        "gold_plantuml": "start\n:Get full Details of data package schema changes;\n:Adjust scripts to handle;\nstop",
+        "generated_plantuml": "@startuml\nskinparam style strictuml\n\ntitle Activity: View Data Package Schema Change Details\n\nstart\n\n:Consumer requests schema change details;\n\n:System retrieves data package schema history;\n\n:System identifies recent schema changes;\n\n:Compare previous schema version with current schema version;\n\n:Generate detailed change report (added/removed/modified fields);\n\n:Display full schema change details to Consumer;\n\n:Consumer reviews changes;\n\n:Consumer adjusts scripts to handle schema changes;\n\nstop\n\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "get full details of data package schema changes",
+            "adjust scripts to handle"
+          ],
+          "extra": [
+            "consumer requests schema change details",
+            "system retrieves data package schema history",
+            "system identifies recent schema changes",
+            "compare previous schema version with current schema version",
+            "generate detailed change report (added/removed/modified fields)",
+            "display full schema change details to consumer",
+            "consumer reviews changes",
+            "consumer adjusts scripts to handle schema changes"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "get full details of data package schema changes -> adjust scripts to handle"
+          ],
+          "extra": [
+            "consumer requests schema change details -> system retrieves data package schema history",
+            "system retrieves data package schema history -> system identifies recent schema changes",
+            "system identifies recent schema changes -> compare previous schema version with current schema version",
+            "compare previous schema version with current schema version -> generate detailed change report (added/removed/modified fields)",
+            "generate detailed change report (added/removed/modified fields) -> display full schema change details to consumer",
+            "display full schema change details to consumer -> consumer reviews changes",
+            "consumer reviews changes -> consumer adjusts scripts to handle schema changes"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0040",
+        "input_requirement": "2.\tWhen the determinant of B(inv(Wp’)B’ is > 1e-12 as indicated by ridge_on set to False, the inversion of the B(inv(Wp’)B’ matrix should be accurate to 12 digits precision in that each element in the check output matrix is within a 1e-12 tolerance with respect to the elements of a 3x3 identity matrix.",
+        "gold_plantuml": "start\n\n:Ridge_on set to False;\n:Determinant of B(inv(Wp’)B’> 1e-12;\n:Each element with respect to 3x3 identity matrix elements < 1e-12 tolerance;\n:B(inv(Wp’)B’matrix inversion be accurate to 12 digits precision;\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Calculate matrix M = B(inv(Wp'))B';\n:Check determinant of M;\nif (det(M) > 1e-12?) then (Yes)\n  :Set ridge_on = False;\n  :Invert matrix M to get M_inv;\n  :Compute check output matrix = M * M_inv;\n  :Compare check output matrix to 3x3 identity matrix;\n  if (Each element within 1e-12 tolerance?) then (Yes)\n    :Inversion accurate to 12 digits precision;\n  else (No)\n    :Inversion precision check failed;\n  endif\nelse (No)\n  :Set ridge_on = True;\n  :Handle ill-conditioned matrix;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "ridge_on set to false",
+            "determinant of b(inv(wp )b > 1e-12",
+            "each element with respect to 3x3 identity matrix elements < 1e-12 tolerance",
+            "b(inv(wp )b matrix inversion be accurate to 12 digits precision"
+          ],
+          "extra": [
+            "calculate matrix m = b(inv(wp ))b",
+            "check determinant of m",
+            "det(m",
+            "set ridge_on = false",
+            "invert matrix m to get m_inv",
+            "compute check output matrix = m * m_inv",
+            "compare check output matrix to 3x3 identity matrix",
+            "each element within 1e-12 tolerance?",
+            "inversion accurate to 12 digits precision",
+            "inversion precision check failed",
+            "set ridge_on = true",
+            "handle ill-conditioned matrix"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "ridge_on set to false -> determinant of b(inv(wp )b > 1e-12",
+            "determinant of b(inv(wp )b > 1e-12 -> each element with respect to 3x3 identity matrix elements < 1e-12 tolerance",
+            "each element with respect to 3x3 identity matrix elements < 1e-12 tolerance -> b(inv(wp )b matrix inversion be accurate to 12 digits precision"
+          ],
+          "extra": [
+            "calculate matrix m = b(inv(wp ))b -> check determinant of m",
+            "check determinant of m -> det(m",
+            "det(m -> set ridge_on = false",
+            "set ridge_on = false -> invert matrix m to get m_inv",
+            "invert matrix m to get m_inv -> compute check output matrix = m * m_inv",
+            "compute check output matrix = m * m_inv -> compare check output matrix to 3x3 identity matrix",
+            "compare check output matrix to 3x3 identity matrix -> each element within 1e-12 tolerance?",
+            "each element within 1e-12 tolerance? -> inversion accurate to 12 digits precision",
+            "inversion accurate to 12 digits precision -> inversion precision check failed",
+            "inversion precision check failed -> set ridge_on = true",
+            "set ridge_on = true -> handle ill-conditioned matrix"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0019",
+        "input_requirement": "As an Enforcement Staff member, I want to Issue a Notice of Violation, so that I can provide formal communication to the responsible party.",
+        "gold_plantuml": "start\n:Issue a Notice of Violation;\n:Provide formal communication;\nstop",
+        "generated_plantuml": "@startuml\nskinparam style strictuml\nskinparam ActivityBackgroundColor #E8F5E9\nskinparam ActivityBorderColor #2E7D32\nskinparam NoteBorderColor #FFA726\nskinparam NoteBackgroundColor #FFF3E0\n\ntitle Issue a Notice of Violation\n\nstart\n\n:Enforcement Staff logs into the system;\n\n:Search for the case or responsible party;\n\nif (Case/Party found?) then (Yes)\n  :Select the case record;\nelse (No)\n  :Create a new case record;\nendif\n\n:Initiate \"Issue Notice of Violation\";\n\n:Enter violation details\n(Description, Code, Date, Location);\n\n:Select responsible party details;\n\n:Attach supporting evidence/documents;\n\n:Generate Notice of Violation document;\n\n:Review notice details;\n\nif (Notice accurate and complete?) then (Yes)\n  :Approve and issue the notice;\n  :System sends formal communication\n  to the responsible party;\n  :Update case status to 'Violation Issued';\n  :Log issuance date and user;\nelse (No)\n  :Edit violation details;\n  note right: Return to data entry\n  stop\nendif\n\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "issue a notice of violation",
+            "provide formal communication"
+          ],
+          "extra": [
+            "enforcement staff logs into the system",
+            "search for the case or responsible party",
+            "case/party found?",
+            "select the case record",
+            "create a new case record",
+            "initiate issue notice of violation",
+            "select responsible party details",
+            "attach supporting evidence/documents",
+            "generate notice of violation document",
+            "review notice details",
+            "notice accurate and complete?",
+            "approve and issue the notice",
+            "update case status to violation issued",
+            "log issuance date and user",
+            "edit violation details"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "issue a notice of violation -> provide formal communication"
+          ],
+          "extra": [
+            "enforcement staff logs into the system -> search for the case or responsible party",
+            "search for the case or responsible party -> case/party found?",
+            "case/party found? -> select the case record",
+            "select the case record -> create a new case record",
+            "create a new case record -> initiate issue notice of violation",
+            "initiate issue notice of violation -> select responsible party details",
+            "select responsible party details -> attach supporting evidence/documents",
+            "attach supporting evidence/documents -> generate notice of violation document",
+            "generate notice of violation document -> review notice details",
+            "review notice details -> notice accurate and complete?",
+            "notice accurate and complete? -> approve and issue the notice",
+            "approve and issue the notice -> update case status to violation issued",
+            "update case status to violation issued -> log issuance date and user",
+            "log issuance date and user -> edit violation details"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      }
+    ]
+  },
+  "knowledge_gap_policy": {
+    "identify_when": [
+      "the failure reflects reusable UML or PlantUML modeling knowledge missing from the current prompt",
+      "the same modeling mistake appears across multiple cases or failure patterns",
+      "the repair can be expressed as a general modeling principle rather than a case-specific instruction"
+    ],
+    "avoid_when": [
+      "the issue is only caused by provider, timeout, parsing, or other infrastructure errors",
+      "the repair would copy a training case, a gold diagram, or dataset-specific wording",
+      "the issue is only output formatting and is better handled in the output or rule section"
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge|rule"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "short snake_case label",
+        "related_failure_patterns": [
+          "error pattern names from error_patterns"
+        ],
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "gap": "what reusable UML/PlantUML modeling knowledge is missing or unclear",
+        "suggested_knowledge": "concise general knowledge that could be added to the knowledge section"
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

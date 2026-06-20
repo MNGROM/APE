@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a structured, step-by-step process to extract and model activities strictly from the input text, preventing extra or hallucinated elements.",
+      "change_instruction": "Add a workflow that requires: 1) Identifying and listing only the explicit activities and actions stated in the input. 2) Determining the sequential or conditional control flow strictly between those identified activities. 3) Mapping the activities and flows directly into PlantUML syntax. Emphasize that no activities or transitions should be added if they are not explicitly grounded in the input text."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Equip the agent with essential PlantUML syntax and UML activity diagram conventions to ensure correct and conservative diagram structure.",
+      "change_instruction": "Add knowledge covering: 1) Basic PlantUML activity diagram syntax (start/stop, action states, transitions, if/else/endif for conditional branches, while/endwhile for loops). 2) UML conventions such as every diagram requiring exactly one start node and at least one end node. 3) A rule that conditional logic in the text must map to standard branching elements rather than linear sequences."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce strict output formatting and structural validity constraints to prevent non-compliant PlantUML generation.",
+      "change_instruction": "Add rules stating: 1) Output must contain only valid PlantUML code with no markdown formatting, explanations, or surrounding text. 2) Every generated diagram must include exactly one 'start' and at least one 'stop' node. 3) All activity names and transition labels must closely reflect the exact phrasing from the input requirement. 4) Do not invent background steps, implicit transitions, or extra activities not explicitly mentioned in the input."
+    }
+  ]
+}
+```

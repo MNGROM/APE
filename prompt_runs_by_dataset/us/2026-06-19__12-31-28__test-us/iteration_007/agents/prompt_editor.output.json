@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Combined intent: Eliminate false-positive parallelism by strictly defaulting lists and 'and'-clauses to single activities or sequential flows.; Ensure mutually exclusive conditions are mapped to switch/if/elseif instead of nested ifs.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise Step 1 to establish a default rule: comma-separated lists, 'and'-joined clauses, and enumerations of attributes, options, or roles must be grouped into a single activity node or connected sequentially. Explicit concurrency cues (e.g., 'simultaneously', 'in parallel', 'concurrently') are the only permitted triggers for decomposing these into parallel branches. Remove any ambiguous phrasing that suggests contextual decomposition.; Revise Step 3 to explicitly instruct that when the requirement presents mutually exclusive conditions, alternative options, or case-based outcomes, they must be mapped to switch/case or if/elseif structures, and deeply nested if/else structures must be avoided for such logic."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Combined intent: Prevent false-positive fork/join usage for non-concurrent lists and clarify positive concurrency cues.; Provide guidance for complex iterative patterns like exponential backoff and periodic monitoring.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise the concurrency modeling rule to explicitly list non-concurrent categories that must NOT use fork/join: lists of permissions/rights, configuration attributes, deployment options, and sequential UI steps. State that fork/join is strictly reserved for actions linked by explicit concurrency keywords ('simultaneously', 'in parallel', 'concurrently') or describing simultaneous system behaviors. Remove the broad 'and'-joined clause trigger unless accompanied by these explicit cues.; Expand the loop modeling rule to include specific mapping instructions for complex iterative patterns: map 'periodic' or 'monitoring' cues to repeat/while loops enclosing the monitoring action and subsequent logic, and map 'retry with exponential backoff' to a repeat/while loop where the loop body contains the retry action followed by a delay/wait activity that increases iteratively."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent hallucinated activities for constraints and enforce decomposition of complex actions.",
+      "change_instruction": "Revise the granularity rule to add two qualifications: 1) Constraints (e.g., 'shall not exceed', 'must be within') are inherent properties of an action and must be represented as simple activities or guard conditions, not as runtime conditional checks with invented branching outcomes (e.g., 'Error tolerance exceeded'). 2) Complex actions describing multi-part behaviors (e.g., 'exchange content availability and load information') must be decomposed into separate sequential or parallel activities for each constituent part, rather than collapsed into a single broad node."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Enforce explicit extraction of parallel and iterative behaviors before sequential control flow construction to prevent defaulting to sequential interpretation.",
+      "change_instruction": "Restructure the workflow steps so that identifying and mapping parallel behaviors (to fork/end fork) and iterative behaviors (to repeat/while) occurs as a distinct, mandatory phase immediately after action extraction and before constructing the main sequential or conditional control flow. Add a step requiring the model to explicitly list out concurrent actions and iterative actions with their linguistic cues as intermediate output before diagramming."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Strengthen rules for preserving granular activities and correctly mapping bounded retries/persistent cycles.",
+      "change_instruction": "Add a rule emphasizing that lists of independent attributes, UI fields, or simultaneous system responses must be preserved as separate, fine-grained activity nodes and not compressed. Add a rule explicitly defining how to map bounded retries (e.g., 'retry up to N times') and persistent cycles (e.g., 'continuously', 'keeps doing') into PlantUML `repeat`/`while` loops with appropriate exit conditions based strictly on the text."
+    },
+    {
+      "section": "rule",
+      "intent": "Prohibit hallucinated loop conditions and enforce preservation of nested conditional logic.",
+      "change_instruction": "Add a strict rule forbidding the invention of placeholder loop conditions or control logic not explicitly stated in the text (e.g., no adding 'retry' loops if only a simple check is requested). Add a rule explicitly prohibiting the flattening of nested conditional logic, requiring that if/else or switch/case structures identified as nested in the text must remain nested in the PlantUML code."
+    }
+  ]
+}
+```

@@ -1,0 +1,71 @@
+```json
+{
+  "summary": "The most useful repair targets are the workflow and rule sections. The prompt currently lacks any procedural guidance for extracting and grounding activities, leading to severe over-decomposition and merging of requirement statements. These activity errors cascade into broken control-flow relations. Adding a structured workflow for activity extraction and control-flow reasoning, backed by strict grounding rules, addresses the root cause.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_activity",
+        "missing_activity",
+        "missing_or_wrong_relation"
+      ],
+      "section_problem": "The workflow section is completely empty, providing no step-by-step procedure for identifying activities from the text or reasoning about control-flow relations before generating PlantUML.",
+      "edit_intent": "Introduce a structured generation procedure that first extracts explicit activities from the requirement, ensures one-to-one mapping of distinct actions, and then explicitly reasons about the control-flow relations between those grounded activities.",
+      "evidence_case_ids": [
+        "us-0216",
+        "us-0153",
+        "lmc-0038",
+        "bp-0007",
+        "pure-0010",
+        "pure-0030",
+        "rac-0004",
+        "bp-0023"
+      ]
+    },
+    {
+      "section": "rule",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_activity",
+        "missing_activity",
+        "wrong_parallel"
+      ],
+      "section_problem": "The rule section is empty, failing to constrain the model against hallucinating implementation details or merging distinct actions, and providing no priority rules for distinguishing parallel flows from alternative branches.",
+      "edit_intent": "Add strict grounding rules to forbid inventing implicit implementation steps and to mandate that each explicit action maps to a distinct activity node. Include a rule to distinguish concurrent parallel actions (fork) from mutually exclusive alternatives (switch/if).",
+      "evidence_case_ids": [
+        "us-0216",
+        "us-0153",
+        "lmc-0038",
+        "bp-0007",
+        "pure-0010",
+        "pure-0030",
+        "pure-0030",
+        "bp-0023"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "rule"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "output",
+      "reason": "The output section already correctly specifies 'Output PlantUML code only.' The syntax errors are low severity and stem primarily from the model struggling with complex, hallucinated control flows; fixing the activity grounding in workflow/rule will likely resolve these cascading syntax issues."
+    },
+    {
+      "section": "knowledge",
+      "reason": "While knowledge could help with parallel vs. alternative semantics and syntax, the constraints limit edits to a maximum of 2 sections. The workflow and rule sections are more critical to address the high-severity activity grounding failures, and the parallel distinction can be enforced via a concise rule."
+    },
+    {
+      "section": "agent task",
+      "reason": "The agent task accurately defines the role as a UML activity diagram code generation agent. The failures are caused by a lack of operational constraints and procedures, not a misdefined scope."
+    },
+    {
+      "section": "input",
+      "reason": "The input section accurately describes the input format. The failure is not in how the input is read, but in how it is processed and transformed into activities."
+    }
+  ]
+}
+```

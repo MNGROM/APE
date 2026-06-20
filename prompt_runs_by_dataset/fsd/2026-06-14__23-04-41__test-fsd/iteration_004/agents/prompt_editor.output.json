@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "rule",
+      "intent": "Prevent hallucinated detail inflation and over-structuring of simple requirements.",
+      "change_instruction": "Add strict constraints: 1) Do not invent implicit steps, validations, or error-handling branches unless explicitly stated in the requirement. 2) Do not assume standard CRUD or operational flows not present in the text. 3) Do not introduce conditional logic (if/else/switch) for simple, linear requirements; use flat, sequential flows when the text has no decision points."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide guidance on modeling parallelism and preserving conditional exit criteria.",
+      "change_instruction": "Add PlantUML modeling knowledge: 1) Explain how to model concurrent/parallel actions using 'fork' and 'end fork' syntax. 2) Provide a reusable pattern for conditional guards and exit criteria, instructing the model to represent explicit exit conditions and state transitions as distinct 'if/else' or 'switch' branches with accurate guard labels, rather than merging them into a single happy-path."
+    },
+    {
+      "section": "workflow",
+      "intent": "Establish a faithful extraction and structuring process before code generation.",
+      "change_instruction": "Add a step-by-step workflow: 1) Extract only the explicit activities and actions stated in the text, matching its granularity. 2) Identify linguistic cues for concurrent behavior (e.g., 'simultaneously', 'at the same time', lists of items received together) and map them to fork/end fork structures. 3) Identify explicit decision points, conditional guards, and exit conditions, mapping them to appropriate control-flow branches. 4) Generate the PlantUML code strictly based on the extracted elements and structures from the previous steps."
+    }
+  ]
+}
+```

@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, failing to provide strict constraints against inventing implicit system behaviors, error-handling logic, or UI-level sub-steps that are not explicitly stated in the requirements, leading to hallucinated control flows and over-granular decomposition."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking reusable modeling guidance for mapping linguistic cues (like lists of attributes or enumerated options) to PlantUML parallel fork and conditional branching constructs, causing the model to default to strictly sequential flows."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, failing to define a step-by-step process that forces the model to first extract activities at the correct abstraction level and then explicitly identify parallel and alternative structures before generating the PlantUML code."
+    }
+  ]
+}
+```

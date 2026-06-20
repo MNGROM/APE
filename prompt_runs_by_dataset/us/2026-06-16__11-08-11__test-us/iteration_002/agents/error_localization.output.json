@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, providing no step-by-step process for the model to extract activities, identify control-flow structures (parallelism, alternatives), and map them to PlantUML constructs, which leads to hallucinated logic, flattened parallelism, and lost conditional alternatives."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, failing to provide the model with essential PlantUML syntax patterns (e.g., fork/end fork, switch/endswitch) and structural cues for recognizing concurrency and alternative flows in text."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, allowing the model to infer unstated operational procedures and summarize/interpret requirements at incorrect granularity levels instead of strictly and faithfully transcribing only the explicitly stated actions."
+    }
+  ]
+}
+```

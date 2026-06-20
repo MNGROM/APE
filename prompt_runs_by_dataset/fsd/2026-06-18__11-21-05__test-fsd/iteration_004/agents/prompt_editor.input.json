@@ -1,0 +1,70 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract a complete and granular, exhaustive list of discrete activities explicitly stated in the text, mapping them 1-to-1 to activity nodes without summarizing or adding implicit steps. Preserve distinct UI elements, data entry fields, and intermediate states as separate nodes rather than summarizing them.\nStep 2: Construct the control flow strictly among these extracted nodes, using the text's explicit sequencing and conditional logic, without adding or merging nodes. Identify linguistic cues for simultaneous execution (e.g., 'simultaneously', 'at the same time', 'concurrently') and construct parallel flows using `fork`/`join` for those specific cases, while keeping sequential or alternative lists as non-parallel.",
+    "knowledge": "- Distinguish sequential actions from concurrent flows: only use `fork`/`join` when the requirement explicitly states simultaneous execution; grammatical lists (e.g., 'enter name and description') or alternative options must be modeled as sequential activities or `if`/`else` branches, not as parallel forks. `fork`/`join` must be used when the requirement uses explicit concurrency cues (e.g., 'simultaneously', 'concurrently', 'at the same time').\n- Map nested conditional logic: map mutually exclusive conditions (e.g., 'if X, else if Y') using nested `if`/`elseif`/`else` constructs rather than flattening them into sequential or unrelated branches. However, for mutually exclusive state-based transitions or case-like logic (e.g., 'depending on state X'), use `switch`/`endswitch` constructs instead of `if`/`elseif`/`else`.",
+    "rule": "- Do not invent implicit steps, validations, error-handling branches, or system responses unless they are explicitly stated in the requirement.\n- Do not add control flow edges that are not directly supported by the requirement's stated sequence or logic; specifically, do not force sequential dependencies between unrelated steps or misroute branches.\n- Do not decompose a single stated action into multiple assumed sub-steps unless those sub-steps are explicitly detailed in the text.\n- Preserve granular UI elements, data entry fields, and intermediate system states as distinct activity nodes; do not compress them into broad abstract activities."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The generator fails to identify and model concurrent behaviors, frequently replacing parallel forks with sequential activities or incorrect conditional branches.",
+        "possible_causes": [
+          "The prompt lacks explicit instructions to identify simultaneous actions (e.g., 'fork'/'split' for parallel execution) and defaults to sequential modeling.",
+          "Listed items or attributes in the requirements are interpreted as sequential steps rather than concurrent flows."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "Control flow is frequently misrouted, with conditions incorrectly nested, mutually exclusive paths chained sequentially, or early exits omitted.",
+        "possible_causes": [
+          "The prompt does not adequately guide the model to distinguish between nested conditions and mutually exclusive alternative flows (e.g., 'else if' vs. sequential 'if').",
+          "The model struggles to map complex state transitions and termination conditions from natural language, resulting in missing 'stop' nodes or incorrect state paths."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The generator introduces speculative or hallucinated activities, often by decomposing single actions into multiple granular steps or adding unmentioned decision nodes.",
+        "possible_causes": [
+          "The prompt encourages over-decomposition of actions, leading the model to invent intermediate steps not present in the requirements.",
+          "The model attempts to make implicit checks explicit by adding conditional nodes (e.g., 'Is X required?') where the requirement only specifies a direct action."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "Explicit behaviors, states, and alternative flows from the requirements are frequently omitted or oversimplified.",
+        "possible_causes": [
+          "The model prioritizes establishing the main control-flow shape and drops alternative or edge-case paths to reduce complexity.",
+          "Lengthy or highly nested requirements cause the model to truncate or compress later steps and conditions."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "Retry or periodic behaviors specified in the requirements are not represented as loops in the diagram.",
+        "possible_causes": [
+          "The prompt does not provide clear heuristics for mapping repetitive or corrective user actions (like re-entering a password) into 'while' or 'repeat' loops.",
+          "The model interprets corrective alternative flows as one-time sequential branches rather than iterative cycles."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section lacks a step for identifying and modeling repetitive or corrective behaviors (loops), causing the model to treat them as one-time sequential branches. Additionally, it does not explicitly guide the extraction and routing of termination conditions or early exits, leading to misrouted control flows and missing 'stop' nodes."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section lacks reusable modeling guidance for identifying and constructing loops (e.g., 'while'/'repeat') from linguistic cues of repetition or retry logic. It also fails to provide heuristics for distinguishing true concurrent execution from grammatical lists of attributes, and lacks guidance on mapping termination conditions and early exits, which results in misrouted relations and incorrect parallel forks."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section's instruction to 'preserve granular UI elements... as distinct activity nodes' contradicts the rule against inventing implicit steps, encouraging over-decomposition where the model splits single actions into multiple hallucinated sub-steps or adds unmentioned decision nodes. It also lacks an explicit prohibition against dropping alternative or edge-case flows, which leads to missing activities."
+      }
+    ]
+  }
+}

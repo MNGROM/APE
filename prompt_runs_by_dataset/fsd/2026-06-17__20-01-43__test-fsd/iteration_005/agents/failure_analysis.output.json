@@ -1,0 +1,47 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The model never generates fork/join constructs, flattening all concurrent or co-occurring behaviors into sequential steps.",
+      "possible_causes": [
+        "The prompt does not instruct the model to look for simultaneous or co-equal sub-tasks (e.g., entering multiple fields, displaying multiple attributes, performing independent checks) and represent them with fork/fork-again/end-fork.",
+        "The model defaults to a linear reading of the requirement, treating every listed item as a sequential step rather than recognizing structural cues for parallelism."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "Repeat/loop constructs are never produced even when the requirement explicitly describes repetition (e.g., 'repeat steps', 'until processing is complete').",
+      "possible_causes": [
+        "The prompt lacks guidance on mapping iterative or periodic language in requirements to PlantUML repeat/while loops.",
+        "The model collapses loop bodies into a single pass or a linear sequence of steps, losing the iterative semantics entirely."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "Control-flow relations are frequently misstructured: nested conditionals are flattened into sequential independent ifs, if/elseif chains are replaced by disconnected if blocks, and switch/case nesting is incorrect.",
+      "possible_causes": [
+        "The prompt does not emphasize preserving the hierarchical nesting of conditions as described in the requirement (e.g., 'under that condition' implies a nested scope).",
+        "The model treats each conditional rule as an independent top-level branch rather than recognizing dependency chains and sub-conditions.",
+        "Insufficient examples of properly nested if/elseif and switch structures in the prompt lead the model to default to flat sequential conditionals."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "Activities present in the ground truth—such as intermediate state labels, context-setting actions (e.g., 'In no-fail state'), and conditional-branch outcomes (e.g., 'Allowed'/'Not allowed')—are omitted.",
+      "possible_causes": [
+        "The model filters out descriptive or contextual statements as non-actionable, even when they serve as meaningful activity nodes in the diagram.",
+        "The prompt does not clarify that outcome labels, state descriptions, and contextual setup statements should be represented as activity nodes."
+      ]
+    },
+    {
+      "name": "syntax_error",
+      "problem": "Invalid PlantUML is generated when conditional structures are opened incorrectly (e.g., elseif without a preceding if).",
+      "possible_causes": [
+        "The prompt does not enforce or demonstrate that every elseif must follow an if, and that switch/case blocks require proper endswitch closure.",
+        "The model attempts to use advanced PlantUML control-flow keywords without understanding their syntactic dependencies."
+      ]
+    }
+  ]
+}
+```

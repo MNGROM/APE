@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "hallucinated_decomposition",
+        "problem": "The generator decomposes high-level requirements or mathematical constraints into granular, procedural steps that are not present in the source text, leading to extra activities and incorrect control flow.",
+        "possible_causes": [
+          "The prompt lacks instructions to map requirements directly to diagram nodes without inventing implementation steps.",
+          "The generator defaults to a procedural programming mindset (e.g., 'Initialize', 'Compute', 'Evaluate') rather than a requirement-verification mindset."
+        ]
+      },
+      {
+        "name": "flattened_conditional_logic",
+        "problem": "The generator fails to represent alternative paths as proper conditional branches (if/else or switch/case), instead modeling them as sequential or nested steps, which distorts the control flow.",
+        "possible_causes": [
+          "The prompt does not emphasize identifying mutually exclusive decision points and mapping them to PlantUML branching syntax.",
+          "The generator struggles to distinguish between sequential instructions and alternative user actions or system conditions described in the requirements."
+        ]
+      },
+      {
+        "name": "incorrect_concurrency_scope",
+        "problem": "The generator misidentifies which actions should run concurrently, often placing sequential checks inside fork blocks or failing to fork independent tasks mentioned in the same context.",
+        "possible_causes": [
+          "The prompt does not provide clear heuristics for identifying concurrent tasks (e.g., 'spawned concurrently', 'simultaneously') versus sequential checks.",
+          "The generator incorrectly assumes that any list of checks or tasks implies parallel execution."
+        ]
+      },
+      {
+        "name": "misrepresented_loop_conditions",
+        "problem": "The generator uses incorrect loop constructs (e.g., repeat-while) or misplaces the loop exit condition, failing to accurately capture iterative, periodic, or retry behaviors.",
+        "possible_causes": [
+          "The prompt does not specify how to map requirement phrases like 'periodic loop', 'until normalized', or 'retry' to PlantUML's repeat/while constructs.",
+          "The generator confuses the entry condition of a loop with the exit condition."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is missing, providing no step-by-step process to guide the generator from text analysis to control-flow construction. This absence allows the generator to default to a procedural programming mindset, inventing implementation steps rather than directly mapping requirement statements to diagram nodes, and failing to systematically identify decision points, concurrency, and loops."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is missing, leaving the generator without reusable modeling guidance or heuristics. This causes the generator to struggle with distinguishing sequential instructions from alternative conditional paths, misidentify concurrent versus sequential tasks, and confuse loop entry and exit conditions because it lacks mapping rules from requirement phrases to PlantUML branching, fork/join, and repeat/while syntax."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is missing, resulting in no explicit constraints against hallucinating procedural decomposition. Without strict rules prohibiting the invention of implementation steps not present in the source text, the generator freely adds granular activities and distorts the control flow."
+      }
+    ]
+  }
+}

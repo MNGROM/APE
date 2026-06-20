@@ -1,0 +1,70 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract a minimal, exhaustive list of discrete activities explicitly stated in the text, mapping them 1-to-1 to activity nodes without summarizing or adding implicit steps.\nStep 2: Construct the control flow strictly among these extracted nodes, using the text's explicit sequencing and conditional logic, without adding or merging nodes.",
+    "knowledge": "- Distinguish sequential actions from concurrent flows: only use `fork`/`join` when the requirement explicitly states simultaneous execution; grammatical lists (e.g., 'enter name and description') or alternative options must be modeled as sequential activities or `if`/`else` branches, not as parallel forks.\n- Map nested conditional logic: map mutually exclusive conditions (e.g., 'if X, else if Y') using nested `if`/`elseif`/`else` constructs rather than flattening them into sequential or unrelated branches.",
+    "rule": "- Do not invent implicit steps, validations, error-handling branches, or system responses unless they are explicitly stated in the requirement.\n- Do not add control flow edges that are not directly supported by the requirement's stated sequence or logic; specifically, do not force sequential dependencies between unrelated steps or misroute branches."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The generator fails to identify and model concurrent behaviors, consistently representing parallel actions as sequential steps instead of using PlantUML's fork/end fork constructs.",
+        "possible_causes": [
+          "The prompt may not explicitly instruct the model to look for concurrent, simultaneous, or grouped items and map them to fork/end fork blocks.",
+          "The model defaults to a strictly sequential interpretation of natural language lists, even when items are logically parallel (e.g., displaying multiple fields, handling multiple inputs simultaneously)."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "Control flow is frequently misrepresented, particularly failing to capture mutually exclusive branching (switch/case) and conditional pre-checks, instead using sequential or nested if/else logic.",
+        "possible_causes": [
+          "The prompt lacks guidance on translating mutually exclusive choices (like selecting from a list or distinct cases) into switch/endswitch constructs.",
+          "The model struggles to identify conditional pre-requisites (e.g., 'ensure you have logged into both systems') and incorrectly models them as sequential actions rather than conditional guards."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The generator introduces incorrect control flow paths, often by forcing sequential checks for independent conditions or misinterpreting conditional dependencies as nested logic.",
+        "possible_causes": [
+          "The model treats independent conditional checks described in the text as a sequential chain of if/elseif statements rather than parallel or independent flows.",
+          "Lack of prompt instructions to distinguish between sequential procedural steps and independent state-based rules, leading to artificial nesting and incorrect flow paths."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "Explicit behaviors, system responses, and UI feedback from the requirements are frequently omitted or compressed into single nodes.",
+        "possible_causes": [
+          "The generator tends to summarize or abstract detailed steps (e.g., collapsing a sequence of menu selections or omitting system display confirmations) instead of faithfully enumerating them as distinct activity nodes.",
+          "The prompt does not emphasize the need to preserve granular actions and system responses as separate activities."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The generator adds unsupported activities, often by splitting a single requirement into redundant actions or hallucinating steps not present in the text.",
+        "possible_causes": [
+          "The model over-decomposes simple statements into multiple unnecessary nodes (e.g., duplicating a state transition as both an action and a condition result).",
+          "Lack of constraints in the prompt to strictly adhere to the explicitly mentioned steps without inferring or adding implicit actions."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "Step 1 instructs the model to extract a 'minimal' list of activities, which encourages summarization and compression of granular actions and system responses into single nodes, leading to missing activities. Additionally, Step 2 focuses strictly on 'explicit sequencing and conditional logic', failing to prompt the model to actively identify and construct parallel flows (fork/join) or mutually exclusive switches (switch/endswitch) from the text."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section lacks guidance on identifying and modeling true concurrent behaviors using fork/end fork, and lacks instructions for mapping mutually exclusive choices to switch/endswitch constructs. It also fails to address how to handle conditional pre-requisites as guards rather than sequential actions, and does not emphasize preserving granular system responses and UI feedback as distinct nodes."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rules do not explicitly prohibit the over-decomposition of single requirements into redundant actions (extra activities). Furthermore, they lack a rule to prevent treating independent conditional checks as a sequential chain of if/elseif statements, and they do not enforce the preservation of explicit system responses and UI feedback as separate activity nodes."
+      }
+    ]
+  }
+}

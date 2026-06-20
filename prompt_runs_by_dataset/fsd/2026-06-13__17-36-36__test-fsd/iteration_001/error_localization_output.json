@@ -1,0 +1,73 @@
+```json
+{
+  "summary": "The most useful repair targets are the knowledge and rule sections. The knowledge section needs reusable UML/PlantUML modeling concepts for control-flow constructs (switch vs. if/fork) and activity granularity, while the rule section needs strict grounding constraints to prevent hallucinated or over-decomposed activities.",
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "missing_activity",
+        "extra_activity"
+      ],
+      "section_problem": "The prompt lacks reusable UML/PlantUML modeling knowledge for distinguishing mutually exclusive alternatives (switch) from conditional (if) or parallel (fork) flows, and lacks guidance on appropriate activity granularity and grounding.",
+      "edit_intent": "Add concise modeling principles mapping requirement patterns to PlantUML control-flow constructs (switch/endswitch vs. if/else vs. fork/endfork) and defining activity granularity (1 explicit action = 1 activity node).",
+      "knowledge_gap_ids": [
+        "switch_vs_if_fork",
+        "activity_granularity_and_grounding"
+      ],
+      "evidence_case_ids": [
+        "bp-0010",
+        "pure-0078",
+        "pure-0046",
+        "us-0098",
+        "us-0092",
+        "lmc-0055",
+        "lmc-0048"
+      ]
+    },
+    {
+      "section": "rule",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_activity",
+        "missing_activity"
+      ],
+      "section_problem": "The prompt lacks strict constraints prohibiting the invention of unstated implementation steps and the over-decomposition of explicit actions.",
+      "edit_intent": "Add hard constraints to forbid hallucinating steps not explicitly stated in the requirement and to forbid decomposing a single stated action into multiple inferred sub-actions.",
+      "knowledge_gap_ids": [
+        "activity_granularity_and_grounding"
+      ],
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0092",
+        "lmc-0055",
+        "bp-0028"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "knowledge",
+    "rule"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The agent's overall role and scope are correctly defined and do not contribute to the granularity or control-flow mapping errors."
+    },
+    {
+      "section": "input",
+      "reason": "The input specification is sufficient; the failure stems from how the input is processed and modeled, not how it is read."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement (PlantUML code only) is appropriate and unrelated to the semantic errors in activity extraction and relation mapping."
+    },
+    {
+      "section": "workflow",
+      "reason": "While workflow could help, the constraints limit edits to 2 sections. The failures are fundamentally rooted in missing UML/PlantUML modeling concepts (knowledge) and a lack of strict grounding prohibitions (rule), which are more directly addressed by those sections."
+    }
+  ]
+}
+```

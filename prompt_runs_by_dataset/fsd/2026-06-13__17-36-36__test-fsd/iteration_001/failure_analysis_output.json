@@ -1,0 +1,107 @@
+```json
+{
+  "summary": "The batch primarily fails due to severe activity granularity and grounding issues, resulting in both missing and extra activities across all cases. The model over-decomposes simple requirements into inferred implementation steps while under-decomposing complex requirements, and consistently misrepresents control flow (using if/else or fork instead of switch/case for mutually exclusive alternatives).",
+  "error_patterns": [
+    {
+      "name": "missing_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0010",
+        "lmc-0055",
+        "us-0098",
+        "lmc-0048",
+        "us-0092",
+        "bp-0028",
+        "pure-0078",
+        "pure-0046"
+      ],
+      "problem": "The model fails to extract explicit activities from the requirement text, often compressing multiple stated steps into a single inferred step or omitting them entirely in favor of hallucinated implementation details.",
+      "suggested_prompt_direction": "Instruct the model to faithfully extract and map every explicit action from the requirement to an activity node, preserving the original granularity without summarizing or skipping steps.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0092",
+        "lmc-0055",
+        "bp-0028"
+      ],
+      "problem": "The model hallucinates implementation details not present in the requirement (e.g., adding validation, database saves, UI display steps) and over-decomposes high-level actions into sub-steps.",
+      "suggested_prompt_direction": "Enforce strict grounding by adding a rule that prohibits inventing steps not explicitly stated in the requirement and forbids decomposing a single stated action into multiple inferred sub-actions.",
+      "target_sections": [
+        "rule"
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0010",
+        "pure-0078",
+        "pure-0046"
+      ],
+      "problem": "Control flow for mutually exclusive alternatives is consistently modeled as if/else or fork instead of switch/case, and parallel display of information is modeled sequentially rather than with fork.",
+      "suggested_prompt_direction": "Provide clear control-flow mapping rules so the model distinguishes conditional branching (if) from mutually exclusive choices (switch) and concurrent flows (fork).",
+      "target_sections": [
+        "knowledge",
+        "workflow"
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0010",
+        "pure-0078",
+        "pure-0046"
+      ],
+      "problem": "Mutually exclusive alternative paths are incorrectly connected using fork/fork again or if/else, leading to wrong relation types and extra relations that do not match the gold standard's switch/endswitch structure.",
+      "suggested_prompt_direction": "Add modeling knowledge that explicitly maps requirement patterns (e.g., 'either A or B', 'case X') to the PlantUML switch construct, and clarify when fork is appropriate versus switch.",
+      "target_sections": [
+        "knowledge"
+      ]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "switch_vs_if_fork",
+      "related_failure_patterns": [
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      "evidence_case_ids": [
+        "bp-0010",
+        "pure-0078",
+        "pure-0046"
+      ],
+      "gap": "The prompt lacks guidance on choosing between if/else, fork, and switch/endswitch for different control-flow semantics, causing the model to use if/else or fork for mutually exclusive alternatives.",
+      "suggested_knowledge": "Use switch/endswitch when the requirement describes mutually exclusive alternatives or choices based on a single variable (e.g., 'either A or B', 'select File System or FTP'). Use if/else for conditional logic with true/false guards. Use fork/endfork for concurrent parallel actions that happen simultaneously."
+    },
+    {
+      "id": "activity_granularity_and_grounding",
+      "related_failure_patterns": [
+        "missing_activity",
+        "extra_activity"
+      ],
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0092",
+        "lmc-0055",
+        "lmc-0048"
+      ],
+      "gap": "The prompt does not specify how to determine the appropriate granularity for activities or how strictly to adhere to the source text, leading to over-decomposition and hallucination.",
+      "suggested_knowledge": "Each explicit action described in the requirement should correspond to exactly one activity node. Do not decompose a single stated action into multiple inferred sub-steps (e.g., 'Edit profile' should not become 'Display profile', 'Modify fields', 'Submit'). Do not add steps (e.g., validation, saving) unless they are explicitly stated in the requirement."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML diagrams into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not attempt to fix infrastructure or provider-level errors."
+  ]
+}
+```

@@ -1,0 +1,98 @@
+{
+  "requirements": [
+    "2.\tLog onto the BI system1.\tLog onto the BI system with a user that has sufficient authorizations for executing the scenario.2.\tStart the Data Warehousing Workbench in the SAP menu by choosing Modeling Data Warehousing Workbench: Modeling.3.\tUnder Modeling, choose Info  Objects. The Info  Object tree is displayed.4.\tFrom the context menu at the root node Info Objects of the Info Object tree, choose Create Info Area.5.\tOn the next screen, enter a technical name and a description for the Info Area. The Info Area is displayed in the Info Object tree.6.\tIt is used to group your Info Objects.7.\tIn the context menu of the Info Area, choose Create Info Object Catalog.8.\tOn the next screen, enter a technical name and description, and select Key Figure as the Info Object Type.9.\tChoose Create9. Activate the Info Object catalog.10.\tThe Info Object catalog is displayed in your Info Area.11.\tIt is used to group your key gures.12.\tPerform the following procedures to create each of the key gures Revenue ,Quantity and Price",
+    "As an app developer, I want to ensure that when I deploy a new version of an app that includes an older version of a dataset type deployed by another app and I expect that the dataset instances created by this app use the dataset type code included in this app.",
+    "3.\tThe output u vector should be a 5x1 vector.",
+    "As a broker team member, I want to make some updates to the SQL codes for clarity.",
+    "As a Zooniverse admin, I want to know whether I should educate a volunteer with text, an image, or a video.",
+    "Migration Tool Execution: Use the command arc_warc_migrate <ARC_FILES> <CONFIG> [options] to migrate content from ARC files to WARC files based on the provided configuration. Ensure the configuration file specifies how fields are translated into WARC records, and handle missing fields by generating errors requiring operator intervention.",
+    "Transfer to Shunting on driver's selection shall only be possible when stationary. It shall be possible to manually select Shunting from Stand By operation, Full Supervision operation, or Partial Supervision operation. Automatic transfer to Shunting may be from Full Supervision operation and Partial Supervision operation status at any speed lower than or equal to the supervised shunting speed based on trackside information. Before automatic transition to Shunting, ETCS shall request confirmation from the driver. Exit from Shunting shall only be possible when the train is stationary. Exit from Shunting shall take place when the driver selects exit from shunting.",
+    "9.\tCreating Web Applications1. Start the BEx Web application by choosing Start Programs Business Explorer Web Application Designer.2. Log onto the BI system.3. In the initial screen of the Web Application Designer, click on the link Create New Blank Web Template.4. In the lower part of the layout view choose New Data Provider.5. In the dialog box for the data provider type select Query and enter the name of the query ZD_SALES_2007 in the eld following Query.6. Choose OK.7. The data provider is displayed in the lower part of the layout view in the Web Application Designer"
+  ],
+  "predictions": [
+    "@startuml\nstart\n:Log onto the BI system with a user that has sufficient authorizations;\n:Start the Data Warehousing Workbench in the SAP menu\\n(Modeling -> Data Warehousing Workbench: Modeling);\n:Under Modeling, choose Info Objects\\n(The Info Object tree is displayed);\n:From the context menu at the root node Info Objects,\\nchoose Create Info Area;\n:Enter a technical name and a description for the Info Area\\n(The Info Area is displayed in the Info Object tree);\nnote right: It is used to group your Info Objects\n:In the context menu of the Info Area,\\nchoose Create Info Object Catalog;\n:Enter a technical name and description,\\nand select Key Figure as the Info Object Type;\n:Choose Create;\n:Activate the Info Object catalog;\nnote right: The Info Object catalog is displayed in your Info Area\\nIt is used to group your key figures\npartition \"Create Key Figures\" {\n  :Create Key Figure: Revenue;\n  :Create Key Figure: Quantity;\n  :Create Key Figure: Price;\n}\nstop\n@enduml",
+    "@startuml\nstart\n:Deploy new version of App A\n(includes older version of Dataset Type X);\n:App A registers its included\nDataset Type X (older version);\n:App A creates a Dataset Instance;\n:Runtime resolves Dataset Type code\nfor the new instance;\nif (Is Dataset Type X included in App A?) then (Yes)\n  :Use Dataset Type X code\n  from App A (older version);\nelse (No)\n  :Use Dataset Type X code\n  from other App B (newer version);\nendif\n:Dataset Instance uses the\nresolved Dataset Type code;\nstop\n@enduml",
+    "@startuml\nstart\n:Initialize output u vector;\n:Set u as a 5x1 vector;\n:Validate dimensions of u (5 rows, 1 column);\nif (Is u a 5x1 vector?) then (Yes)\n  :Proceed with computation;\nelse (No)\n  :Raise dimension mismatch error;\n  stop\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Broker team member identifies SQL code for clarity update;\n:Review current SQL code;\n:Draft SQL code updates for clarity;\n:Validate updated SQL code;\nif (Is SQL code valid?) then (Yes)\n  :Commit SQL code updates;\n  :Update documentation;\n  stop\nelse (No)\n  :Revise SQL code updates;\n  :Review current SQL code;\nendif\n@enduml",
+    "@startuml\nskinparam style strictuml\n\nstart\n\n:Zooniverse admin reviews volunteer performance;\n\nif (Is volunteer struggling with the task?) then (Yes)\n  if (What type of difficulty is the volunteer having?) then (Conceptual misunderstanding)\n    :Recommend text-based education;\n  else (Visual/spatial confusion)\n    :Recommend image-based education;\n  endif\nelse (No)\n  if (Is volunteer a new or passive learner?) then (Yes)\n    :Recommend video-based education;\n  else (No)\n    :No additional education needed;\n  endif\nendif\n\nstop\n\n@enduml",
+    "@startuml\nstart\n:Input command: arc_warc_migrate <ARC_FILES> <CONFIG> [options];\n:Read ARC files (<ARC_FILES>);\n:Load configuration file (<CONFIG>);\nif (Configuration specifies field translation?) then (Yes)\n  :Translate ARC fields into WARC records\\nbased on configuration;\n  :Generate WARC files;\nelse (No - Missing fields)\n  :Generate error for missing field translation;\n  :Require operator intervention;\n  stop\nendif\nstop\n@enduml",
+    "@startuml\nstart\n\npartition \"Manual Transfer to Shunting\" {\n    if (Is train stationary?) then (Yes)\n        switch (Current Operation Mode?)\n        case (Stand By)\n            :Driver selects Shunting;\n        case (Full Supervision)\n            :Driver selects Shunting;\n        case (Partial Supervision)\n            :Driver selects Shunting;\n        endswitch\n        :Enter Shunting Mode;\n    else (No)\n        :Manual transfer not possible;\n        stop\n    endif\n}\n\npartition \"Automatic Transfer to Shunting\" {\n    switch (Current Operation Mode?)\n    case (Full Supervision)\n        if (Is speed <= supervised shunting speed\\nbased on trackside info?) then (Yes)\n            :ETCS requests confirmation from driver;\n            if (Driver confirms?) then (Yes)\n                :Enter Shunting Mode;\n            else (No)\n                :Remain in current mode;\n                stop\n            endif\n        else (No)\n            :Automatic transfer not possible;\n            stop\n        endif\n    case (Partial Supervision)\n        if (Is speed <= supervised shunting speed\\nbased on trackside info?) then (Yes)\n            :ETCS requests confirmation from driver;\n            if (Driver confirms?) then (Yes)\n                :Enter Shunting Mode;\n            else (No)\n                :Remain in current mode;\n                stop\n            endif\n        else (No)\n            :Automatic transfer not possible;\n            stop\n        endif\n    endswitch\n}\n\npartition \"Exit Shunting\" {\n    if (Is train stationary?) then (Yes)\n        :Driver selects exit from shunting;\n        :Exit Shunting Mode;\n    else (No)\n        :Exit not possible;\n    endif\n}\n\nstop\n@enduml",
+    "@startuml\nstart\n:Start the BEx Web application by choosing\nStart Programs Business Explorer Web Application Designer;\n:Log onto the BI system;\n:In the initial screen of the Web Application Designer,\nclick on the link Create New Blank Web Template;\n:In the lower part of the layout view\nchoose New Data Provider;\n:In the dialog box for the data provider type\nselect Query and enter the name of the query\nZD_SALES_2007 in the field following Query;\n:Choose OK;\n:The data provider is displayed in the lower part\nof the layout view in the Web Application Designer;\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\nif (User authorizations are sufficient?) then (no)\n  stop\nelse (yes)\n:Log in;\n:Choose Modeling Data Warehousing Workbench: Modeling;\n:Data Warehousing Workbench is started;\n:Choose \"Info Objects\";\n:Info Object tree is displayed;\n:Open root node context menu;\n:Choose \"Create Info Area\";\n\nfork\n  :Enter a technical name;\nfork again\n  :Enter a description;\nend fork\n\n:Info Area is displayed;\n\nnote right\nGroup Info Objects\nend note\n\n:Open Info Area context menu;\n:Choose \"Create Info Object Catalog\";\n\nfork\n  :Enter a technical name;\nfork again\n  :Enter a description;\nend fork\n\n:Select \"Key Figure\";\n:Choose \"Create\";\n:Activate Info Object Catalog;\n:Info Object catalog is displayed;\n\nnote right\nGroup key figures\nend note\n\nfork\n  :Create Revenue;\nfork again\n  :Create Quantity;\nfork again\n  :Create Price;\nend fork\n\nstop",
+    "start\n:Deploy new version of app;\nif(it includes older version of dataset type?)then(yes)\n:dataset instances use type code;\nstop\nelse(no)\nstop",
+    "start\n\n:Output u vector;\nif(5x1 vector?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+    "start\n:Make updates to SQL codes;\nstop",
+    "start\n:educate volunteer with text, an image, or a video;\nstop",
+    "start\n\n:Use command arc_warc_migrate <ARC_FILES> <CONFIG> [options];\n:Refer to provided configuration;\n\nfork\n:Specify how fields are translated into WARC records;\nfork again\n:Generate errors requiring operator intervention;\n:Handle missing fields;\nend fork\n\n:Migrate content from ARC files to WARC files;\n\nstop",
+    "start\n\nif(Transfer to Shunting on driver's selection?) then(yes)\n if(Stationary?) then(yes)\n :From Stand By/Full Supervision/Partial Supervision operation;\n :Manually select Shunting;\n else(no)\n :Not allowed;\n endif\nelse(no)\nendif\n\nif(Automatic transfer?) then(yes)\n if(Speed <= Supervised speed?) then(yes)\n :From Full Supervision/Partial Supervision operation;\n :ETCS requests driver confirmation;\n :Automatic transfer;\n else(no)\n :Not allowed;\n endif\nelse(no)\nendif\n\nif(Exit from Shunting?) then(yes)\n if(Stationary?) then(yes)\n :Driver selects exit from shunting;\n :Exit;\n else(no)\n :Not allowed;\n endif\nelse(no)\nendif\n\nstop",
+    "start\n\n:Choose \"Start Programs Business Explorer Web Application Designer\";\n:BEx Web is started;\n\n:Log in;\n:Initial screen is shown;\n:Click \"Create New Blank Web Template\";\n\n:Choose \"New Data Provider\";\n\n:Open data provider type dialog box;\n:Select \"Query\";\n:Enter \"ZD_SALES_2007\" as query name;\n\n:Choose \"OK\";\n:Data provider is displayed;\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

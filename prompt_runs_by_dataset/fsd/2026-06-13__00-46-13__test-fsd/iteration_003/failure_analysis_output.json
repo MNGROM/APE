@@ -1,0 +1,69 @@
+```json
+{
+  "summary": "The batch primarily fails due to a severe activity granularity mismatch and poor control-flow modeling. The model consistently over-decomposes requirements into low-level UI interactions while omitting the abstract, requirement-level activities present in the gold standard. This leads to cascading missing and extra activities, as well as fundamentally incorrect control-flow relations.",
+  "error_patterns": [
+    {
+      "name": "activity_granularity_mismatch",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0056",
+        "lmc-0050",
+        "bp-0015"
+      ],
+      "problem": "The model over-decomposes requirements into fine-grained, assumed UI steps (e.g., 'click edit profile', 'receive input inertial vector') instead of extracting the explicit, abstract behaviors stated in the text (e.g., 'Edit site member profile', 'Body Vector Output Vb'). This causes massive extra_activity and missing_activity counts.",
+      "suggested_prompt_direction": "Instruct the model to extract activities strictly grounded in the explicit statements of the requirement, avoiding assumed low-level interactions or sub-steps not explicitly mentioned.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "missing_parallel_decomposition",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0129",
+        "bp-0015"
+      ],
+      "problem": "When the requirement describes multiple concurrent aspects or lists items (e.g., 'details, history, and results', 'host names, port numbers...'), the model models them sequentially or compresses them into a single activity, missing the parallel/fork structure used in the gold standard.",
+      "suggested_prompt_direction": "Provide explicit guidance to identify concurrent actions or multiple items listed together and model them using PlantUML's parallel constructs (fork/fork again/end fork or split/split again/end split).",
+      "target_sections": [
+        "knowledge",
+        "workflow"
+      ]
+    },
+    {
+      "name": "missing_conditional_branching",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0050",
+        "lmc-0016",
+        "bp-0022"
+      ],
+      "problem": "The model frequently misses conditional logic explicitly stated in the text (e.g., 'if/when' clauses, switch cases based on options). It either models them as sequential actions or omits the decision nodes entirely, leading to missing activities and wrong relations.",
+      "suggested_prompt_direction": "Emphasize the need to actively identify conditional keywords (if, when, case, switch) in the requirement and map them to PlantUML decision constructs (if/else/endif, switch/case/endswitch).",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "wrong_control_flow_relations",
+      "severity": "high",
+      "evidence_case_ids": [
+        "rac-0013",
+        "pure-0082"
+      ],
+      "problem": "Even when activities are somewhat correctly identified, the control flow connecting them is often wrong. The model creates incorrect sequential chains, misplaces branches, or fails to properly nest conditions, resulting in low relation precision and recall.",
+      "suggested_prompt_direction": "Encourage a two-step reasoning process: first identify the core activities and decision points, then carefully determine the correct control-flow sequence and nesting based on the requirement's logic.",
+      "target_sections": [
+        "workflow"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not simply instruct the model to output fewer nodes to fix extra activities; this will harm recall further."
+  ]
+}
+```

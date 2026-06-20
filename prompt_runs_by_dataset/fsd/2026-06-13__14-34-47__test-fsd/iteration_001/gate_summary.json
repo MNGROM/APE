@@ -1,0 +1,20 @@
+{
+  "count": 20.0,
+  "syntax_pass_rate": 1.0,
+  "infrastructure_error_rate": 0.0,
+  "node_precision": 0.3460211582731814,
+  "node_recall": 0.3546078968450319,
+  "node_f1": 0.3406001907710231,
+  "relation_precision": 0.2681142189894064,
+  "relation_recall": 0.25831044736735276,
+  "relation_f1": 0.26150629119082425,
+  "plantuml_compilation_pass_rate": 1.0,
+  "llm_element_evaluated": 0.0,
+  "llm_element_failed": 0.0,
+  "llm_node_precision": 0.0,
+  "llm_node_recall": 0.0,
+  "llm_node_f1": 0.0,
+  "llm_relation_precision": 0.0,
+  "llm_relation_recall": 0.0,
+  "llm_relation_f1": 0.0
+}

@@ -1,0 +1,99 @@
+{
+  "requirements": [
+    "5.2.2.1 It shall be possible for the driver to initiate a call to any of the following types of controller with a minimum of driver action being required (eg a single keystroke): (M) primary controller; secondary controller; power supply controller. 5.2.2.2 If the radio system cannot give a unique identity for a given type of controller, the identity could be obtained using external systems as defined in 11.4.7. (I) 5.2.2.3 Once an appropriate destination has been obtained, the radio shall attempt to establish a call to this destination. The functional identity shall be displayed to the controller. (M) 5.2.2.3i The functional identity includes the following: − the train number, if available; (M) − the engine number, if no train number is available; (M) − the coach number of the leading cab, if neither a train number nor an engine number is available. (O) 5.2.2.4 An audible and visual indication shall be provided to the driver that the call is proceeding. (M) 5.2.2.5 When the call is connected to the controller, an audible and visual indication is to be provided to the driver. The call shall be connected to the loudspeaker at the pre-set value. (M) 5.2.2.6 The functional identity of the connected party, if available, shall be displayed to the driver. (M) 5.2.2.7 If the functional identity of the connected party contains an alphanumeric description, this shall also be displayed. (M) 5.2.2.8 If the system is not able to connect the call, an audible and visual indication shall be provided to the driver that the call was not received by the controller. This shall also indicate if the called party was busy or if the network could not connect the call. (M)",
+    "As an Owner, I want to edit my profile, so that that it is updated with new information.",
+    "As a Consumer, I want to know full details of how the data package schema has changed, so that that I can adjust my scripts to handle it.",
+    "2.\tLog onto the BI system1.\tLog onto the BI system with a user that has sufficient authorizations for executing the scenario.2.\tStart the Data Warehousing Workbench in the SAP menu by choosing Modeling Data Warehousing Workbench: Modeling.3.\tUnder Modeling, choose Info  Objects. The Info  Object tree is displayed.4.\tFrom the context menu at the root node Info Objects of the Info Object tree, choose Create Info Area.5.\tOn the next screen, enter a technical name and a description for the Info Area. The Info Area is displayed in the Info Object tree.6.\tIt is used to group your Info Objects.7.\tIn the context menu of the Info Area, choose Create Info Object Catalog.8.\tOn the next screen, enter a technical name and description, and select Key Figure as the Info Object Type.9.\tChoose Create9. Activate the Info Object catalog.10.\tThe Info Object catalog is displayed in your Info Area.11.\tIt is used to group your key gures.12.\tPerform the following procedures to create each of the key gures Revenue ,Quantity and Price",
+    "As a Cornell faculty member, I want to associate a researcherID or ORCID with a submission, so that there is no ambiguity between my work and someone else with the same name.",
+    "Requirement\tWhen heading hold mode becomes the active mode the heading hold reference shall be set by the pilot via a cockpit control.",
+    "6.\tLoading Master Data forCharacteristic \"Product\"Go to the Data Warehousing Workbench;in the Modeling area choose Info Provider. The attributes and texts are displayed with transformation and Data source in your Info Area below the characteristic Product.3. Perform the following steps, rst for the attributes of the characteristic and then for the texts of the characteristic.4. From the context menu of the Data source, choose Create Info Package...5. On the next screen, enter a description for the Info Package and choose Save. The Info Package maintenance screen for the scheduler appears.6. Go to the tab page Schedule and choose Start.7. To check the load process, choose Monitor in the toolbar of the Info Package maintenance screen.8 On the next screen, select the date and choose Execute. The monitor for the load process is displayed.9 Select the load process for your Data source from the tree at the left of the screen.",
+    "28.\tExporting a Job to a BIAR File1. Log into the LifeCycle Manager tool, and create a new job. For more information on creating a new job, see Creating a New Job on page 372. In the Destination System drop-down list, select Output to a BIAR file option and click Create.3. Click Add objects to add infoobjects to the job. You can use the Manage Dependencies option to manage the dependencies of the selected job.4. Click Promote.The \"Promote - Job Name\" screen appears.5. Click Export.The BIAR file is created. You can save a BIAR file to a File System or an FTP location.6. In the \"Promote - Job Name\"screen, click Biar File Destination. Biar File Destination pane appears.7. Select either File System or FTP.8. To export the BIAR file to a file system, select File System and click Export. The BIAR file is exported to a file system.9. To export the BIAR file to an FTP location, select FTP. Enter appropriate details in the host, port, username, password, directory, and filename fields.10. Click Export.The BIAR file is exported to an FTP location."
+  ],
+  "predictions": [
+    "@startuml\nskinparam style strictuml\n\nstart\n\n:Driver initiates call (single keystroke)\nto Primary, Secondary, or Power Supply Controller;\n\nif (Radio provides unique identity for controller type?) then (No)\n  :Obtain identity using external systems (per 11.4.7);\nelse (Yes)\nendif\n\n:Determine functional identity of the caller:\n  if (Train number available?) then (Yes)\n    :Use Train number;\n  else (No)\n    if (Engine number available?) then (Yes)\n      :Use Engine number;\n    else (No)\n      :Use Coach number of leading cab;\n    endif\n  endif;\n\n:Display functional identity to controller;\n\n:Attempt to establish call to destination;\n\n:Provide audible and visual indication to driver\nthat call is proceeding;\n\nif (Call connected?) then (Yes)\n  :Provide audible and visual indication to driver\n  that call is connected;\n  \n  :Connect call to loudspeaker at pre-set value;\n  \n  if (Functional identity of connected party available?) then (Yes)\n    :Display functional identity to driver;\n    \n    if (Identity contains alphanumeric description?) then (Yes)\n      :Display alphanumeric description to driver;\n    else (No)\n    endif\n  else (No)\n  endif\n\nelse (No - Call failed)\n  :Provide audible and visual indication to driver\n  that call was not received;\n  \n  :Indicate failure reason\n  (Called party busy OR Network could not connect);\nendif\n\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\nstart\n:Owner selects \"Edit Profile\";\n:System displays current profile information;\n:Owner modifies profile fields;\n:Owner clicks \"Save\";\n:System validates input;\nif (Valid input?) then (yes)\n  :System updates profile in database;\n  :System displays success message;\nelse (no)\n  :System displays error message;\n  stop\nendif\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Consumer: View Data Package Schema Change Details\n\nstart\n\n:Consumer requests schema change details;\n\n:System retrieves data package schema history;\n\n:System identifies recent schema changes;\n\n:System presents full details of schema changes\n(differences, added/removed fields, type changes);\n\nif (Are schema changes clear?) then (Yes)\n  :Consumer reviews change details;\n  :Consumer adjusts scripts to handle new schema;\n  stop\nelse (No)\n  :Consumer requests further clarification;\n  :System provides additional schema documentation;\n  stop\nendif\n\n@enduml",
+    "@startuml\nstart\n:Log onto the BI system with a user that has sufficient authorizations;\n:Start the Data Warehousing Workbench in the SAP menu\\n(Modeling -> Data Warehousing Workbench: Modeling);\n:Under Modeling, choose Info Objects\\n(The Info Object tree is displayed);\n:From the context menu at the root node Info Objects,\\nchoose Create Info Area;\n:Enter a technical name and a description for the Info Area\\n(The Info Area is displayed in the Info Object tree);\nnote right: It is used to group your Info Objects\n:In the context menu of the Info Area,\\nchoose Create Info Object Catalog;\n:Enter a technical name and description,\\nand select Key Figure as the Info Object Type;\n:Choose Create;\n:Activate the Info Object catalog;\nnote right: The Info Object catalog is displayed in your Info Area.\\nIt is used to group your key figures.\npartition \"Create Key Figures\" {\n  :Create Key Figure: Revenue;\n  :Create Key Figure: Quantity;\n  :Create Key Figure: Price;\n}\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Associate ResearcherID or ORCID with Submission\n\nstart\n\n:Faculty member initiates submission;\n\n:Enter submission details;\n\n:Enter name in contributor field;\n\nif (Disambiguation needed?) then (Yes)\n  :System prompts for unique identifier;\n  :Enter ResearcherID or ORCID;\n  :System validates identifier format;\n  if (Identifier valid?) then (Yes)\n    :Associate identifier with contributor;\n  else (No)\n    :Display validation error;\n    stop\n  endif\nelse (No)\nendif\n\n:Complete and submit;\n\n:System links submission to unique identifier;\n\nstop\n@enduml",
+    "@startuml\nstart\n:Heading hold mode becomes the active mode;\n:Pilot sets heading hold reference via cockpit control;\nstop\n@enduml",
+    "@startuml\nstart\n:Go to the Data Warehousing Workbench;\n:In the Modeling area choose InfoProvider;\n:The attributes and texts are displayed\\nwith transformation and Datasource\\nin your InfoArea below the characteristic Product;\nrepeat\n  :From the context menu of the Datasource,\\nchoose Create Info Package...;\n  :On the next screen, enter a description\\nfor the Info Package and choose Save;\n  :The Info Package maintenance screen\\nfor the scheduler appears;\n  :Go to the tab page Schedule and choose Start;\n  :To check the load process, choose Monitor\\nin the toolbar of the Info Package maintenance screen;\n  :On the next screen, select the date\\nand choose Execute;\n  :The monitor for the load process is displayed;\n  :Select the load process for your Datasource\\nfrom the tree at the left of the screen;\nrepeat while (For both attributes and texts of the characteristic?)\nstop\n@enduml",
+    "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:Create a new job;\n:Select \"Output to a BIAR file\" from the Destination System drop-down list;\n:Click Create;\n:Click Add objects to add infoobjects to the job;\n:Manage Dependencies (optional);\n:Click Promote;\n:\"Promote - Job Name\" screen appears;\n:Click Export;\n:The BIAR file is created;\n:Click Biar File Destination;\n:Biar File Destination pane appears;\nswitch (Select destination type)\ncase (File System)\n  :Select File System;\n  :Click Export;\n  :The BIAR file is exported to a file system;\ncase (FTP)\n  :Select FTP;\n  :Enter details (host, port, username, password, directory, filename);\n  :Click Export;\n  :The BIAR file is exported to an FTP location;\nendswitch\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n\n:Initiate call to controller;\nfork\n:Primary controller;\nfork again\n:Secondary controller;\nfork again\n:Power supply controller;\nend fork\n\nif(Unique identity?) then(no)\n:Use external systems to obtain;\nelse(yes)\nendif\n\n:Obtain appropriate destination;\n:Attempt to establish call to destination;\n:Functional identity be displayed;\n\nif(Train number available?) then(yes)\n:Train number;\nelse(no)\n  if(Engine number available?) then(yes)\n  :Engine number;\n  else(no)\n  :Coach number of leading cab;\n  endif\nendif\n\n:Call is proceeding;\nif(Audible and visual indication?) then(yes)\n:Provide to driver;\nelse(no)\nendif\n\n:Call is connected;\n:Provide driver audible and visual indication;\n:Connect call to loudspeaker at pre-set value;\n\nif(Connected party functional identity available?) then(yes)\n:Display to driver;\n  if(An alphanumeric description?) then(yes)\n  :Display;\n  else(no)\n  endif\nelse(no)\nendif\n\nif(System connect call?) then(no)\n:Provide driver audible and visual indication;\n:Show call was not received;\n:Indicate busy/network could not connect;\nelse(yes)\nendif\n\nstop",
+    "start\n:Edit profile;\n:Upload new information;\nstop",
+    "start\n:Get full Details of data package schema changes;\n:Adjust scripts to handle;\nstop",
+    "start\nif (User authorizations are sufficient?) then (no)\n  stop\nelse (yes)\n:Log in;\n:Choose Modeling Data Warehousing Workbench: Modeling;\n:Data Warehousing Workbench is started;\n:Choose \"Info Objects\";\n:Info Object tree is displayed;\n:Open root node context menu;\n:Choose \"Create Info Area\";\n\nfork\n  :Enter a technical name;\nfork again\n  :Enter a description;\nend fork\n\n:Info Area is displayed;\n\nnote right\nGroup Info Objects\nend note\n\n:Open Info Area context menu;\n:Choose \"Create Info Object Catalog\";\n\nfork\n  :Enter a technical name;\nfork again\n  :Enter a description;\nend fork\n\n:Select \"Key Figure\";\n:Choose \"Create\";\n:Activate Info Object Catalog;\n:Info Object catalog is displayed;\n\nnote right\nGroup key figures\nend note\n\nfork\n  :Create Revenue;\nfork again\n  :Create Quantity;\nfork again\n  :Create Price;\nend fork\n\nstop",
+    "start\n:associate a researcherID or ORCID with a submission;\n:avoid ambiguity between my work and others;\nstop",
+    "start\n\n:Requirement When heading hold mode becomes active;\n:Pilot uses cockpit control;\n:Set heading hold reference;\n\nstop",
+    "start\n\n:Go to Data Warehousing Workbench;\n:Go to Modeling area;\n:Choose \"Info Provider\";\n\n:Info Area displays information;\nfork\n  :Transformation;\nfork again\n  :Data source;\nfork again\n  :Attributes;\nfork again\n  :Texts;\nend fork\n\nrepeat\n    :Open Data source context menu;\n    :Choose \"Create InfoPackage...\";\n    \n    :Enter description;\n    :Choose \"Save\";\n    :The Info Package maintenance screen appears;\n\n    :Go to tab page Schedule;\n    :Choose \"Start\";\n\n    :Open the toolbar;\n    :Choose \"Monitor\";\n    :Check the load process;\n\n    :Select date;\n    :Choose \"Execute\";\n\n    :The monitor is displayed;\n    :Select load process from left tree;\nrepeat while (The texts are completed?) is (no)\n\nstop",
+    "start\n\n:Log in;\n:Create a new job;\nif(More information?) then (yes)\n  :See \"Creating a New Job\";\n  note right: Page 372\nelse (no)\nendif\n\n:Open drop-lists;\n:Select \"Output to a BIAR file\";\n:Click \"Create\";\n\n:Click \"Add objects\";\n:Infoobjects are added;\n\nif(Other operations?) then(yes)\n\nswitch(Option)\n  case(\"Manage Dependencies\" option)\n    :Manage dependencies;\n  case(Click \"Promote\")\n    :\"Promote - Job Name\" screen appears;\nendswitch\n\nelse (no)\nendif\n\n:Click \"Export\";\n:BIAR file is created;\n\nif(Save?) then(yes)\n\n:Open \"Promote - Job Name\"screen;\n:Click \"Biar File Destination\";\n:\"Biar File Destination\" pane appears;\n\nswitch(Location)\n  case(File System)\n    :Select \"File System\";\n    :Click \"Export\";\n    :BIAR file is exported to a file system;\n  case(FTP)\n    :Select \"FTP\";\n    :Enter Host, Port, Username, \\nPassword, Directory, Filename;\n    :Click \"Export\";\n    :BIAR file is exported to an FTP location;\nendswitch\n\nelse (no)\nendif\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "syntax_error",
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

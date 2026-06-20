@@ -1,0 +1,70 @@
+{
+  "requirements": [
+    "7.\tThe autopilot shall change states from PULLUP to TRANSITION when the system is supported and sensor data is good.",
+    "1. User opens KeePass 2. User types a password, user name, URL, word of notes, title or group that exist in the database 3. The list of data related to search word are appeared in the main window 3.5.2.2 Alternative Data Flows 3.5.2.2.1 Alternative Data Flow 1 2. User types two or more words in the search field 3. Nothing appears in the main window 3.5.2.2.2 Alternative Data Flow 2 2. User does not type anything 3. Nothing appears in the main window 3.5.2.2.3 Alternative Data Flow 3 2a. User types part or even just one character of password, user name, URL, word of notes, title or group 3.5.2.2.4 Alternative Data Flow 4 2. User types data not related with the database 3. Nothing appears in the main window",
+    "As a Web Developer, I want to be able to install multiple versions of the same datapackage separately, so that that all my projects could be developed independently and deployed locally.",
+    "20.\tlog into a new CMS1. Log into the LifeCycle Manager tool.2. Create a new job.For more information on creating a new job, see Creating a New Job onpage 37.3. From the Source System drop-down list, select Login to a New CMS.The \"Login to System\" dialog box appears.4. Enter the user credentials, select the appropriate authentication type, andclick Login.5. From the Destination System drop-down list, select Login to a NewCMS.6. Enter the user credentials, select the appropriate authentication type, andclick Login.",
+    "After the system starts up: If slow charging is active, go into power-up mode. Then:\n1.  If remote mode is enabled, enter state 110. Then, if slow charging becomes inactive, go to state 28. Finally, if remote mode is disabled, shut down and end.\n2.  If a pet mode request comes in, switch to state 110. Then, if slow charging is inactive, move to state 28. Once the pet mode request is handled, shut down and end.\n3.  If the battery SOC is 20, enter state 110. Then, if slow charging is inactive, switch to state 28. If the SOC later reaches 80 and the DCDC state is 3, shut down and end."
+  ],
+  "predictions": [
+    "@startuml\nskinparam style strictuml\n\nstate PULLUP\nstate TRANSITION\n\nPULLUP --> TRANSITION : [system is supported AND sensor data is good]\n@enduml",
+    "@startuml\nstart\n:User opens KeePass;\nfork\n  :User types in the search field;\nfork again\n  :User does not type anything;\n  :Nothing appears in the main window;\n  stop\nend fork\n\nif (Is search input two or more words?) then (Yes)\n  :Nothing appears in the main window;\n  stop\nelseif (Is search input not related to the database?) then (Yes)\n  :Nothing appears in the main window;\n  stop\nelse (No - Input is a single word or part/character)\n  if (Does the input match password, user name, URL, word of notes, title or group in the database?) then (Yes)\n    :List of related data appears in the main window;\n  else (No)\n    :Nothing appears in the main window;\n  endif\nendif\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Install Multiple Versions of the Same Datapackage\n\nstart\n\n:Web Developer initiates datapackage installation;\n\n:Specify datapackage name;\n:Specify required version;\n\nif (Is the specified version already installed globally?) then (No)\n  :Download specified datapackage version;\nelse (Yes)\n  :Use cached datapackage version;\nendif\n\n:Install datapackage version into project-specific directory;\n\n:Update project dependency manifest;\n\n:Verify project isolation;\n\n:Confirm independent local deployment capability;\n\nstop\n\n@enduml",
+    "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:Create a new job;\n:From the Source System drop-down list,\\nselect \"Login to a New CMS\";\n:The \"Login to System\" dialog box appears;\n:Enter the user credentials,\\nselect the appropriate authentication type,\\nand click Login;\n:From the Destination System drop-down list,\\nselect \"Login to a New CMS\";\n:Enter the user credentials,\\nselect the appropriate authentication type,\\nand click Login;\nstop\n@enduml",
+    "@startuml\nstart\n:System Start Up;\nif (Slow charging active?) then (Yes)\n  :Enter Power-Up Mode;\n  fork\n    :Remote Mode Path;\n    if (Remote mode enabled?) then (Yes)\n      :Enter State 110;\n      if (Slow charging inactive?) then (Yes)\n        :Go to State 28;\n      endif\n      if (Remote mode disabled?) then (Yes)\n        :Shut down;\n        stop\n      endif\n    else (No)\n    endif\n  fork again\n    :Pet Mode Path;\n    if (Pet mode request received?) then (Yes)\n      :Switch to State 110;\n      if (Slow charging inactive?) then (Yes)\n        :Move to State 28;\n      endif\n      :Pet mode request handled;\n      :Shut down;\n      stop\n    else (No)\n    endif\n  fork again\n    :Battery SOC Path;\n    if (Battery SOC == 20?) then (Yes)\n      :Enter State 110;\n      if (Slow charging inactive?) then (Yes)\n        :Switch to State 28;\n      endif\n      if (SOC == 80 and DCDC state == 3?) then (Yes)\n        :Shut down;\n        stop\n      else (No)\n      endif\n    else (No)\n    endif\n  end fork\nelse (No)\nendif\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n\nif(System is supported?) then(yes)\n if(Sensor data is good?) then(yes)\n :Autopilot change states from PULLUP to TRANSITION;\n else(no)\n endif\nelse(no)\nendif\n\nstop",
+    "start\n\n:Open KeePass;\n\n:Information can be input;\nfork\n:Password;\nfork again\n:User name;\nfork again\n:URL;\nfork again\n:Word of notes;\nfork again\n:Title;\nfork again\n:Group;\nend fork\n\nswitch(Input)\ncase(Existing)\n:List of data related are appeared;\ncase(Two or more words)\n:Nothing appears;\ncase(No input)\n:Nothing appears;\ncase(Part or one character)\n if(Found?) then(yes)\n :List of data related are appeared;\n else(no)\n :Nothing appears;\n endif\ncase(Not related input)\n:Nothing appears;\nendswitch\n\nstop",
+    "start\n:Support multi-version datapackages;\n:Develop all projects independently;\n:Deploy projects locally;\nstop",
+    "start\n\n:Log in LifeCycle Manager tool;\n:Create a new job;\nif (More information?) then(yes)\n:See Creating a New Job on page 37;\nelse(no)\nendif\n\n:Open Source System drop-down list;\n:Select \"Login\";\n:To a New CMS;\n\n:\"Login to System\" dialog box appears;\n:Enter user credentials;\n:Select appropriate authentication type;\n:Click \"Login\";\n\n:Open Destination System drop-down list;\n:Select \"Login\";\n:To a New CMS;\n\n:Enter user credentials;\n:Select appropriate authentication type;\n:Click \"Login\";\n\n:Click \"Create\";\n\nstop",
+    "start\nif (slow charging is active) then(yes)\n  :enter power-up mode;\n  switch(condition judgement)\n  case (remote mode is enabled)\n    :switch to state 110;\n    if (slow charging is inactive) then\n      :switch to state 28;\n      if (remote mode is disabled) then\n      :shutdown;\n      stop\n      endif\n    endif\n\n  case (pet mode request is received)\n    :switch to state 110;\n    if (slow charging is inactive) then\n      :switch to state 28;\n      if (pet mode request handling is finished) then\n      :shutdown;\n      stop\n      endif\n    endif\n\n  case (battery SOC is 20)\n    :switch to state 110;\n    if (slow charging is inactive) then\n      :switch to state 28;\n      if (battery SOC reaches 80 and DCDC state is 3) then\n      :shutdown;\n      stop\n      endif\n    endif\n    \n  endswitch\nelse(no)\n  stop\nendif\nend"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

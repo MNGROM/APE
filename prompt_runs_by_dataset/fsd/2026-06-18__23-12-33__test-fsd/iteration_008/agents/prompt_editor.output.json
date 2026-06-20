@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Combined intent: Prevent false-positive parallelism for attribute enumerations and sequential steps joined by 'and'.; Prevent false-negative parallelism when explicit concurrency keywords are absent.; Prevent extra relations caused by wrapping unconditional statements in conditional logic.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: In Step 2, revise the instruction 'Evaluate listed items or attributes for independence before mapping them...' by adding an explicit exclusion: Do not map enumerations of attributes, parameters, or descriptive items to fork/join. Furthermore, qualify the 'AND'/'and' concurrency rule: when 'and' connects sequential UI entry steps (e.g., 'enter X and Y') or sequential actions where one logically precedes the other, map them sequentially, not with fork/join.; In Step 2, expand the implicit concurrency check to include structural cues: map using fork/join when the text describes multiple distinct operational actions performed by independent actors or system components as part of the same phase (e.g., 'While X does A, Y does B'), provided there is no sequential dependency between them.; In Step 2, add a check before mapping conditional constructs: explicitly forbid wrapping unconditional statements, facts, or declarative actions in if/else or switch/case logic. Only apply conditional branching if the requirement text explicitly states a condition, guard, or alternative trigger."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Refine the 'AND'/'and' fork/join rule to exclude sequential UI steps and attribute lists.",
+      "change_instruction": "In Rule (4), revise the 'AND'/'and' condition to state: 'OR when independent actions or parallel data entries are joined by 'AND' or 'and' (e.g., 'enter a technical name AND a description'), provided there is no explicit sequential dependency, sequential UI entry pattern, or mere enumeration of attributes/parameters between them.'"
+    },
+    {
+      "section": "rule",
+      "intent": "Combined intent: Explicitly forbid fork/join for descriptive lists and attribute enumerations.; Explicitly forbid adding conditional control-flow for unconditional statements.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: In Rule (1), expand the exclusion list: 'Do not use `fork`/`join` for mutually exclusive alternative choices, sequential UI steps, or mere enumerations of attributes, parameters, or descriptive items (e.g., 'The system displays name, address, and phone number').'; Add a new rule (or append to an existing control-flow rule): 'Do not wrap unconditional statements, facts, or declarative actions in conditional logic (if/else or switch/case) unless the requirement text explicitly specifies a condition, guard, or alternative trigger for that action.'"
+    }
+  ]
+}

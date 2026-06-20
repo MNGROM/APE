@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "append",
+      "content": "9. Strictly decompose compound sentences or listed steps into separate, atomic activity nodes. If a sentence contains multiple verbs or sequential actions (e.g., 'go to X and choose Y'), each action must be a distinct node with a sequential control-flow relation between them.\n10. Extract and use the exact actions, goals, and conditions stated in the requirement verbatim, even if they seem high-level. Never invent speculative implementation steps, UI interactions, or error handling to replace or expand upon the stated activities.\n11. When the requirement lists multiple concurrent items, displayed details, or alternative options, model them using fork or switch constructs rather than flattening them into a sequential flow.\n12. Detect explicit system, actor, or component assignments in the requirement and use PlantUML partition constructs to group activities under their respective responsible entities.\n13. Decompose compound conditions joined by 'and'/'or' into separate, sequential or nested decision nodes, preserving the explicit evaluation of each individual condition."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Use PlantUML 'partition' constructs to group activities under their explicitly assigned actors, systems, or components. When a requirement lists multiple concurrent items, displayed details, or alternative options, represent them using 'fork/fork again/end fork' or 'switch/switch/endswitch' rather than sequential activities."
+    }
+  ],
+  "rationale": "The edits target the highest-severity failure patterns: merged atomic activities, speculative extra activities, missing parallel/fork flows, missing swimlane partitions, and merged conditional checks. Appending to 'workflow' provides explicit procedural rules to decompose compound actions, use verbatim requirements, model concurrency, use partitions, and separate compound conditions. Appending to 'knowledge' reinforces the PlantUML syntax for partitions and concurrent/alternative lists.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

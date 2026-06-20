@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities strictly from the requirement text. Create one activity node for each distinct action or state explicitly mentioned; do not invent UI interactions, system validations, or other unstated implementation details.\n2. Decompose compound phrases, lists of items, and multi-action sentences into separate, concise activity nodes. Each listed item or sub-action must become its own node before determining control flow.\n3. Identify control-flow keywords in the requirement (e.g., if, unless, alternatively, simultaneously, in parallel) to determine branching and concurrency before writing PlantUML.\n4. Map the identified control-flow semantics to the correct PlantUML constructs and generate the diagram."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "When a requirement specifies a compound condition (e.g., 'if A and B'), model each condition as a separate, nested if/else branch to preserve individual decision points. When the requirement lists multiple items produced, displayed, or occurring simultaneously (e.g., 'A, B, and C are displayed'), decompose the list into separate activity nodes within a fork/end fork block. When the requirement enumerates distinct alternative choices based on a single variable or selection (e.g., 'select option X, Y, or Z'), use a switch/case construct with each enumerated option as a separate case branch."
+    }
+  ],
+  "rationale": "The workflow edit strengthens step 2 to explicitly mandate decomposing compound phrases and lists into separate nodes, addressing the over-compression and missing parallel decomposition failures. The knowledge edit adds three reusable modeling principles for compound conditions, concurrent lists, and enumerated alternatives, addressing the flattened control flow and missing parallel decomposition gaps without copying case-specific examples.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

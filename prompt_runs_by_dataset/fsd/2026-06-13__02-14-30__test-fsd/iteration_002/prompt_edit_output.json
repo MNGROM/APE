@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities strictly from the requirement text. Create one activity node for each distinct action or state explicitly mentioned; do not invent UI interactions, system validations, or other unstated implementation details.\n2. Decompose compound actions or sentences describing multiple sequential actions into separate, concise activity nodes. Model explicit condition checks as separate decision nodes rather than merging them into a single activity or condition label.\n3. Identify control-flow keywords in the requirement (e.g., if, unless, alternatively, simultaneously, in parallel) to determine branching and concurrency before writing PlantUML. Identify lists of items or actions that happen simultaneously or act as parallel inputs/outputs and map them to concurrent constructs.\n4. Map the identified control-flow semantics to the correct PlantUML constructs and generate the diagram."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "When the requirement lists multiple items or actions that happen simultaneously or act as parallel inputs/outputs (e.g., separated by commas, 'and', or 'or' in a list), model them using 'fork/fork again/end fork'; do not use fork for sequential steps or mere organizational groupings. When the requirement assigns actions to different systems, components, or actors (e.g., 'System A: do X; System B: do Y'), use PlantUML 'partition' blocks to group activities by their responsible entity rather than modeling them as parallel forks. When a requirement states a compound condition (e.g., 'when A and B'), decompose it into nested 'if/else' constructs where each condition is checked sequentially."
+    }
+  ],
+  "rationale": "The workflow edit strengthens procedural guidance for decomposing compound actions, explicitly modeling condition checks as decision nodes, and identifying concurrent lists before mapping to PlantUML. The knowledge edit adds three reusable modeling principles addressing the identified gaps: mapping concurrent lists to forks, distinguishing partitions from parallelism, and decomposing compound conditions into nested if/else constructs.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

@@ -1,0 +1,52 @@
+```json
+{
+  "summary": "The current prompt lacks guidance on abstraction level and fidelity to the input, causing the model to hallucinate extra activities, invent UI/system interactions not mentioned, and over-decompose simple statements. It also fails to guide the model on how to handle conditional logic and implicit states, leading to inverted conditions and added implicit transitions that diverge significantly from the ground truth.",
+  "error_patterns": [
+    {
+      "name": "over_decomposition_and_hallucination",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0065",
+        "pure-0020"
+      ],
+      "problem": "The model invents activities and UI/system interactions not stated in the requirement (e.g., 'Open Workshop App', 'Select Completed Workshop', 'Use Normal Mode', 'Switch back to Normal Mode'). It over-decomposes a single simple action into a multi-step flow, severely hurting precision.",
+      "suggested_prompt_direction": "Instruct the agent to strictly model only the activities and flows explicitly described in the input requirement, avoiding any assumptions, implicit UI steps, or unwarranted decomposition of atomic actions.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "inverted_or_added_conditions",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0065",
+        "pure-0020"
+      ],
+      "problem": "The model creates conditional branches where none exist (e.g., 'Findings Available?' for a straightforward user story) or inverts the logic of stated conditions (e.g., testing 'Normal services available?' instead of starting with 'Normal services unavailable').",
+      "suggested_prompt_direction": "Provide rules for mapping conditional logic directly from the text without inverting it, and explicitly prohibit adding 'availability' or 'existence' checks unless they are stated in the requirement.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "implicit_state_injection",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "pure-0020"
+      ],
+      "problem": "The model adds implicit waiting states or transitions not present in the requirement (e.g., 'Wait for normal services' and 'Switch back to Normal Mode'), assuming a complete system lifecycle rather than just the described scenario.",
+      "suggested_prompt_direction": "Emphasize that the diagram should represent the exact scope of the requirement without extrapolating preceding or succeeding states, unless explicitly part of the input text.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Adding more conditional branching or error handling paths, as the model already over-generates these.",
+    "Generating complete system lifecycles or loop-back logic beyond what is explicitly requested."
+  ]
+}
+```

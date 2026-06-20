@@ -1,0 +1,84 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract activities strictly from explicit actions in the requirement, grouping lists of attributes, parameters, or properties into a single descriptive activity node *unless* they are joined by explicit concurrency cues (e.g., 'simultaneously', 'in parallel') or represent simultaneous system behaviors (e.g., 'Close window and display statistics'). In those specific cases, decompose the compound step into separate activities for parallel branching.\nStep 2: Decompose any identified concurrent compound steps into separate activities before constructing control-flow.\nStep 3: Construct control-flow by connecting the extracted activities, mapping mutually exclusive conditions to switch/if/elseif structures and explicit concurrency keywords to fork/join blocks.",
+    "knowledge": "- Concurrency modeling: Comma-separated lists or 'and'-joined clauses must be decomposed into fork/join blocks *only* when accompanied by explicit concurrency cues or when describing simultaneous system behaviors (e.g., 'Close window and display statistics'). Explicitly exclude comma-separated lists that represent sequential UI steps, configuration options, or sequentially dependent steps in multi-threaded contexts from fork/join usage; these must remain single activity nodes or sequential flows.\n- Loop modeling: Map iterative cues (e.g., 'repeat', 'retry', 'periodically', 'cyclically') to repeat/while loops, ensuring the loop boundary strictly wraps only the iterative portion and does not enclose non-iterative parallel blocks.",
+    "rule": "- Granularity rule: Do not infer implicit system interactions or UI responses unless explicitly stated in the text; do not collapse multiple distinct specified actions into one broad node, especially if they represent simultaneous actions or concurrent behaviors explicitly described in the requirement.\n- Convergence rule: All fork/join branches and switch/case paths must merge before reaching a stop node; 'stop' nodes must not be placed inside conditional branches unless the requirement explicitly states an immediate process termination for that specific branch. Instead, conditional paths must merge."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The prediction predominantly suffers from false_negative_parallel, failing to use fork/join when the requirement or ground truth clearly indicates concurrent actions, simultaneous data entry, or independent attributes. In a few cases, it also exhibits false_positive_parallel by grouping sequential or conditional actions under fork/join.",
+        "possible_causes": [
+          "The prompt lacks explicit instructions to identify and map linguistic cues of concurrency (e.g., 'concurrently', 'simultaneously', 'enter details', comma-separated lists) to PlantUML fork/join blocks.",
+          "The generator defaults to a strictly sequential flow, treating parallel attributes or concurrent tasks as sequential steps.",
+          "For false_positive_parallel, the generator misinterprets alternative options or sequential sub-steps as concurrent branches."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction frequently omits explicit behaviors, sub-steps, or state transitions described in the requirements, collapsing multiple actions into single nodes or ignoring them entirely.",
+        "possible_causes": [
+          "The generator over-summarizes, combining granular steps (e.g., entering name, description, and keywords) into one broad activity node instead of preserving them as distinct actions.",
+          "It fails to extract and represent individual items from comma-separated or bulleted lists in the text (e.g., specific system states, multiple concurrent parameters).",
+          "It drops conditional branches or state transitions that lack explicit 'if' keywords but are implied by the logic."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction introduces activities, decisions, or branches that are not supported by the requirement text, often adding speculative logic or incorrect interpretations.",
+        "possible_causes": [
+          "The generator hallucinates error-handling or validation branches (e.g., checking if inversion is accurate, adding 'No' paths) when the requirement only states a factual condition or behavior.",
+          "It creates artificial decision nodes to gate processes that the requirement treats as unconditional or sequential.",
+          "It misinterprets descriptive text as actionable steps, adding unnecessary activity nodes."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction frequently flattens nested conditional logic, misplaces state transitions, or omits control-flow connections, resulting in an incorrect diagram structure.",
+        "possible_causes": [
+          "The generator struggles to parse complex, deeply nested 'if-else' or 'switch-case' logic, often representing mutually exclusive conditions as independent sequential checks.",
+          "It fails to correctly chain state transitions, especially when the requirement describes a sequence of state changes based on varying conditions.",
+          "It omits implicit control flows, such as a step relying on the completion of a prior parallel block, leading to disconnected or incorrectly ordered branches."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction adds incorrect control-flow edges, often by making sequential steps parallel, misrouting conditional branches, or creating invalid transitions between states.",
+        "possible_causes": [
+          "The generator incorrectly routes the 'else' or default paths of conditional statements, sometimes merging them back into the main flow improperly.",
+          "It misinterprets the scope of conditional logic, applying a condition to the wrong subsequent activities.",
+          "It creates spurious relations by treating independent sequential paragraphs as interconnected conditional branches."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The prediction mishandles repeated, periodic, or retry behaviors, either by omitting required loops or by misplacing loop boundaries and exit conditions.",
+        "possible_causes": [
+          "The generator fails to recognize linguistic cues for loops, such as 'continuously', 'periodically', 'retry', or 'until', and models them as single actions or conditional branches instead.",
+          "It incorrectly places loop constructs around the wrong set of actions, for example, looping only a sub-task when the entire monitoring sequence should repeat.",
+          "It confuses a 'while' wait condition (e.g., waiting for a 10-second timeout) with a 'repeat' loop, misrepresenting the control flow."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "Step 1's extraction logic defaults to grouping comma-separated lists or 'and'-joined clauses into a single activity node unless explicit concurrency cues are present, which directly causes the false-negative parallelism and missing activity errors by collapsing concurrent sub-steps or simultaneous data entries into single nodes. Additionally, the workflow lacks explicit instructions for extracting implied conditional state transitions and nested logic, leading to missing activities and flattened relations."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The concurrency modeling rule's strict requirement for explicit concurrency cues causes false-negative parallelism by failing to recognize simultaneous data entry or independent attributes as valid triggers for fork/join blocks. Conversely, its lack of strict negative boundaries for alternative/sequential options leads to false-positive parallelism. The section also lacks guidance on recognizing implicit conditional logic and state transitions, causing missing activities and wrong relations, and lacks cues for identifying loop boundaries and wait-conditions versus repeat-conditions, causing wrong loops."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The granularity rule's instruction to not infer implicit system interactions fails to prevent the hallucination of error-handling and validation branches (extra_activity). The convergence rule lacks specific guidance on preserving nested conditional logic and correctly routing else/default paths, which leads to flattened relations (missing_or_wrong_relation) and misrouted branches (extra_or_wrong_relation)."
+      }
+    ]
+  }
+}

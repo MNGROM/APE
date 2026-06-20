@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_loop",
+      "problem": "The generator fails to correctly identify and represent iterative, periodic, or conditional looping behaviors, often replacing repeat/while loops with simple sequential actions or incorrect conditional structures.",
+      "possible_causes": [
+        "The prompt does not explicitly instruct the model to map linguistic cues like 'until', 'repeatedly', 'periodic', or 'retry' to PlantUML's `repeat`/`while` loop constructs.",
+        "The model defaults to a linear sequence of actions when describing sustained operations (e.g., 'apply brake until stationary') instead of recognizing them as loop conditions."
+      ]
+    },
+    {
+      "name": "wrong_parallel",
+      "problem": "The generator fails to correctly decompose grouped actions or concurrent operations into `fork`/`end fork` blocks, often representing them as sequential steps or missing implicit parallelism.",
+      "possible_causes": [
+        "The prompt lacks guidance on identifying compound actions (e.g., 'enter name, description, and keywords') as candidates for parallel decomposition.",
+        "The model struggles to map concurrent phrases (e.g., 'Concurrently', 'while its second thread') to PlantUML fork constructs, treating them as sequential narratives instead."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The generator frequently omits required control-flow branches or misstructures conditional logic, particularly when handling complex nested conditions or mutually exclusive state transitions.",
+      "possible_causes": [
+        "The prompt does not provide strategies for organizing deeply nested or multi-branch conditional logic, leading the model to flatten or disconnect related conditions.",
+        "The model treats separate conditional paragraphs as independent sequential flows rather than mutually exclusive branches of a parent state, losing the correct control-flow topology."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The generator introduces activities or decision nodes that are not explicitly required by the text, often by over-interpreting implicit outcomes or adding unnecessary validation checks.",
+      "possible_causes": [
+        "The model hallucinates 'else' branches or failure paths (e.g., 'Inversion fails precision check') when the requirement only specifies the success path.",
+        "The prompt encourages exhaustive decision-making, causing the model to insert speculative activities instead of strictly adhering to the provided requirements."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The generator omits explicit activities or states described in the requirements, particularly when they are embedded in notes, conditional branches, or grouped lists.",
+      "possible_causes": [
+        "The model treats important conditional behaviors (e.g., 'If edited in source system, display edited') as non-actionable notes rather than activities to be modeled.",
+        "The prompt does not emphasize that all explicit actions and state changes must be preserved as nodes, even if they seem secondary or are listed as bullet points."
+      ]
+    }
+  ]
+}
+```

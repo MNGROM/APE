@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Improve detection of concurrency and complex conditional logic during control flow analysis.",
+      "change_instruction": "Update step 2 (Identify control flow) to explicitly instruct the model to: (a) look for structural cues of concurrency, such as lists of items or operations that logically execute simultaneously, and map them to parallel branches; and (b) differentiate complex multi-branch mutually exclusive logic (e.g., monitoring multiple distinct states) from simple binary if/else choices."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Add missing PlantUML constructs for switch/case and clarify loop vs. conditional heuristics and contextual states.",
+      "change_instruction": "Add the following rules: (1) Multi-branch mutually exclusive conditions (e.g., monitoring multiple distinct states or switch/case logic) should use PlantUML `switch`/`case`/`endswitch` constructs instead of nested if/else. (2) Clarify loop heuristics: continuous monitoring or cyclic control system behaviors should be modeled using `repeat`/`while` loops, distinguishing the overarching cyclic behavior from the internal conditional logic of the states. (3) Contextual system states and operational conditions (e.g., 'In [System Name]') must be treated as essential activity nodes, not descriptive fluff."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent hallucinated extra activities from constraints and stop omitting contextual states.",
+      "change_instruction": "Add two explicit rules: (1) Do not convert constraints, limits, or mathematical rules into sequential procedural actions; they should only be represented as conditional guards on existing control flows. (2) Preserve all explicitly mentioned contextual system states, operational conditions, and system names as distinct activity nodes in the diagram."
+    }
+  ]
+}
+```

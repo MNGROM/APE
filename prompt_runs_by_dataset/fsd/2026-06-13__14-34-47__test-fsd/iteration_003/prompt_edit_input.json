@@ -1,0 +1,285 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Extract activities: Identify each distinct action or state change explicitly stated in the requirement. Preserve key noun-verb phrases from the requirement as activity labels. Do not decompose a single stated action into sub-steps, and do not add steps not mentioned in the requirement (e.g., navigation, validation, confirmation).\n2. Determine control flow: Identify decision points, mutually exclusive alternative paths, optional paths, and concurrent paths. For each decision point, classify it as a yes/no condition, a mutually exclusive choice among several alternatives, or true concurrency.\n3. Generate PlantUML: Write the diagram code based on the extracted activities and determined control-flow structure.",
+    "knowledge": "Use switch/case when the requirement describes mutually exclusive alternatives based on a single discriminant (e.g., operation type, mode, destination). Provide a meaningful discriminant label summarizing what is being decided, and label each case branch to match the alternative described in the requirement. Use if/else when the requirement describes a yes/no condition or optional behavior. Use fork/end fork only when the requirement explicitly states concurrent or parallel actions; never use fork for mutually exclusive alternatives.",
+    "rule": ""
+  },
+  "failure_analysis": {
+    "summary": "The batch fails primarily on activity granularity and control-flow accuracy. The model over-compresses multi-item lists and system responses into single activities, adds inferred procedural steps not in the requirement, and misclassifies mutually exclusive alternatives as parallel forks. Activity labels are frequently paraphrased instead of preserving requirement phrasing. These compound into severe relation errors.",
+    "error_patterns": [
+      {
+        "name": "compressed_list_or_collection",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0015",
+          "bp-0022",
+          "pure-0082"
+        ],
+        "problem": "When the requirement enumerates multiple items (e.g., 'host names, port numbers, display names, and descriptions'), the model compresses them into a single activity instead of decomposing each item into its own activity, often within a parallel structure.",
+        "suggested_prompt_direction": "Instruct the model to decompose enumerated lists of items into separate activities, using fork/end fork when the items represent concurrent or independent pieces of information being displayed or processed.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_system_response_activity",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0015",
+          "bp-0022",
+          "pure-0082"
+        ],
+        "problem": "System responses and UI state changes (e.g., 'window appears', 'list is displayed', 'dialog box appears') are omitted as separate activities or merged into the triggering user action, losing intermediate states the gold diagram captures.",
+        "suggested_prompt_direction": "Explicitly instruct the model to treat each system response or UI state change mentioned in the requirement as a distinct activity node, separate from the user action that triggers it.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "inferred_extra_activities",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "lmc-0016",
+          "pure-0082"
+        ],
+        "problem": "The model infers procedural steps not stated in the requirement (e.g., 'Get Input Inertial Vector', 'System starts up') and adds them as activities, or decomposes a single stated action into sub-steps despite the prompt forbidding this.",
+        "suggested_prompt_direction": "Strengthen the rule against adding inferred steps: only activities whose actions are explicitly stated in the requirement text should appear. Reinforce that a single stated action must not be decomposed into sub-steps.",
+        "target_sections": [
+          "workflow",
+          "rule"
+        ]
+      },
+      {
+        "name": "paraphrased_activity_labels",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "pure-0026",
+          "lmc-0016",
+          "us-0129"
+        ],
+        "problem": "Activity labels are paraphrased or summarized rather than preserving the key noun-verb phrases from the requirement (e.g., 'Command the emergency brake immediately' vs. 'ETCS trainborne equipment command emergency brake').",
+        "suggested_prompt_direction": "Emphasize that activity labels must preserve the exact key noun-verb phrases from the requirement, including actor names and domain terms, without rewording or summarizing.",
+        "target_sections": [
+          "workflow",
+          "rule"
+        ]
+      },
+      {
+        "name": "fork_vs_switch_misclassification",
+        "severity": "high",
+        "evidence_case_ids": [
+          "rac-0013",
+          "us-0129"
+        ],
+        "problem": "Mutually exclusive alternative paths are modeled with fork/end fork (parallel) instead of switch/case. The existing knowledge section covers this distinction but the model still defaults to fork for structurally separate monitoring branches.",
+        "suggested_prompt_direction": "Reinforce the switch/case vs. fork distinction with a clearer decision rule: if the requirement describes separate cases or categories that cannot occur simultaneously (e.g., monitoring different conditions one at a time), use switch/case; reserve fork only for actions that explicitly happen at the same time.",
+        "target_sections": [
+          "knowledge",
+          "rule"
+        ]
+      },
+      {
+        "name": "condition_not_modeled_as_decision",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0016",
+          "lmc-0050",
+          "pure-0082"
+        ],
+        "problem": "Requirements that express constraints, validations, or conditional state transitions are modeled as sequential procedural activities instead of decision nodes (if/else). Compound conditions are merged into a single guard instead of nested decisions.",
+        "suggested_prompt_direction": "Instruct the model to identify conditional language (e.g., 'if', 'when', 'shall equal', 'only if') and model it as decision/branch nodes. Compound conditions with multiple sub-conditions should be represented with nested if structures when the gold standard decomposes them.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "list_decomposition_to_parallel",
+        "related_failure_patterns": [
+          "compressed_list_or_collection"
+        ],
+        "evidence_case_ids": [
+          "bp-0015",
+          "pure-0082"
+        ],
+        "gap": "The prompt does not explain how to handle enumerated lists of items in a requirement—whether they should be separate activities and whether they imply parallelism.",
+        "suggested_knowledge": "When a requirement lists multiple distinct items (e.g., 'host names, port numbers, display names, and descriptions'), model each item as a separate activity. If the items are displayed or processed independently at the same time, wrap them in a fork/end fork structure."
+      },
+      {
+        "id": "system_response_separation",
+        "related_failure_patterns": [
+          "missing_system_response_activity"
+        ],
+        "evidence_case_ids": [
+          "bp-0015",
+          "bp-0022",
+          "pure-0082"
+        ],
+        "gap": "The prompt does not clarify that system responses and UI state changes mentioned in the requirement should be separate activity nodes distinct from the triggering action.",
+        "suggested_knowledge": "When a requirement describes a user action followed by a system response (e.g., 'Click Add. The Add System dialog box appears'), model the user action and the system response as two separate sequential activities. Do not merge them into one activity."
+      },
+      {
+        "id": "conditional_requirement_as_decision",
+        "related_failure_patterns": [
+          "condition_not_modeled_as_decision"
+        ],
+        "evidence_case_ids": [
+          "lmc-0016",
+          "lmc-0050"
+        ],
+        "gap": "The prompt does not address how to model requirements that express constraints, validations, or conditional state transitions rather than procedural steps.",
+        "suggested_knowledge": "When a requirement expresses a condition or constraint (e.g., 'shall equal', 'if and only if', 'when condition X then state Y'), model it as a decision node (if/else) with the condition as the guard, not as a sequential activity. The state transition or validation outcome should appear within the appropriate branch."
+      },
+      {
+        "id": "switch_case_for_mutually_exclusive_categories",
+        "related_failure_patterns": [
+          "fork_vs_switch_misclassification"
+        ],
+        "evidence_case_ids": [
+          "rac-0013"
+        ],
+        "gap": "Although the prompt mentions switch/case for mutually exclusive alternatives, it does not clearly address the case where the requirement describes multiple monitoring categories or condition groups that are alternatives by nature of the discriminant.",
+        "suggested_knowledge": "When a requirement describes multiple categories or monitoring modes that are selected based on a discriminant (e.g., 'For DCDC state monitoring… For EAS state monitoring…'), use switch/case with the discriminant as the switch label. Each category becomes a case branch. Do not use fork, because these categories are mutually exclusive alternatives, not concurrent actions."
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy gold PlantUML diagrams or dataset-specific examples into the prompt.",
+      "Do not add memorized activity names or requirement-specific phrasing.",
+      "Do not sacrifice syntax correctness to improve node/relation metrics.",
+      "Do not over-specify granularity rules to the point of requiring domain-specific decomposition heuristics."
+    ]
+  },
+  "error_localization": {
+    "summary": "The most useful repair appears to be in workflow and knowledge. The workflow lacks procedural guidance for extracting activities from lists, system responses, and conditional language, while the knowledge section lacks reusable UML modeling principles for these concepts and for distinguishing switch/case from fork.",
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "priority": "high",
+        "failure_patterns": [
+          "compressed_list_or_collection",
+          "missing_system_response_activity",
+          "inferred_extra_activities",
+          "paraphrased_activity_labels",
+          "condition_not_modeled_as_decision"
+        ],
+        "section_problem": "The activity extraction step gives weak guidance on handling enumerated lists, system responses, and conditional language, and does not adequately enforce preservation of requirement phrasing or prohibition of inferred steps.",
+        "edit_intent": "Enhance the activity extraction and control-flow steps to explicitly handle enumerated lists, system responses, and conditional language, and reinforce strict adherence to requirement text without paraphrasing or inferring steps.",
+        "knowledge_gap_ids": [],
+        "evidence_case_ids": [
+          "bp-0015",
+          "bp-0022",
+          "pure-0082",
+          "lmc-0050",
+          "lmc-0016",
+          "pure-0026",
+          "us-0129"
+        ]
+      },
+      {
+        "section": "knowledge",
+        "priority": "high",
+        "failure_patterns": [
+          "compressed_list_or_collection",
+          "missing_system_response_activity",
+          "fork_vs_switch_misclassification",
+          "condition_not_modeled_as_decision"
+        ],
+        "section_problem": "The knowledge section lacks reusable modeling principles for handling enumerated lists, separating system responses from user actions, modeling conditional requirements as decisions, and distinguishing switch/case for mutually exclusive categories.",
+        "edit_intent": "Add concise modeling principles for list decomposition to parallel activities, separating system responses, modeling conditional requirements as decision nodes, and using switch/case for mutually exclusive monitoring categories.",
+        "knowledge_gap_ids": [
+          "list_decomposition_to_parallel",
+          "system_response_separation",
+          "conditional_requirement_as_decision",
+          "switch_case_for_mutually_exclusive_categories"
+        ],
+        "evidence_case_ids": [
+          "bp-0015",
+          "bp-0022",
+          "pure-0082",
+          "rac-0013",
+          "us-0129",
+          "lmc-0016",
+          "lmc-0050"
+        ]
+      }
+    ],
+    "recommended_edit_sections": [
+      "workflow",
+      "knowledge"
+    ],
+    "do_not_edit_sections": [
+      {
+        "section": "agent task",
+        "reason": "The overall role definition is appropriate and does not contribute to the observed granularity or control-flow errors."
+      },
+      {
+        "section": "input",
+        "reason": "The input specification is standard and unrelated to the extraction and modeling failures."
+      },
+      {
+        "section": "output",
+        "reason": "The output format requirement is correct and editing it would not fix activity or relation errors."
+      }
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge",
+      "rule"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "knowledge_edit_policy": {
+    "use_knowledge_when": [
+      "failure_analysis.knowledge_gaps contains reusable UML or PlantUML concepts",
+      "error_localization recommends the knowledge section",
+      "the fix is a compact principle about branch, loop, fork/join, merge, guard labels, start/stop, or valid PlantUML structure"
+    ],
+    "write_knowledge_as": [
+      "one or two concise reusable modeling principles",
+      "general guidance that can transfer across datasets",
+      "knowledge, not a step-by-step workflow and not a copied example"
+    ],
+    "avoid_knowledge_when": [
+      "the issue is only a case-specific omitted activity",
+      "the issue is only output formatting",
+      "the content duplicates existing knowledge section text"
+    ]
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

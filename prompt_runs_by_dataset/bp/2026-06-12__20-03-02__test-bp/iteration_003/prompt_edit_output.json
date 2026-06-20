@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "append",
+      "content": "8. Use the exact wording from the input requirement for all activity and condition node labels. Do not paraphrase, summarize, rephrase, or merge explicit phrases.\n9. Do not decompose high-level actions into sub-steps or invent intermediate processing states, validation checks, or speculative control flows unless those exact steps are explicitly written in the input.\n10. Model each distinct condition mentioned in the input as its own separate decision node. Do not merge multiple conditions into a single combined decision node; preserve the exact conditional nesting described."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Fork/end fork blocks must only encapsulate tasks explicitly described as concurrent. Sequential steps occurring between different sets of concurrent tasks must be placed outside the fork blocks to maintain correct control flow. When a requirement states a constraint or validation (e.g., 'must be a 5x1 vector'), model it as an if/else/endif decision node even if the text does not explicitly use 'if then' wording."
+    }
+  ],
+  "rationale": "The edits target the highest-severity failure patterns: speculative implementation elaboration, node label paraphrasing, and merged atomic conditions. Appending to 'workflow' enforces verbatim label preservation, forbids inventing sub-steps, and prevents merging distinct conditions. Appending to 'knowledge' corrects incorrect parallel decomposition and addresses missing implicit control flow for constraints. These changes improve precision by reducing hallucinated nodes and relations, and improve recall by preserving exact atomic actions and conditions.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

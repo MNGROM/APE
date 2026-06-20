@@ -1,0 +1,82 @@
+[
+  {
+    "dataset": "fsd",
+    "case_id": "fsd-0057"
+  },
+  {
+    "dataset": "lmc",
+    "case_id": "lmc-0001"
+  },
+  {
+    "dataset": "pure",
+    "case_id": "pure-0029"
+  },
+  {
+    "dataset": "rac",
+    "case_id": "rac-0006"
+  },
+  {
+    "dataset": "us",
+    "case_id": "us-0027"
+  },
+  {
+    "dataset": "fsd",
+    "case_id": "fsd-0077"
+  },
+  {
+    "dataset": "lmc",
+    "case_id": "lmc-0049"
+  },
+  {
+    "dataset": "pure",
+    "case_id": "pure-0057"
+  },
+  {
+    "dataset": "rac",
+    "case_id": "rac-0010"
+  },
+  {
+    "dataset": "us",
+    "case_id": "us-0068"
+  },
+  {
+    "dataset": "fsd",
+    "case_id": "fsd-0114"
+  },
+  {
+    "dataset": "lmc",
+    "case_id": "lmc-0047"
+  },
+  {
+    "dataset": "pure",
+    "case_id": "pure-0068"
+  },
+  {
+    "dataset": "rac",
+    "case_id": "rac-0002"
+  },
+  {
+    "dataset": "us",
+    "case_id": "us-0142"
+  },
+  {
+    "dataset": "fsd",
+    "case_id": "fsd-0012"
+  },
+  {
+    "dataset": "lmc",
+    "case_id": "lmc-0007"
+  },
+  {
+    "dataset": "pure",
+    "case_id": "pure-0081"
+  },
+  {
+    "dataset": "rac",
+    "case_id": "rac-0015"
+  },
+  {
+    "dataset": "us",
+    "case_id": "us-0215"
+  }
+]

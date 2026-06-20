@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1's grouping heuristic causes false-positive parallelism by leaving the interpretation of lists and 'and'-joined clauses ambiguous without explicit concurrency cues, while Step 3 lacks specific mapping instructions for mutually exclusive conditions, leading to nested ifs instead of switch/if/elseif structures."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The concurrency modeling rule is insufficient for preventing false-positive parallelism for non-concurrent lists (e.g., rights, attributes, options) and fails to provide clear positive cues for true concurrency, resulting in both false-positive and false-negative fork/join errors. The loop modeling rule lacks guidance for complex iterative patterns like exponential backoff and periodic monitoring, causing mis-scoped or missing loops."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The granularity rule does not adequately prevent hallucinated activities for constraint-based requirements (e.g., inventing error/rejection outcomes) nor does it enforce the decomposition of complex actions into constituent sub-activities, leading to extra_activity and missing_activity errors. The convergence rule fails to prevent spurious branching relations where constraints are misinterpreted as runtime conditional checks rather than inherent action properties."
+    }
+  ]
+}
+```

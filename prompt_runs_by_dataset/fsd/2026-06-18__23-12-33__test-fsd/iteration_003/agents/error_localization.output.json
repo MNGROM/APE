@@ -1,0 +1,22 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section provides conflicting or insufficiently bounded criteria for `fork`/`join` usage. It allows `fork`/`join` for 'lists of attributes, options, or grouped items that represent independent properties or simultaneous display states', which directly causes false-positive parallelism by triggering on itemized lists or sequential form fields. Simultaneously, it lacks explicit positive cues (e.g., 'simultaneously', 'independently', 'while') needed to reliably trigger true concurrency, causing false-negative parallelism."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section fails to clearly differentiate when to use `switch`/`case` versus `if`/`elseif`/`else`, leading to incorrect branching constructs for conditional logic versus alternative options. It also lacks explicit instructions to preserve nested conditional structures, resulting in flattened or linearized control-flow."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section does not prevent the generation of empty or trivial 'else' branches (e.g., 'perform no function'), nor does it restrict the use of 'stop' to true process termination, allowing it to be misused as a substitute for proper flow merging (end fork / endif)."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "Step 1 of the workflow does not adequately constrain activity extraction to strictly explicit statements, allowing the model to infer sub-steps or hallucinate actor roles as activity nodes. Step 2 prioritizes establishing the overall control-flow shape without enforcing the preservation of all intermediate sequential steps, leading to collapsed or missing activities."
+    }
+  ]
+}
+```

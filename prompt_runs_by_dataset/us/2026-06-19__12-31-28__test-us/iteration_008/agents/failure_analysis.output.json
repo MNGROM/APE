@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction predominantly introduces false_positive_parallel forks, treating sequential steps, alternative options, or attribute lists as concurrent flows. In some cases, it also exhibits false_negative_parallel by failing to represent clearly concurrent tasks. For false positives: entering name/description/keywords (case 3), displaying current/historical info (case 11), and monitoring DCDC/EAS/WTCH conditions (case 9) are modeled as fork/join blocks despite being sequential or alternative. For false negatives: in case 10, the concurrent telemetry monitor and sensor fusion routines are incorrectly placed inside the main sequential loop instead of a parallel fork, and in case 16, the periodic telemetry monitor is placed sequentially after the fork instead of parallel to it.",
+      "possible_causes": [
+        "The prompt lacks clear heuristics for distinguishing true concurrency (simultaneous execution) from sequential enumeration or alternative branches, leading the model to over-apply fork/join for any list of items.",
+        "The prompt does not emphasize that parallel blocks must be independent of the main sequential flow, causing the model to incorrectly nest or sequentially order concurrent tasks."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction frequently omits explicit activities, states, or system actions described in the requirements. For example, in case 1, the 'Network module initialization' step is missing; in case 7, the 'Connect call to loudspeaker' activity is omitted; in case 10, the 'Regulate PWM fans' and 'Regulate liquid-cooling loops' activities are absent; and in case 16, the 'Govern PWM fans' and 'Govern liquid-cooling pumps' steps are skipped.",
+      "possible_causes": [
+        "The generator tends to compress or abstract multiple explicit actions into single nodes, dropping intermediate steps.",
+        "The prompt may not sufficiently enforce that every distinct behavioral step or state transition in the requirement must be preserved as a separate activity node."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces activities or control nodes that have no basis in the requirement. For instance, in case 4, a 'Start duration counter' and 'Continue commanding acceleration' loop are fabricated; in case 7, a 'Continue on-going multi-driver call' backward step is added; and in case 13, a 'Validate temperature reading with CRC check' step is inserted prematurely.",
+      "possible_causes": [
+        "The model hallucinates control logic to enforce constraints that should simply be modeled as conditional branches.",
+        "The prompt does not adequately constrain the generator to only create activities explicitly stated in the text, leading to inferred or common-sense additions."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction frequently misrepresents the control flow, particularly by failing to nest conditions correctly or by placing activities in the wrong sequence. In case 2, the requirement's nested 'system supported' and 'sensor data good' conditions are flattened; in case 10, the 'restart with expanded scope' is incorrectly placed outside the conditional check; and in case 13, the calibration loop and out-of-range handling are sequentially misplaced instead of being correctly iterated and conditionally triggered.",
+      "possible_causes": [
+        "The generator struggles to map complex conditional logic (e.g., nested ifs, switch statements) from natural language into properly nested PlantUML structures.",
+        "The prompt lacks guidance on maintaining the structural integrity of state machines and conditional hierarchies, leading to flattened or incorrectly ordered relations."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds unsupported or incorrect control-flow transitions. In case 9, the model creates multiple 'stop' nodes within the fork branches, which is structurally invalid and unsupported by the requirement; in case 7, a backward loop for continuing the call is introduced where the requirement implies a persistent state; and in case 1, the second set of deterministic tasks is incorrectly placed sequentially after the first fork/join instead of being properly nested or parallel.",
+      "possible_causes": [
+        "The model attempts to prematurely terminate branches using 'stop' inside parallel forks, misunderstanding how to model exit conditions that apply to the whole system.",
+        "The generator incorrectly sequences parallel task sets, adding artificial sequential dependencies between concurrent groups that the requirement does not specify."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction mishandles repeated, periodic, or retry behaviors by either misplacing the loop boundary or using the wrong loop construct. In case 4, a while loop is incorrectly used to monitor duration instead of a simple conditional check; in case 10, the repeat loop for the charging/discharging cycle is incorrectly scoped, failing to include the restart condition; and in case 13, the periodic calibration is modeled as a sequential repeat loop rather than a concurrent periodic task.",
+      "possible_causes": [
+        "The prompt does not clearly differentiate between a 'while/repeat' loop for iterative processes and simple conditional checks for thresholds or durations.",
+        "The model fails to correctly scope loops around the entire repetitive cycle, often placing loop boundaries only around the inner monitoring steps instead of the full restart logic."
+      ]
+    }
+  ]
+}
+```

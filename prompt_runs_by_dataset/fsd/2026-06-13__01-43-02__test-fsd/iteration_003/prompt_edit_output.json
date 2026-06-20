@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities: Read the requirement and map each explicitly stated action or system response directly to exactly one activity node. Preserve the original phrasing from the text. Do not infer unstated sub-steps, assumed initial states, or decompose a single stated action into multiple nodes.\n2. Identify control-flow: Analyze the extracted activities for dependencies, conditional branches, alternative paths, and concurrent actions. Look for linguistic cues: keywords indicating concurrency (e.g., 'as well as', 'and' between independent actions) map to fork/join structures; keywords indicating alternative choices (e.g., 'select from options') map to switch/case structures.\n3. Separate conditions from actions: Model conditional checks (if/else, switch) as distinct decision/branch nodes. The subsequent actions resulting from those conditions must be modeled as separate activity nodes within the appropriate branch, not merged into the condition node.\n4. Evaluate dependencies: Before linking two activities sequentially, confirm that the second activity logically depends on the completion of the first. Do not artificially serialize independent or alternative actions. Establish relations based on the identified structural boundaries (forks, switches) rather than simple textual succession.\n5. Generate PlantUML: Construct the diagram using the extracted activities and identified control-flow structures."
+    },
+    {
+      "section": "rule",
+      "operation": "append",
+      "content": "\n- No inferred sub-steps or initial states: Explicitly prohibit inferring unstated sub-steps or assumed initial states that are not mentioned in the text. One stated action equals one activity node.\n- Separate condition checks: Conditional checks must be modeled as distinct decision/branch nodes. Do not merge a condition and its resulting action into a single activity node."
+    }
+  ],
+  "rationale": "The edits target the root causes of activity and relation errors by enforcing a strict 1:1 mapping of explicit text actions to single activity nodes (preventing over-decomposition) and adding explicit instructions to identify concurrency/alternative linguistic cues and separate conditional checks from their resulting actions (fixing missing control-flow structures and flattened logic).",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

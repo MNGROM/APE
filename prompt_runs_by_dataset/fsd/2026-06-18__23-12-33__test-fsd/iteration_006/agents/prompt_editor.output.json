@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Combined intent: Enforce strict extraction of all explicitly stated actions and conditions to prevent missing activities due to abstraction.; Provide explicit guidance for identifying implicit concurrency cues to fix false-negative parallelism.; Fix wrong loops by ensuring loop boundaries and retry limits map to correct nesting and exit conditions.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Amend Step 1 to require a verbatim extraction pass: every action verb, state, and condition phrase explicitly written in the requirement must be listed as a distinct activity node candidate before any control-flow mapping begins, explicitly forbidding the merging of multiple stated actions into a single abstract node.; Amend Step 2 to add a specific check for implicit concurrency: when independent actions or data entries are joined by 'AND' or 'and' (e.g., 'enter a technical name AND a description'), map them using `fork`/`join` unless the text explicitly describes a sequential dependency between them.; Amend Step 2 to require that iterative logic, including retry limits (e.g., 'three attempts'), must be mapped by explicitly defining the loop's entry point, the exact activities contained within the loop body, and the exit condition at the correct nesting level, rather than placing the exit condition outside the repeated scope."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Combined intent: Expand fork/join triggers to include implicit concurrency cues joined by 'AND' to resolve false-negative parallelism.; Clarify the distinction between `switch` and `if/elseif` to prevent extra or wrong relations.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise knowledge rule (4) to add that `fork`/`join` must also be used when independent actions or parallel data entries are joined by 'AND' or 'and', provided there is no explicit sequential dependency between them.; Revise knowledge rule (3) to explicitly define `switch`/`case` for categorical choices among distinct options (e.g., selecting among payment methods) and `if`/`elseif`/`else` for evaluating Boolean or conditional logic (e.g., checking if a condition is true/false or if a resource is available)."
+    },
+    {
+      "section": "rule",
+      "intent": "Combined intent: Prevent fabricated speculative control-flow branches and activities.; Strengthen the `switch` vs `if/elseif` distinction to prevent structural misinterpretation.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Add a rule explicitly forbidding the invention of implicit error-handling branches, validation loops, recovery paths, or speculative operational steps (e.g., 'Detect timezone', 'Retry') unless the exact action, condition, or branch is explicitly stated in the requirement text.; Revise rule (6) to emphasize that `switch` must strictly be used for selecting among categorical alternatives (e.g., 'Choose between A, B, or C'), while `if`/`elseif` must be used for conditional evaluations (e.g., 'If X is available, do Y, else do Z'), and explicitly forbid substituting one for the other."
+    }
+  ]
+}

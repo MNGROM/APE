@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1's grouping/decomposition criteria are ambiguous and contradictory, causing false-positive parallelism by treating sequential UI steps, attribute listings, or alternative options as independent data entry fields or simultaneous behaviors. It also fails to enforce the extraction of all explicit actions, leading to missing activities from over-summarization."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The concurrency modeling knowledge lacks strict negative constraints for common false-positive triggers (e.g., sequential UI steps, attribute listings, alternative options), allowing the model to misinterpret structural lists as concurrent actions. It also lacks clear positive linguistic cues for true concurrency, causing false-negative parallelism."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The granularity rule does not sufficiently prevent the model from inferring implicit steps (causing extra activities) or collapsing distinct explicit actions into broad nodes (causing missing activities). The convergence rule does not adequately prevent the flattening of nested conditional logic or the incorrect sequential wiring of independent/alternative paths (causing missing/wrong and extra/wrong relations)."
+    }
+  ]
+}
+```

@@ -1,0 +1,336 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 20
+- syntax_pass_rate: 1.0000
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.5667
+- node_recall: 0.6140
+- node_f1: 0.5835
+- relation_precision: 0.4051
+- relation_recall: 0.4273
+- relation_f1: 0.4140
+- plantuml_compilation_pass_rate: 1.0000
+- llm_element_evaluated: 0.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.0000
+- llm_node_recall: 0.0000
+- llm_node_f1: 0.0000
+- llm_relation_precision: 0.0000
+- llm_relation_recall: 0.0000
+- llm_relation_f1: 0.0000
+
+## Failure Types
+- missing_activity: 19
+- missing_or_wrong_relation: 19
+- extra_or_wrong_relation: 19
+- extra_activity: 18
+
+## Representative Failure Cases
+### rac-0008
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3529
+- relation_f1: 0.0408
+- missing_nodes:
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - issue 2.2s timeout warning
+  - enter shutdown state
+  - slow charging is inactive and bms self-check counter is 1
+- extra_nodes:
+  - system start up
+  - high-voltage shutdown request flag == 2?
+  - switch to state 115
+  - switch to state 115
+  - flag drops to 0?
+  - flag drops to 0?
+  - flag drops to 0?
+  - flag drops to 0?
+- missing_relations:
+  - enter power-up mode -> high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0 -> switch to state 127
+  - switch to state 127 -> slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1 -> switch to state 128
+  - switch to state 128 -> shutdown
+  - switch to state 128 -> shutdown
+  - shutdown -> slow charging is inactive
+  - slow charging is inactive -> issue 2.2s timeout warning
+- input_excerpt:
+  After the system starts up, if slow charging is active, we enter power-up mode. Then:  1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:    a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.    b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.    c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with 
+- generated_excerpt:
+  @startuml start :System Start Up; if (Slow charging active?) then (Yes)   :Enter Power-Up Mode;      partition "Condition 1" {     if (High-voltage shutdown request flag == 2?) then (Yes)       :Switch to State 115;              partition "Condition 1a" {         if (Flag drops to 0?) then (Yes)           if (CP duty cycle == 85%?) then (Yes)             :Switch to State 126;           endif         endif         if (BMS self-check counter == 1?) then (Yes)           :Switch to State 130;         endif         if (Slow charging becomes inactive?) then (Yes)           :Shut down;           end         endif       }              partition "Condition 1b" {         if (Flag drops to 0?) then (Ye
+### rac-0019
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3733
+- relation_f1: 0.0822
+- missing_nodes:
+  - switch to state 30
+  - switch to state 49
+  - switch to state 49
+  - switch to state 49
+  - switch to state 49
+  - switch to state 49
+  - charging system command=4
+  - switch to state 29
+- extra_nodes:
+  - system startup
+  - state 30
+  - state 49
+  - state 49
+  - state 49
+  - state 49
+  - state 49
+  - exit
+- missing_relations:
+  - ignition switch=2 -> switch to state 30
+  - switch to state 30 -> ignition switch=0
+  - ignition switch=0 -> switch to state 49
+  - switch to state 49 -> fast charge vcc2=6
+  - charging system command=4 -> switch to state 29
+  - charging system command=4 -> switch to state 29
+  - switch to state 29 -> ignition switch=0 and vcc2=12
+  - ignition switch=0 and vcc2=12 -> switch to state 49
+- input_excerpt:
+  After the system starts up, if the ignition switch is set to 2, transition to state 30. Then, under that condition: - If the ignition switch becomes 0, move to state 49 and exit. - If the fast charge Vcc2 is 6, observe the charging gun indicator. Should the charging system command be 4, switch to state 29. - If the ignition switch is 0 and Vcc2 is 12, proceed to state 49 and exit. - If slow charging is active and the charging system command is 1, transition to state 110. If the command is 4 instead, go to state 29. Also, if the ignition switch is 0 and slow charging is not active, shift to state 49 and exit.  If remote mode is enabled, switch to state 28. If it's disabled, transition to stat
+- generated_excerpt:
+  @startuml start :System Startup; if (Ignition switch = 2?) then (Yes)   :State 30;   if (Ignition switch = 0?) then (Yes)     :State 49;     :Exit;     stop   elseif (Fast charge Vcc2 = 6?) then (Yes)     :Observe charging gun indicator;     if (Charging system command = 4?) then (Yes)       :State 29;     else (No)     endif   elseif (Ignition switch = 0 AND Vcc2 = 12?) then (Yes)     :State 49;     :Exit;     stop   elseif (Slow charging active AND Charging system command = 1?) then (Yes)     :State 110;   elseif (Slow charging active AND Charging system command = 4?) then (Yes)     :State 29;   elseif (Ignition switch = 0 AND Slow charging not active?) then (Yes)     :State 49;     :Exit;
+### rac-0013
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4124
+- relation_f1: 0.1489
+- missing_nodes:
+  - fast charging is active and bms manual charging/discharging flag=0
+  - condtion judgement
+  - stay in state 155
+  - stay in state 155
+  - stay in state 155
+  - bms-fast charger handshake flag=1
+  - bms-fast charger handshake flag=1
+  - bms-fast charger handshake flag=1
+- extra_nodes:
+  - system startup
+  - bms manual charging/discharging flag = 0?
+  - dcdc state monitoring
+  - transition to state 156
+  - 3 seconds pass?
+  - 3 seconds pass?
+  - move to state 157
+  - eas state monitoring
+- missing_relations:
+  - fast charging is active and bms manual charging/discharging flag=0 -> enter state 155
+  - enter state 155 -> condtion judgement
+  - condtion judgement -> dcdc state=1
+  - stay in state 155 -> bms-fast charger handshake flag=1
+  - stay in state 155 -> bms-fast charger handshake flag=1
+  - stay in state 155 -> bms-fast charger handshake flag=1
+  - stay in state 155 -> bms-fast charger handshake flag=1
+  - stay in state 155 -> bms-fast charger handshake flag=1
+- input_excerpt:
+  After the system starts up: if fast charging is active and the BMS manual charging/discharging flag is 0, the system enters state 155. While in state 155:  1. For DCDC state monitoring:    - If DCDC state remains 1, stay in state 155.    - If the BMS-fast charger handshake flag becomes 1, transition to state 156.    - If DCDC state is not 1 or 3 seconds pass, move to state 157.    - If fast charging becomes inactive at any point, shut down and end the process.  2. For EAS state monitoring:    - If EAS state stays at 1, remain in state 155.    - If the handshake flag turns to 1, switch to state 156.    - If EAS state isn’t 1 or 3 seconds elapse, shift to state 157.    - Should fast charging d
+- generated_excerpt:
+  @startuml start  :System Startup;  if (Fast charging active?) then (yes)   if (BMS manual charging/discharging flag = 0?) then (yes)     :Enter State 155;          fork       :DCDC State Monitoring;       if (Fast charging inactive?) then (yes)         :Shut down;         stop       else (no)         if (BMS-fast charger handshake flag = 1?) then (yes)           :Transition to State 156;           stop         else (no)           if (DCDC state = 1?) then (yes)             :Stay in State 155;             stop           else (no)             if (3 seconds pass?) then (yes)               :Move to State 157;               stop             else (no)               :Stay in State 155;             
+### rac-0005
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4167
+- relation_f1: 0.3913
+- missing_nodes:
+  - switch to state 93
+  - switch to state 95
+  - power-up is ready and vehicle charging/discharging mode is 2
+  - switch to state 105
+  - switch to state 105
+  - switch to state 105
+  - switch to state 105
+  - condition judgement
+- extra_nodes:
+  - system starts up
+  - transition to state 93
+  - move to state 95
+  - power-up readiness is confirmed and vehicle charging/discharging mode = 2?
+  - proceed to state 105
+  - go to state 105
+  - slow charging becomes inactive?
+  - remote mode deactivates?
+- missing_relations:
+  - switch to state 95 -> power-up is ready and vehicle charging/discharging mode is 2
+  - power-up is ready and vehicle charging/discharging mode is 2 -> switch to state 105
+  - switch to state 105 -> condition judgement
+  - condition judgement -> in remote mode
+  - in remote mode -> switch to state 105
+  - switch to state 28 -> remote mode is closed
+  - remote mode is closed -> shutdown
+  - shutdown -> pet mode request is received
+- input_excerpt:
+  After the system starts up: - If slow charging is active and the front MCU high-voltage detection flag is 0, transition to state 93. - If charging/discharging power-up is active while the front MCU high-voltage detection flag reads 1, move to state 95. - When power-up readiness is confirmed and the vehicle's charging/discharging mode is set to 2, proceed to state 105.  Then handle these cases: 1. In remote mode: Go to state 105. If slow charging becomes inactive, shift to state 28. Should remote mode deactivate, initiate shutdown and terminate. 2. Upon receiving a pet mode request: Enter state 105. If slow charging is inactive, transition to state 28. After processing the pet mode request, p
+- generated_excerpt:
+  @startuml start :System starts up;  if (Slow charging is active\nand front MCU high-voltage detection flag = 0?) then (Yes)   :Transition to state 93; elseif (Charging/discharging power-up is active\nand front MCU high-voltage detection flag = 1?) then (Yes)   :Move to state 95; elseif (Power-up readiness is confirmed\nand vehicle charging/discharging mode = 2?) then (Yes)   :Proceed to state 105; endif  partition "Case Handling" {   if (Remote mode?) then (Yes)     :Go to state 105;     if (Slow charging becomes inactive?) then (Yes)       :Shift to state 28;     endif     if (Remote mode deactivates?) then (Yes)       :Initiate shutdown;       stop     endif   elseif (Pet mode request rece
+### rac-0010
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4211
+- relation_f1: 0.1091
+- missing_nodes:
+  - high-voltage shutdown request is 2 and bms self-check counter is 1
+  - enter state 126
+  - enter state 126
+  - high-voltage shutdown request is 2 and bms counter is 0
+  - switch to state 127
+  - switch state 127
+  - condition judgement
+  - timeout 2.2s occurs
+- extra_nodes:
+  - system startup
+  - high-voltage shutdown request == 2?
+  - transition to state 126
+  - transition to state 127
+  - transition to state 127
+  - 2.2-second timeout?
+  - 2.2-second timeout?
+  - transition to state 142
+- missing_relations:
+  - enter power-up mode -> high-voltage shutdown request is 2 and bms self-check counter is 1
+  - high-voltage shutdown request is 2 and bms self-check counter is 1 -> enter state 126
+  - enter state 126 -> high-voltage shutdown request is 2 and bms counter is 0
+  - high-voltage shutdown request is 2 and bms counter is 0 -> enter state 126
+  - enter state 126 -> fast charging is active and front mcu initialization state is 0
+  - fast charging is active and front mcu initialization state is 0 -> switch to state 127
+  - front mcu low-voltage shutdown flag is 0 -> switch state 127
+  - switch state 127 -> condition judgement
+- input_excerpt:
+  After the system starts up and slow charging is active, it enters power-up mode. Then, if the high-voltage shutdown request (for charging or discharging) is 2, the system moves to state 126 regardless of whether the BMS self-check counter is 0 or 1.  While in state 126: - If fast charging becomes active and the front MCU initialization state is 0, it transitions to state 127. - Similarly, if the front MCU low-voltage shutdown flag is 0, it also transitions to state 127. - Additionally, the following checks occur:   1. If a 2.2-second timeout triggers, it switches to state 142. Should fast charging be inactive at this point, the system shuts down and ends.   2. If the BMS counter reads 0, it 
+- generated_excerpt:
+  @startuml start :System Startup; :Slow Charging Active; :Enter Power-Up Mode; if (High-voltage shutdown request == 2?) then (yes)   :Transition to State 126;      if (Fast charging active\nAND Front MCU init state == 0?) then (yes)     :Transition to State 127;   elseif (Front MCU low-voltage shutdown flag == 0?) then (yes)     :Transition to State 127;   elseif (2.2-second timeout?) then (yes)     :Transition to State 142;     if (Fast charging inactive?) then (yes)       :System shuts down;       end     else (no)     endif   elseif (BMS counter == 0?) then (yes)     :Transition to State 142;     if (Fast charging inactive?) then (yes)       :System shuts down;       end     else (no)     
+### rac-0012
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4314
+- relation_f1: 0.3265
+- missing_nodes:
+  - switch to state 153
+  - condition judgement
+  - switch to state 175
+  - switch to state 175
+  - switch to state 175
+  - switch to state 175
+  - fast charging is inactive
+  - high-voltage shutdown request charging/discharging =2
+- extra_nodes:
+  - system starts up
+  - transition to state 153
+  - move to state 175
+  - high-voltage shutdown request detected (value = 2
+  - wait 0.8 seconds
+  - enter state 175
+  - fast charging inactive afterward?
+  - ignition switch status = 2?
+- missing_relations:
+  - enter state 155 -> condition judgement
+  - condition judgement -> pre-charge failure occurs
+  - switch to state 175 -> fast charging is inactive
+  - switch to state 175 -> fast charging is inactive
+  - switch to state 175 -> fast charging is inactive
+  - fast charging is inactive -> shutdown
+  - shutdown -> high-voltage shutdown request charging/discharging =2
+  - high-voltage shutdown request charging/discharging =2 -> wait 0.8s
+- input_excerpt:
+  After the system starts up: - If charging is active (charging=1) and the front MCU high-voltage detection flag is 0, transition to state 153. - If the BMS-fast charger handshake flag is 0 and the front MCU high-voltage flag is 0, enter state 155.  While in state 155: 1. If pre-charge failure occurs, move to state 175. If fast charging remains inactive after this, shut down and end the process. 2. If a high-voltage shutdown request (for charging/discharging) is detected (value=2), wait 0.8 seconds before entering state 175. If fast charging is inactive afterward, shut down and end. 3. If the ignition switch status is 2, remain in state 155. If a high-voltage shutdown request (value=2) exists 
+- generated_excerpt:
+  @startuml start  :System starts up;  if (charging = 1\nand front MCU high-voltage detection flag = 0?) then (Yes)   :Transition to state 153;   stop elseif (BMS-fast charger handshake flag = 0\nand front MCU high-voltage flag = 0?) then (Yes)   :Enter state 155; else (No)   stop endif  repeat :State 155 Actions;   if (Pre-charge failure occurs?) then (Yes)     :Move to state 175;     if (Fast charging inactive?) then (Yes)       :Shut down;       stop     endif   elseif (High-voltage shutdown request detected\n(value = 2)?) then (Yes)     :Wait 0.8 seconds;     :Enter state 175;     if (Fast charging inactive afterward?) then (Yes)       :Shut down;       stop     endif   elseif (Ignition sw
+### rac-0004
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4746
+- relation_f1: 0.2105
+- missing_nodes:
+  - slow charging state is 1 and charging/discharging power-up is ready
+  - vehicle charging/discharging mode is 2 and power-up is ready
+  - switch to state 105
+  - condition judgement
+  - high-voltage shutdown charging/discharging value is 3 or 4
+  - slow charging?
+  - slow charging?
+  - slow charging?
+- extra_nodes:
+  - system startup
+  - slow charging active (state 1
+  - charging/discharging system powered up?
+  - vehicle charging/discharging mode is 2?
+  - system powered up?
+  - high-voltage shutdown value is 3 or 4?
+  - slow charging becomes inactive?
+  - slow charging becomes inactive?
+- missing_relations:
+  - slow charging state is 1 and charging/discharging power-up is ready -> switch to state 95
+  - switch to state 95 -> vehicle charging/discharging mode is 2 and power-up is ready
+  - vehicle charging/discharging mode is 2 and power-up is ready -> switch to state 105
+  - switch to state 105 -> condition judgement
+  - condition judgement -> high-voltage shutdown charging/discharging value is 3 or 4
+  - high-voltage shutdown charging/discharging value is 3 or 4 -> switch to state 115
+  - switch to state 115 -> slow charging?
+  - switch to state 115 -> slow charging?
+- input_excerpt:
+  After the system starts up: - If slow charging is active (state 1) and the charging/discharging system is powered up, switch to state 95. - If the vehicle charging/discharging mode is 2 and the system is powered up, switch to state 105. Then, while in state 105:   1) If the high-voltage shutdown value is 3 or 4, switch to state 115. If slow charging becomes inactive during this, shut down and end the process.   2) If a high-voltage shutdown request (value 3) occurs while the ignition is on (position 2), return to state 105. If the ignition turns off (position 0), switch to state 115. If slow charging becomes inactive, shut down and end.   3) If a pre-charge failure happens, switch to state 1
+- generated_excerpt:
+  @startuml start :System Startup;  if (Slow charging active\n(State 1)?) then (Yes)   if (Charging/discharging system\npowered up?) then (Yes)     :Switch to State 95;     stop   else (No)     stop   endif elseif (Vehicle charging/discharging\nmode is 2?) then (Yes)   if (System powered up?) then (Yes)     :Switch to State 105;          repeat       if (High-voltage shutdown value\nis 3 or 4?) then (Yes)         :Switch to State 115;         if (Slow charging becomes inactive?) then (Yes)           :Shut down;           end         else (No)         endif       elseif (High-voltage shutdown request\n(value 3) occurs?) then (Yes)         if (Ignition is on\n(position 2)?) then (Yes)           
+### rac-0001
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.6667
+- missing_nodes:
+  - initial judgement
+  - vehicle status > 9 and < 28
+  - vehicle status == 28 or 29 or 30
+  - switch to new state
+  - switch to new state
+  - switch to new state
+  - switch to new state
+  - switch to new state
+- extra_nodes:
+  - check vehicle status value
+  - status > 9 and status < 28
+  - status == 28 or status == 29 or status == 30
+  - transition to new state
+  - transition to new state
+  - enter new state
+  - transition to another state
+  - transition to another state
+- missing_relations:
+  - initial judgement -> vehicle status > 9 and < 28
+  - set instantaneous driving mileage gradient to 0 -> vehicle status == 28 or 29 or 30
+  - vehicle status == 28 or 29 or 30 -> switch to new state
+  - energy recovery mileage >1 -> switch to new state
+  - cumulative discharge distance >0.1? -> switch to new state
+  - switch to new state -> set instantaneous driving mileage gradient = cumulative discharge distance * driving error correction coefficient /2
+  - switch to new state -> set instantaneous driving mileage gradient = instantaneous discharge mileage * error correction coefficient
+  - set instantaneous driving mileage gradient = instantaneous discharge mileage * error correction coefficient -> switch to another state
+- input_excerpt:
+  Once the system starts up, it checks the vehicle's status value first.  If the status is greater than 9 but less than 28, or greater than 30 but 49 or less, the system sets the instantaneous driving mileage gradient to 0 and ends.  For a status of 28, 29, or 30, the system transitions to a new state and sets the instantaneous driving mileage to 10. After this state change, it performs additional checks:  *   If the current stays between -Current Threshold A and Current Threshold A, the system sets the instantaneous driving mileage gradient to 0 and ends. *   If the vehicle speed exceeds the speed threshold (kph), the system enters a new state and resets the cumulative discharge distance to 0
+- generated_excerpt:
+  @startuml start :Check Vehicle Status Value;  if (Status > 9 and Status < 28) or (Status > 30 and Status <= 49) then   :Set instantaneous driving mileage gradient to 0;   end elseif (Status == 28 or Status == 29 or Status == 30) then   :Transition to new state;   :Set instantaneous driving mileage to 10;    if (Current >= -Current Threshold A and Current <= Current Threshold A) then     :Set instantaneous driving mileage gradient to 0;     end   elseif (Vehicle Speed > Speed Threshold (kph)) then     :Enter new state;     :Reset cumulative discharge distance to 0;     if (Energy recovery mileage > 1) then       :Transition to another state;       :Reset energy recovery mileage to 0;       en
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

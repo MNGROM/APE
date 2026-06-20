@@ -1,0 +1,348 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 116
+- syntax_pass_rate: 0.9483
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.4835
+- node_recall: 0.4064
+- node_f1: 0.4349
+- relation_precision: 0.2838
+- relation_recall: 0.2340
+- relation_f1: 0.2517
+- plantuml_compilation_pass_rate: 0.9483
+- llm_element_evaluated: 0.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.0000
+- llm_node_recall: 0.0000
+- llm_node_f1: 0.0000
+- llm_relation_precision: 0.0000
+- llm_relation_recall: 0.0000
+- llm_relation_f1: 0.0000
+
+## Failure Types
+- missing_activity: 116
+- missing_or_wrong_relation: 116
+- extra_or_wrong_relation: 116
+- extra_activity: 115
+- wrong_loop: 90
+- wrong_parallel: 74
+- syntax_error: 6
+
+## Representative Failure Cases
+### fsd-0088
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.0800
+- relation_f1: 0.0870
+- missing_nodes:
+  - thermal management controller executes as state machine on rtos
+  - govern via priority-based task scheduling
+  - pwm fan speeds
+  - watchdog-monitored supervisory task manages concurrent health checks
+  - abnormal heart rate/blood oxygen saturation < defined threshold?
+  - initiate device integrity check
+  - validate via protected crc-enabled can bus transaction
+  - connection status
+- extra_nodes:
+  - execute state machine
+  - govern pwm fan speeds
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern via priority-based task scheduling
+  - govern via priority-based task scheduling -> pwm fan speeds
+  - liquid-cooling pump duty cycles -> watchdog-monitored supervisory task manages concurrent health checks
+  - watchdog-monitored supervisory task manages concurrent health checks -> abnormal heart rate/blood oxygen saturation < defined threshold?
+  - abnormal heart rate/blood oxygen saturation < defined threshold? -> initiate device integrity check
+  - initiate device integrity check -> validate via protected crc-enabled can bus transaction
+  - validate via protected crc-enabled can bus transaction -> connection status
+  - connection status -> calibration
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fan speeds and liquid-cooling pump duty cycles via priority-based task scheduling. A watchdog-monitored supervisory task manages concurrent health checks: abnormal heart rate or blood oxygen saturation below a defined threshold initiates a device integrity check, which validates connection status and calibration via a protected CRC-enabled CAN bus transaction. If an abnormal connection is detected, a non-maskable ISR triggers an audible-visual alarm. For valid devices, sensor fusion algorithms process data into a ring buffer, with out-of-range readings engaging hardware redundancy and initiating a contro
+- generated_excerpt:
+  @startuml start  partition "Thermal Management Controller (RTOS)" {     :Execute state machine;     :Govern PWM fan speeds;     :Govern liquid-cooling pump duty cycles;     note right: via priority-based task scheduling      partition "Watchdog-monitored Supervisory Task" {         :Manage concurrent health checks;          fork             :Check heart rate;             if (Abnormal heart rate?) then (yes)                 :Initiate device integrity check;             else (no)             endif         fork again             :Check blood oxygen saturation;             if (Blood oxygen saturation below threshold?) then (yes)                 :Initiate device integrity check;             else 
+### fsd-0005
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.2333
+- relation_f1: 0.1034
+- missing_nodes:
+  - check id
+  - check dlc
+  - check crc fields
+  - enqueue into lock-free multi-producer ring buffers
+  - subsequent processing
+  - detect sensor signal anomaly?
+  - execute preliminary diagnostic isr
+  - inconclusive?
+- extra_nodes:
+  - validate incoming can frame dlc field
+  - validate incoming can frame crc field
+  - enqueue can frame into lock-free multi-producer ring buffers for subsequent processing
+  - sensor signal anomaly detected?
+  - execute preliminary diagnostic isr to isolate the source
+  - preliminary diagnostic isr inconclusive?
+  - acquire protected health-monitoring mutex
+  - sequentially interrogate pmic
+- missing_relations:
+  - validate incoming can frames -> check id
+  - check id -> check dlc
+  - check dlc -> check crc fields
+  - check crc fields -> enqueue into lock-free multi-producer ring buffers
+  - enqueue into lock-free multi-producer ring buffers -> subsequent processing
+  - subsequent processing -> detect sensor signal anomaly?
+  - detect sensor signal anomaly? -> execute preliminary diagnostic isr
+  - execute preliminary diagnostic isr -> inconclusive?
+- input_excerpt:
+  The embedded communications subsystem validates incoming CAN frames by checking the ID, DLC, and CRC fields before enqueuing them into lock-free, multi-producer ring buffers for subsequent processing. Upon detecting a sensor signal anomaly, the system executes a preliminary diagnostic ISR to isolate the source; if inconclusive, a multi-layer fault analysis task is initiated, sequentially interrogating the PMIC, BMS or FADEC, communication interfaces, and sensor data pipelines via a protected health-monitoring mutex. Within this diagnostic state machine, any identified potential fault triggers a parallel monitoring process that tracks key parameters using an exponential backoff strategy until
+- generated_excerpt:
+  @startuml start  partition "Embedded Communications Subsystem" {     :Validate incoming CAN frame ID field;     :Validate incoming CAN frame DLC field;     :Validate incoming CAN frame CRC field;     :Enqueue CAN frame into lock-free, multi-producer ring buffers for subsequent processing; }  if (Sensor signal anomaly detected?) then (yes)     partition "System" {         :Execute preliminary diagnostic ISR to isolate the source;     }      if (Preliminary diagnostic ISR inconclusive?) then (yes)         partition "Multi-layer Fault Analysis Task" {             :Acquire protected health-monitoring mutex;             :Sequentially interrogate PMIC;             :Sequentially interrogate BMS or 
+### fsd-0006
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.3099
+- relation_f1: 0.2029
+- missing_nodes:
+  - thermal management controller executes as state machine on rtos
+  - multi-source fault condition triggered by deviations in
+  - temperature
+  - pressure
+  - humidity
+  - system rail voltage from pmic
+  - rf signal strength
+  - data uplink rate
+- extra_nodes:
+  - execute state machine on rtos
+  - check for deviations in temperature
+  - deviation in temperature?
+  - activate level-1 fault handler
+  - activate level-1 fault handler
+  - activate level-1 fault handler
+  - activate level-1 fault handler
+  - activate level-1 fault handler
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans
+  - govern liquid-cooling pump duty cycles -> multi-source fault condition triggered by deviations in
+  - multi-source fault condition triggered by deviations in -> temperature
+  - temperature -> pressure
+  - pressure -> humidity
+  - humidity -> system rail voltage from pmic
+  - system rail voltage from pmic -> rf signal strength
+  - rf signal strength -> data uplink rate
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fan speeds and liquid-cooling pump duty cycles. A multi-source fault condition—triggered by deviations in temperature, pressure, humidity, system rail voltage from the PMIC, RF signal strength, or data uplink rate—activates the level-1 fault handler. This initiates concurrent tasks: a high-priority ISR for real-time environmental monitoring, a medium-priority task for cyclic equipment status checks using a watchdog, and a lower-priority thread for continuous system load assessment and resource optimization via a mutex-protected priority queue. Upon escalation, the level-2 fault management routine spawns 
+- generated_excerpt:
+  @startuml start  partition "Thermal Management Controller" {     :Execute state machine on RTOS;     :Govern PWM fan speeds;     :Govern liquid-cooling pump duty cycles; }  partition "Multi-Source Fault Condition" {     :Check for deviations in temperature;     if (Deviation in temperature?) then (yes)         :Activate level-1 fault handler;     else (no)         :Check for deviations in pressure;         if (Deviation in pressure?) then (yes)             :Activate level-1 fault handler;         else (no)             :Check for deviations in humidity;             if (Deviation in humidity?) then (yes)                 :Activate level-1 fault handler;             else (no)                 :Ch
+### fsd-0044
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.3929
+- relation_f1: 0.1481
+- missing_nodes:
+  - embedded control platform employs fsm
+  - orchestrate complex safety-critical operations
+  - scheduling of isrs
+  - concurrent set of preconditions
+  - verify via mutex-protected validation loop
+  - trigger positioning module s real-time data acquisition
+  - perform iterative calculations within dedicated thread
+  - continuously update target s state within ring buffer
+- extra_nodes:
+  - schedule interrupt service routines (isrs)
+  - abort
+  - abort
+  - abort
+  - abort
+  - abort
+  - abort
+  - launch real-time data acquisition
+- missing_relations:
+  - embedded control platform employs fsm -> orchestrate complex safety-critical operations
+  - orchestrate complex safety-critical operations -> scheduling of isrs
+  - scheduling of isrs -> management of deferred work in rtos tasks with priority queues
+  - target detection within effective sensor range -> admissible trajectory and velocity
+  - admissible trajectory and velocity -> unobstructed line-of-sight
+  - unobstructed line-of-sight -> safe distance thresholds
+  - safe distance thresholds -> no active obstacle avoidance warnings
+  - no active obstacle avoidance warnings -> no conflict with current path plan
+- input_excerpt:
+  The embedded control platform employs a finite-state machine (FSM) to orchestrate complex, safety-critical operations, including the scheduling of interrupt service routines (ISRs), the management of deferred work in RTOS tasks with priority queues, and the enforcement of fail-safe policies supervised by a hardware watchdog. Upon satisfying a concurrent set of preconditions—verified via a mutex-protected validation loop—including target detection within effective sensor range, admissible trajectory and velocity, unobstructed line-of-sight, safe distance thresholds, no active obstacle avoidance warnings, and no conflict with the current path plan, the system initializes the multi-core computi
+- generated_excerpt:
+  @startuml start  partition "RTOS" {   :Schedule interrupt service routines (ISRs);   :Manage deferred work in RTOS tasks with priority queues;   :Enforce fail-safe policies supervised by a hardware watchdog; }  repeat :Mutex-protected validation loop; repeat while (Verify concurrent set of preconditions?)  partition "Precondition Validation" {   if (Target detection within effective sensor range?) then (yes)   else (no)     :Abort;     stop   endif    if (Admissible trajectory and velocity?) then (yes)   else (no)     :Abort;     stop   endif    if (Unobstructed line-of-sight?) then (yes)   else (no)     :Abort;     stop   endif    if (Safe distance thresholds?) then (yes)   else (no)     :A
+### fsd-0062
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.4516
+- relation_f1: 0.2333
+- missing_nodes:
+  - avionics stack comprises
+  - fms
+  - fadec
+  - execute on deterministic rtos
+  - control law computations implemented within high-priority isrs
+  - lower-priority worker tasks handle asynchronous processing
+  - high-frequency task
+  - managed by rtos scheduler using priority-based preemption
+- extra_nodes:
+  - execute on deterministic rtos with hardware and task-level redundancy
+  - compute control laws
+  - handle asynchronous processing
+  - monitor coolant flow
+  - poll pmic for fuel supply status via protected can bus channel
+  - poll bms for thruster pressure via protected can bus channel
+  - parameter returned to safe threshold?
+  - assess flight state
+- missing_relations:
+  - avionics stack comprises -> fms
+  - fms -> fadec
+  - fadec -> execute on deterministic rtos
+  - execute on deterministic rtos -> control law computations implemented within high-priority isrs
+  - control law computations implemented within high-priority isrs -> sample sensor data
+  - sample sensor data -> lower-priority worker tasks handle asynchronous processing
+  - lower-priority worker tasks handle asynchronous processing -> aircraft enters preset altitude envelope?
+  - initiate concurrent multi-task response -> high-frequency task
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), executes on a deterministic Real-Time Operating System (RTOS) featuring hardware and task-level redundancy. Control law computations are implemented within high-priority Interrupt Service Routines (ISRs) that sample sensor data, while lower-priority worker tasks handle asynchronous processing. Upon the aircraft entering a preset altitude envelope, an abnormal engine temperature rise detected via the Engine Health Monitoring (EHM) system triggers a fault-tolerant state machine. This initiates a concurrent multi-task response: a high-frequency task, managed by the RTOS scheduler
+- generated_excerpt:
+  @startuml start  partition "Avionics Stack (FMS & FADEC)" {     :Execute on deterministic RTOS with hardware and task-level redundancy; }  partition "RTOS (ISRs)" {     :Sample sensor data;     :Compute control laws; }  partition "RTOS (Worker Tasks)" {     :Handle asynchronous processing; }  if (Aircraft entered preset altitude envelope?) then (yes)     if (Abnormal engine temperature rise detected via EHM?) then (yes)         :Trigger fault-tolerant state machine;         :Initiate concurrent multi-task response;          fork             partition "RTOS (High-Frequency Task)" {                 repeat                     :Monitor heat exchanger efficiency;                     :Monitor cool
+### fsd-0056
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.4615
+- relation_f1: 0.2222
+- missing_nodes:
+  - thermal management controller executes as state machine within rtos
+  - coordinate concurrent tasks for environmental control
+  - high-priority task monitors sensor inputs
+  - indoor humidity > 70 ?
+  - mutex-protected sensor fusion routine triggers dehumidification
+  - event-driven task handles discrete events
+  - window detected open/automatically closing curtains based on light intensity?
+  - detect occupancy?
+- extra_nodes:
+  - monitor sensor inputs
+  - execute mutex-protected sensor fusion routine
+  - indoor humidity surpasses 70 ?
+  - trigger dehumidification
+  - handle discrete events
+  - window is detected open?
+  - light intensity requires closing curtains?
+  - automatically close the curtains
+- missing_relations:
+  - thermal management controller executes as state machine within rtos -> coordinate concurrent tasks for environmental control
+  - coordinate concurrent tasks for environmental control -> high-priority task monitors sensor inputs
+  - high-priority task monitors sensor inputs -> ambient temperature > 35 c?
+  - activate air conditioner refrigeration -> indoor humidity > 70 ?
+  - indoor humidity > 70 ? -> mutex-protected sensor fusion routine triggers dehumidification
+  - mutex-protected sensor fusion routine triggers dehumidification -> event-driven task handles discrete events
+  - event-driven task handles discrete events -> window detected open/automatically closing curtains based on light intensity?
+  - window detected open/automatically closing curtains based on light intensity? -> send reminder notification
+- input_excerpt:
+  The thermal management controller executes as a state machine within an RTOS, coordinating concurrent tasks for environmental control. A high-priority task monitors sensor inputs: if the ambient temperature exceeds 35°C, it activates the PWM-controlled liquid-cooling loop and air conditioner refrigeration; concurrently, a mutex-protected sensor fusion routine triggers dehumidification when indoor humidity surpasses 70%. An event-driven task handles discrete events, sending a reminder notification if a window is detected open or automatically closing the curtains based on light intensity. Occupancy detection initiates an energy-saving mode, while sub-standard air quality activates the air pur
+- generated_excerpt:
+  @startuml start  partition "Thermal Management Controller (RTOS State Machine)" {   fork     partition "High-Priority Task" {       :Monitor sensor inputs;       if (Ambient temperature exceeds 35°C?) then (yes)         :Activate PWM-controlled liquid-cooling loop;         :Activate air conditioner refrigeration;       else (no)       endif       :Execute mutex-protected sensor fusion routine;       if (Indoor humidity surpasses 70%?) then (yes)         :Trigger dehumidification;       else (no)       endif     }   fork again     partition "Event-Driven Task" {       :Handle discrete events;       if (Window is detected open?) then (yes)         :Send reminder notification;       else (no)  
+### fsd-0115
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0377
+- relation_f1: 0.0000
+- missing_nodes:
+  - power-on reset
+  - verify firmware signature
+  - valid?
+  - initialize clocks and buses
+  - select self-test/calibration targets
+  - calibrate imu via i2c
+  - imu ok?
+  - record result
+- extra_nodes:
+  - power on
+  - perform secure boot
+  - verify firmware signature using on-board root of trust
+  - is image invalid or untrusted?
+  - signal the failure
+  - halt further execution
+  - initialize clocks
+  - initialize power rails
+- missing_relations:
+  - power-on reset -> verify firmware signature
+  - verify firmware signature -> valid?
+  - valid? -> initialize clocks and buses
+  - initialize clocks and buses -> select self-test/calibration targets
+  - select self-test/calibration targets -> calibrate imu via i2c
+  - calibrate imu via i2c -> imu ok?
+  - imu ok? -> record result
+  - record result -> timeout / retry handling
+- input_excerpt:
+  When the embedded controller powers on, it must first perform Secure Boot by verifying the firmware signature using the on-board root of trust. If the image is invalid or untrusted, signal the failure and halt further execution. After verification succeeds, the controller should initialize critical subsystems (clocks, power rails, GPIO, I2C/SPI/UART) and run multi-module self-tests and calibrations (e.g., IMU, temperature sensor, storage CRC), requiring at least two subsystems to pass according to the configured safety policy. Each step must implement timeouts, retries, and error handling; if repeated failures occur (e.g., more than three attempts), enter Safe Mode and raise an audible/visua
+- generated_excerpt:
+  @startuml start  partition "Embedded Controller" {     :Power on;      :Perform Secure Boot;      :Verify firmware signature using on-board root of trust;      if (Is image invalid or untrusted?) then (Yes)         :Signal the failure;         :Halt further execution;         stop     else (No)     endif      fork         :Initialize clocks;     fork again         :Initialize power rails;     fork again         :Initialize GPIO;     fork again         :Initialize I2C/SPI/UART;     end fork      fork         :Run IMU self-test and calibration;     fork again         :Run temperature sensor self-test and calibration;     fork again         :Run storage CRC self-test and calibration;     end fo
+### fsd-0113
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1304
+- relation_f1: 0.0000
+- missing_nodes:
+  - is user account valid?
+  - select authentication methods
+  - enter password
+  - is password correct?
+  - record authentication details
+  - record authentication details
+  - timeout and error handling
+  - timeout and error handling
+- extra_nodes:
+  - verify validity and legality of the user account
+  - is user account invalid or unrecognized?
+  - prompt the user
+  - block further operations
+  - check user s configured security level
+  - execute authentication step (e.g. password fingerprint facial recognition)
+  - check timeout and error-handling mechanisms for the step
+  - authentication step passed and at least two methods passed?
+- missing_relations:
+  - perform user account authentication -> is user account valid?
+  - is user account valid? -> initiate multi-factor authentication
+  - initiate multi-factor authentication -> select authentication methods
+  - select authentication methods -> enter password
+  - enter password -> is password correct?
+  - is password correct? -> record authentication details
+  - record authentication details -> timeout and error handling
+  - record authentication details -> timeout and error handling
+- input_excerpt:
+  The device at startup should first perform user account authentication, verifying the validity and legality of the user account. If the user account is invalid or unrecognized, prompt the user and block further operations. After authentication succeeds, the device should initiate a multi-factor authentication process (e.g., password, fingerprint, facial recognition), requiring at least two methods to pass according to the user’s configured security level. Each authentication step should include timeout and error-handling mechanisms; if multiple failures occur (e.g., more than three attempts), the device should lock the user account and issue a warning notification. Upon successful authentica
+- generated_excerpt:
+  @startuml start  partition Device {     :Perform user account authentication;     :Verify validity and legality of the user account; }  if (Is user account invalid or unrecognized?) then (Yes)     :Prompt the user;     :Block further operations;     stop else (No) endif  partition Device {     :Initiate multi-factor authentication process;     :Check user's configured security level;          repeat         :Execute authentication step (e.g., password, fingerprint, facial recognition);         :Check timeout and error-handling mechanisms for the step;     repeat while (Authentication step passed and at least two methods passed?) is (No)     ->Yes;          if (Did multiple failures occur (mo
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

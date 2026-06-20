@@ -1,0 +1,70 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1) Extract activities: Identify explicit actions and states directly stated in the requirement without inventing implementation details.\n2) Identify control flow: Analyze the extracted activities to determine their relationships, specifically looking for decision points (mutually exclusive paths), concurrent tasks, and iterative behaviors.\n3) Map to PlantUML: Construct the diagram by mapping the identified activities and control-flow relationships directly to the appropriate PlantUML syntax (if/else, fork/join, repeat/while).",
+    "knowledge": "1) Conditional branching: Map mutually exclusive choices, alternative paths, or yes/no questions to if/elseif/else structures.\n2) Concurrency: Only use fork/join when the requirement explicitly indicates simultaneous or independent execution (e.g., 'simultaneously', 'concurrently', 'in parallel'); otherwise, default to sequential flow.\n3) Loops: Map phrases like 'retry', 'repeat', or 'periodic' to repeat/while constructs, ensuring the exit condition accurately reflects the requirement's termination clause rather than the entry condition.",
+    "rule": "1) Do not invent, decompose, or infer implementation steps (e.g., 'Initialize', 'Compute', 'Evaluate') that are not explicitly stated in the requirement text.\n2) Every activity node in the diagram must correspond directly to an action or state described in the input.\n3) Do not convert high-level constraints or mathematical rules into procedural steps."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The generator fails to identify and model parallel/concurrent behaviors, often representing them as sequential steps instead of using PlantUML fork/end fork constructs.",
+        "possible_causes": [
+          "The prompt lacks explicit instructions to decompose lists of items or concurrent system operations into parallel branches.",
+          "The generator defaults to a strictly sequential interpretation of natural language, even when items are logically simultaneous or structurally grouped."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The generator fails to capture complex conditional logic, such as mutually exclusive conditions or switch/case states, often flattening them into nested if-else structures or omitting the correct control flow.",
+        "possible_causes": [
+          "The prompt does not guide the model to use the `switch`/`endswitch` construct for mutually exclusive conditions.",
+          "The generator struggles to map multi-branch state monitoring logic into a unified control flow, instead creating fragmented or overly nested paths."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The generator omits explicit activities, states, or contextual actors mentioned in the requirements, such as system names or specific operational conditions.",
+        "possible_causes": [
+          "The generator treats contextual information (e.g., 'In NLGuidance', 'In Inner Loop Pitch Regulator') as descriptive fluff rather than essential activity nodes.",
+          "The prompt does not emphasize the need to preserve all explicit behaviors and system states as distinct nodes in the diagram."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The generator introduces activities or decision nodes that are not supported by the requirements, often by hallucinating implicit steps or misinterpreting constraints.",
+        "possible_causes": [
+          "The generator attempts to make the diagram 'complete' by adding common-sense steps not present in the text (e.g., 'Reject command', 'Allow command').",
+          "Constraints and limits in the text are misinterpreted as sequential actions rather than conditional guards on existing flows."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The generator mishandles repeated, periodic, or cyclic behaviors, often misplacing loop boundaries or failing to represent continuous monitoring correctly.",
+        "possible_causes": [
+          "The prompt does not provide clear heuristics on when to use `repeat`/`while` loops versus standard conditional branching for cyclic control systems.",
+          "The generator confuses the exit conditions of a loop with the internal conditional logic of a state, leading to incorrect loop structures."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow does not instruct the model to look for structural cues of concurrency (e.g., lists of simultaneous operations) or to differentiate complex mutually exclusive logic (like switch/case states) from simple if/else, leading to sequential defaults and nested flattening."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section lacks guidance on using PlantUML `switch`/`endswitch` for multi-branch mutually exclusive conditions, fails to provide heuristics for distinguishing cyclic monitoring from standard conditional branching, and does not specify how to handle contextual system states as distinct activity nodes."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rules do not explicitly prohibit treating constraints or limits as sequential actions (which causes extra activities), nor do they mandate preserving contextual system states and operational conditions as distinct nodes (which causes missing activities)."
+      }
+    ]
+  }
+}

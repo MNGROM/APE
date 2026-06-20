@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow does not provide a clear, deterministic sequence for distinguishing sequential enumerations from true concurrent tasks, causing the model to over-apply `fork` to lists or linearize genuine parallelism. It also lacks explicit steps for identifying and preserving implicit intermediate activities or system responses, leading to over-compression of steps. Furthermore, it does not provide a structured method for verifying loop scope and exit conditions before code generation, resulting in misplaced or omitted loops."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section provides insufficient negative constraints for parallel decomposition, failing to explicitly prohibit using `fork` for sequential enumerations, independent attributes, or non-simultaneous lists. It also lacks guidance on preserving implicit intermediate activities and system responses as distinct nodes, and it does not clearly differentiate the semantic mapping between continuous/periodic monitoring versus bounded retries and their corresponding PlantUML loop constructs."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section lacks explicit prohibitions against wrapping unconditional actions in `if` blocks and against hallucinating conditional guards for standard actions. It also fails to explicitly forbid compressing multiple sequential steps or intermediate system responses into a single aggregated node, and it lacks rules against misinterpreting sequential lists as parallel flows."
+    }
+  ]
+}
+```

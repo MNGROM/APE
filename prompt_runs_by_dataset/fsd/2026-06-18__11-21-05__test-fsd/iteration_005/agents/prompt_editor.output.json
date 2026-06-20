@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Combined intent: Add steps for identifying iterative behaviors and structural elements like swimlanes.; Relax the over-constrained parallelism identification to allow contextual inference.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Add a workflow step between the current Step 1 and Step 2 to identify iterative or repetitive behaviors (triggered by textual cues like 'repeat', 'every', 'until', 'while') and structural elements (distinct actors or systems). Instruct the model to map these iterative cues to `repeat`/`while` constructs and distinct actors/systems to `partition` blocks.; Revise the existing Step 2's instruction on parallel flows. Expand the identification of parallel behaviors beyond explicit linguistic cues to include contextual cues, such as multiple independent attributes being processed or simultaneous sub-tasks that logically occur at the same time. Instruct the model to use `fork`/`join` for these cases, while keeping dependent or alternative lists as sequential or `if`/`else` branches."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Combined intent: Provide modeling guidance for PlantUML loop and swimlane constructs.; Relax the restrictive parallelism rule to address sequential bias.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Add a concise rule explaining that iterative keywords (e.g., 'repeat', 'until', 'while') must be mapped to PlantUML `repeat`/`while` loop constructs rather than linearized sequences. Add another concise rule explaining that when distinct actors or systems are mentioned, their actions should be enclosed in `partition` blocks named after the actor/system to preserve behavioral boundaries.; Revise the existing parallel flows rule to remove the strict prohibition against parallel modeling unless explicit concurrency words are present. Qualify the rule to state that `fork`/`join` must be used for explicit concurrency cues AND for contextual cues indicating independent simultaneous operations (e.g., multiple independent attributes processed at once), but must NOT apply to grammatical lists of dependent steps or mutually exclusive alternatives."
+    },
+    {
+      "section": "rule",
+      "intent": "Combined intent: Constrain hallucination of implicit steps for high-level requirements.; Prevent dropping alternative paths, error checks, and conditional outcomes.; Enforce the preservation of actor/system boundaries into partitions.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise the existing rule 'Do not invent implicit steps...' by adding a qualification: specifically prohibit inventing user actions, validations, or interactions for high-level requirements (like user stories) when the text only states a goal; the model must only model what is explicitly detailed without filling in assumed interactions.; Add a rule instructing the model to preserve all alternative paths, error checks, and specific conditional outcomes explicitly stated in the text. State that the model must not drop these activities in favor of only representing the main success path.; Add a rule enforcing that when distinct actors or systems are mentioned in the requirement, their corresponding activities must be grouped into `partition` blocks, and the model must not omit these structural boundaries."
+    }
+  ]
+}

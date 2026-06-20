@@ -1,0 +1,78 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract activities strictly from explicit actions in the requirement, grouping lists of attributes, parameters, or properties into a single descriptive activity node *unless* they are joined by explicit concurrency cues (e.g., 'simultaneously', 'in parallel') or represent simultaneous system behaviors (e.g., 'Close window and display statistics'). In those specific cases, decompose the compound step into separate activities for parallel branching.\nStep 2: Decompose any identified concurrent compound steps into separate activities before constructing control-flow.\nStep 3: Construct control-flow by connecting the extracted activities, mapping mutually exclusive conditions to switch/if/elseif structures and explicit concurrency keywords to fork/join blocks.",
+    "knowledge": "- Concurrency modeling: Comma-separated lists or 'and'-joined clauses must be decomposed into fork/join blocks *only* when accompanied by explicit concurrency cues or when describing simultaneous system behaviors (e.g., 'Close window and display statistics'). Explicitly exclude comma-separated lists that represent sequential UI steps, configuration options, or sequentially dependent steps in multi-threaded contexts from fork/join usage; these must remain single activity nodes or sequential flows.\n- Loop modeling: Map iterative cues (e.g., 'repeat', 'retry', 'periodically', 'cyclically') to repeat/while loops, ensuring the loop boundary strictly wraps only the iterative portion and does not enclose non-iterative parallel blocks.",
+    "rule": "- Granularity rule: Do not infer implicit system interactions or UI responses unless explicitly stated in the text; do not collapse multiple distinct specified actions into one broad node, especially if they represent simultaneous actions or concurrent behaviors explicitly described in the requirement.\n- Convergence rule: All fork/join branches and switch/case paths must merge before reaching a stop node; 'stop' nodes must not be placed inside conditional branches unless the requirement explicitly states an immediate process termination for that specific branch. Instead, conditional paths must merge."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The prediction frequently misidentifies non-concurrent lists, attributes, or sequential steps as parallel actions (false_positive_parallel), while also failing to recognize clearly concurrent tasks described by keywords like 'concurrently' or 'simultaneously' (false_negative_parallel).",
+        "possible_causes": [
+          "The prompt lacks clear guidance on distinguishing true concurrency (e.g., simultaneous execution, 'concurrently') from mere enumeration of attributes, options, or sequential items, leading to false_positive_parallel overuse of fork/join.",
+          "The prompt does not emphasize mapping explicit concurrency keywords in the requirement to fork/join blocks, causing false_negative_parallel omissions when actions are described as running concurrently or in parallel."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction often omits explicit behaviors, sub-steps, or state transitions that are clearly stated in the requirements.",
+        "possible_causes": [
+          "The generator tends to collapse multiple explicit actions or enumerated attributes into a single broad activity node, losing granular behaviors.",
+          "The prompt may not instruct the model to preserve all explicitly mentioned steps, conditions, and state transitions without abstraction or summarization."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction introduces activities, decision branches, or procedural steps that are not supported by the requirement text.",
+        "possible_causes": [
+          "The model hallucinates control-flow logic (e.g., adding 'Reject command' or 'Allow command' branches) to enforce constraints that should simply be stated as activity behaviors.",
+          "The prompt does not sufficiently constrain the model from inventing structural filler nodes to complete standard flowchart patterns (like if-else blocks) when the requirement only specifies a simple action or constraint."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction frequently omits or misrepresents control-flow relations, such as flattening nested conditional logic, missing alternative paths, or incorrectly sequencing steps.",
+        "possible_causes": [
+          "The model struggles to map complex nested conditions (e.g., switch/case inside if-else) and instead linearizes or flattens the control flow.",
+          "The prompt lacks specific instructions on how to handle multi-branch decision logic (like switch/case or nested ifs) and how to properly represent conditional transitions and alternative paths."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction adds unsupported or incorrect control-flow relations, such as forcing sequential dependencies where none exist or creating invalid structural transitions.",
+        "possible_causes": [
+          "The model forces sequential execution for items that should be alternative paths or independent attributes, creating incorrect dependencies.",
+          "Misinterpretation of requirement structure leads to adding incorrect transition arrows, such as treating descriptive text as sequential procedural steps."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The prediction mishandles repeated, periodic, retry, or loop behavior, either by omitting required loops or by incorrectly structuring loop boundaries and exit conditions.",
+        "possible_causes": [
+          "The prompt does not provide clear mapping rules for translating requirement keywords like 'repeat', 'periodically', 'retry', or 'until' into correct PlantUML loop constructs (repeat/while).",
+          "The model fails to correctly identify the scope and termination conditions of loops, leading to loops that exit too early, too late, or encompass the wrong activities."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section provides conflicting cues for parallelism: Step 1 allows decomposition based on 'simultaneous system behaviors', which leads to false-positive parallelism for sequential or enumerated items, while Step 3 only broadly mentions mapping 'explicit concurrency keywords' to fork/join, failing to enforce their use and causing false-negative parallelism. Additionally, Step 1's grouping rule directly causes missing activities by instructing the model to collapse lists of attributes or parameters into a single node."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section's concurrency modeling rule is the primary source of false-positive parallelism; the exception for 'simultaneous system behaviors' is too vague and overrides the sequential exclusions, causing the model to misidentify non-concurrent lists as parallel. It also contributes to false-negative parallelism by not establishing a definitive, prioritized mapping from explicit keywords like 'concurrently' or 'simultaneously' to fork/join blocks. Furthermore, the loop modeling rule lacks guidance on identifying loop scope and exit conditions, leading to incorrect loop boundaries."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The granularity rule contradicts the workflow and knowledge sections by forbidding the collapse of distinct specified actions, yet fails to override the explicit instructions that allow collapsing, leaving the model confused and causing both missing activities and extra hallucinated activities. The convergence rule is insufficient for complex control-flow, lacking specific instructions on how to handle nested conditional logic (like switch/case inside if-else) or how to properly represent conditional transitions, resulting in missing, wrong, or flattened relations."
+      }
+    ]
+  }
+}

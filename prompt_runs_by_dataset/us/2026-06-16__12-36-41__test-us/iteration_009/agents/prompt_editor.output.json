@@ -1,0 +1,51 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Prevent misinterpretation of sequential enumerations as parallel flows and linearization of true concurrent tasks.",
+      "change_instruction": "Add a workflow step between the current steps 1 and 2 that explicitly requires classifying every list, enumeration, or comma-separated set of items as SEQUENTIAL by default. It must state that `fork`/`end fork` is ONLY permitted if the text contains explicit positive linguistic cues of simultaneity (e.g., 'simultaneously', 'at the same time', 'concurrently'). Require the model to output an intermediate classification of each identified set of actions as either 'sequential' or 'parallel' with the textual evidence before constructing any control flow."
+    },
+    {
+      "section": "workflow",
+      "intent": "Preserve implicit intermediate activities and system responses from being over-compressed.",
+      "change_instruction": "Modify workflow step 2 to explicitly include the identification and preservation of intermediate states, system responses, and secondary effects as distinct activity nodes. Add a mandatory intermediate output step requiring the model to list all primary actions AND secondary/implicit activities before diagramming, ensuring they are not compressed into aggregated nodes."
+    },
+    {
+      "section": "workflow",
+      "intent": "Ensure correct loop type selection, scope, and exit condition mapping.",
+      "change_instruction": "Add a dedicated workflow step for loop verification before code generation (prior to step 8). This step must require the model to: 1) Identify the exact start and end boundaries of the loop in the text, 2) Explicitly map 'repeat/until' semantics (action then condition check) to `repeat` and 'while' semantics (condition check then action) to `while`, 3) Extract the exact exit condition from the text, and 4) Output this loop specification as intermediate output to verify correct scope and exit conditions."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide negative constraints to stop over-applying `fork` to sequential lists or independent attributes.",
+      "change_instruction": "Add a knowledge rule explicitly stating that `fork`/`end fork` MUST NOT be used for sequential enumerations, independent attributes, UI field entries, or comma-separated lists of steps unless explicit simultaneous linguistic cues are present. State that entering multiple fields or creating multiple objects sequentially is NOT parallel execution."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Clarify the semantic mapping of continuous/periodic monitoring versus bounded retries to specific PlantUML loop constructs.",
+      "change_instruction": "Add a knowledge rule that clearly differentiates loop semantics: map continuous/periodic monitoring or persistent cycles (e.g., 'continuously monitors', 'periodically checks') to `while` (condition first), and map bounded retries or action-then-check cycles (e.g., 'retry up to N times', 'perform action until success') to `repeat` (action first)."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Ensure implicit intermediate activities and system responses are preserved as distinct nodes.",
+      "change_instruction": "Add a knowledge rule stating that intermediate system states, system responses, and secondary effects explicitly mentioned in the text must be represented as separate, fine-grained activity nodes. Explicitly prohibit compressing a sequence of action -> system response -> next action into a single aggregated activity node."
+    },
+    {
+      "section": "rule",
+      "intent": "Prohibit wrapping unconditional actions in `if` blocks and hallucinating conditional guards.",
+      "change_instruction": "Add a rule explicitly stating: 'NEVER wrap unconditional actions, standard procedural steps, or default behaviors in `if`/`else` blocks. ONLY create conditional branches for actions explicitly guarded by an `if`, `when`, `unless`, or similar conditional keyword in the text. Do not hallucinate conditional guards for standard actions.'"
+    },
+    {
+      "section": "rule",
+      "intent": "Prohibit compressing multiple sequential steps or intermediate system responses into a single node.",
+      "change_instruction": "Add a rule explicitly stating: 'NEVER compress multiple sequential steps, intermediate system responses, or state changes into a single aggregated activity node. Each distinct action and system response mentioned in the text must remain a separate activity node.'"
+    },
+    {
+      "section": "rule",
+      "intent": "Explicitly forbid misinterpreting sequential lists as parallel flows.",
+      "change_instruction": "Add a rule explicitly stating: 'NEVER represent sequentially listed items, independent attributes, or multiple UI field entries as parallel flows using `fork`/`end fork` unless the text explicitly states they occur simultaneously or concurrently.'"
+    }
+  ]
+}
+```

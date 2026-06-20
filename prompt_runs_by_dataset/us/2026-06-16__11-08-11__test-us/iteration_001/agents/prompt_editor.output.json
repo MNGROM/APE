@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a step-by-step process to extract activities and map control flow from text, preventing omission, hallucination, and incorrect structuring.",
+      "change_instruction": "Add a multi-step workflow requiring the model to: (1) Extract all explicit actions and states from the requirement as distinct activity nodes without summarizing or compressing them; (2) Identify natural language connectives (e.g., 'if/otherwise', 'while', 'simultaneously') and map them to the corresponding PlantUML control flow structures (if/else, while/repeat, fork); (3) Construct the diagram by connecting only the extracted nodes using the mapped control flows, ensuring correct nesting and scope; (4) Validate that every node and transition in the diagram is explicitly supported by the source text."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Equip the model with heuristics to correctly identify parallel boundaries, loop constructs, and conditional alternatives from textual cues.",
+      "change_instruction": "Add a knowledge section providing specific mapping heuristics: (1) Concurrency: Map phrases indicating simultaneous actions (e.g., 'meanwhile', 'at the same time', 'concurrently') to fork/end fork blocks, ensuring boundaries strictly enclose only the concurrent tasks; (2) Loops: Map iterative phrases (e.g., 'periodically', 'retry', 'exponential backoff', 'repeat until') to repeat/while loops, noting that asynchronous/periodic background processes may require separate concurrent flows rather than standard inline loops; (3) Conditionals: Map alternative or guarded outcomes (e.g., 'if...otherwise', 'in case of') to if/elseif/else structures, preserving the requirement's meaning in guard labels and maintaining proper nesting."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce strict 1:1 mapping between requirement actions and nodes, prohibit hallucinated steps, and require text-based justification for all transitions.",
+      "change_instruction": "Add a rule section with strict constraints: (1) 1:1 Activity Mapping: Every explicit action in the requirement must map to a distinct activity node; do not summarize or compress multiple steps into single nodes. (2) No Hallucination: Do not add inferred, implicit, or 'helpful' intermediate steps, states, or processing logic not explicitly stated in the requirement. (3) Strict Transitions: Every control-flow transition (edge) must be explicitly supported by the source text; do not force sequential flow where the requirement implies conditional or alternative paths. (4) Fidelity to Text: Model the control flow exactly as described by the text's connectives, avoiding default procedural assumptions."
+    }
+  ]
+}
+```

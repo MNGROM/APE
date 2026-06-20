@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, providing no step-by-step process to guide the LLM from requirement parsing to diagram generation. This absence forces the LLM into an unconstrained generation process, causing it to invent speculative steps, decompose high-level requirements into granular programming procedures, and misinterpret textual lists as parallel flows."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, leaving the LLM without domain-specific modeling guidance on how to map natural language constructs to UML activity diagram semantics. This leads to a failure to distinguish between alternative choices/attributes and true concurrent execution, and a lack of understanding of how to preserve the requirement's original level of abstraction."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, resulting in no strict constraints against hallucination or over-specification. Without explicit rules to map only explicitly stated behaviors and to preserve original phrasing, the LLM defaults to inventing plausible but unrequired UI actions and procedural steps."
+    }
+  ]
+}
+```

@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities strictly from the explicit text of the requirement. Identify each distinct action as a single concise activity, preserving the core action and object. Do not infer, assume, or decompose actions into sub-steps beyond what is explicitly written; do not merge sequential distinct actions into one.\n2. Identify control-flow constructs in the requirement: alternative paths (if/else), mutually exclusive cases based on a variable (switch/case), concurrent actions (fork), and compound conditions requiring nested logic.\n3. Generate the PlantUML code by assembling only the extracted activities and identified control-flow constructs. Ensure all control-flow edges strictly follow the sequence and logic described in the requirement, connecting only the explicitly extracted activities without adding or skipping steps."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Use PlantUML `fork`/`fork again`/`end fork` when the requirement lists multiple independent items that occur concurrently, represent independent system components, or are displayed simultaneously as separate attributes. When a requirement specifies a compound condition (e.g., 'when A and B'), model it as nested `if`/`else` blocks to reflect the distinct decision points, rather than flattening it into a single combined guard. Use PlantUML `partition` blocks to group activities performed by the same system or actor when the requirement explicitly names distinct responsible entities."
+    }
+  ],
+  "rationale": "The workflow edit strengthens the procedural grounding by explicitly prohibiting inference, assumption, and decomposition of sub-steps, while enforcing strict edge assembly based only on extracted activities. The knowledge edit addresses the identified knowledge gaps by adding concise, reusable modeling principles for identifying parallel constructs from requirement lists, nesting compound conditions, and using partitions for distinct actors.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

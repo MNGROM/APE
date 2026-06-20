@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The model predominantly commits false_positive_parallel errors, misusing fork/join for non-concurrent lists, attributes, options, or sequential steps. It also commits false_negative_parallel errors by flattening explicitly concurrent tasks into sequential flows.",
+      "possible_causes": [
+        "The prompt lacks clear guidance on when parallelism is structurally required, causing the model to treat any list of items (e.g., rights, attributes, deployment/administration/enforcement) as concurrent fork/join branches rather than sequential or conditional logic.",
+        "The model fails to recognize explicit concurrency keywords (e.g., 'concurrently', 'simultaneously', 'while') and defaults to sequential activity nodes, missing the need for fork/join when actions are truly parallel."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The model frequently hallucinates activities that are not in the requirements, such as inventing 'Error tolerance exceeded' or 'Reject transient change' outcomes for constraint-based requirements, or adding redundant processing nodes for list items.",
+      "possible_causes": [
+        "The prompt does not adequately instruct the model to strictly adhere to the provided text, leading it to infer or invent implicit actions or outcomes.",
+        "The model struggles to represent constraints and limits as simple activities or conditions, instead generating hypothetical behavioral branches (e.g., what happens if a threshold is exceeded) that are not specified in the requirement."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The model omits explicit behaviors, state transitions, and structural decompositions present in the requirements, often collapsing multiple steps or detailed components into a single broad node.",
+      "possible_causes": [
+        "The model prioritizes establishing the high-level control-flow shape over preserving all granular activities and state changes mentioned in the text.",
+        "It fails to decompose complex actions (e.g., 'PAs exchange content availability and load information') into their constituent sub-activities as demonstrated in the ground truth."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The model misrepresents control-flow logic, particularly by replacing mutually exclusive conditional branches (if/elseif/switch) with nested ifs, and by failing to correctly route flows for complex state machines.",
+      "possible_causes": [
+        "The prompt lacks specific instructions on mapping mutually exclusive conditions to switch/case or if/elseif constructs, causing the model to default to deeply nested if/else structures.",
+        "The model has difficulty parsing complex, multi-conditional state transition logic from natural language and translating it into correct top-down activity diagram routing."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The model introduces incorrect control-flow paths, such as forcing a single linear sequence for alternative flows or adding unnecessary conditional checks for constraints that should be simple actions.",
+      "possible_causes": [
+        "The model attempts to fit all logic into a single main flow, incorrectly linking alternative or exception paths as sequential steps rather than separate branches.",
+        "It misinterprets requirement constraints (e.g., 'shall not exceed') as runtime conditional checks rather than inherent properties of the action, leading to spurious branching relations."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The model mishandles repeated, periodic, or retry behaviors, often misplacing loop boundaries or failing to represent exponential backoff and monitoring loops accurately.",
+      "possible_causes": [
+        "The prompt does not provide sufficient guidance on how to map periodic tasks or retry mechanisms (like exponential backoff) into repeat/while loops in PlantUML.",
+        "The model confuses the scope of the loop, either placing the loop condition around the wrong set of activities or failing to enclose the iterative logic entirely."
+      ]
+    }
+  ]
+}
+```

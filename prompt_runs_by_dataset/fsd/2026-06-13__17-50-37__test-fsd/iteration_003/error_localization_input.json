@@ -1,0 +1,169 @@
+{
+  "task": "Localize analyzed prompt failures to the fixed prompt sections before editing.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\error_localization.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Extract activities strictly from the explicit text of the requirement. Identify each distinct action as a single concise activity, preserving the core action and object without merging sequential distinct actions.\n2. Identify control-flow constructs in the requirement: alternative paths (if/else), mutually exclusive cases based on a variable (switch/case), and concurrent actions (fork).\n3. Generate the PlantUML code by assembling only the extracted activities and identified control-flow constructs, strictly following the sequence and logic described in the requirement.",
+    "knowledge": "An activity should represent a single distinct action stated in the requirement; do not decompose a stated action into sub-steps or merge sequential distinct actions into one. Use PlantUML `switch`/`case`/`endswitch` when the requirement describes multiple mutually exclusive paths based on different values of a single variable or category; use `if`/`else` for simple binary conditions. Use `fork`/`fork again`/`end fork` when the requirement indicates that multiple actions happen concurrently or represent independent parallel components.",
+    "rule": ""
+  },
+  "failure_analysis": {
+    "summary": "The batch mainly fails because the prompt gives weak guidance on activity granularity and decomposition, leading to merged or paraphrased activities instead of faithful extraction. It also lacks clear rules for mapping compound conditions into nested control-flow and for decomposing grouped items into parallel forks, causing widespread missing/extra activities and relation errors.",
+    "error_patterns": [
+      {
+        "name": "activity_granularity_mismatch",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0015",
+          "pure-0082",
+          "pure-0026"
+        ],
+        "problem": "The model merges multiple distinct actions into a single activity or paraphrases activities instead of extracting them verbatim from the requirement, leading to both missing and extra activities.",
+        "suggested_prompt_direction": "Strengthen the instruction to extract activities strictly as stated in the text, preserving the original wording and separating grouped items into individual activities.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "compound_condition_flattening",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0016",
+          "lmc-0050"
+        ],
+        "problem": "Compound conditions (e.g., 'A and B') are flattened into a single decision node instead of being decomposed into nested if/else branches as expected in the gold standard.",
+        "suggested_prompt_direction": "Instruct the model to decompose compound conditions into separate, nested decision nodes, preserving each condition as an individual guard.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_parallel_decomposition",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0015",
+          "us-0129"
+        ],
+        "problem": "When the requirement lists multiple items or concurrent actions, the model lists them sequentially in one activity instead of decomposing them into parallel forks.",
+        "suggested_prompt_direction": "Add explicit guidance to identify grouped or concurrent items in the text and represent them as separate activities within a fork construct.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_conditional_alternatives",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "bp-0022",
+          "pure-0082"
+        ],
+        "problem": "Optional behaviors or alternative paths described in the requirement are omitted or linearized instead of being modeled as if/else or switch/case constructs.",
+        "suggested_prompt_direction": "Emphasize identifying optional steps, alternative choices, and conditional outcomes, and mapping them to appropriate control-flow constructs.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "compound_condition_nesting",
+        "related_failure_patterns": [
+          "compound_condition_flattening"
+        ],
+        "evidence_case_ids": [
+          "lmc-0016",
+          "lmc-0050"
+        ],
+        "gap": "The prompt does not specify how to handle compound conditions (e.g., 'A and B') that should be represented as nested decision nodes rather than a single flattened guard.",
+        "suggested_knowledge": "When a requirement specifies a compound condition (e.g., 'if A and B'), represent it as nested if/else constructs, where each condition is a separate decision node, rather than merging them into a single guard."
+      },
+      {
+        "id": "list_parallel_decomposition",
+        "related_failure_patterns": [
+          "missing_parallel_decomposition"
+        ],
+        "evidence_case_ids": [
+          "bp-0015",
+          "us-0129"
+        ],
+        "gap": "The prompt lacks guidance on decomposing lists of items or concurrent actions into parallel fork constructs.",
+        "suggested_knowledge": "When the requirement lists multiple items, attributes, or concurrent actions together (e.g., 'host names, port numbers, display names'), decompose them into separate activities within a fork/fork again/end fork construct rather than merging them into a single activity."
+      },
+      {
+        "id": "verbatim_activity_extraction",
+        "related_failure_patterns": [
+          "activity_granularity_mismatch"
+        ],
+        "evidence_case_ids": [
+          "bp-0015",
+          "pure-0082",
+          "pure-0026"
+        ],
+        "gap": "The prompt does not emphasize preserving the exact phrasing from the requirement for activity labels, leading to paraphrased or abstracted activities that mismatch the gold standard.",
+        "suggested_knowledge": "Use the exact phrasing from the requirement for activity labels. Do not paraphrase, abstract, or merge distinct sequential actions into a single activity. Each distinct action stated in the text should become its own activity node."
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML into the prompt.",
+      "Do not add dataset-specific examples or memorized answers.",
+      "Do not change the output format away from PlantUML code only."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge",
+      "rule"
+    ],
+    "max_sections_per_edit": 2,
+    "prefer_general_rules_over_dataset_specific_examples": true
+  },
+  "section_routing_policy": {
+    "workflow": "how the agent should proceed from requirement reading to PlantUML generation",
+    "knowledge": "reusable UML or PlantUML modeling knowledge such as branch, loop, fork/join, merge, guard labels, start/stop, and valid structure patterns",
+    "rule": "short hard constraints or priorities that should override normal generation habits",
+    "prefer_knowledge_when": [
+      "failure_analysis contains knowledge_gaps",
+      "the repair is a reusable UML/PlantUML concept rather than a procedural step",
+      "similar relation, loop, parallel, guard-label, or syntax mistakes repeat across cases"
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "section_diagnoses": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "priority": "low|medium|high",
+        "failure_patterns": [
+          "error pattern names from failure_analysis"
+        ],
+        "section_problem": "what this prompt section currently fails to specify or overstates",
+        "edit_intent": "what kind of prompt change should be made in this section",
+        "knowledge_gap_ids": [
+          "ids from failure_analysis.knowledge_gaps when relevant"
+        ],
+        "evidence_case_ids": [
+          "case id strings from failure_analysis"
+        ]
+      }
+    ],
+    "recommended_edit_sections": [
+      "section names in priority order"
+    ],
+    "do_not_edit_sections": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "reason": "why editing this section would be unnecessary or risky"
+      }
+    ]
+  }
+}

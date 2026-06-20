@@ -1,0 +1,34 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 3 restricts fork/join construction to explicit concurrency cues (e.g., 'simultaneously', 'concurrently'), which causes false-negative parallelism when independent actions, parallel attributes, or simultaneous options lack these exact keywords. It also over-prescribes mapping lists to sequential or if/else branches, preventing the recognition of true concurrent independence."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section strictly limits fork/join to explicit concurrency cues and mandates that grouped attributes and options be modeled as mutually exclusive or sequential. This prevents the model from inferring parallelism from structural independence when explicit concurrency words are absent, directly causing false-negative parallelism."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section explicitly prohibits modeling alternative choices, mutually exclusive options, or grouped attributes as parallel flows. This absolute prohibition forces the model into sequential or conditional branching even for items that the failure analysis identifies as independently executed parallel options, driving the false-negative parallelism error."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "Step 1 lacks guidance on distinguishing procedural actions from descriptive text, UI labels, or meta-statements, leading to the generation of extra activity nodes for non-actions."
+    },
+    {
+      "section": "rule",
+      "section_problem": "While the rule section prohibits inventing implicit steps or compressing multiple steps, it lacks an explicit prohibition against converting descriptive text, UI labels, or structural headings into activity nodes, resulting in extra activities."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "Step 3 does not provide adequate guidance on mapping nested conditional logic or mutually exclusive conditions based on textual semantics, causing the model to flatten nested conditions or misrepresent mutually exclusive logic as sequential steps."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "Step 2 lacks explicit rules for identifying retry patterns or alternative data flows and mapping them to repeat/while constructs, leading to misplaced or structurally incorrect loops."
+    }
+  ]
+}
+```

@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1 instructs to extract activities 'explicitly stated in the text' and prohibits 'adding implicit steps,' which causes the model to omit implicit outcomes of conditional checks (like 'Allowed/Not allowed'). Step 3 lacks clear guidelines for distinguishing sequential multi-part actions from concurrent ones, leading to the misuse of `fork`/`join` for sequential data entry. It also lacks instructions for constructing bounded loops with internal exit conditions, resulting in incorrect flat loop structures."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks guidance on representing the implicit outcomes or consequences of conditional checks as explicit activity nodes, causing missing activities. It also fails to clarify that sequential multi-part actions (like data entry) must not be modeled as parallel forks, and it provides no templates or rules for modeling bounded loops with early exit conditions (e.g., attempt counters), leading to incorrect loop constructs."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule strictly prohibits inventing 'implicit steps' and 'error-handling branches,' which likely causes the model to omit implicit conditional outcomes (like 'Not allowed') and avoid adding necessary 'else' stop nodes. It also lacks a rule against using `fork`/`join` for sequential or alternative steps, allowing the model to incorrectly use parallel constructs as a visual grouping mechanism."
+    }
+  ]
+}
+```

@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Combined intent: Prevent false-negative parallelism and missing activities caused by over-grouping independent attributes and simultaneous data entries.; Prevent missing activities and flattened relations from implied conditional state transitions.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise Step 1 to add an exception: when a comma-separated list or 'and'-joined clause describes independent data entry fields (e.g., 'enter name, description, and keywords') or simultaneous system state attributes, decompose them into separate activity nodes rather than grouping them into a single node. Retain the grouping rule only for sequential UI steps, configuration options, or sequentially dependent steps.; Add a step after control-flow construction requiring the model to review the requirement for implicit conditional state transitions (e.g., 'upon [event]', 'when [state]', 'triggers') and map them to if/switch structures with distinct activities, rather than representing them as sequential flows."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Combined intent: Expand concurrency triggers to include independent attributes and simultaneous data entry while preventing false positives.; Prevent wrong loops by distinguishing wait-conditions from repeat-conditions and correctly scoping loop boundaries.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise the concurrency modeling rule to explicitly include independent data entry fields and simultaneous system state attributes as valid triggers for fork/join blocks, alongside explicit concurrency cues. Add a strict exclusion: do not apply fork/join to alternative options (e.g., 'either/or', 'options include'), sequential sub-steps, or conditionally executed branches.; Add a rule to the loop modeling section: distinguish between a 'while' wait condition (e.g., waiting for a timeout or external event), which should be modeled as an if/else branch that stalls the flow, and a 'repeat' loop (e.g., 'continuously', 'periodically', 'retry'), which wraps the iterative actions. Specify that loop boundaries must strictly enclose only the actions explicitly described as repeating, excluding non-iterative setup or teardown steps."
+    },
+    {
+      "section": "rule",
+      "intent": "Combined intent: Prevent hallucinated error-handling and validation branches (extra_activity).; Prevent flattened relations and misrouted branches by preserving nested conditional logic.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise the granularity rule to explicitly prohibit inferring error-handling, validation, or 'No' branches unless the requirement text explicitly states an error condition, validation check, or failure outcome. Factual statements or unconditional behaviors must not be gated by artificial decision nodes.; Revise the convergence rule to specify that nested conditional logic (e.g., an 'if' within an 'if') must be modeled as nested switch/if structures in the PlantUML code, not flattened into independent sequential checks. Add that 'else' or default paths must rejoin the main flow strictly after all conditional branches for that specific decision have concluded, avoiding improper merging into unrelated parallel branches."
+    }
+  ]
+}

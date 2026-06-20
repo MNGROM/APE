@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "rule",
+      "section_problem": "The rule section is absent, which is the primary cause for false-positive parallelism. The generator defaults to using fork/join as a visual grouping mechanism for enumerated lists, attributes, or sequential steps because there are no strict rules reserving fork/join exclusively for true simultaneous concurrency (e.g., explicitly stated 'concurrently', 'parallel', or concurrent RTOS tasks) and explicitly excluding mere enumerations or sequential checks."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is absent, leading to missing and extra activities. Without a defined extraction workflow, the generator is not constrained to preserve every explicit action as a distinct activity node, causing it to collapse multiple actions into abstract nodes. Conversely, the lack of boundaries against interpretation causes it to hallucinate inferred sub-steps or unstated enforcement logic."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is absent, resulting in missing/wrong relations, extra/wrong relations, and wrong loops. The generator lacks reusable modeling guidance for mapping complex conditional logic (nested if-else, switch/case) and various forms of iterative behavior (periodic, retry, continuous) to the correct PlantUML control structures and loop boundaries, causing it to impose rigid sequential flows or misplace loop boundaries."
+    }
+  ]
+}
+```

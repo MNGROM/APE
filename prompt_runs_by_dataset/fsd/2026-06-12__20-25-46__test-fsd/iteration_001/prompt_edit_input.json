@@ -1,0 +1,124 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "",
+    "knowledge": ""
+  },
+  "failure_analysis": {
+    "summary": "The batch suffers from extremely low node and relation recall and precision because the current prompt provides no workflow or knowledge guidance. The generation model freely speculates implementation details not present in the input, merges or omits required atomic activities, and fails to model required conditional, parallel, and loop control flows. The prompt's empty workflow and knowledge sections leave the agent without constraints or structural strategies.",
+    "error_patterns": [
+      {
+        "name": "speculative_extra_activities",
+        "severity": "high",
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055"
+        ],
+        "problem": "The generator fabricates implementation steps and UI interactions not stated in the requirement, causing very low node precision. For example, a simple user story like 'edit profile' is expanded into a multi-step validation flow with database updates and error messages.",
+        "suggested_prompt_direction": "Add a strict constraint in the workflow or agent task section that the diagram must only include activities, actors, and conditions explicitly stated in the input requirement, prohibiting speculative implementation details.",
+        "target_sections": [
+          "workflow",
+          "agent task"
+        ]
+      },
+      {
+        "name": "missing_conditional_and_parallel_flows",
+        "severity": "high",
+        "evidence_case_ids": [
+          "pure-0046",
+          "bp-0028",
+          "bp-0010",
+          "pure-0078"
+        ],
+        "problem": "The generated diagrams frequently flatten conditional branches (if/switch) and parallel forks into simple sequential flows, or represent them incorrectly. This leads to missing decision nodes and drastically low relation recall for control flows.",
+        "suggested_prompt_direction": "Provide workflow instructions requiring the agent to actively identify and explicitly model conditional branches (if/else, switch) and concurrent tasks (fork/end fork) based on keywords like 'if', 'optionally', 'either/or', or 'simultaneously' in the input.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "merged_atomic_activities",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0048",
+          "pure-0078",
+          "pure-0046"
+        ],
+        "problem": "The generator merges multiple distinct actions described in the input into single, coarse-grained activity nodes. For instance, 'Pilot uses cockpit control' and 'Set heading hold reference' are merged into one node, dropping required granularity and sequential relations.",
+        "suggested_prompt_direction": "Instruct the agent to preserve the granularity of the input requirement: explicitly listed steps, checks, or actions must be represented as separate activity nodes unless the input clearly groups them as a single action.",
+        "target_sections": [
+          "workflow",
+          "input"
+        ]
+      },
+      {
+        "name": "missing_loop_and_retry_flows",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "pure-0046"
+        ],
+        "problem": "When the requirement implies a repeat or retry mechanism, the generator either omits it or models it incorrectly, leading to missing repeat/while constructs and broken control flow relations.",
+        "suggested_prompt_direction": "Add guidance in the workflow section to detect iterative or retry logic in the input and map it to PlantUML loop constructs (repeat/repeat while or while/endwhile).",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "plantuml_syntax_errors",
+        "severity": "low",
+        "evidence_case_ids": [
+          "pure-0046"
+        ],
+        "problem": "Occasional invalid PlantUML constructs are generated, such as mismatched fork/endif blocks, causing compilation failures.",
+        "suggested_prompt_direction": "Include a brief knowledge reminder about the correct pairing of PlantUML control-flow blocks (e.g., fork/end fork, if/endif, switch/endswitch) to prevent structural mismatches.",
+        "target_sections": [
+          "knowledge"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not add dataset-specific examples or memorized ground-truth PlantUML snippets to the prompt.",
+      "Do not instruct the model to copy exact wording from the input if it violates PlantUML syntax or activity naming best practices.",
+      "Do not encourage the model to add speculative steps just to increase node count or recall."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

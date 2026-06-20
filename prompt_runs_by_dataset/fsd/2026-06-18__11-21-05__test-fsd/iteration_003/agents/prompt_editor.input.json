@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract a minimal, exhaustive list of discrete activities explicitly stated in the text, mapping them 1-to-1 to activity nodes without summarizing or adding implicit steps.\nStep 2: Construct the control flow strictly among these extracted nodes, using the text's explicit sequencing and conditional logic, without adding or merging nodes.",
+    "knowledge": "- Distinguish sequential actions from concurrent flows: only use `fork`/`join` when the requirement explicitly states simultaneous execution; grammatical lists (e.g., 'enter name and description') or alternative options must be modeled as sequential activities or `if`/`else` branches, not as parallel forks.\n- Map nested conditional logic: map mutually exclusive conditions (e.g., 'if X, else if Y') using nested `if`/`elseif`/`else` constructs rather than flattening them into sequential or unrelated branches.",
+    "rule": "- Do not invent implicit steps, validations, error-handling branches, or system responses unless they are explicitly stated in the requirement.\n- Do not add control flow edges that are not directly supported by the requirement's stated sequence or logic; specifically, do not force sequential dependencies between unrelated steps or misroute branches."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The model frequently fails to identify and represent concurrent behaviors, either ignoring parallelism entirely or incorrectly modeling it using sequential control flow.",
+        "possible_causes": [
+          "The prompt lacks explicit instructions or examples on how to map simultaneous actions, lists of items, or concurrent system checks to PlantUML's `fork`/`end fork` or `split`/`end split` constructs.",
+          "The model defaults to a strictly sequential interpretation of requirements, failing to recognize linguistic cues for parallelism (e.g., 'and', simultaneous monitoring, or listed attributes)."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The model often misrepresents the control flow logic, particularly failing to correctly model mutually exclusive branching paths and state-based transitions.",
+        "possible_causes": [
+          "The prompt does not adequately guide the model to use the `switch`/`endswitch` construct for mutually exclusive conditions (e.g., state machine cases), leading the model to use nested `if/elseif` or disconnected `if` blocks instead.",
+          "Complex conditional logic with multiple overlapping guards is flattened or linearized, losing the correct topological relationships between states."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The model omits explicit activities, UI elements, or intermediate states that are clearly specified in the requirements.",
+        "possible_causes": [
+          "The model tends to abstract or compress granular steps (like individual UI interactions or data entry fields) into single, broad activities rather than preserving them as distinct nodes.",
+          "Intermediate states or system responses (e.g., windows appearing, lists displaying) are skipped over in favor of directly connecting user actions to outcomes."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The model introduces activities or nodes that are not grounded in the source requirement, often by decomposing single actions into multiple assumed sub-steps.",
+        "possible_causes": [
+          "The model over-interprets requirements, hallucinating operational details or breaking down a single specified action into an unsupported sequence of sub-actions.",
+          "Lack of strict constraints in the prompt forcing the model to only generate nodes explicitly traceable to the requirement text."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "Step 1 instructs the model to extract a 'minimal' list of activities, which encourages the model to abstract or compress granular steps (causing missing_activity) rather than preserving them as distinct nodes. Step 2 lacks explicit guidance on how to identify and construct parallel flows, causing the model to default to a strictly sequential interpretation (causing wrong_parallel)."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section only warns against *incorrectly* using `fork`/`join` for grammatical lists, but provides no positive guidance or linguistic cues for when parallelism *should* be used (causing wrong_parallel). It also explicitly prescribes `if`/`elseif`/`else` for mutually exclusive conditions, failing to mention `switch`/`endswitch` for state-based transitions (causing missing_or_wrong_relation)."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rules against inventing implicit steps and adding unsupported control flow edges are insufficient to prevent extra_activity, as they do not explicitly prohibit decomposing single specified actions into multiple assumed sub-steps. Additionally, they lack strict constraints forcing the model to preserve granular UI elements or intermediate states as distinct nodes (causing missing_activity)."
+      }
+    ]
+  }
+}

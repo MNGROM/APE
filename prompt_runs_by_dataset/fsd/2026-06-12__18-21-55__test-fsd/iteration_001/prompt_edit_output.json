@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Read the input requirement carefully and identify every distinct action and actor.\n2. Decompose compound or verbose phrases into fine-grained, single-action activity nodes. Each distinct verb phrase or action must become its own separate activity node.\n3. Strictly extract activities only from the provided text. Do not invent, infer, or add unstated steps, UI interactions, system validations, error handling, or success messages.\n4. Determine the control flow between the extracted nodes based solely on the text.\n5. Generate the corresponding PlantUML activity diagram code."
+    },
+    {
+      "section": "knowledge",
+      "operation": "replace",
+      "content": "PlantUML Control Flow Constructs:\n- Use `switch` / `case` / `endswitch` to model mutually exclusive alternative paths. Do not use if/else or fork for mutually exclusive choices.\n- Use `fork` / `end fork` strictly for concurrent parallel activities. Do not use fork for alternative choices or sequential enumerations.\n- The keyword `or` is only valid inside a `fork` / `end fork` block to separate concurrent threads. Using `or` outside of a fork block causes syntax errors.\n- Ensure all control flow blocks are properly opened and closed with their respective end keywords (e.g., `endswitch`, `end fork`).\n- Keep activity labels concise and focused on a single action. Avoid merging multiple distinct actions into one verbose node."
+    }
+  ],
+  "rationale": "The workflow section is populated with explicit instructions to decompose actions into fine-grained nodes and strictly forbid hallucinating unstated steps, directly addressing the over-specification and insufficient granularity errors. The knowledge section provides concrete rules for PlantUML control flow constructs, specifically mandating switch/case for alternatives and restricting fork to true parallelism, which targets the incorrect fork usage, missing switch constructs, and syntax errors.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}
+```

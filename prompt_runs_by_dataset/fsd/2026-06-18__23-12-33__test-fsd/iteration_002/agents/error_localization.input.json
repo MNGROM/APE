@@ -1,0 +1,54 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract explicit activities strictly from the requirement text, explicitly including data sources, system outputs, and displayed information as distinct activity nodes.\nStep 2: Construct control-flow relations exclusively among the extracted activities, mapping textual lists and conditions to the appropriate PlantUML constructs.",
+    "knowledge": "(1) Treat data sources, displayed information, and system outputs as distinct activity nodes when explicitly mentioned. (2) Map iterative keywords (e.g., 'repeat', 'for each', 'perform first X then Y') to PlantUML `repeat`/`while` loops. (3) Map mutually exclusive options, alternative choices, and attribute groupings to `switch`/`case` or `if`/`elseif`/`else` constructs. (4) Reserve `fork`/`join` strictly for actions explicitly stated to occur concurrently or simultaneously.",
+    "rule": "(1) Do not use `fork`/`join` for sequential steps, alternative options, attribute listings, or UI steps; only use it when true concurrency is explicitly stated. (2) Do not invent implicit error-handling branches, validation loops, or recovery paths unless they are explicitly described in the requirement. (3) Do not compress multiple explicitly stated actions into a single abstract node."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The prediction consistently fails to use fork/join for concurrent or grouped items, representing them as sequential steps instead (false_negative_parallel).",
+        "possible_causes": [
+          "The prompt lacks explicit instructions to identify lists of attributes, options, or items as parallel structures using fork/join.",
+          "The generator defaults to a strictly sequential interpretation for any comma-separated or bulleted list in the requirement text."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction frequently hallucinates activities that are not stated in the requirements, particularly for simple user stories or abstract requirements.",
+        "possible_causes": [
+          "The generator over-decomposes high-level goals (e.g., 'identify whales') into assumed sub-steps (e.g., 'select file', 'play audio', 'listen') that are not specified.",
+          "The prompt may encourage breaking down actions into granular steps without a constraint to only use activities explicitly mentioned in the text."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction omits required activities, often by collapsing multiple explicit actions into a single broad node or skipping structural elements like partitions.",
+        "possible_causes": [
+          "The generator merges sequential actions (e.g., a menu navigation path) into one activity node instead of modeling each step.",
+          "The prompt does not emphasize preserving swimlanes/partitions or distinct structural components mentioned in the requirement."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction frequently misrepresents control-flow logic, particularly by flattening nested conditional structures into sequential or independent branches.",
+        "possible_causes": [
+          "The generator struggles to map complex, nested 'if-then' logic from text into nested PlantUML control structures, opting for sequential if/elseif chains instead.",
+          "The prompt lacks guidance on how to handle multi-level state transitions or nested conditional dependencies common in state-driven requirements."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction introduces incorrect control-flow paths, such as treating mutually exclusive alternatives as sequential steps or adding unsupported conditional branches.",
+        "possible_causes": [
+          "The generator misinterprets alternative options (e.g., 'you can also right-click') as sequential actions rather than branching paths.",
+          "The generator adds default 'else' conditions or loops where the requirement specifies a simple linear or switch-based flow."
+        ]
+      }
+    ]
+  }
+}

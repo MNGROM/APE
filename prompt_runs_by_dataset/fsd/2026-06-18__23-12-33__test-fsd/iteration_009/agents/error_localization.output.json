@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section's concurrency rules in Step 2 are insufficiently strict for false-positive parallelism, causing the model to treat form fields, sequential steps, and alternative options as concurrent actions. Simultaneously, it lacks clear positive cues for true concurrency, leading to false-negative parallelism. Additionally, the workflow does not adequately enforce the preservation of system responses as distinct activity nodes during the extraction pass, and its control-flow mapping instructions fail to prevent the flattening of nested conditional logic or the misplacement of loop boundaries."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section's fork/join criteria (Rule 4) do not adequately exclude sequential UI entry patterns or mere attribute enumerations, directly causing false-positive parallelism. It also lacks explicit modeling guidance for preserving intermediate system responses as distinct nodes, correctly nesting hierarchical state transitions, and selecting the appropriate loop construct based on entry-condition versus exit-condition logic."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section's prohibition against fork/join for sequential UI steps and enumerations (Rule 1) is not strong enough to override the model's tendency to parallelize listed items. It also lacks explicit rules preventing the over-decomposition of single actions into unsupported sub-steps, the fabrication of action nodes from state descriptions, and the duplication of conditional branches or insertion of unnecessary conditional logic where sequential flow is required."
+    }
+  ]
+}
+```

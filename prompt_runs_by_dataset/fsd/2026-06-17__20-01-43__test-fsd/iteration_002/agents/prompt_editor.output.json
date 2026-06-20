@@ -1,0 +1,36 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "knowledge",
+      "intent": "Clarify the distinction between parallel and alternative flows, and add guidance for concurrent information display.",
+      "change_instruction": "Expand the fork/join definition to explicitly state that it applies to concurrent, simultaneous actions OR displaying multiple pieces of information at the same time (e.g., showing multiple columns/attributes simultaneously). Add a heuristic: 'If the requirement lists items that are displayed together at once, use fork/join; if the requirement lists items as choices or mutually exclusive options, use switch/if.'"
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide guidance on modeling nested conditional logic and compound guard conditions.",
+      "change_instruction": "Add a rule explaining that nested conditional logic (e.g., decisions that depend on prior decisions) must be modeled using nested if/elseif/else or switch structures to preserve hierarchy. Add that compound guard conditions (e.g., 'A and B') should be decomposed into separate, sequential decision nodes if the requirement implies a prerequisite or hierarchical check."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Introduce swimlane/partition modeling for multi-actor workflows.",
+      "change_instruction": "Add a definition for swimlanes/partitions: 'Used to separate activities performed by different actors or system components. If the requirement mentions distinct roles or actors performing actions, represent them using partitions (swimlanes).'"
+    },
+    {
+      "section": "workflow",
+      "intent": "Ensure actors and conditional hierarchy are captured during extraction.",
+      "change_instruction": "Update Step 1 to instruct the model to: (a) identify and list all distinct actors or roles mentioned in the requirement alongside their associated activities, and (b) explicitly note the hierarchical structure and nesting depth of conditional statements, rather than flattening them."
+    },
+    {
+      "section": "rule",
+      "intent": "Refine the prohibition on implicit steps so explicit prerequisite checks and guard conditions are not omitted.",
+      "change_instruction": "Amend Rule 1 to clarify: 'Do not invent implicit background steps (e.g., login, navigation) unless explicitly stated. However, explicit prerequisite checks, guard conditions, and decision criteria mentioned in the requirement MUST be represented as separate decision nodes.'"
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent over-decomposition of conditions into explanatory or computational activity nodes.",
+      "change_instruction": "Add a new rule: 'Do not over-decompose a single condition or constraint into multiple explanatory or computational activity nodes. If the requirement describes a condition to be checked or a calculation used only as a guard, model it as a decision node (if/switch) rather than intermediate activity steps.'"
+    }
+  ]
+}
+```

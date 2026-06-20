@@ -1,0 +1,738 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 20
+- syntax_pass_rate: 1.0000
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.4685
+- node_recall: 0.4060
+- node_f1: 0.4350
+- relation_precision: 0.3235
+- relation_recall: 0.2746
+- relation_f1: 0.2971
+- plantuml_compilation_pass_rate: 1.0000
+- llm_element_evaluated: 20.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.8244
+- llm_node_recall: 0.7189
+- llm_node_f1: 0.7540
+- llm_relation_precision: 0.6238
+- llm_relation_recall: 0.5210
+- llm_relation_f1: 0.5510
+
+## Failure Types
+- extra_or_wrong_relation: 20
+- missing_activity: 19
+- missing_or_wrong_relation: 19
+- extra_activity: 18
+- wrong_parallel: 6
+- wrong_loop: 5
+
+## Representative Failure Cases
+### lmc-0053
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.3077
+- llm_relation_f1: 0.3077
+- missing_nodes:
+  - for each pitch angle theta
+  - dcm321 provides distinct mapping from vi to vb
+  - dcm321 is not distinct for all phi and psi inputs
+- extra_nodes:
+  - receive input vector vi and pitch angle theta
+  - theta
+  - map vi to vb using dcm321 for theta_1
+  - map vi to vb using dcm321 for theta_2
+  - map vi to vb using dcm321 for theta_n
+  - output vector vb
+- missing_relations:
+  - for each pitch angle theta -> dcm321 provides distinct mapping from vi to vb
+  - dcm321 provides distinct mapping from vi to vb -> dcm321 is not distinct for all phi and psi inputs
+- input_excerpt:
+  5.	The Rotation Matrix, DCM321, shall provide a distinct mapping from the input vector, Vi, to the output vector, Vb, for each pitch angle, theta.  Note:  the DCM321 is not distinct for all phi and psi inputs.
+- generated_excerpt:
+  @startuml start :Receive input vector Vi and pitch angle theta; switch (theta) case (theta_1)   :Map Vi to Vb using DCM321 for theta_1; case (theta_2)   :Map Vi to Vb using DCM321 for theta_2; case (theta_n)   :Map Vi to Vb using DCM321 for theta_n; endswitch :Output vector Vb; stop @enduml
+### lmc-0049
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.4286
+- llm_relation_f1: 0.2857
+- missing_nodes:
+  - rotation matrix output dcm321
+  - =roll * pitch * heading 3*3 matrix product?
+  - allowed
+  - not allowed
+- extra_nodes:
+  - calculate 3x3 euler 1 (heading) rotation matrix
+  - calculate 3x3 euler 2 (pitch) rotation matrix
+  - calculate 3x3 euler 3 (roll) rotation matrix
+  - multiply euler 3 (roll) matrix by euler 2 (pitch) matrix
+  - multiply the result by euler 1 (heading) matrix
+  - set dcm321 equal to the final 3x3 matrix product
+- missing_relations:
+  - rotation matrix output dcm321 -> =roll * pitch * heading 3*3 matrix product?
+  - =roll * pitch * heading 3*3 matrix product? -> allowed [yes]
+  - =roll * pitch * heading 3*3 matrix product? -> not allowed [no]
+- input_excerpt:
+  1.	The Rotation Matrix Output, DCM321, of this Function Shall Equal a 3x3 Matrix Product of a 3x3 Euler 3 (Roll) Rotation Matrix times a 3x3 Euler 2 (Pitch) Rotation Matrix times a 3x3 Euler 1 (Heading) Rotation Matrix.
+- generated_excerpt:
+  @startuml start :Calculate 3x3 Euler 1 (Heading) Rotation Matrix; :Calculate 3x3 Euler 2 (Pitch) Rotation Matrix; :Calculate 3x3 Euler 3 (Roll) Rotation Matrix; :Multiply Euler 3 (Roll) Matrix by Euler 2 (Pitch) Matrix; :Multiply the result by Euler 1 (Heading) Matrix; :Set DCM321 equal to the final 3x3 Matrix Product; stop @enduml
+### rac-0008
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1818
+- relation_f1: 0.0769
+- llm_element_status: success
+- llm_node_f1: 0.2424
+- llm_relation_f1: 0.1579
+- missing_nodes:
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - switch to state 127
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - switch to state 128
+  - shutdown
+  - slow charging is inactive
+  - issue 2.2s timeout warning
+  - enter shutdown state
+- extra_nodes:
+  - system starts up
+  - high-voltage shutdown request flag == 2?
+  - switch to state 115
+  - condition after switching?
+  - switch to state 126
+  - switch to state 130
+  - shut down and end
+  - central control charging/discharging command == 2 and vehicle not in charging/discharging mode?
+- missing_relations:
+  - enter power-up mode -> high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0 -> switch to state 127 [yes]
+  - switch to state 127 -> slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1 -> switch to state 128 [yes]
+  - switch to state 128 -> shutdown
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1 -> slow charging is inactive [no]
+  - slow charging is inactive -> issue 2.2s timeout warning [yes]
+  - issue 2.2s timeout warning -> switch to state 128
+- input_excerpt:
+  After the system starts up, if slow charging is active, we enter power-up mode. Then:  1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:    a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.    b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.    c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with 
+- generated_excerpt:
+  @startuml start :System starts up; if (Slow charging active?) then (Yes)   :Enter power-up mode;   if (High-voltage shutdown request flag == 2?) then (Yes)     :Switch to state 115;     switch (Condition after switching?)     case (Flag drops to 0 with CP duty cycle at 85%)       :Switch to state 126;     case (BMS self-check counter == 1)       :Switch to state 130;     case (Slow charging becomes inactive)       :Shut down and end;       stop     endswitch   elseif (Central control charging/discharging command == 2 AND vehicle not in charging/discharging mode?) then (Yes)     :Switch to state 110;     switch (Condition after switching?)     case (High-voltage shutdown request flag becomes 
+### bp-0014
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2069
+- relation_f1: 0.1818
+- llm_element_status: success
+- llm_node_f1: 0.6250
+- llm_relation_f1: 0.4848
+- missing_nodes:
+  - select start
+  - select programs
+  - select businessobjects xi 3.1
+  - select businessobjects enterprise
+  - select businessobjects lifecycle manager
+  - lifecycle manager login screen appears
+  - go to system field
+  - enter cms name
+- extra_nodes:
+  - select start > programs > businessobjects xi 3.1 > businessobjects enterprise > businessobjects lifecycle manager
+  - enter cms name in system field
+  - select authentication method from drop-down list
+  - authentication type
+  - authenticate with ldap
+  - authenticate with windows ad
+- missing_relations:
+  - select start -> select programs
+  - select programs -> select businessobjects xi 3.1
+  - select businessobjects xi 3.1 -> select businessobjects enterprise
+  - select businessobjects enterprise -> select businessobjects lifecycle manager
+  - select businessobjects lifecycle manager -> lifecycle manager login screen appears
+  - lifecycle manager login screen appears -> go to system field
+  - go to system field -> enter cms name
+  - select authentication method -> default method?
+- input_excerpt:
+  14.	log into the LifeCycle Manager tool.To log into the LifeCycle Manager tool, complete the following steps:1. Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager. The LifeCycle Manager login screen appears.2. In the System field, enter the name of the Central Management Server (CMS) on which the LifeCycle Manager tool is installed.3. Enter the user name and password.4. Select the appropriate authentication method from the Authentication drop-down list.The LifeCycle Manager tool supports the following authentication types:• Enterprise authentication - This authentication type requires a user name and a password that are recognize
+- generated_excerpt:
+  @startuml start :Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager; :Enter CMS name in System field; :Enter user name and password; :Select authentication method from drop-down list; switch (Authentication type) case (Enterprise)   :Authenticate with Enterprise; case (LDAP)   :Authenticate with LDAP; case (Windows AD)   :Authenticate with Windows AD; endswitch :Click Log on; stop @enduml
+### bp-0010
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2222
+- relation_f1: 0.1538
+- llm_element_status: success
+- llm_node_f1: 0.7000
+- llm_relation_f1: 0.4091
+- missing_nodes:
+  - click arrows in revenue eld?
+  - sort increasing or decreasing
+  - click alternative mouse button
+  - internet channel is the greatest
+  - analyze differences for months?
+  - open dropdown box calendar year/month
+  - select 08.2007
+  - select 07.2007
+- extra_nodes:
+  - sort method
+  - arrows in revenue field
+  - click arrows to sort increasing or decreasing
+  - right-click revenue
+  - observe greatest revenue is with internet channel
+  - select 08.2007 in calendar year/month dropdown
+  - select 07.2007 in calendar year/month dropdown
+  - observe internet revenue increase
+- missing_relations:
+  - sort revenue data -> click arrows in revenue eld?
+  - click arrows in revenue eld? -> click alternative mouse button [no]
+  - sort increasing or decreasing -> internet channel is the greatest
+  - click alternative mouse button -> open context menu
+  - open context menu -> choose sort increasing or sort decreasing
+  - choose sort increasing or sort decreasing -> internet channel is the greatest
+  - internet channel is the greatest -> analyze differences for months?
+  - analyze differences for months? -> open dropdown box calendar year/month [yes]
+- input_excerpt:
+  10.	Analyzing Data in the Web Application1. Since you are interested in the revenue, you want to sort the revenue data.2. Click on the arrows in the Revenue eld to sort the revenue data in increasing or decreasing order.3. You can also sort the revenue by clicking the alternative mouse button on Revenue and choosing Sort Sort Increasing or Sort Decreasing in the context menu. You see that the greatest revenue is obtained with the distribution channel Internet.4. To see the differences in the revenue data for the months July, August and September, select rst 08.2007 and then 07.2007 in the dropdown box Calendar Year/Month. You see that the revenue data for the distribution channel Internet in
+- generated_excerpt:
+  @startuml start :Sort the revenue data; switch (Sort method) case (Arrows in Revenue field)   :Click arrows to sort increasing or decreasing; case (Context menu)   :Right-click Revenue;   :Choose Sort Increasing or Sort Decreasing; endswitch :Observe greatest revenue is with Internet channel; :Select 08.2007 in Calendar Year/Month dropdown; :Select 07.2007 in Calendar Year/Month dropdown; :Observe Internet revenue increase; :Filter data back to September by selecting 09.2007; :At Internet subtotal, choose Documents > Create New Comment in context menu; :Enter name and description for the document; :Enter text and choose Save; stop @enduml
+### lmc-0022
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2500
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.6667
+- llm_relation_f1: 0.4615
+- missing_nodes:
+  - in inner loop height regulator
+  - command translational height accelerations <= 32 ft/sec2
+- extra_nodes:
+  - command translational height acceleration
+  - acceleration > 32 ft/sec2?
+  - monitor duration
+  - limit translational height acceleration
+- missing_relations:
+  - in inner loop height regulator -> durations > 100 frames?
+  - durations > 100 frames? -> command translational height accelerations <= 32 ft/sec2 [yes]
+- input_excerpt:
+  5.	The Inner Loop Height Regulator Shall not command translational height accelerations greater than the capability of the system (32 ft/sec2) for durations exceeding 100 frames (1 second @ 100 hz).
+- generated_excerpt:
+  @startuml start :Command translational height acceleration; if (Acceleration > 32 ft/sec2?) then (Yes)   :Monitor duration;   if (Duration > 100 frames (1 second @ 100 hz)?) then (Yes)     :Limit translational height acceleration;   else (No)   endif else (No) endif stop @enduml
+### pure-0065
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2609
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 0.9143
+- missing_nodes:
+  - open keepass
+  - select to find something
+  - leave search unchecked?
+  - all data appear
+  - nothing appears
+  - select fields
+  - selection
+  - results appears
+- extra_nodes:
+  - user opens keepass and selects to find something in a selected group/subgroup
+  - user leaves all search in boxes unchecked?
+  - are all search in boxes unchecked?
+  - nothing appears in the main window
+  - all data from the group/subgroup appear
+  - user selects the fields which will be searched
+  - user selects ok or cancel?
+  - user selection?
+- missing_relations:
+  - open keepass -> select to find something
+  - select to find something -> leave find field empty?
+  - leave find field empty? -> leave search unchecked? [yes]
+  - leave find field empty? -> type word to search for [no]
+  - leave search unchecked? -> all data appear [no]
+  - leave search unchecked? -> nothing appears [yes]
+  - type word to search for -> leave search unchecked?
+  - leave search unchecked? -> select fields [no]
+- input_excerpt:
+  1. User opens KeePass and selects to find something in a selected group/subgroup 2. User types the word to search for 3. User selects the fields which will be searched 4. User selects OK 5. Results appears at the database main window 3.9.2.2 Alternative Data Flows 3.9.2.2.1 Alternative Data Flow 1 2a. User leaves the find field empty 5. All data from the group/subgroup appear 3.9.2.2.2 Alternative Data Flow 2 3. User leaves all search in boxes unchecked 5. Nothing appears in the main window 3.9.2.2.3 Alternative Data Flow 3 4. User selects cancel 5. The main window appears 3.9.2.2.4 Alternative Data Flow 4 2. User leaves the find field empty 3. User leaves all search in boxes unchecked 5. No
+- generated_excerpt:
+  @startuml start :User opens KeePass and selects to find something in a selected group/subgroup; :User types the word to search for; if (Is the find field empty?) then (Yes)   :User leaves all search in boxes unchecked?;   if (Are all search in boxes unchecked?) then (Yes)     :Nothing appears in the main window;   else (No)     :All data from the group/subgroup appear;   endif else (No)   :User selects the fields which will be searched;   if (Are all search in boxes unchecked?) then (Yes)     :Nothing appears in the main window;   else (No)     :User selects OK or Cancel?;     if (User selection?) then (OK)       :Results appears at the database main window;     else (Cancel)       :The main
+### bp-0002
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3125
+- relation_f1: 0.1143
+- llm_element_status: success
+- llm_node_f1: 0.8696
+- llm_relation_f1: 0.2326
+- missing_nodes:
+  - user authorizations are sufficient?
+  - log in
+  - data warehousing workbench is started
+  - choose info objects
+  - open root node context menu
+  - choose create info area
+  - enter a technical name
+  - enter a description
+- extra_nodes:
+  - log onto the bi system with sufficient authorizations
+  - under modeling choose info objects (display info object tree)
+  - from context menu at root node info objects choose create info area
+  - enter technical name and description for the info area
+  - enter technical name and description select key figure as info object type
+  - create key figure (revenue quantity or price)
+  - more key figures to create?
+- missing_relations:
+  - user authorizations are sufficient? -> log in [yes]
+  - log in -> choose modeling data warehousing workbench modeling
+  - choose modeling data warehousing workbench modeling -> data warehousing workbench is started
+  - data warehousing workbench is started -> choose info objects
+  - choose info objects -> info object tree is displayed
+  - info object tree is displayed -> open root node context menu
+  - open root node context menu -> choose create info area
+  - choose create info area -> enter a technical name [fork]
+- input_excerpt:
+  2.	Log onto the BI system1.	Log onto the BI system with a user that has sufficient authorizations for executing the scenario.2.	Start the Data Warehousing Workbench in the SAP menu by choosing Modeling Data Warehousing Workbench: Modeling.3.	Under Modeling, choose Info  Objects. The Info  Object tree is displayed.4.	From the context menu at the root node Info Objects of the Info Object tree, choose Create Info Area.5.	On the next screen, enter a technical name and a description for the Info Area. The Info Area is displayed in the Info Object tree.6.	It is used to group your Info Objects.7.	In the context menu of the Info Area, choose Create Info Object Catalog.8.	On the next screen, enter a 
+- generated_excerpt:
+  @startuml start :Log onto the BI system with sufficient authorizations; :Start the Data Warehousing Workbench (Modeling > Data Warehousing Workbench: Modeling); :Under Modeling, choose Info Objects (Display Info Object tree); :From context menu at root node Info Objects, choose Create Info Area; :Enter technical name and description for the Info Area; :Info Area is displayed in the Info Object tree; :In context menu of the Info Area, choose Create Info Object Catalog; :Enter technical name and description, select Key Figure as Info Object Type; :Create and Activate the Info Object catalog; :Info Object catalog is displayed in Info Area; repeat :Create Key Figure (Revenue, Quantity, or Price)
+### fsd-0080
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4091
+- relation_f1: 0.2041
+- llm_element_status: success
+- llm_node_f1: 0.6939
+- llm_relation_f1: 0.4590
+- missing_nodes:
+  - system initialization
+  - thermal management controller implements as state machine on rtos
+  - query pmic
+  - determine power state
+  - nominal?
+  - spawn multiple concurrent tasks
+  - managed by priority-based rtos scheduler
+  - high-priority task monitors bms
+- extra_nodes:
+  - query pmic to determine power state
+  - power nominal?
+  - monitor bms
+  - poll bms
+  - periodically
+  - execute controlled cool-down path via liquid-cooling loops and pwm fans
+  - summarize all detection results
+- missing_relations:
+  - system initialization -> thermal management controller implements as state machine on rtos
+  - thermal management controller implements as state machine on rtos -> query pmic
+  - determine power state -> nominal?
+  - nominal? -> spawn multiple concurrent tasks [yes]
+  - spawn multiple concurrent tasks -> managed by priority-based rtos scheduler
+  - managed by priority-based rtos scheduler -> high-priority task monitors bms [fork]
+  - managed by priority-based rtos scheduler -> medium-priority tasks handle sensor fusion [fork]
+  - managed by priority-based rtos scheduler -> telemetry monitor task driven by timer interrupts [fork]
+- input_excerpt:
+  Upon system initialization, the thermal management controller, implemented as a state machine on the RTOS, first queries the PMIC to determine the power state. If power is nominal, it spawns multiple concurrent tasks managed by a priority-based RTOS scheduler. A high-priority task monitors the BMS; should battery power fall below a defined threshold, the system enters a low-power iterate mode, polling the BMS within a tight loop until a safe power level is restored. Concurrently, medium-priority tasks handle sensor fusion, periodically reading temperature sensors via a protected ring buffer. A critical temperature fault, signaled via an ISR, immediately preempts all parallel processing, trig
+- generated_excerpt:
+  @startuml start :Query PMIC to determine power state; if (Power nominal?) then (yes)   fork     :Monitor BMS;     repeat       :Poll BMS;     repeat while (Battery power below threshold?) is (yes)     ->no;   fork again     repeat       :Read temperature sensors via protected ring buffer;     repeat while (Periodically) is (yes)     ->no;   fork again     :Handle critical temperature fault ISR;     :Mutex-protected transition to fault processing mode;     :Execute controlled cool-down path via liquid-cooling loops and PWM fans;   fork again     repeat       :Package data for CAN transmission with CRC;       :Implement exponential backoff for communication faults;     repeat while (Periodical
+### pure-0002
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4375
+- relation_f1: 0.1026
+- llm_element_status: success
+- llm_node_f1: 0.8333
+- llm_relation_f1: 0.1860
+- missing_nodes:
+  - demonstrate capability every five years
+  - testing records
+  - include dates
+  - include duration
+  - compliance with requirements
+  - units requirments
+  - without external assistance
+  - start and energize transmission paths
+- extra_nodes:
+  - demonstrate capability
+  - every five years?
+  - record dates duration and compliance
+  - start unit without external assistance
+  - energize transmission paths without external assistance
+  - include key operating aids (telephone communications and scada)
+  - run unit for minimum 10 minutes
+- missing_relations:
+  - demonstrate capability every five years -> submit documentation
+  - notify caiso of test results -> testing records
+  - testing records -> include dates [fork]
+  - testing records -> include duration [fork]
+  - testing records -> compliance with requirements [fork]
+  - include dates -> units requirments [merge]
+  - include duration -> units requirments [merge]
+  - compliance with requirements -> units requirments [merge]
+- input_excerpt:
+  Generator Unit Testing Steps (Minimal Requirements)Step 1: Owners of Voluntary Black Start units must demonstrate capability every five years, submit documentation, and notify the CAISO of test results.Step 2: Testing records must include dates, duration, and compliance with requirements.Step 3: Units must maintain voltage within emergency limits.Step 4: Units must have governors capable of isochronous mode.Step 5: Adequate transmission capacity must be available.Step 6: Units must start and energize transmission paths without external assistance.Step 7: Tests should include key operating aids like telephone communications and SCADA.Step 8: Start-up/synchronizing time limits apply based on u
+- generated_excerpt:
+  @startuml start repeat   :Demonstrate capability;   :Submit documentation;   :Notify CAISO of test results; repeat while (Every five years?) -> yes; :Record dates, duration, and compliance; :Maintain voltage within emergency limits; :Verify governors capable of isochronous mode; :Verify adequate transmission capacity available; fork   :Start unit without external assistance; fork again   :Energize transmission paths without external assistance; end fork :Include key operating aids (telephone communications and SCADA); :Apply start-up/synchronizing time limits based on unit type; :Run unit for minimum 10 minutes; :Submit CAISO market schedule for test energy; stop @enduml
+### lmc-0034
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4444
+- relation_f1: 0.2222
+- llm_element_status: success
+- llm_node_f1: 0.6154
+- llm_relation_f1: 0.2857
+- missing_nodes:
+  - in nlguidance
+  - output equivalent altitude of the vehicle
+- extra_nodes:
+  - output equivalent altitude of the vehicle for in-plane navigation
+  - check target altitude (3rd component of input inertial position vector)
+  - check vehicle altitude (3rd component of input inertial position vector)
+- missing_relations:
+  - in nlguidance -> target = vehicle altitude?
+  - define in-plane navigation -> output equivalent altitude of the vehicle
+  - target = vehicle altitude? -> output equivalent altitude of the vehicle [no]
+- input_excerpt:
+  7.	NLGuidance shall output the equivalent altitude of the vehicle for in-plane navigation.  In-plane navigation is defined where the target and the vehicle altitude (3rd component in the input inertial position vectors) are equal.
+- generated_excerpt:
+  @startuml start :Output equivalent altitude of the vehicle for in-plane navigation; fork   :Check target altitude (3rd component of input inertial position vector); fork again   :Check vehicle altitude (3rd component of input inertial position vector); end fork if (Target altitude == Vehicle altitude?) then (Yes)   :Define as in-plane navigation; else (No) endif stop @enduml
+### bp-0027
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4800
+- relation_f1: 0.5385
+- llm_element_status: success
+- llm_node_f1: 0.9333
+- llm_relation_f1: 0.8387
+- missing_nodes:
+  - experienced expert user?
+  - open the promote window
+  - click mappings
+  - the connection list is displayed
+  - select a connection
+  - edit federation connection properties tab appears
+  - federation mappings tab appears
+  - edited5 is displayed
+- extra_nodes:
+  - click mappings in the promote window
+  - display the list of federation connections
+  - select a federation connection
+  - display the edit federation connection properties tab with list of properties and their values
+  - display edited message beside the federation connection
+- missing_relations:
+  - experienced expert user? -> open the promote window [yes]
+  - open the promote window -> click mappings
+  - the connection list is displayed -> select a connection
+  - click apply -> federation mappings tab appears
+  - federation mappings tab appears -> edit in the source system?
+  - edit in the source system? -> edited5 is displayed [yes]
+  - edited5 is displayed -> click save or promote
+  - experienced expert user? -> click save or promote [no]
+- input_excerpt:
+  27.	map a Federation connection1. In the "Promote" window, click Mappings.2. Click Federation Mappings.The list of Federation connections is displayed.3. Select a Federation connection, and click Edit Federation Connection Properties. The "Edit Federation Connection Properties" tab appears. This tab displays the list of properties and their values.4. Modify the appropriate fields, and click Apply. The "Federation Mappings" tab appears.Note:If you edit a Federation connection in the source system, the followingmessage is displayed beside the federation connection: edited5. Click Save or Promote as per your requirement. Important: Mapping must be performed by an expert user who has adequate kn
+- generated_excerpt:
+  @startuml start :Click Mappings in the "Promote" window; :Click Federation Mappings; :Display the list of Federation connections; :Select a Federation connection; :Click Edit Federation Connection Properties; :Display the "Edit Federation Connection Properties" tab\nwith list of properties and their values; :Modify the appropriate fields; :Click Apply; if (Edited in source system?) then (yes)   :Display "edited" message beside\nthe federation connection; else (no) endif :Click Save or Promote; stop @enduml
+### fsd-0073
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4898
+- relation_f1: 0.3438
+- llm_element_status: success
+- llm_node_f1: 0.8077
+- llm_relation_f1: 0.4478
+- missing_nodes:
+  - avionics stack comprises
+  - fms
+  - fadec
+  - execute on deterministic rtos
+  - core control laws implemented via high-frequency isrs
+  - sample sensor data
+  - flight control module triggers concurrent initialization of tasks
+  - scheduled by rtos using priority-based preemption
+- extra_nodes:
+  - execute fms and fadec on deterministic rtos with hardware redundancy
+  - implement core control laws via high-frequency isrs sampling sensor data
+  - initialize data verification module
+  - sensor recalibration (mutex protected)
+  - managed system restart (mutex protected)
+  - critical anomaly detected?
+  - reset system and resume normal operational state
+- missing_relations:
+  - avionics stack comprises -> fms [fork]
+  - avionics stack comprises -> fadec [fork]
+  - fms -> execute on deterministic rtos [merge]
+  - fadec -> execute on deterministic rtos [merge]
+  - execute on deterministic rtos -> core control laws implemented via high-frequency isrs [fork]
+  - execute on deterministic rtos -> lower-priority worker tasks handle ancillary computations [fork]
+  - core control laws implemented via high-frequency isrs -> sample sensor data
+  - sample sensor data -> abnormal signal/sensor reading > preset threshold? [merge]
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), executes on a deterministic Real-Time Operating System (RTOS) with hardware redundancy for fault tolerance. Core control laws are implemented via high-frequency Interrupt Service Routines (ISRs) that sample sensor data, while lower-priority worker tasks handle ancillary computations. Upon detection of an abnormal signal or a sensor reading exceeding a preset threshold, the flight control module triggers the concurrent initialization of two distinct tasks: a data verification module and a fault diagnosis module, which are scheduled by the RTOS using priority-based preemption. T
+- generated_excerpt:
+  @startuml start :Execute FMS and FADEC on deterministic RTOS with hardware redundancy; :Implement core control laws via high-frequency ISRs sampling sensor data; :Handle ancillary computations via lower-priority worker tasks; if (Abnormal signal detected or sensor reading exceeds preset threshold?) then (yes)   fork     :Initialize data verification module;     repeat       :Compute CRC via calibration algorithm;       if (Data error detected?) then (yes)         :Initiate automatic data retransmission with exponential backoff;       else (no)       endif;     repeat while (Valid data confirmed?) is (no)     ->yes;   fork again     :Initialize fault diagnosis module;     :Execute diagnostic 
+### rac-0012
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5455
+- relation_f1: 0.3810
+- llm_element_status: success
+- llm_node_f1: 0.9677
+- llm_relation_f1: 0.9831
+- missing_nodes:
+  - condition judgement
+  - pre-charge failure occurs
+  - shutdown
+  - high-voltage shutdown request charging/discharging =2
+  - wait 0.8s
+- extra_nodes:
+  - system startup
+  - condition in state 155?
+  - move to state 175
+  - shut down
+  - high-voltage shutdown request detected (value=2)?
+  - wait 0.8 seconds
+  - enter state 175
+  - high-voltage shutdown request (value=2) exists?
+- missing_relations:
+  - switch to state 153 -> bms-fast charger handshake flag=0 and front mcu high-voltage flag=0
+  - enter state 155 -> condition judgement
+  - condition judgement -> pre-charge failure occurs [case pre-charge failure occurs]
+  - pre-charge failure occurs -> switch to state 175
+  - condition judgement -> high-voltage shutdown request charging/discharging =2 [case high-voltage shutdown request charging/discharging =2]
+  - high-voltage shutdown request charging/discharging =2 -> wait 0.8s
+  - wait 0.8s -> switch to state 175
+  - condition judgement -> ignition switch=2 [case ignition switch=2]
+- input_excerpt:
+  After the system starts up: - If charging is active (charging=1) and the front MCU high-voltage detection flag is 0, transition to state 153. - If the BMS-fast charger handshake flag is 0 and the front MCU high-voltage flag is 0, enter state 155.  While in state 155: 1. If pre-charge failure occurs, move to state 175. If fast charging remains inactive after this, shut down and end the process. 2. If a high-voltage shutdown request (for charging/discharging) is detected (value=2), wait 0.8 seconds before entering state 175. If fast charging is inactive afterward, shut down and end. 3. If the ignition switch status is 2, remain in state 155. If a high-voltage shutdown request (value=2) exists 
+- generated_excerpt:
+  @startuml start :System startup;  if (charging=1 and front MCU high-voltage detection flag=0?) then (yes)   :Transition to state 153; else (no)   if (BMS-fast charger handshake flag=0 and front MCU high-voltage flag=0?) then (yes)     :Enter state 155;          if (Condition in state 155?) then (pre-charge failure occurs)       :Move to state 175;       if (fast charging inactive?) then (yes)         :Shut down;         stop;       else (no)       endif     elseif (high-voltage shutdown request detected (value=2)?) then (yes)       :Wait 0.8 seconds;       :Enter state 175;       if (fast charging inactive?) then (yes)         :Shut down;         stop;       else (no)       endif     elseif 
+### pure-0040
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5455
+- relation_f1: 0.6364
+- llm_element_status: success
+- llm_node_f1: 0.9231
+- llm_relation_f1: 0.9231
+- missing_nodes:
+  - see view inventory
+  - display category type screen
+  - unique item?
+  - system validates data
+  - system updates information
+  - back to category screen
+- extra_nodes:
+  - category type
+  - validate the category data
+  - update the category information
+  - take user back to the category screen
+- missing_relations:
+  - see view inventory -> navigate to category
+  - unique item? -> display unique item screen [yes]
+  - unique item? -> display stock item screen [no]
+  - system validates data -> system updates information
+  - system updates information -> back to category screen
+- input_excerpt:
+  2. Edit Category 2.1. User navigates to a Category (see View Inventory) 2.2. System displays the Edit Category button 2.3. User clicks the Edit Category button 2.4. System displays the appropriate screen for the Category type 2.4.1. Unique Item 2.4.2. Stock Item 2.5. User edits Category data 2.6. System validates the Category data 2.7. System updates the Category information 2.8. User is taken back to the Category screen
+- generated_excerpt:
+  @startuml start :Navigate to a Category; :System displays the Edit Category button; :Click the Edit Category button; switch (Category type) case (Unique Item)   :Display Unique Item screen; case (Stock Item)   :Display Stock Item screen; endswitch :Edit Category data; :Validate the Category data; :Update the Category information; :Take User back to the Category screen; stop @enduml
+### rac-0010
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5882
+- relation_f1: 0.4783
+- llm_element_status: success
+- llm_node_f1: 0.8718
+- llm_relation_f1: 0.4912
+- missing_nodes:
+  - high-voltage shutdown request is 2 and bms self-check counter is 1
+  - high-voltage shutdown request is 2 and bms counter is 0
+  - switch to state 127
+  - switch state 127
+  - condition judgement
+  - shutdown
+  - stay in state 127
+- extra_nodes:
+  - high-voltage shutdown request == 2?
+  - fast charging active and front mcu initialization state == 0?
+  - enter state 127
+  - move to state 142
+  - system shuts down
+  - 2.2-second timeout triggers?
+  - in state 126
+- missing_relations:
+  - slow charging is active -> enter power-up mode [yes]
+  - enter power-up mode -> high-voltage shutdown request is 2 and bms self-check counter is 1
+  - high-voltage shutdown request is 2 and bms self-check counter is 1 -> enter state 126 [yes]
+  - high-voltage shutdown request is 2 and bms self-check counter is 1 -> high-voltage shutdown request is 2 and bms counter is 0 [no]
+  - high-voltage shutdown request is 2 and bms counter is 0 -> enter state 126 [yes]
+  - fast charging is active and front mcu initialization state is 0 -> switch to state 127 [yes]
+  - switch to state 127 -> condition judgement [merge]
+  - switch state 127 -> condition judgement [merge]
+- input_excerpt:
+  After the system starts up and slow charging is active, it enters power-up mode. Then, if the high-voltage shutdown request (for charging or discharging) is 2, the system moves to state 126 regardless of whether the BMS self-check counter is 0 or 1.  While in state 126: - If fast charging becomes active and the front MCU initialization state is 0, it transitions to state 127. - Similarly, if the front MCU low-voltage shutdown flag is 0, it also transitions to state 127. - Additionally, the following checks occur:   1. If a 2.2-second timeout triggers, it switches to state 142. Should fast charging be inactive at this point, the system shuts down and ends.   2. If the BMS counter reads 0, it 
+- generated_excerpt:
+  @startuml start :System starts up and slow charging is active; :Enter power-up mode; if (High-voltage shutdown request == 2?) then (Yes)   :Enter state 126; else (No)   stop endif repeat   if (Fast charging active AND front MCU initialization state == 0?) then (Yes)     :Enter state 127;     repeat       if (Front MCU low-voltage shutdown request flag == 1?) then (Yes)         :Move to state 142;         if (Fast charging inactive?) then (Yes)           :System shuts down;           stop         else (No)         endif       elseif (2.2-second timeout occurs?) then (Yes)         :Move to state 142;         if (Fast charging inactive?) then (Yes)           :System shuts down;           stop  
+### fsd-0075
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6667
+- relation_f1: 0.5405
+- llm_element_status: success
+- llm_node_f1: 0.8438
+- llm_relation_f1: 0.7179
+- missing_nodes:
+  - avionics stack comprises
+  - fms
+  - fadec
+  - execute on deterministic rtos
+  - acquire data from
+  - air pressure sensor
+  - altimeter
+  - gps module
+- extra_nodes:
+  - execute avionics stack (fms and fadec) on deterministic rtos with redundancy
+  - acquire data from air pressure sensor
+  - acquire data from altimeter
+  - acquire data from gps module
+  - voting outcome determined?
+  - discrepancy found?
+  - activate fault-tolerant strategies for confirmed anomalies
+- missing_relations:
+  - avionics stack comprises -> fms [fork]
+  - avionics stack comprises -> fadec [fork]
+  - fms -> execute on deterministic rtos [merge]
+  - fadec -> execute on deterministic rtos [merge]
+  - execute on deterministic rtos -> employ concurrent monitoring tasks with priority queues
+  - acquire data from -> air pressure sensor [fork]
+  - acquire data from -> altimeter [fork]
+  - acquire data from -> gps module [fork]
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), executes on a deterministic Real-Time Operating System (RTOS) featuring hardware and task-level redundancy. For fault identification, the system employs concurrent monitoring tasks with priority queues. Upon detecting an anomalous flight altitude, a dedicated health management task initializes a multi-sensor verification routine, simultaneously acquiring data from the air pressure sensor, altimeter, and GPS module. This task then enters an iterative loop, continuously comparing the datasets using a voting mechanism protected by a mutex. If the pressure sensor data is inconsist
+- generated_excerpt:
+  @startuml start :Execute avionics stack (FMS and FADEC) on deterministic RTOS with redundancy; :Concurrent monitoring tasks with priority queues; if (Anomalous flight altitude detected?) then (yes)   :Health management task initializes multi-sensor verification;   fork     :Acquire data from air pressure sensor;   fork again     :Acquire data from altimeter;   fork again     :Acquire data from GPS module;   end fork   repeat     :Compare datasets using voting mechanism protected by mutex;   repeat while (Voting outcome determined?) is (no) not (yes)   if (Pressure sensor inconsistent, altimeter and GPS agree?) then (yes)     :Declare pressure sensor fault;     :Exit loop;     :Generate struc
+### fsd-0109
+- dataset: fsd
+- failure_types: missing_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7273
+- relation_f1: 0.3860
+- llm_element_status: success
+- llm_node_f1: 0.7917
+- llm_relation_f1: 0.5806
+- missing_nodes:
+  - thermal management controller operates as multi-threaded state machine under rtos
+  - govern pwm fans
+  - govern liquid-cooling loops
+  - primary control task scheduled periodically via timer interrupts
+  - core logic predicated on user presence
+  - ambient temperature > setpoint?
+  - setpoint reached?
+  - point active control ceasesl
+- extra_nodes:
+  - cease active control
+- missing_relations:
+  - thermal management controller operates as multi-threaded state machine under rtos -> govern pwm fans [fork]
+  - thermal management controller operates as multi-threaded state machine under rtos -> govern liquid-cooling loops [fork]
+  - govern pwm fans -> primary control task scheduled periodically via timer interrupts [merge]
+  - govern liquid-cooling loops -> primary control task scheduled periodically via timer interrupts [merge]
+  - primary control task scheduled periodically via timer interrupts -> execute sensor fusion and calibration routine
+  - initiate controlled system cool-down path managed by pmic and bms -> core logic predicated on user presence [merge]
+  - out-of-range sensor readings? -> core logic predicated on user presence [no]
+  - core logic predicated on user presence -> ambient temperature > setpoint?
+- input_excerpt:
+  Operating as a multi-threaded state machine under the control of a real-time operating system (RTOS), the thermal management controller governs PWM fans and liquid-cooling loops. A primary control task, scheduled periodically via timer interrupts, executes a sensor fusion and calibration routine; out-of-range sensor readings trigger a switch to redundant sensors and initiate a controlled system cool-down path managed by the PMIC and BMS. The core logic is predicated on user presence: when the ambient temperature exceeds the setpoint and occupancy is detected, the system concurrently initializes the air conditioner in cooling mode and actuates the motorized curtains to close. If the temperatu
+- generated_excerpt:
+  @startuml start  repeat   :Execute sensor fusion and calibration routine;    if (Sensor readings out of range?) then (Yes)     :Switch to redundant sensors;     :Initiate controlled system cool-down path (PMIC and BMS);     stop   else (No)   endif    if (Temperature > setpoint?) then (Yes)     if (Occupancy detected?) then (Yes)       fork         :Initialize air conditioner in cooling mode;       fork again         :Actuate motorized curtains to close;       end fork       :Enter closed-loop adjustment phase;       repeat         :Modulate air conditioner fan speed using exponential backoff algorithm;       repeat while (Temperature deviation persists?) is (Yes)       ->No;       :Cease ac
+### rac-0009
+- dataset: rac
+- failure_types: missing_activity, extra_activity, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7556
+- relation_f1: 0.8000
+- llm_element_status: success
+- llm_node_f1: 0.9583
+- llm_relation_f1: 0.8529
+- missing_nodes:
+  - high-voltage shutdown request charging/discharging is 2
+  - condition judgement
+  - shutdown
+  - ignition switch is 2 and onboard charger command is 1
+  - command becomes 4
+- extra_nodes:
+  - system starts up
+  - high-voltage shutdown request == 2?
+  - condition?
+  - system shuts down
+  - ignition switch at position 2 and onboard charger command == 1
+  - onboard charger command == 4?
+- missing_relations:
+  - stay in state 127 -> command becomes 4
+  - command becomes 4 -> switch to state 12 [yes]
+  - switch to state 12 -> ignition switch is off and slow charging is inactive
+  - switch to state 12 -> remote mode is disabled
+  - switch to state 12 -> pet request mode ends
+  - switch to state 12 -> soc reaches 100 and dcdc state is 2
+- input_excerpt:
+  After the system starts up, if slow charging is active, it enters power-up mode. Then, if the high-voltage shutdown request (for charging or discharging) is set to 2, it switches to state 127. Once in state 127, the following actions apply based on conditions:  1. If the ignition switch is at position 2 and the front MCU state remains unchanged, the system stays in state 127.    a. Should slow charging become inactive and a timeout of 2.2 seconds occur, it switches to state 12. If the ignition switch is off at this point, the system shuts down and ends.    b. Similarly, if slow charging is inactive and the BMS self-check counter reads 1, it switches to state 12. Again, if the ignition switch
+- generated_excerpt:
+  @startuml start :System starts up; if (Slow charging active?) then (Yes)   :Enter power-up mode;   if (High-voltage shutdown request == 2?) then (Yes)     :Switch to state 127;     switch (Condition?)     case (Ignition switch at position 2 and front MCU state unchanged)       :Stay in state 127;       if (Slow charging inactive and timeout 2.2s?) then (Yes)         :Switch to state 12;         if (Ignition switch off?) then (Yes)           :System shuts down;           stop         endif       elseif (Slow charging inactive and BMS self-check counter == 1?) then (Yes)         :Switch to state 12;         if (Ignition switch off?) then (Yes)           :System shuts down;           stop      
+### pure-0092
+- dataset: pure
+- failure_types: missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 1.0000
+- relation_f1: 0.6667
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 1.0000
+- missing_relations:
+  - redraw board -> set player statistics [merge]
+- input_excerpt:
+  Open Game Input: Menu selection. Processing: Load game data from a file. Output: Redraw board and set player statistics.
+- generated_excerpt:
+  @startuml start :Menu selection; :Load game data from a file; fork   :Redraw board; fork again   :Set player statistics; end fork stop @enduml
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

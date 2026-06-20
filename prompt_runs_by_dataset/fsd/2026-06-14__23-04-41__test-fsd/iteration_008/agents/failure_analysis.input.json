@@ -1,0 +1,98 @@
+{
+  "requirements": [
+    "11.\tThe sensor shall change states from NOMINAL to TRANSITION when the autopilot is not requesting support (not request).",
+    "Data Receive – The BE shall receive incoming data packets from the Correlator to Backend network interface. This network is a part of the BE System.",
+    "As a developer, I want to be able to design my App on my own - though there will be a few rules I have to stand to.",
+    "3.\tCreating Data sources for Master Data of Characteristic \"Product\"1. You are in the Modeling functional area of the Data Warehousing Workbench2. Choose Info Provider. The Info Provider tree is displayed. The Info Area created previously in the Info Object tree is also displayed in the Info Provider tree. It contains the characteristics that were dened as Info Provider and is used to group further objects.3. In the context menu of the Info Area, choose Create Info Cube.4. In the next screen, enter ZD_SALES as the technical name under Info Cube and Sales Overview as the description.5. Select Standard Info Cube as Info Provider Type and choose Create. You go to the screen for Info Cube editing.6. Choose Create New Dimensions in the context menu of the folder Dimensions. 7. Enter Product as the description for the new dimension and choose Create Another Dimension.8. Enter Sales Organization as the description for the new dimension and choose Continue. The dimensions are inserted.9. In the toolbar in the left area, choose Info Object Catalog.10. On the next screen, select your Info Object catalog for characteristics as the template and choose Continue. The Info Object catalog is displayed in the left area with the characteristics you created.11. Assign the characteristics to the dimensions as follows with drag and drop:12. Choose Info Object Direct Input in the context menu of the dimension Sales Organization.13. On the next screen, enter the characteristic 0DOC_NUMBER ( Sales Document ) and choose Continue. The characteristic Sales Document is a shipped Info Object of BI Content.14. Expand the folder Navigation Attributes. Activate the navigation attribute Product Group (ZD_PROD__ZDPGROUP) by setting the indicator in column On/Off。",
+    "9.\tThe Inner Loop Airspeed Regulator Shall not command transient changes in translational axial acceleration greater than 32 ft/sec2/sec.",
+    "As an archivist, I want to restrict a group of files from view.",
+    "As an OlderPerson, I want to have an ALFRED device that can be easily adapted for user that have hearing trouble.",
+    "2.\tNLGuidance shall compute the inertial position vector for aim point 1, defining the location at Standoff 1 with an offset from the target position, and oriented on a vector perpendicular to the tangent relative position vector from the vehicle to the corresponding aim point."
+  ],
+  "predictions": [
+    "@startuml\nskinparam style strictuml\n\nstate NOMINAL\nstate TRANSITION\n\nNOMINAL --> TRANSITION : autopilot is not requesting support (not request)\n@enduml",
+    "@startuml\nstart\n:Receive incoming data packets from Correlator to Backend network interface;\nnote right: Network is part of the BE System\n:Process received data packets;\nstop\n@enduml",
+    "@startuml\nstart\n:Developer starts App design;\n:Access design interface;\nrepeat\n  :Design App components;\n  :Apply custom styling and layout;\n  :Submit design for validation;\n  :System validates design against rules;\n  -> if validation fails;\nrepeat while (Design passes all rules?) is (No)\n-> Yes;\n:Design approved and saved;\n:App design completed;\nstop\n@enduml",
+    "@startuml\nstart\n:You are in the Modeling functional area\\nof the Data Warehousing Workbench;\n:Choose Info Provider;\nnote right: Info Provider tree is displayed\n:In the context menu of the Info Area,\\nchoose Create Info Cube;\n:Enter ZD_SALES as technical name\\nand Sales Overview as description;\n:Select Standard Info Cube\\nas Info Provider Type and choose Create;\nnote right: Go to Info Cube editing screen\n:Choose Create New Dimensions\\nin context menu of Dimensions folder;\n:Enter Product as description\\nand choose Create Another Dimension;\n:Enter Sales Organization as description\\nand choose Continue;\nnote right: Dimensions are inserted\n:Choose Info Object Catalog in toolbar;\n:Select Info Object catalog for characteristics\\nas template and choose Continue;\nnote right: Info Object catalog displayed with characteristics\n:Assign characteristics to dimensions\\nusing drag and drop;\n:Choose Info Object Direct Input\\nin context menu of Sales Organization dimension;\n:Enter characteristic 0DOC_NUMBER\\n(Sales Document) and choose Continue;\nnote right: Sales Document is a shipped\\nInfo Object of BI Content\n:Expand Navigation Attributes folder;\n:Activate navigation attribute\\nProduct Group (ZD_PROD__ZDPGROUP)\\nby setting indicator in On/Off column;\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\ntitle Inner Loop Airspeed Regulator - Translational Axial Acceleration Limit\n\nstart\n\n:Receive Airspeed Regulation Command;\n\n:Calculate Required Translational Axial Acceleration;\n\nif (Is Calculated Acceleration > 32 ft/sec²/sec?) then (Yes)\n  :Cap Acceleration Command to 32 ft/sec²/sec;\nelse (No)\n  :Pass Calculated Acceleration Command;\nendif\n\n:Output Acceleration Command to Inner Loop;\n\nstop\n\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Archivist: Restrict a group of files from view\n\nstart\n\n:Archivist selects a group of files;\n\n:Choose \"Restrict from view\" option;\n\n:Confirm restriction action;\n\nif (Restriction applied successfully?) then (Yes)\n  :Update file group access permissions;\n  :Hide files from public view;\n  :Display success message;\nelse (No)\n  :Display error message;\nendif\n\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Activity Diagram: OlderPerson adapting ALFRED device for hearing trouble\n\nstart\n\n:Power on ALFRED device;\n\n:Access device settings menu;\n\n:Select \"Accessibility\" option;\n\n:Select \"Hearing Adaptation\" mode;\n\nswitch (Choose hearing adaptation type)\ncase (Visual Alerts)\n  :Enable visual alerts and notifications;\n  :Adjust screen flash intensity;\ncase (Audio Adjustments)\n  :Increase audio volume;\n  :Adjust audio frequency (tone);\n  :Enable audio amplification;\ncase (Haptic Feedback)\n  :Enable vibration alerts;\n  :Adjust vibration intensity;\nendswitch\n\n:Save accessibility settings;\n\n:Test adapted settings;\n\nif (Are the settings suitable?) then (No)\n  :Return to Hearing Adaptation menu;\n  note right: Loop to adjust settings\nelse (Yes)\nendif\n\n:Use ALFRED device with adapted settings;\n\nstop\n@enduml",
+    "@startuml\nstart\n:Compute inertial position vector for Aim Point 1;\nnote right: Defines location at Standoff 1\n:Calculate offset from target position;\n:Determine tangent relative position vector\\nfrom vehicle to Aim Point 1;\n:Calculate vector perpendicular\\nto tangent relative position vector;\n:Orient offset on the\\nperpendicular vector;\n:Set final inertial position vector\\nfor Aim Point 1;\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n\nif(Autopilot is not requesting support (not request)?) then(yes)\n:Sensor change states from NOMINAL to TRANSITION;\nelse(no)\nendif\n\nstop",
+    "start\n\n:Get Correlator-Backend network interface;\n:Receive incoming data packets;\n\nstop",
+    "start\n:design own App;\n:stand to a few rules;\nstop",
+    "start:\n\nChoose \"Info Provider\";\n:Info Provider tree is displayed;\n:The Info Area is displayed;\n\nnote right \nIt contains Info Provider characteristics and is used to group further objects\nend note\n\n:Open context menu;\n:Choose \"Create Info Cube\";\n\nfork \n:Enter \"ZD_SALES\" as the technical name;\nfork again \n:Enter \"Sales Overview\" as the description;\nend fork\n\n:Select \"Standard Info Cube\" as Info Provider Type;\n:Choose \"Create\";\n:Screen for Info Cube editing is shown;\n\n:Open context menu;\n:Choose \"Create New Dimensions\";\n:Enter \"Product\" as the new dimension description;\n:Choose \"Create Another Dimension\";\n\n:Enter \"Sales Organization\" as the next dimension description;\n:Choose \"Continue\";\n:Dimensions are inserted;\n\n:Open the toolbar on the left;\n:Choose \"Info Object Catalog\";\n:Select your Info Object catalog for characteristics;\n:Choose \"Continue\";\n:Info Object catalog is displayed;\n\n:Open context menu;\n:Choose \"Info Object Direct Input\";\n:Enter characteristic 0DOC_NUMBER;\n\nnote right \nSales Document:a shipped Info Object of BI Content\nend note\n\n:Choose \"Continue\";\n\n:Expand \"Navigation Attributes\" folder;\n:Set the indicator ON/OFF;\n:Activate navigation attribute;\nnote right:ZD_PROD__ZDPGROUP\n\nStop",
+    "start\n\n:In Inner  Loop Airspeed Regulator;\n:Command transient changes in translational axial acceleration <= 32 ft/sec2/sec;\n\nstop",
+    "start\n:Restrict a group of files from view;\nstop",
+    "start\n:get an ALFRED device;\n:adapt for user had hearing trouble;\nstop",
+    "start\n\n:In NLGuidance;\nif(Vector define location at Standoff 1 with offset from target position?) then(yes)\n if(It oriented on vector perpendicular to tangent relative position vector from vehicle to aim point?) then (yes)\n  :It is inertial position vector for aim point 1;\n  :Compute the vector;\n else(no)\n endif\nelse(no)\nendif\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_loop"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

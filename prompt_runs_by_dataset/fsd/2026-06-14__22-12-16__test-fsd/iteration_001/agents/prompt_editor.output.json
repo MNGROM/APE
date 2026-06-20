@@ -1,0 +1,26 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "agent task",
+      "intent": "Explicitly constrain the output to UML activity diagram semantics to prevent diagram type mismatches.",
+      "change_instruction": "Revise the agent task description to explicitly state that the output must be a UML activity diagram using activity diagram semantics (e.g., action nodes, control flows, start/stop terminals) and explicitly forbid generating other diagram types like state machines."
+    },
+    {
+      "section": "workflow",
+      "intent": "Provide a step-by-step process to ensure correct logic interpretation, action extraction, and construct mapping.",
+      "change_instruction": "Add a structured workflow requiring the model to: 1) Identify and extract explicit actions at the exact granularity stated in the text without splitting or merging, 2) Analyze the logical relationship between actions to distinguish mutually exclusive conditional branches from parallel executions, 3) Map the extracted actions and logic to the correct PlantUML control flow constructs based on the analysis."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide essential PlantUML syntax constraints and mapping rules to prevent syntax confusion and incorrect control flows.",
+      "change_instruction": "Add a knowledge section containing: 1) A clear distinction between activity diagram syntax (start/stop, action nodes) and state machine syntax (state, -->), emphasizing the use of start/stop, 2) Explicit mapping rules for control flows—specifically that `switch`/`case`/`endswitch` must be used for mutually exclusive alternative paths, and `fork`/`end fork` must only be used for concurrent parallel execution."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce strict adherence to the provided requirements to prevent hallucination and granularity mismatches.",
+      "change_instruction": "Add a rule section containing strict constraints: 1) Do not hallucinate, infer, or add any steps, conditions, or implementation details not explicitly stated in the requirement, 2) Preserve the exact granularity of the requirement—do not split a single stated action into multiple sub-steps, and do not merge multiple explicit actions into one abstract node, 3) Ignore misleading keywords like 'state' or 'switch to' in the text; always model the logic as an activity flow."
+    }
+  ]
+}
+```

@@ -1,0 +1,55 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The model predominantly produces false_positive_parallel errors, incorrectly using fork/join for non-concurrent lists, attributes, options, or sequential steps. It also exhibits false_negative_parallel errors by missing fork/join when requirements clearly state concurrent, simultaneous, or parallel actions.",
+      "possible_causes": [
+        "The prompt lacks clear guidance on when to use fork/join versus switch/case or if/else, causing the model to treat any list of items (e.g., authentication types, key figures, attributes) as concurrent tasks.",
+        "The model fails to recognize explicit concurrency keywords (e.g., 'concurrently', 'simultaneously', 'parallel') and misses the need for parallel constructs when they are required.",
+        "Sequential steps or descriptive attributes (like entering a name and description) are misinterpreted as parallel operations."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction frequently omits explicit behaviors, states, or actions described in the requirements, collapsing multiple steps into broad or abstract activity nodes.",
+      "possible_causes": [
+        "The prompt does not sufficiently emphasize the need to map every explicit action or state transition from the requirement into a distinct activity node.",
+        "The model prioritizes establishing the high-level control-flow shape over preserving granular behavioral details, leading to the omission of intermediate steps, conditions, or specific system states."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces activities or states that are not supported by the requirement text, often adding speculative logic or redundant nodes.",
+      "possible_causes": [
+        "The model hallucinates control logic (e.g., adding 'No' branches or 'else' conditions) where the requirement only specifies affirmative actions.",
+        "The prompt does not constrain the model to strictly adhere to the provided text, allowing it to infer or invent steps that seem plausible but are not explicitly required."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction omits or misrepresents control-flow relations, frequently flattening nested conditional logic or misinterpreting the structural hierarchy of the requirements.",
+      "possible_causes": [
+        "The model struggles to parse deeply nested or hierarchical requirement structures (e.g., sub-steps within a conditional state), flattening them into sequential or sibling nodes instead of preserving the correct nesting.",
+        "The prompt lacks instructions on how to map complex conditional dependencies and state-dependent transitions into appropriate PlantUML control-flow constructs."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds unsupported or incorrect control-flow relations, often by forcing sequential dependencies where none exist or misrouting transitions.",
+      "possible_causes": [
+        "The model incorrectly assumes sequential execution for independent or alternative paths, creating false dependencies.",
+        "Misinterpretation of the requirement's logic leads to incorrect branching or looping connections that do not align with the specified flow."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction mishandles repeated, periodic, retry, or loop behavior, either by omitting required loops or by misplacing loop boundaries.",
+      "possible_causes": [
+        "The model fails to identify explicit loop indicators in the text (e.g., 'repeat', 'periodically', 'until', 'tight loop') and represents iterative processes as single-pass actions.",
+        "When loops are identified, the model struggles to correctly place the repeat condition or to encapsulate the right set of activities within the loop body."
+      ]
+    }
+  ]
+}
+```

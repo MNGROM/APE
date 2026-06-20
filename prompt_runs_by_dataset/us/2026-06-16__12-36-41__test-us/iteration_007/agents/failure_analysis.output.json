@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "flattened_parallelism",
+      "problem": "The prediction fails to decompose compound actions into parallel forks, instead representing them as single, monolithic activity nodes. For example, 'Govern multi-zone PWM fans and liquid-cooling pump loops' is generated as one node instead of a fork, and 'Managed through priority queues and mutex-protected shared resources' is similarly collapsed.",
+      "possible_causes": [
+        "The prompt does not explicitly instruct the model to decompose lists of concurrent items into PlantUML fork/end fork structures.",
+        "The model prioritizes brevity and linear flow over accurately representing concurrent architectural elements described in the requirements."
+      ]
+    },
+    {
+      "name": "misplaced_or_omitted_parallel_branches",
+      "problem": "Parallel branches that should exist as siblings at the same control-flow level are either placed inside conditional blocks or omitted entirely. For instance, sensor calibration is placed inside a repeat loop instead of being a parallel branch to the threshold check, and curtain adjustment is incorrectly nested inside a conditional instead of being a parallel sibling to air purification.",
+      "possible_causes": [
+        "The prompt lacks guidance on how to map independent system tasks (e.g., background periodic tasks vs. triggered events) into top-level or sibling parallel structures.",
+        "The model defaults to a strictly sequential interpretation, inserting independent tasks as nested steps within the closest preceding conditional block."
+      ]
+    },
+    {
+      "name": "incorrect_loop_structuring",
+      "problem": "Periodic or repeated behaviors are incorrectly modeled using repeat loops that wrap the entire activity sequence, rather than representing the periodic nature as a structural property or a self-contained loop. For example, sensor calibration is wrapped in a repeat loop, and the 'attributes then texts' iteration is modeled as a loop around the entire process rather than a targeted repetition.",
+      "possible_causes": [
+        "The prompt does not provide clear rules for distinguishing between a user-driven iterative workflow and a system-level periodic task.",
+        "The model overgeneralizes the 'repeat' construct for any requirement mentioning periodic execution or doing steps 'for X then Y'."
+      ]
+    },
+    {
+      "name": "missing_intermediate_activities",
+      "problem": "Intermediate steps explicitly stated in the requirements and ground truth are skipped or merged. Examples include omitting the 'Ensure system safety' final step, skipping the 'Coordinated cooling process' after triggering the AC, and missing UI navigation steps like 'Open the toolbar on the right' or 'Find the tab page General Info'.",
+      "possible_causes": [
+        "The prompt does not emphasize preserving all granular steps and intermediate states described in the requirements.",
+        "The model is biased towards compressing sequences it interprets as trivial or implicit, leading to low node recall."
+      ]
+    },
+    {
+      "name": "incorrect_control_flow_for_mutually_exclusive_conditions",
+      "problem": "Mutually exclusive conditional branches (e.g., vehicle status checks or mode switches) are modeled using nested if-elseif-else structures or switch statements with incorrect nesting, rather than the flat, sequential if-stop structures used in the ground truth. This results in incorrect relation precision and recall.",
+      "possible_causes": [
+        "The prompt does not specify how to handle state-machine-like transitions where each valid condition leads to a terminal state (stop) rather than falling through to a shared continuation.",
+        "The model applies standard programming constructs (deeply nested if-else) instead of the flat, early-exit activity diagram pattern expected by the ground truth."
+      ]
+    }
+  ]
+}
+```

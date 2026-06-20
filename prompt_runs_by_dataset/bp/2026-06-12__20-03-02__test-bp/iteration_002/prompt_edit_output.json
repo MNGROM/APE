@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "append",
+      "content": "8. Preserve the exact wording, phrases, and variable names from the input requirement for activity and condition nodes. Do not paraphrase, summarize, or add verbs (e.g., 'Compute', 'Ensure') unless they are explicitly present in the text.\n9. Strictly prohibit adding conditional branches, loops, or implementation steps that are not explicitly described in the input. If a condition or loop is not stated, the flow must proceed sequentially without speculative checks.\n10. Model explicitly listed items (e.g., separated by 'and', commas, or listed across lines) as distinct activity nodes. If the text implies they occur simultaneously or independently, model them using fork/fork again/end fork constructs."
+    },
+    {
+      "section": "knowledge",
+      "operation": "replace",
+      "content": "Use standard PlantUML activity diagram syntax only. Use if/else/endif for conditional branches, repeat/repeat while for polling, retry, or until-style loops, and fork/fork again/end fork only for explicitly concurrent tasks, threads, periodic routines, or parallel activities. Use switch/endswitch for multi-branch condition evaluations where cases are discrete and independent. Ensure every opened control structure is properly closed. Use partitions or swimlanes to represent actors or systems, keeping activity node text purely action-oriented."
+    }
+  ],
+  "rationale": "The workflow append addresses the highest-severity patterns: node wording mismatch, speculative control flow, and merged atomic activities by enforcing exact phrasing, prohibiting speculative branches, and ensuring listed items remain distinct nodes. The knowledge replace removes the harmful prohibition on switch/case syntax, allowing proper multi-branch modeling and fixing the resulting syntax errors.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}
+```

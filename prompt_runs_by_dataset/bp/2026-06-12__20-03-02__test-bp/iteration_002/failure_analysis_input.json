@@ -1,0 +1,636 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description.\n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n1. Read the requirement and identify every explicitly stated activity, trigger, condition, task, thread, loop, retry, logging step, and terminal outcome.\n2. Extract only activities and conditions explicitly stated in the input. Strictly forbid inventing unstated implementation details, sub-steps, or speculative control flows.\n3. Keep explicitly listed actions, checks, or triggers as separate activity or decision nodes unless the input clearly presents them as a single undivided action. Do not merge multiple atomic actions into one broad node.\n4. Separate actors or systems from activity actions. Map actors to PlantUML partitions or swimlanes, keeping the activity node text purely action-oriented without actor prefixes.\n5. Identify concurrent or parallel tasks in the input and explicitly model them using PlantUML fork/end fork constructs.\n6. Carefully preserve the nesting and hierarchy of conditional logic as described in the input, mapping embedded conditions to nested PlantUML if/else/endif blocks.\n7. Generate the PlantUML code following the extracted structure and syntax rules.\n\n## knowledge\n\nUse standard PlantUML activity diagram syntax only. Use if/else/endif for conditional branches, repeat/repeat while for polling, retry, or until-style loops, and fork/fork again/end fork only for explicitly concurrent tasks, threads, periodic routines, or parallel activities. Ensure every opened control structure is properly closed. Explicitly forbid experimental or unsupported constructs such as switch/case. Use partitions or swimlanes to represent actors or systems, keeping activity node text purely action-oriented.\n",
+  "evaluation": {
+    "summary": {
+      "count": 10.0,
+      "syntax_pass_rate": 0.8,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.3814901477832512,
+      "node_recall": 0.4160197678938308,
+      "node_f1": 0.3581168831168831,
+      "relation_precision": 0.29047619047619044,
+      "relation_recall": 0.31825674325674325,
+      "relation_f1": 0.29010135455148245,
+      "plantuml_compilation_pass_rate": 0.8,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {
+      "syntax_error": 2,
+      "missing_activity": 8,
+      "extra_activity": 8,
+      "missing_or_wrong_relation": 8,
+      "extra_or_wrong_relation": 8,
+      "wrong_loop": 1
+    },
+    "representative_cases": [
+      {
+        "dataset": "fsd",
+        "case_id": "fsd-0114",
+        "input_requirement": "When a user attempts to enter the system, they must first swipe a card to complete identity verification. If the card is invalid, the system will deny access and terminate the flow; if the card is valid, the system will first turn on the lights, start the air conditioning (AC), and then execute subsequent steps in parallel. Based on current temperature conditions, the system will make the following adjustments: if it is hot, the system will close the blinds and set the AC to high fan speed; if normal, it will set the AC to medium fan speed; if cloudy, it will turn off the AC and open the blinds. Simultaneously with temperature detection, the system will activate environmental sensors for real-time monitoring, primarily detecting the presence of smoke. If smoke is detected, the system will perform the following parallel actions: open the door to allow the user to evacuate quickly; generate an alarm to alert the user. If no smoke is detected, the system will enter sleep mode.",
+        "gold_plantuml": "@startuml\nstart\n:Swipe card for entrance;\n:verify user;\nif (valid?) then (yes)\n    :ON Lights;\n    :Activate Sensor;\n    :Set AC;\n    fork\n    :Check Temperature;\n    switch()\n    case (Hot)\n        :Close Blinds and Set Ac to High;\n    case (normal)\n        :Set AC to Medium;\n    case (Cloudy)\n        :OFF AC and open Blinds;\n    endswitch\n    fork again\n        :Activate Sensor;\n        :Detect Smoke;\n    if (detected?) then (yes)\n        fork\n           :Open Door;\n        fork again\n           :Generate Alarm;\n        end fork\n    else (no)\n    endif\n    :exit;\n    :Activate Sleep mode;\n    end fork\n    stop\nelse (no)\n    :Rejected;\n    stop\n@enduml",
+        "predicted_plantuml": "@startuml\nstart\npartition User {\n    :Swipe card for identity verification;\n}\npartition System {\n    if (Card valid?) then (no)\n        :Deny access;\n        stop\n    else (yes)\n        :Turn on the lights;\n        :Start the AC;\n        fork\n            if (Temperature condition?) then (hot)\n                :Close the blinds;\n                :Set AC to high fan speed;\n            else (normal)\n                :Set AC to medium fan speed;\n            else (cloudy)\n                :Turn off the AC;\n                :Open the blinds;\n            endif\n        fork again\n            :Activate environmental sensors for real-time monitoring;\n            if (Smoke detected?) then (yes)\n                fork\n                    :Open the door to allow evacuation;\n                fork again\n                    :Generate an alarm to alert the user;\n                end fork\n            else (no)\n                :Enter sleep mode;\n            endif\n        end fork\n    endif\n}\n@enduml",
+        "syntax": {
+          "passed": false,
+          "errors": [
+            "ERROR"
+          ]
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "swipe card for entrance",
+            "verify user",
+            "valid?",
+            "on lights",
+            "activate sensor",
+            "activate sensor",
+            "set ac",
+            "check temperature",
+            "hot",
+            "close blinds and set ac to high",
+            "normal",
+            "set ac to medium",
+            "cloudy",
+            "off ac and open blinds",
+            "detect smoke",
+            "detected?",
+            "open door",
+            "generate alarm",
+            "exit",
+            "activate sleep mode"
+          ],
+          "extra": [
+            "swipe card for identity verification",
+            "card valid?",
+            "deny access",
+            "turn on the lights",
+            "start the ac",
+            "temperature condition?",
+            "close the blinds",
+            "set ac to high fan speed",
+            "set ac to medium fan speed",
+            "turn off the ac",
+            "open the blinds",
+            "activate environmental sensors for real-time monitoring",
+            "smoke detected?",
+            "open the door to allow evacuation",
+            "generate an alarm to alert the user",
+            "enter sleep mode"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "swipe card for entrance -> verify user",
+            "verify user -> valid?",
+            "valid? -> on lights",
+            "on lights -> activate sensor",
+            "activate sensor -> set ac",
+            "set ac -> check temperature",
+            "check temperature -> hot",
+            "hot -> close blinds and set ac to high",
+            "close blinds and set ac to high -> normal",
+            "normal -> set ac to medium",
+            "set ac to medium -> cloudy",
+            "cloudy -> off ac and open blinds",
+            "off ac and open blinds -> activate sensor",
+            "activate sensor -> detect smoke",
+            "detect smoke -> detected?",
+            "detected? -> open door",
+            "open door -> generate alarm",
+            "generate alarm -> exit",
+            "exit -> activate sleep mode",
+            "activate sleep mode -> rejected"
+          ],
+          "extra": [
+            "swipe card for identity verification -> card valid?",
+            "card valid? -> deny access",
+            "deny access -> turn on the lights",
+            "turn on the lights -> start the ac",
+            "start the ac -> temperature condition?",
+            "temperature condition? -> close the blinds",
+            "close the blinds -> set ac to high fan speed",
+            "set ac to high fan speed -> set ac to medium fan speed",
+            "set ac to medium fan speed -> turn off the ac",
+            "turn off the ac -> open the blinds",
+            "open the blinds -> activate environmental sensors for real-time monitoring",
+            "activate environmental sensors for real-time monitoring -> smoke detected?",
+            "smoke detected? -> open the door to allow evacuation",
+            "open the door to allow evacuation -> generate an alarm to alert the user",
+            "generate an alarm to alert the user -> enter sleep mode"
+          ]
+        },
+        "failure_types": [
+          "syntax_error",
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0004",
+        "input_requirement": "After the system starts up:\n- If slow charging is active (state 1) and the charging/discharging system is powered up, switch to state 95.\n- If the vehicle charging/discharging mode is 2 and the system is powered up, switch to state 105. Then, while in state 105:\n  1) If the high-voltage shutdown value is 3 or 4, switch to state 115. If slow charging becomes inactive during this, shut down and end the process.\n  2) If a high-voltage shutdown request (value 3) occurs while the ignition is on (position 2), return to state 105. If the ignition turns off (position 0), switch to state 115. If slow charging becomes inactive, shut down and end.\n  3) If a pre-charge failure happens, switch to state 115. If slow charging becomes inactive, shut down and end.\n  4) If an AC discharge system fault occurs, switch to state 115. If slow charging becomes inactive, shut down and end.\n  5) If slow charging becomes inactive, switch to state 115, then shut down and end.",
+        "gold_plantuml": "start\nif (slow charging state is 1 and charging/discharging power-up is ready) then\n  :switch to state 95;\n if (vehicle charging/discharging mode is 2 and power-up is ready) then\n  :switch to state 105;\n  switch(condition judgement) \n  case (high-voltage shutdown charging/discharging value is 3 or 4)\n    :switch to state 115;\n     if (slow charging?) then(no)\n     :shutdown;\n     stop\n     end if\n  case (high-voltage shutdown request is 3 and ignition switch is 2)\n    :switch to state 105;\n    if(ignition switch becomes 0) then\n    :switch to state 115;\n     if (slow charging?) then(no)\n          :shutdown;\n     stop\n     end if\n    end if\n  case (pre-charge failure occurs)\n    :switch to state 115;\n    if (slow charging?) then(no)\n         :shut down;\n     stop\n     end if\n  case (AC discharge system fault occurs)\n    :switch to state 115;\n    if (slow charging?) then(no)\n         :shutdown;\n     stop\n     end if\n  case (slow charging is inactive)\n   :switch to state 115;\n    if (slow charging?) then(no)\n         :shutdown;\n     stop\n     end if\n  endswitch\n  end if\n  end if\n  end",
+        "predicted_plantuml": "@startuml\nstart\n:System starts up;\nif (Slow charging is active (state 1)\\nand charging/discharging system is powered up?) then (yes)\n  :Switch to state 95;\nelseif (Vehicle charging/discharging mode is 2\\nand system is powered up?) then (yes)\n  :Switch to state 105;\n  repeat\n    if (High-voltage shutdown value is 3 or 4?) then (yes)\n      :Switch to state 115;\n      if (Slow charging becomes inactive?) then (yes)\n        :Shut down;\n        end\n      endif\n    elseif (High-voltage shutdown request (value 3) occurs\\nand ignition is on (position 2)?) then (yes)\n      :Return to state 105;\n      if (Slow charging becomes inactive?) then (yes)\n        :Shut down;\n        end\n      endif\n    elseif (Ignition turns off (position 0)?) then (yes)\n      :Switch to state 115;\n      if (Slow charging becomes inactive?) then (yes)\n        :Shut down;\n        end\n      endif\n    elseif (Pre-charge failure happens?) then (yes)\n      :Switch to state 115;\n      if (Slow charging becomes inactive?) then (yes)\n        :Shut down;\n        end\n      endif\n    elseif (AC discharge system fault occurs?) then (yes)\n      :Switch to state 115;\n      if (Slow charging becomes inactive?) then (yes)\n        :Shut down;\n        end\n      endif\n    elseif (Slow charging becomes inactive?) then (yes)\n      :Switch to state 115;\n      :Shut down;\n      end\n    endif\n  repeat while (Remain in state 105)\n  endif\nendif\n@enduml",
+        "syntax": {
+          "passed": false,
+          "errors": [
+            "ERROR"
+          ]
+        },
+        "node_metrics": {
+          "precision": 0.4827586206896552,
+          "recall": 0.5185185185185185,
+          "f1": 0.5,
+          "missing": [
+            "slow charging state is 1 and charging/discharging power-up is ready",
+            "vehicle charging/discharging mode is 2 and power-up is ready",
+            "switch to state 105",
+            "condition judgement",
+            "high-voltage shutdown charging/discharging value is 3 or 4",
+            "slow charging?",
+            "slow charging?",
+            "slow charging?",
+            "slow charging?",
+            "slow charging?",
+            "high-voltage shutdown request is 3 and ignition switch is 2",
+            "ignition switch becomes 0",
+            "pre-charge failure occurs"
+          ],
+          "extra": [
+            "system starts up",
+            "slow charging is active (state 1",
+            "vehicle charging/discharging mode is 2 and system is powered up?",
+            "high-voltage shutdown value is 3 or 4?",
+            "slow charging becomes inactive?",
+            "slow charging becomes inactive?",
+            "slow charging becomes inactive?",
+            "slow charging becomes inactive?",
+            "slow charging becomes inactive?",
+            "shut down",
+            "high-voltage shutdown request (value 3",
+            "return to state 105",
+            "ignition turns off (position 0",
+            "pre-charge failure happens?",
+            "remain in state 105"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.17857142857142858,
+          "recall": 0.19230769230769232,
+          "f1": 0.1851851851851852,
+          "missing": [
+            "slow charging state is 1 and charging/discharging power-up is ready -> switch to state 95",
+            "switch to state 95 -> vehicle charging/discharging mode is 2 and power-up is ready",
+            "vehicle charging/discharging mode is 2 and power-up is ready -> switch to state 105",
+            "switch to state 105 -> condition judgement",
+            "condition judgement -> high-voltage shutdown charging/discharging value is 3 or 4",
+            "high-voltage shutdown charging/discharging value is 3 or 4 -> switch to state 115",
+            "switch to state 115 -> slow charging?",
+            "switch to state 115 -> slow charging?",
+            "switch to state 115 -> slow charging?",
+            "switch to state 115 -> slow charging?",
+            "switch to state 115 -> slow charging?",
+            "slow charging? -> shutdown",
+            "slow charging? -> shutdown",
+            "slow charging? -> shutdown",
+            "slow charging? -> shutdown",
+            "shutdown -> high-voltage shutdown request is 3 and ignition switch is 2",
+            "high-voltage shutdown request is 3 and ignition switch is 2 -> switch to state 105",
+            "switch to state 105 -> ignition switch becomes 0",
+            "ignition switch becomes 0 -> switch to state 115",
+            "shutdown -> pre-charge failure occurs"
+          ],
+          "extra": [
+            "system starts up -> slow charging is active (state 1",
+            "slow charging is active (state 1 -> switch to state 95",
+            "switch to state 95 -> vehicle charging/discharging mode is 2 and system is powered up?",
+            "vehicle charging/discharging mode is 2 and system is powered up? -> switch to state 105",
+            "switch to state 105 -> high-voltage shutdown value is 3 or 4?",
+            "high-voltage shutdown value is 3 or 4? -> switch to state 115",
+            "switch to state 115 -> slow charging becomes inactive?",
+            "switch to state 115 -> slow charging becomes inactive?",
+            "switch to state 115 -> slow charging becomes inactive?",
+            "switch to state 115 -> slow charging becomes inactive?",
+            "slow charging becomes inactive? -> shut down",
+            "slow charging becomes inactive? -> shut down",
+            "slow charging becomes inactive? -> shut down",
+            "slow charging becomes inactive? -> shut down",
+            "slow charging becomes inactive? -> shut down",
+            "shut down -> high-voltage shutdown request (value 3",
+            "high-voltage shutdown request (value 3 -> return to state 105",
+            "return to state 105 -> slow charging becomes inactive?",
+            "shut down -> ignition turns off (position 0",
+            "ignition turns off (position 0 -> switch to state 115"
+          ]
+        },
+        "failure_types": [
+          "syntax_error",
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0037",
+        "input_requirement": "3.\tUsing a first order finite backward difference equation, the spatial derivatives of Δz/ Δxt = (z(n,1)-z(n-1))/(xt(n,1)-xt(n-1,1) and Δz/ Δyt = (z(n,1)-z(n-1))/(yt(n,1)-yt(n-1,1) shall never exceed a top bound of +10 or bottom bound of -35 (e.g. -35 <= Δz/ Δ(xt,yt) <= 10), where n denotes an index to the current values and n-1 denotes the prior values in the included truth data for xt and yt.",
+        "gold_plantuml": "start\n\n:Use first order finite backward difference equation;\nfork\n:n:index to current values;\nfork again\n:n-1:prior values;\nfork again\n:Included truth data for xt and yt;\nend fork\n\nfork\n: Δz/ Δxt = (z(n,1)-z(n-1))/(xt(n,1)-xt(n-1,1));\nfork again\n:Δz/ Δyt = (z(n,1)-z(n-1))/(yt(n,1)-yt(n-1,1));\nend fork\n\nif(-35 <= Spatial derivatives <= 10?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\npartition \"System\" {\n  :Compute Δz/Δxt using first order finite backward difference:\n  (z(n,1) - z(n-1)) / (xt(n,1) - xt(n-1,1));\n  :Compute Δz/Δyt using first order finite backward difference:\n  (z(n,1) - z(n-1)) / (yt(n,1) - yt(n-1,1));\n  if (Δz/Δxt > +10?) then (yes)\n    :Enforce top bound: Δz/Δxt = +10;\n  elseif (Δz/Δxt < -35?) then (yes)\n    :Enforce bottom bound: Δz/Δxt = -35;\n  else (no)\n  endif\n  if (Δz/Δyt > +10?) then (yes)\n    :Enforce top bound: Δz/Δyt = +10;\n  elseif (Δz/Δyt < -35?) then (yes)\n    :Enforce bottom bound: Δz/Δyt = -35;\n  else (no)\n  endif\n}\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "use first order finite backward difference equation",
+            "n index to current values",
+            "n-1 prior values",
+            "included truth data for xt and yt",
+            "z/ xt = (z(n 1)-z(n-1))/(xt(n 1)-xt(n-1 1))",
+            "z/ yt = (z(n 1)-z(n-1))/(yt(n 1)-yt(n-1 1))",
+            "-35 <= spatial derivatives <= 10?",
+            "allowed",
+            "not allowed"
+          ],
+          "extra": [
+            "z/ xt > +10?",
+            "enforce top bound z/ xt = +10",
+            "z/ xt < -35?",
+            "enforce bottom bound z/ xt = -35",
+            "z/ yt > +10?",
+            "enforce top bound z/ yt = +10",
+            "z/ yt < -35?",
+            "enforce bottom bound z/ yt = -35"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "use first order finite backward difference equation -> n index to current values",
+            "n index to current values -> n-1 prior values",
+            "n-1 prior values -> included truth data for xt and yt",
+            "included truth data for xt and yt -> z/ xt = (z(n 1)-z(n-1))/(xt(n 1)-xt(n-1 1))",
+            "z/ xt = (z(n 1)-z(n-1))/(xt(n 1)-xt(n-1 1)) -> z/ yt = (z(n 1)-z(n-1))/(yt(n 1)-yt(n-1 1))",
+            "z/ yt = (z(n 1)-z(n-1))/(yt(n 1)-yt(n-1 1)) -> -35 <= spatial derivatives <= 10?",
+            "-35 <= spatial derivatives <= 10? -> allowed",
+            "allowed -> not allowed"
+          ],
+          "extra": [
+            "z/ xt > +10? -> enforce top bound z/ xt = +10",
+            "enforce top bound z/ xt = +10 -> z/ xt < -35?",
+            "z/ xt < -35? -> enforce bottom bound z/ xt = -35",
+            "enforce bottom bound z/ xt = -35 -> z/ yt > +10?",
+            "z/ yt > +10? -> enforce top bound z/ yt = +10",
+            "enforce top bound z/ yt = +10 -> z/ yt < -35?",
+            "z/ yt < -35? -> enforce bottom bound z/ yt = -35"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0042",
+        "input_requirement": "4.\tThe 2-norm of the output Buminusd should be less than 0.01.",
+        "gold_plantuml": "start\n\n:2-norm of output Buminusd;\nif(< 0.01? ) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:Compute 2-norm of Buminusd;\nif (2-norm of Buminusd < 0.01?) then (yes)\n  :Pass;\nelse (no)\n  :Fail;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "2-norm of output buminusd",
+            "< 0.01?",
+            "allowed",
+            "not allowed"
+          ],
+          "extra": [
+            "compute 2-norm of buminusd",
+            "2-norm of buminusd < 0.01?",
+            "pass",
+            "fail"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "2-norm of output buminusd -> < 0.01?",
+            "< 0.01? -> allowed",
+            "allowed -> not allowed"
+          ],
+          "extra": [
+            "compute 2-norm of buminusd -> 2-norm of buminusd < 0.01?",
+            "2-norm of buminusd < 0.01? -> pass",
+            "pass -> fail"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0008",
+        "input_requirement": "As a UI designer, I want to schedule user testing, so that I can give the testers advanced notice to ensure buy-in.",
+        "gold_plantuml": "start\n:Schedule user testing;\n:Give advanced notice to ensure buy-in;\nstop",
+        "predicted_plantuml": "@startuml\n|UI Designer|\nstart\n:Schedule user testing;\n:Give testers advanced notice;\nif (Testers buy-in?) then (Yes)\n  :Confirm user testing;\nelse (No)\n  :Reschedule user testing;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.2,
+          "recall": 0.5,
+          "f1": 0.28571428571428575,
+          "missing": [
+            "give advanced notice to ensure buy-in"
+          ],
+          "extra": [
+            "give testers advanced notice",
+            "testers buy-in?",
+            "confirm user testing",
+            "reschedule user testing"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "schedule user testing -> give advanced notice to ensure buy-in"
+          ],
+          "extra": [
+            "schedule user testing -> give testers advanced notice",
+            "give testers advanced notice -> testers buy-in?",
+            "testers buy-in? -> confirm user testing",
+            "confirm user testing -> reschedule user testing"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "fsd",
+        "case_id": "fsd-0050",
+        "input_requirement": "The thermal management controller, implemented as a deterministic state machine on the RTOS, governs the PWM fans and liquid-cooling loops. Upon receiving a user-initiated air conditioner start command, the system first verifies the unit is in a powered-off state and then checks if the indoor temperature exceeds the setpoint. If both conditions are met, it executes the air conditioner startup sequence, during which a high-priority task, synchronized via mutexes with a BMS/PMIC interface, continuously monitors the compressor status and condenser temperature to ensure operational parameters remain within safe bounds. A medium-priority periodic task, scheduled by the RTOS, polls indoor temperature sensors until the setpoint is achieved. Concurrently, user commands for wind speed adjustment are serviced through an interrupt-driven priority queue; the system enters a control loop to regulate the PWM duty cycle until the actual fan speed matches the requested value, with telemetry data logged to a ring buffer. A separate, timer-driven telemetry monitor task runs with bounded retries and exponential backoff for fault handling, while sensor fusion and calibration routines execute periodically, with out-of-range readings triggering redundant sensor checks and initiating a controlled cool-down safety path. Following all operations, the system returns to a low-power standby state.",
+        "gold_plantuml": "@startuml\n\nstart\n\n:Thermal management controller implemented as deterministic state machine on RTOS;\nfork\n:Govern PWM fans;\nfork again\n:Govern liquid-cooling loops;\nend fork\n\n:Receive user-initiated air conditioner start command;\nif (Unit in powered-off state?) then (yes)\n  if (Indoor temperature > setpoint?) then (yes)\n    :Execute air conditioner startup sequence;\n\n    fork\n      :High-priority task synchronized via mutexes with BMS/PMIC interface;\n      :Continuously monitor compressor status and condenser temperature;\n       :Ensure operational parameters within safe bounds;\n\n    fork again\n      :Medium-priority periodic task scheduled by RTOS;\n      repeat\n      :Poll indoor temperature sensors;\n      repeat while(Setpoint achieved?) is(no)\n\n    fork again\n    :User commands for wind speed adjustment serviced via interrupt-driven priority queue;\n    :Enter control loop;\n    repeat\n    :Regulate PWM duty cycle;\n    repeat while(Actual fan speed matches requested value) is(no)\n    :Log telemetry data to ring buffer;\n\n    fork again\n    :Timer-driven telemetry monitor task runs;\n     fork\n       fork\n      :Bounded retries;\n       fork again\n      :Exponential backoff;\n       end fork\n      :For fault handling;\n     fork again\n      fork\n      :Sensor fusion;\n      fork again\n      :Calibration routines;\n       end fork\n      :Execute periodically;\n     fork again\n     if (Out-of-range readings?) then (yes)\n      :Trigger redundant sensor checks;\n      :Initiate controlled cool-down safety path;\n    else (no)\n    end if\n    end fork\n   end fork\n  else (no)\n  end if\nelse (no)\nend if\n\n:Return to low-power standby state;\n\nstop\n\n@enduml",
+        "predicted_plantuml": "@startuml\nstart\npartition \"Thermal Management Controller\" {\n    :Receive user-initiated air conditioner start command;\n    if (Is unit in powered-off state?) then (No)\n        :Return to low-power standby state;\n        stop\n    else (Yes)\n        if (Does indoor temperature exceed setpoint?) then (No)\n            :Return to low-power standby state;\n            stop\n        else (Yes)\n            :Execute air conditioner startup sequence;\n            fork\n                :Continuously monitor compressor status and condenser temperature;\n                note right: High-priority task\\n(synchronized via mutexes with BMS/PMIC interface)\n            fork again\n                repeat\n                    :Poll indoor temperature sensors;\n                repeat while (Setpoint achieved?) is (No)\n                ->Yes;\n                note right: Medium-priority periodic task\\n(scheduled by RTOS)\n            fork again\n                :Service wind speed adjustment commands via interrupt-driven priority queue;\n                repeat\n                    :Regulate PWM duty cycle;\n                repeat while (Actual fan speed matches requested value?) is (No)\n                ->Yes;\n                :Log telemetry data to ring buffer;\n            fork again\n                :Run telemetry monitor task;\n                repeat\n                    :Attempt telemetry operation;\n                repeat while (Fault handled within bounded retries?) is (Yes, retry with exponential backoff)\n                ->No;\n            fork again\n                :Execute sensor fusion and calibration routines periodically;\n                if (Out-of-range readings detected?) then (Yes)\n                    :Trigger redundant sensor checks;\n                    :Initiate controlled cool-down safety path;\n                else (No)\n                endif\n            end fork\n            :Return to low-power standby state;\n            stop\n        endif\n    endif\n}\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.8571428571428571,
+          "recall": 0.20689655172413793,
+          "f1": 0.33333333333333326,
+          "missing": [
+            "thermal management controller implemented as deterministic state machine on rtos",
+            "govern pwm fans",
+            "govern liquid-cooling loops",
+            "high-priority task synchronized via mutexes with bms/pmic interface",
+            "ensure operational parameters within safe bounds",
+            "medium-priority periodic task scheduled by rtos",
+            "poll indoor temperature sensors",
+            "setpoint achieved?",
+            "user commands for wind speed adjustment serviced via interrupt-driven priority queue",
+            "enter control loop",
+            "regulate pwm duty cycle",
+            "actual fan speed matches requested value",
+            "log telemetry data to ring buffer",
+            "timer-driven telemetry monitor task runs",
+            "bounded retries",
+            "exponential backoff",
+            "for fault handling",
+            "sensor fusion",
+            "calibration routines",
+            "execute periodically"
+          ],
+          "extra": [
+            "return to low-power standby state"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.16666666666666666,
+          "recall": 0.03571428571428571,
+          "f1": 0.058823529411764705,
+          "missing": [
+            "thermal management controller implemented as deterministic state machine on rtos -> govern pwm fans",
+            "govern pwm fans -> govern liquid-cooling loops",
+            "govern liquid-cooling loops -> receive user-initiated air conditioner start command",
+            "unit in powered-off state? -> indoor temperature > setpoint?",
+            "indoor temperature > setpoint? -> execute air conditioner startup sequence",
+            "execute air conditioner startup sequence -> high-priority task synchronized via mutexes with bms/pmic interface",
+            "high-priority task synchronized via mutexes with bms/pmic interface -> continuously monitor compressor status and condenser temperature",
+            "continuously monitor compressor status and condenser temperature -> ensure operational parameters within safe bounds",
+            "ensure operational parameters within safe bounds -> medium-priority periodic task scheduled by rtos",
+            "medium-priority periodic task scheduled by rtos -> poll indoor temperature sensors",
+            "poll indoor temperature sensors -> setpoint achieved?",
+            "setpoint achieved? -> user commands for wind speed adjustment serviced via interrupt-driven priority queue",
+            "user commands for wind speed adjustment serviced via interrupt-driven priority queue -> enter control loop",
+            "enter control loop -> regulate pwm duty cycle",
+            "regulate pwm duty cycle -> actual fan speed matches requested value",
+            "actual fan speed matches requested value -> log telemetry data to ring buffer",
+            "log telemetry data to ring buffer -> timer-driven telemetry monitor task runs",
+            "timer-driven telemetry monitor task runs -> bounded retries",
+            "bounded retries -> exponential backoff",
+            "exponential backoff -> for fault handling"
+          ],
+          "extra": [
+            "is unit in powered-off state? -> return to low-power standby state",
+            "return to low-power standby state -> does indoor temperature exceed setpoint?",
+            "does indoor temperature exceed setpoint? -> return to low-power standby state",
+            "return to low-power standby state -> execute air conditioner startup sequence",
+            "execute air conditioner startup sequence -> continuously monitor compressor status and condenser temperature"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation",
+          "wrong_loop"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0005",
+        "input_requirement": "After the system starts up:\n- If slow charging is active and the front MCU high-voltage detection flag is 0, transition to state 93.\n- If charging/discharging power-up is active while the front MCU high-voltage detection flag reads 1, move to state 95.\n- When power-up readiness is confirmed and the vehicle's charging/discharging mode is set to 2, proceed to state 105.\n\nThen handle these cases:\n1. In remote mode: Go to state 105. If slow charging becomes inactive, shift to state 28. Should remote mode deactivate, initiate shutdown and terminate.\n2. Upon receiving a pet mode request: Enter state 105. If slow charging is inactive, transition to state 28. After processing the pet mode request, perform shutdown and end operations.\n3. When battery SOC hits 20%: Transition to state 105. If slow charging is inactive, switch to state 28. If SOC reaches 80% while DCDC state is 3, execute shutdown and conclude.",
+        "gold_plantuml": "start\nif (slow charging is 1 and front MCU high-voltage detection flag is 0) then(yes)\n  :switch to state 93;\n if (charging/discharging power-up is active and front MCU high-voltage detection flag is 1) then(yes)\n  :switch to state 95;\n  if (power-up is ready and vehicle charging/discharging mode is 2) then(yes)\n  :switch to state 105;\n\nswitch(condition judgement)\n  case(in remote mode)\n    :switch to state 105;\n    if (slow charging is inactive) then\n      :switch to state 28;\n      if (remote mode is closed) then\n          :shutdown;\n      stop\n      endif\n    endif\n\n  case (pet mode request is received)\n    :switch to state 105;\n     if (slow charging is inactive) then\n      :switch to state 28;\n      if (pet mode open request is closed) then\n          :shutdown;\n      stop\n      endif\n    endif\n\n  case (battery SOC is 20) \n    :switch to state 105;\n    if (SOC reaches 80 and DCDC state is 3) then\n    :shutdown;\n    stop\n    endif\nendswitch\n\n  endif\nendif\nendif\nend",
+        "predicted_plantuml": "@startuml\nstart\n:System startup;\n\nif (Slow charging is active\\nand front MCU high-voltage detection flag is 0?) then (Yes)\n  :Transition to state 93;\nelseif (Charging/discharging power-up is active\\nand front MCU high-voltage detection flag is 1?) then (Yes)\n  :Move to state 95;\nelseif (Power-up readiness is confirmed\\nand vehicle charging/discharging mode is 2?) then (Yes)\n  :Proceed to state 105;\nendif\n\nif (In remote mode?) then (Yes)\n  :Go to state 105;\n  if (Slow charging becomes inactive?) then (Yes)\n    :Shift to state 28;\n  endif\n  if (Remote mode deactivates?) then (Yes)\n    :Initiate shutdown;\n    stop\n  endif\nelseif (Received pet mode request?) then (Yes)\n  :Enter state 105;\n  if (Slow charging is inactive?) then (Yes)\n    :Transition to state 28;\n  endif\n  :Process pet mode request;\n  :Perform shutdown;\n  stop\nelseif (Battery SOC hits 20%?) then (Yes)\n  :Transition to state 105;\n  if (Slow charging is inactive?) then (Yes)\n    :Switch to state 28;\n  endif\n  if (SOC reaches 80%\\nand DCDC state is 3?) then (Yes)\n    :Execute shutdown;\n    stop\n  endif\nendif\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.4,
+          "recall": 0.43478260869565216,
+          "f1": 0.41666666666666663,
+          "missing": [
+            "switch to state 93",
+            "switch to state 95",
+            "switch to state 105",
+            "switch to state 105",
+            "switch to state 105",
+            "switch to state 105",
+            "condition judgement",
+            "remote mode is closed",
+            "shutdown",
+            "shutdown",
+            "shutdown",
+            "pet mode request is received",
+            "pet mode open request is closed"
+          ],
+          "extra": [
+            "system startup",
+            "transition to state 93",
+            "move to state 95",
+            "proceed to state 105",
+            "go to state 105",
+            "slow charging becomes inactive?",
+            "remote mode deactivates?",
+            "initiate shutdown",
+            "received pet mode request?",
+            "enter state 105",
+            "transition to state 28",
+            "process pet mode request",
+            "perform shutdown",
+            "transition to state 105",
+            "execute shutdown"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.4166666666666667,
+          "recall": 0.45454545454545453,
+          "f1": 0.43478260869565216,
+          "missing": [
+            "switch to state 95 -> power-up is ready and vehicle charging/discharging mode is 2",
+            "power-up is ready and vehicle charging/discharging mode is 2 -> switch to state 105",
+            "switch to state 105 -> condition judgement",
+            "condition judgement -> in remote mode",
+            "switch to state 28 -> remote mode is closed",
+            "remote mode is closed -> shutdown",
+            "shutdown -> pet mode request is received",
+            "pet mode request is received -> switch to state 105",
+            "switch to state 28 -> pet mode open request is closed",
+            "pet mode open request is closed -> shutdown",
+            "shutdown -> battery soc is 20",
+            "battery soc is 20 -> switch to state 105"
+          ],
+          "extra": [
+            "system startup -> slow charging is active and front mcu high-voltage detection flag is 0?",
+            "move to state 95 -> power-up readiness is confirmed and vehicle charging/discharging mode is 2?",
+            "power-up readiness is confirmed and vehicle charging/discharging mode is 2? -> proceed to state 105",
+            "proceed to state 105 -> in remote mode?",
+            "go to state 105 -> slow charging becomes inactive?",
+            "slow charging becomes inactive? -> shift to state 28",
+            "shift to state 28 -> remote mode deactivates?",
+            "remote mode deactivates? -> initiate shutdown",
+            "initiate shutdown -> received pet mode request?",
+            "received pet mode request? -> enter state 105",
+            "transition to state 28 -> process pet mode request",
+            "process pet mode request -> perform shutdown",
+            "perform shutdown -> battery soc hits 20 ?",
+            "battery soc hits 20 ? -> transition to state 105"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0010",
+        "input_requirement": "1. central trading system: give out the successful trade information 2. security account management: save the trade information",
+        "gold_plantuml": "start\n\npartition \"Central trading system\"{\n  :Give out successful trade information;\n}\n\npartition \"Security account management\"{\n  :Save trade instruction;\n}\n\nstop",
+        "predicted_plantuml": "@startuml\npartition \"Central Trading System\" {\n  :Give out the successful trade information;\n}\npartition \"Security Account Management\" {\n  :Save the trade information;\n}\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.5,
+          "recall": 0.5,
+          "f1": 0.5,
+          "missing": [
+            "save trade instruction"
+          ],
+          "extra": [
+            "save the trade information"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "missing": [],
+          "extra": []
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity"
+        ]
+      }
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

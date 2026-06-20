@@ -1,0 +1,113 @@
+```json
+{
+  "summary": "The batch primarily fails due to a mismatch in activity granularity and a tendency to invent unstated actions. The prompt encourages decomposing compound actions, which leads to over-splitting single requirements into multiple sequential steps and inventing implicit actions (e.g., 'Select file', 'System starts up'). Conversely, it misses gold activities that represent distinct outcomes or states. These activity-level errors cascade into severe relation errors, as the generated control flow diverges entirely from the expected structure.",
+  "error_patterns": [
+    {
+      "name": "over_decomposition_of_activities",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0165",
+        "bp-0005",
+        "bp-0021",
+        "us-0200"
+      ],
+      "problem": "The prompt instructs to 'Decompose compound actions or sentences describing multiple sequential actions into separate, concise activity nodes,' which causes the model to split single, cohesive requirements (like 'configure the help center URL and topic mappings') into multiple sequential steps, or to break down single UI actions into granular sub-steps not present in the gold standard.",
+      "suggested_prompt_direction": "Refine the decomposition rule to clarify that a single requirement statement expressing a combined or concurrent action should remain a single activity node, and only decompose when the requirement explicitly describes a strict sequence of separate steps.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "invented_implicit_activities",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0200",
+        "rac-0005",
+        "rac-0019",
+        "lmc-0055"
+      ],
+      "problem": "The model frequently adds activities that are not explicitly stated in the requirement but are inferred as necessary prerequisites or system responses (e.g., 'Select file', 'System starts up', 'Compute Rotation Matrix', 'Exit'). The current instruction against inventing 'UI interactions, system validations' is not broad enough to prevent these other types of hallucinated steps.",
+      "suggested_prompt_direction": "Strengthen the grounding constraint to explicitly forbid inventing any implicit prerequisites, setup steps, or system responses not directly stated as an action or outcome in the requirement text.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "missing_conditional_outcomes",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0055",
+        "lmc-0002"
+      ],
+      "problem": "When a requirement implies a condition or validation, the model often omits the explicit conditional outcomes (e.g., 'Allowed'/'Not allowed', 'Not affect method') that are present in the gold standard, instead treating the condition as a simple branch or a note.",
+      "suggested_prompt_direction": "Instruct the model to explicitly model the outcomes or consequences of conditional branches as activity nodes when they are stated or strongly implied in the requirement, rather than leaving branches empty or collapsing the outcome into the branch label.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "cascading_relation_errors",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0165",
+        "bp-0005",
+        "bp-0021",
+        "rac-0019"
+      ],
+      "problem": "Because activities are over-decomposed or invented, the control flow between them is fundamentally altered, resulting in extra or missing relations. The model also struggles to correctly chain sequential branches, often flattening nested logic or incorrectly routing flow after a branch concludes.",
+      "suggested_prompt_direction": "Emphasize that correct control flow depends on identifying the correct activity granularity first. Add guidance on maintaining the structural integrity of nested control flows and ensuring that branches reconnect appropriately without inventing intermediate sequential steps.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "compound_vs_sequential_actions",
+      "related_failure_patterns": [
+        "over_decomposition_of_activities"
+      ],
+      "evidence_case_ids": [
+        "us-0165",
+        "bp-0021"
+      ],
+      "gap": "The prompt lacks a clear modeling principle for distinguishing between a compound action (which should be a single node) and a sequential description (which should be multiple nodes).",
+      "suggested_knowledge": "If a requirement describes actions joined by 'and' that are performed simultaneously or as part of a single configuration step, represent them as one activity node. Only decompose into multiple nodes if the requirement uses sequential markers (e.g., 'then', 'followed by') or explicitly lists discrete sequential steps."
+    },
+    {
+      "id": "modeling_conditional_outcomes",
+      "related_failure_patterns": [
+        "missing_conditional_outcomes"
+      ],
+      "evidence_case_ids": [
+        "lmc-0055",
+        "lmc-0002"
+      ],
+      "gap": "The prompt does not specify how to handle the positive and negative consequences of a condition when they are stated in the requirement.",
+      "suggested_knowledge": "When a requirement states a condition and specifies the resulting states or allowed/disallowed outcomes, model the condition as an if/else branch and the outcomes as explicit activity nodes within the respective branches, rather than omitting them or treating them as notes."
+    },
+    {
+      "id": "avoiding_inferred_steps",
+      "related_failure_patterns": [
+        "invented_implicit_activities"
+      ],
+      "evidence_case_ids": [
+        "us-0200",
+        "rac-0005",
+        "lmc-0055"
+      ],
+      "gap": "The current knowledge section warns against inventing UI interactions and system validations, but lacks a general principle against inferring other implicit steps.",
+      "suggested_knowledge": "Do not invent prerequisite steps (e.g., 'Select file', 'System starts up'), computational steps (e.g., 'Compute value'), or termination steps (e.g., 'Exit') unless they are explicitly stated as actions in the requirement. Stick strictly to the actions and states described."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not attempt to fix relation errors by hardcoding specific control flows; fix the activity identification first."
+  ]
+}
+```

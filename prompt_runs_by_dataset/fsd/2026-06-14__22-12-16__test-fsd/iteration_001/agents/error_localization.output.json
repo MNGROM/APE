@@ -1,0 +1,22 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for analyzing the requirement's logic structure, extracting actions at the correct granularity, and mapping them to PlantUML control flow constructs. This absence directly leads to misinterpreting conditional branches as parallel forks and arbitrarily splitting or merging actions."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking essential PlantUML syntax constraints and mapping rules. This causes the generator to confuse activity diagram syntax with state machine syntax, default to incorrect control flow constructs (e.g., using fork instead of switch/case), and fail to distinguish parallel execution from mutually exclusive alternatives."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, failing to enforce strict adherence to the provided requirements. This allows the generator to hallucinate speculative logic, infer implementation details, and deviate from the specified action granularity instead of faithfully representing only the explicitly stated steps."
+    },
+    {
+      "section": "agent task",
+      "section_problem": "The agent task section does not explicitly constrain the output to UML activity diagram semantics (e.g., using start/stop and action nodes), leaving the generator susceptible to misinterpreting requirement keywords and producing incorrect diagram types like state machines."
+    }
+  ]
+}
+```

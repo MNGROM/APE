@@ -1,0 +1,728 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 20
+- syntax_pass_rate: 0.9500
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.5109
+- node_recall: 0.4499
+- node_f1: 0.4785
+- relation_precision: 0.3476
+- relation_recall: 0.2922
+- relation_f1: 0.3175
+- plantuml_compilation_pass_rate: 0.9500
+- llm_element_evaluated: 20.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.8999
+- llm_node_recall: 0.8038
+- llm_node_f1: 0.8351
+- llm_relation_precision: 0.6516
+- llm_relation_recall: 0.5609
+- llm_relation_f1: 0.5879
+
+## Failure Types
+- missing_activity: 19
+- extra_activity: 19
+- missing_or_wrong_relation: 19
+- extra_or_wrong_relation: 18
+- wrong_parallel: 8
+- wrong_loop: 6
+- syntax_error: 1
+
+## Representative Failure Cases
+### fsd-0049
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: Missing required @startuml/@enduml wrapper | ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.4500
+- relation_f1: 0.2857
+- llm_element_status: success
+- llm_node_f1: 0.7727
+- llm_relation_f1: 0.4483
+- missing_nodes:
+  - embedded control system employs fsm
+  - orchestrate
+  - isrs
+  - priority-scheduled rtos tasks
+  - fail-safe policies
+  - photodiode-driven isr serviced upon timer interrupt
+  - continuously sample ambient light intensity
+  - < defined threshold?
+- extra_nodes:
+  - sample ambient light intensity (photodiode isr)
+  - light intensity below threshold?
+  - system in night mode?
+  - intrusion identified?
+  - synchronize with monitoring task
+  - check if ambient light returned to normal (exponential backoff)
+  - ambient light stabilized?
+- missing_relations:
+  - embedded control system employs fsm -> orchestrate
+  - orchestrate -> isrs [fork]
+  - orchestrate -> priority-scheduled rtos tasks [fork]
+  - orchestrate -> fail-safe policies [fork]
+  - isrs -> photodiode-driven isr serviced upon timer interrupt [merge]
+  - priority-scheduled rtos tasks -> photodiode-driven isr serviced upon timer interrupt [merge]
+  - fail-safe policies -> photodiode-driven isr serviced upon timer interrupt [merge]
+  - photodiode-driven isr serviced upon timer interrupt -> continuously sample ambient light intensity
+- input_excerpt:
+  The embedded control system employs a finite-state machine (FSM) to orchestrate interrupt service routines (ISRs), priority-scheduled RTOS tasks, and fail-safe policies. A photodiode-driven ISR, serviced upon a timer interrupt, continuously samples ambient light intensity. When this value falls below a defined threshold, a medium-priority task acquires a mutex to check if the system is in night mode. If confirmed, the system initializes an object detection algorithm; upon identifying an intrusion within the monitoring area, it triggers the infrared fill light via a GPIO command. Concurrently, a high-priority task enters a loop to capture infrared image data into a ring buffer, applying real-
+- generated_excerpt:
+  @startuml start  repeat   :Sample ambient light intensity (Photodiode ISR); repeat while (Light intensity below threshold?) is (Yes) ->No;  if (System in night mode?) then (Yes)   :Initialize object detection algorithm;   if (Intrusion identified?) then (Yes)     fork       :Trigger infrared fill light via GPIO command;       repeat         :Capture infrared image data into ring buffer;         :Apply real-time noise filtering;       repeat while (Object departed?) is (No)       ->Yes;     fork again       repeat         :Synchronize with monitoring task;         :Check if ambient light returned to normal (Exponential backoff);       repeat while (Ambient light stabilized?) is (No)       ->Y
+### pure-0001
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 1.0000
+- missing_nodes:
+  - conduct contingency studies
+  - determine amount and location of black start generation
+  - verify black start units annually
+  - number
+  - size
+  - availability
+  - location
+  - document cranking paths
+- extra_nodes:
+  - the caiso determines the amount and location of black start generation through contingency studies
+  - the caiso annually verifies the number size availability and location of black start units
+  - the caiso documents cranking paths and provides them to wecc upon request
+  - the caiso evaluates diverse fuel resources cranking paths communication unit capabilities and coordination with neighboring plans
+  - the planning process is coordinated with transmission owners and neighboring balancing authorities
+  - the caiso annually enters into rmr and interim black start contracts with qualified generators
+- missing_relations:
+  - conduct contingency studies -> determine amount and location of black start generation
+  - determine amount and location of black start generation -> verify black start units annually
+  - verify black start units annually -> number [fork]
+  - verify black start units annually -> size [fork]
+  - verify black start units annually -> availability [fork]
+  - verify black start units annually -> location [fork]
+  - number -> document cranking paths [merge]
+  - size -> document cranking paths [merge]
+- input_excerpt:
+  [Grid Planning Steps] Step 1: The CAISO determines the amount and location of Black Start Generation through contingency studies. Step 2: The CAISO annually verifies the number, size, availability, and location of Black Start units.Step 3: The CAISO documents Cranking Paths and provides them to WECC upon request.Step 4: The CAISO evaluates diverse fuel resources, cranking paths, communication, unit capabilities, and coordination with neighboring plans.Step 5: The planning process is coordinated with transmission owners and neighboring Balancing Authorities.Step 6: The CAISO annually enters into RMR and Interim Black Start Contracts with qualified generators.
+- generated_excerpt:
+  @startuml start :The CAISO determines the amount and location of Black Start Generation through contingency studies; :The CAISO annually verifies the number, size, availability, and location of Black Start units; :The CAISO documents Cranking Paths and provides them to WECC upon request; :The CAISO evaluates diverse fuel resources, cranking paths, communication, unit capabilities, and coordination with neighboring plans; :The planning process is coordinated with transmission owners and neighboring Balancing Authorities; :The CAISO annually enters into RMR and Interim Black Start Contracts with qualified generators; stop @enduml
+### lmc-0024
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.4000
+- llm_relation_f1: 0.2222
+- missing_nodes:
+  - in inner loop pitch regulator
+  - command transient changes in angular pitch acceleration <= 50 deg/sec2/sec
+- extra_nodes:
+  - command angular pitch acceleration change
+  - transient change > 50 deg/sec2/sec?
+  - reject command
+  - allow command
+- missing_relations:
+  - in inner loop pitch regulator -> command transient changes in angular pitch acceleration <= 50 deg/sec2/sec
+- input_excerpt:
+  7.	The Inner Loop Pitch Regulator Shall not command transient changes in angular pitch acceleration greater than 50 deg/sec2/sec.
+- generated_excerpt:
+  @startuml start :Command angular pitch acceleration change; if (Transient change > 50 deg/sec2/sec?) then (Yes) :Reject command; else (No) :Allow command; endif stop @enduml
+### bp-0005
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1739
+- relation_f1: 0.2143
+- llm_element_status: success
+- llm_node_f1: 0.9032
+- llm_relation_f1: 0.4000
+- missing_nodes:
+  - choose info objects
+  - open characteristics info object catalog
+  - open zd_pgroup context menu
+  - select maintain master data
+  - enter product group
+  - enter short description
+  - choose continue
+  - more values?
+- extra_nodes:
+  - choose info objects in the modeling area
+  - choose maintain master data from the context menu of info object product group (zd_pgroup)
+  - enter product group and short description then choose continue
+  - more values to enter?
+  - save entries and return to the info object tree
+  - choose maintain master data from the context menu of info object channel (zd_chan)
+  - enter channel and short description then choose continue
+  - more characteristics to process?
+- missing_relations:
+  - choose info objects -> open characteristics info object catalog
+  - open characteristics info object catalog -> open zd_pgroup context menu
+  - open zd_pgroup context menu -> select maintain master data
+  - select maintain master data -> choose execute
+  - choose create -> enter product group [fork]
+  - choose create -> enter short description [fork]
+  - enter product group -> choose continue [merge]
+  - enter short description -> choose continue [merge]
+- input_excerpt:
+  5.	Creating Master Data Directly in the System1. In the Modeling area of the Data Warehousing Workbench, choose Info Objects. 2. In the Info Object catalog for characteristics, choose Maintain master data from the context menu of your Info Object Product Group (ZD_PGROUP).3. Choose Execute.4. Choose Create.5. Enter DS10 as Product Group and Computer as the Short description and choose Continue.6. Repeat steps 4 and 5 with the following values:7. Save your entries and return to the Info Object tree.8. Repeat steps 2-7 for the characteristic Channel (ZD_CHAN) with the following values:
+- generated_excerpt:
+  @startuml start :Choose Info Objects in the Modeling area; :Choose Maintain master data from the context menu of Info Object Product Group (ZD_PGROUP); :Choose Execute; repeat   :Choose Create;   :Enter Product Group and Short description, then choose Continue; repeat while (More values to enter?) is (yes) -> no; :Save entries and return to the Info Object tree; repeat   :Choose Maintain master data from the context menu of Info Object Channel (ZD_CHAN);   :Choose Execute;   repeat     :Choose Create;     :Enter Channel and Short description, then choose Continue;   repeat while (More values to enter?) is (yes)   -> no;   :Save entries and return to the Info Object tree; repeat while (More c
+### pure-0054
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2353
+- relation_f1: 0.1053
+- llm_element_status: success
+- llm_node_f1: 0.8205
+- llm_relation_f1: 0.7111
+- missing_nodes:
+  - donor/primary contact has valid donation number
+  - arrive at receiving dock
+  - see view acquisitions
+  - locate donation request
+  - see add item to inventory
+  - enter information
+  - add new item?
+  - way to add item
+- extra_nodes:
+  - donor or primary contact arrives at receiving dock with a valid donation number
+  - receiving associate locates donation request in the system
+  - receiving associate enters information about each donated item into the donation request
+  - item entry method
+  - remove item by setting received quantity to zero
+  - receiving associate prints a donation receipt
+  - receiving associate optionally writes information to the receipt by hand
+  - receiving associate prints item tags for unique and stock items
+- missing_relations:
+  - arrive at receiving dock -> see view acquisitions
+  - see view acquisitions -> locate donation request
+  - locate donation request -> display donation request information
+  - display donation request information -> see add item to inventory
+  - see add item to inventory -> enter information
+  - enter information -> add new item?
+  - add new item? -> way to add item [yes]
+  - way to add item -> click add item button [case click]
+- input_excerpt:
+  1. Donor or Primary Contact arrives at receiving dock with a valid donation number 2. Receiving Associate locates donation request in the system (see View Acquisitions) 3. System displays donation request information 4. Receiving Associate enters information about each donated item into the donation request (see Add Item to Inventory) 4.1. A new item can be added to the list by cloning an existing item 4.2. A new item can be added by clicking the Add Item button 4.3. An item can be removed by setting the received quantity to zero 5. Receiving Associate prints a donation receipt 6. Receiving Associate optionally writes information to the receipt by hand such as condition 7. Donation receipt i
+- generated_excerpt:
+  @startuml start :Donor or Primary Contact arrives at receiving dock with a valid donation number; :Receiving Associate locates donation request in the system; :System displays donation request information; :Receiving Associate enters information about each donated item into the donation request; switch (Item entry method) case (Clone existing item)   :Add new item by cloning an existing item; case (Click Add Item button)   :Add new item by clicking the Add Item button; endswitch :Remove item by setting received quantity to zero; :Receiving Associate prints a donation receipt; :Receiving Associate optionally writes information to the receipt by hand; :Donation receipt is given to the Donor or
+### lmc-0052
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2500
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 1.0000
+- missing_nodes:
+  - theta = +/- pi/2 radians?
+  - not invertible
+  - invertible
+- extra_nodes:
+  - check theta value
+  - matrix is invertible
+  - matrix is not invertible
+- missing_relations:
+  - rotation matrix dcm321 -> theta = +/- pi/2 radians?
+  - theta = +/- pi/2 radians? -> not invertible [yes]
+  - theta = +/- pi/2 radians? -> invertible [no]
+  - not invertible -> invertible [merge]
+- input_excerpt:
+  4.	The Rotation Matrix, DCM321, shall be invertible with the exception of the case where theta = +/- pi/2 radians.
+- generated_excerpt:
+  @startuml start :Invert Rotation Matrix DCM321; switch (Check theta value) case (theta != +/- pi/2 radians)   :Matrix is invertible; case (theta = +/- pi/2 radians)   :Matrix is not invertible; endswitch stop @enduml
+### bp-0014
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2759
+- relation_f1: 0.0606
+- llm_element_status: success
+- llm_node_f1: 0.6250
+- llm_relation_f1: 0.6471
+- missing_nodes:
+  - select start
+  - select programs
+  - select businessobjects xi 3.1
+  - select businessobjects enterprise
+  - select businessobjects lifecycle manager
+  - lifecycle manager login screen appears
+  - go to system field
+  - enter cms name
+- extra_nodes:
+  - select start > programs > businessobjects xi 3.1 > businessobjects enterprise > businessobjects lifecycle manager
+  - enter the name of the central management server (cms) in the system field
+  - authentication type
+  - authenticate with ldap credentials
+  - authenticate with windows ad credentials
+- missing_relations:
+  - select start -> select programs
+  - select programs -> select businessobjects xi 3.1
+  - select businessobjects xi 3.1 -> select businessobjects enterprise
+  - select businessobjects enterprise -> select businessobjects lifecycle manager
+  - select businessobjects lifecycle manager -> lifecycle manager login screen appears
+  - lifecycle manager login screen appears -> go to system field
+  - go to system field -> enter cms name
+  - enter cms name -> enter username and password
+- input_excerpt:
+  14.	log into the LifeCycle Manager tool.To log into the LifeCycle Manager tool, complete the following steps:1. Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager. The LifeCycle Manager login screen appears.2. In the System field, enter the name of the Central Management Server (CMS) on which the LifeCycle Manager tool is installed.3. Enter the user name and password.4. Select the appropriate authentication method from the Authentication drop-down list.The LifeCycle Manager tool supports the following authentication types:• Enterprise authentication - This authentication type requires a user name and a password that are recognize
+- generated_excerpt:
+  @startuml start :Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager; :Enter the name of the Central Management Server (CMS) in the System field; :Enter the user name and password; :Select authentication method from the Authentication drop-down list; switch (Authentication type) case (Enterprise)   :Authenticate with Enterprise credentials; case (LDAP)   :Authenticate with LDAP credentials; case (Windows AD)   :Authenticate with Windows AD credentials; endswitch :Click Log on; stop @enduml
+### bp-0021
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3704
+- relation_f1: 0.1429
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 0.5143
+- missing_nodes:
+  - click new job
+  - the list of jobs is displayed
+  - select a job from list
+  - cick create
+  - information is displayed
+  - name
+  - keywords
+  - description
+- extra_nodes:
+  - the list of jobs in the promotionjob folder is displayed
+  - select a job from the job list and click create
+  - the name keywords and description of the job are displayed
+  - modify fields if required
+  - in the save job in field browse and select the folder
+- missing_relations:
+  - log in lifecycle manager tool -> go to promotion jobs home page
+  - click new job -> click the copy an existing job option
+  - click the copy an existing job option -> the list of jobs is displayed
+  - the list of jobs is displayed -> select a job from list
+  - select a job from list -> cick create
+  - cick create -> information is displayed
+  - information is displayed -> name [fork]
+  - information is displayed -> keywords [fork]
+- input_excerpt:
+  21.	create a new job by copying an existing job.To create a new job by copying an existing job, complete the following steps:1. Log into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, click New Job.3. Click the Copy an Existing Job option. The list of jobs in the PromotionJob folder is displayed4. Select a job from the job list, and click Create. The name, keywords, and description of the job are displayed. You can modify these fields, if required. However, you cannot change the source system.5. In the Save Job in field, browse and select the folder in which you want to save the job, and click Create.A new job is created.
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :In the "Promotion Jobs" home page, click New Job; :Click the Copy an Existing Job option; :The list of jobs in the PromotionJob folder is displayed; :Select a job from the job list, and click Create; :The name, keywords, and description of the job are displayed; :Modify fields if required; :In the Save Job in field, browse and select the folder; :Click Create; :A new job is created; stop @enduml
+### pure-0015
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4118
+- relation_f1: 0.1053
+- llm_element_status: success
+- llm_node_f1: 0.9189
+- llm_relation_f1: 0.5417
+- missing_nodes:
+  - initiate operations
+  - record all self_tests failures
+  - connect to last registered mobile network?
+  - succeed?
+  - display network name
+  - give audible indication
+  - can receive calls by
+  - cab radio telephone number
+- extra_nodes:
+  - connection of the cab radio to an authorised mobile network (last registered network where available)
+  - record all self-test failures in the train-borne recorder
+  - connection successful?
+  - display network name on the mmi
+  - give audible indication of successful connection
+  - enable reception of all calls (telephone number engine number group call numbers railway emergency calls)
+  - manual network selection procedure may be initiated by the driver
+  - disconnect the cab radio from the mobile network
+- missing_relations:
+  - power up cab radio -> initiate operations
+  - initiate operations -> automatic self-testing [fork]
+  - initiate operations -> automatic pre-set loudspeaker volume selection [fork]
+  - initiate operations -> other on-train system registration [fork]
+  - initiate operations -> record all self_tests failures [fork]
+  - record all self_tests failures -> connect to last registered mobile network?
+  - connect to last registered mobile network? -> succeed? [yes]
+  - succeed? -> display network name [yes]
+- input_excerpt:
+  5.2.3.1 Powering up the Cab radio will initiate the following: − automatic self-testing; (M) − automatic selection of the pre-set loudspeaker volume; (M) − registration with other on-train systems, such as ERTMS/ETCS; (M) − all failures of self-tests should be recorded in the train-borne recorder; (O) − connection of the Cab radio to an authorised mobile network. This shall be the network to which the mobile was last registered (where available); (M) − if connection is successful, the name of the network shall be displayed on the MMI and an audible indication of successful connection shall be given; (M) − if connection is not successful, an audible and visual indication shall be provided. (M
+- generated_excerpt:
+  @startuml start :Power up the Cab radio; fork   :Automatic self-testing; fork again   :Automatic selection of the pre-set loudspeaker volume; fork again   :Registration with other on-train systems (e.g. ERTMS/ETCS); fork again   :Connection of the Cab radio to an authorised mobile network   (last registered network where available); end fork :Record all self-test failures in the train-borne recorder; if (Connection successful?) then (Yes)   :Display network name on the MMI;   :Give audible indication of successful connection;   :Enable reception of all calls   (telephone number, engine number, group call numbers, Railway emergency calls); else (No)   :Provide audible and visual indication;  
+### bp-0013
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4615
+- relation_f1: 0.2581
+- llm_element_status: success
+- llm_node_f1: 0.7333
+- llm_relation_f1: 0.4000
+- missing_nodes:
+  - have existing job?
+  - create a new job
+  - add infoobjects
+  - promote all dependencies?
+  - use manage dependencies
+  - open type drop-down list
+  - select dependent want to promote
+  - click import biar tab
+- extra_nodes:
+  - add infoobjects to the job
+  - promote all dependents?
+  - use manage dependencies option to select dependents
+  - select type of dependents from type drop-down list
+  - connect to the source system and create a job or copy an existing job
+  - use manage dependencies option to select required dependents
+- missing_relations:
+  - have existing job? -> create a new job [no]
+  - have existing job? -> copy existing job [yes]
+  - create a new job -> add infoobjects
+  - add infoobjects -> promote all dependencies?
+  - promote all dependencies? -> use manage dependencies [yes]
+  - promote all dependencies? -> source and the destination systems connected? [no]
+  - use manage dependencies -> open type drop-down list
+  - open type drop-down list -> select dependent want to promote
+- input_excerpt:
+  13.	promote a job when the source and the destination systems are connected, complete the following steps:1. Connect to the source system.2. Create a new job. You can also copy an existing job.3. Add infoobjects to the job you want to promote. If you do not want to promote all the dependents of the infoobjects, you can use the Manage Dependencies option to select the dependents you want to promote.Note:You can select the type of dependents you want to promote from the Type drop-down list.4. Promote the job.Promoting a job when the source system and the destination system are not connected18 To promote a job when the source and the destination systems are not connected, complete the following
+- generated_excerpt:
+  @startuml start if (Source and destination systems connected?) then (Yes)   :Connect to the source system;   :Create a new job or copy an existing job;   :Add infoobjects to the job;   if (Promote all dependents?) then (No)     :Use Manage Dependencies option     to select dependents;     :Select type of dependents     from Type drop-down list;   else (Yes)   endif   :Promote the job; else (No)   :Connect to the source system   and create a job or copy an existing job;   :Add infoobjects to the job;   :Use Manage Dependencies option   to select required dependents;   :Select type of dependents   from Type drop-down list;   :Export infoobjects with   Output to BIAR file as destination;   :Imp
+### fsd-0104
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5405
+- relation_f1: 0.4000
+- llm_element_status: success
+- llm_node_f1: 0.6829
+- llm_relation_f1: 0.2800
+- missing_nodes:
+  - thermal management controller operates as state machine within rtos
+  - govern pwm fans
+  - govern liquid-cooling loops using multi-threaded architecture
+  - high-priority isr triggered by pmic/dedicated temperature sensors
+  - abnormal temperature rise?
+  - initiate safety protocols
+  - employ primary control loop
+  - spawn concurrent tasks from priority queue
+- extra_nodes:
+  - initiate safety protocols upon detecting abnormal temperature rise
+  - spawn concurrent task from priority queue to monitor temperature in fixed cycles
+  - log anomaly to structured audit trail within ring buffer (protected by mutex)
+  - asynchronously flush processing results to non-volatile memory under i/o budget constraints
+  - watchdog timer supervision failed?
+- missing_relations:
+  - thermal management controller operates as state machine within rtos -> govern pwm fans [fork]
+  - thermal management controller operates as state machine within rtos -> govern liquid-cooling loops using multi-threaded architecture [fork]
+  - govern pwm fans -> high-priority isr triggered by pmic/dedicated temperature sensors [merge]
+  - govern liquid-cooling loops using multi-threaded architecture -> high-priority isr triggered by pmic/dedicated temperature sensors [merge]
+  - high-priority isr triggered by pmic/dedicated temperature sensors -> abnormal temperature rise?
+  - abnormal temperature rise? -> initiate safety protocols [yes]
+  - abnormal temperature rise? -> all critical safety actions verified [no]
+  - initiate safety protocols -> employ primary control loop
+- input_excerpt:
+  Operating as a state machine within the RTOS, the thermal management controller governs PWM fans and liquid-cooling loops using a multi-threaded architecture. A high-priority ISR, triggered by the PMIC or dedicated temperature sensors, initiates safety protocols upon detecting an abnormal temperature rise. The system employs a primary control loop which, upon reaching an early warning threshold, spawns concurrent tasks from a priority queue to actively monitor the temperature in fixed cycles; monitoring ceases only when thermal stability is confirmed, otherwise it escalates. If the temperature remains below this threshold but exhibits significant fluctuation, a lower-priority task logs the a
+- generated_excerpt:
+  @startuml start :Initiate safety protocols upon detecting abnormal temperature rise; if (Early warning threshold reached?) then (Yes)   fork     :Spawn concurrent task from priority queue to monitor temperature in fixed cycles;   fork again     :Spawn concurrent task from priority queue to monitor temperature in fixed cycles;   fork again     :Spawn concurrent task from priority queue to monitor temperature in fixed cycles;   end fork   repeat     :Monitor temperature in fixed cycles;   repeat while (Thermal stability confirmed?) is (No)   ->Yes;   :Escalate; elseif (Temperature below threshold but significant fluctuation?) then (Yes)   :Log anomaly to structured audit trail within ring buff
+### pure-0037
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5882
+- relation_f1: 0.8000
+- llm_element_status: success
+- llm_node_f1: 0.9524
+- llm_relation_f1: 0.9474
+- missing_nodes:
+  - see view inventory
+  - system validates data
+  - system updates information
+  - back to department screen
+- extra_nodes:
+  - system validates the department data
+  - system updates the department information
+  - user is taken back to the department screen
+- missing_relations:
+  - see view inventory -> navigate to department
+  - system validates data -> system updates information
+- input_excerpt:
+  2. Edit Department 2.1. User navigates to a Department (see View Inventory) 2.2. System displays the Edit Department button 2.3. User clicks the Edit Department button 2.4. System displays the Department data 2.5. User edits Department data 2.6. System validates the Department data 2.7. System updates the Department information 2.8. User is taken back to the Department screen
+- generated_excerpt:
+  @startuml start :User navigates to a Department; :System displays the Edit Department button; :User clicks the Edit Department button; :System displays the Department data; :User edits Department data; :System validates the Department data; :System updates the Department information; :User is taken back to the Department screen; stop @enduml
+### lmc-0020
+- dataset: lmc
+- failure_types: extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.7143
+- llm_relation_f1: 0.3750
+- extra_nodes:
+  - acceleration > 50 deg/sec ?
+  - command duration exceeds limit
+  - limit yaw acceleration command
+  - regulator active?
+- missing_relations:
+  - in inner loop yaw regulator -> durations > 100 frames?
+  - durations > 100 frames? -> command angular yaw accelerations <= 50 deg/sec2 [yes]
+- input_excerpt:
+  3.	The Inner Loop Yaw Regulator Shall not command angular yaw accelerations greater than the capability of the system (50 deg/sec2) for durations exceeding 100 frames (1 second @ 100 hz).
+- generated_excerpt:
+  @startuml start :Enter Inner Loop Yaw Regulator; repeat   :Command angular yaw acceleration;   if (Acceleration > 50 deg/sec²?) then (Yes)     :Command duration exceeds limit;     if (Duration > 100 frames?) then (Yes)       :Limit yaw acceleration command;     else (No)     endif   else (No)   endif repeat while (Regulator active?) is (Yes) ->No; stop @enduml
+### rac-0012
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6061
+- relation_f1: 0.3404
+- llm_element_status: success
+- llm_node_f1: 0.9524
+- llm_relation_f1: 0.6032
+- missing_nodes:
+  - condition judgement
+  - shutdown
+  - high-voltage shutdown request charging/discharging =2
+  - wait 0.8s
+- extra_nodes:
+  - system startup
+  - move to state 175
+  - shut down
+  - high-voltage shutdown request detected (value=2)?
+  - wait 0.8 seconds
+  - enter state 175
+  - high-voltage shutdown request (value=2) exists?
+  - pause for 0.8 seconds
+- missing_relations:
+  - switch to state 153 -> bms-fast charger handshake flag=0 and front mcu high-voltage flag=0
+  - enter state 155 -> condition judgement
+  - condition judgement -> pre-charge failure occurs [case pre-charge failure occurs]
+  - pre-charge failure occurs -> switch to state 175
+  - condition judgement -> high-voltage shutdown request charging/discharging =2 [case high-voltage shutdown request charging/discharging =2]
+  - high-voltage shutdown request charging/discharging =2 -> wait 0.8s
+  - wait 0.8s -> switch to state 175
+  - condition judgement -> ignition switch=2 [case ignition switch=2]
+- input_excerpt:
+  After the system starts up: - If charging is active (charging=1) and the front MCU high-voltage detection flag is 0, transition to state 153. - If the BMS-fast charger handshake flag is 0 and the front MCU high-voltage flag is 0, enter state 155.  While in state 155: 1. If pre-charge failure occurs, move to state 175. If fast charging remains inactive after this, shut down and end the process. 2. If a high-voltage shutdown request (for charging/discharging) is detected (value=2), wait 0.8 seconds before entering state 175. If fast charging is inactive afterward, shut down and end. 3. If the ignition switch status is 2, remain in state 155. If a high-voltage shutdown request (value=2) exists 
+- generated_excerpt:
+  @startuml start :System Startup;  if (Charging=1 and Front MCU High-Voltage Detection Flag=0?) then (Yes)   :Transition to State 153;   stop elseif (BMS-Fast Charger Handshake Flag=0 and Front MCU High-Voltage Flag=0?) then (Yes)   :Enter State 155; else (No)   stop endif  repeat   if (Pre-charge failure?) then (Yes)     :Move to State 175;     if (Fast charging inactive?) then (Yes)       :Shut down;       stop     else (No)     endif   elseif (High-voltage shutdown request detected (value=2)?) then (Yes)     :Wait 0.8 seconds;     :Enter State 175;     if (Fast charging inactive?) then (Yes)       :Shut down;       stop     else (No)     endif   elseif (Ignition switch status=2?) then (Yes
+### fsd-0001
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6341
+- relation_f1: 0.4286
+- llm_element_status: success
+- llm_node_f1: 0.8000
+- llm_relation_f1: 0.5357
+- missing_nodes:
+  - thermal management controller executes as state machine on rtos
+  - govern pwm fans
+  - govern liquid-cooling loop
+  - external ambient exceeds set threshold?
+  - sensor over-temperature confirmed?
+  - priority-based task manages
+  - timer interrupt drives periodic task
+  - temperature descends?
+- extra_nodes:
+  - confirm over-temperature
+  - temperature descends within defined window?
+  - manage fault events with bounded retry and exponential backoff
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller executes as state machine on rtos -> govern liquid-cooling loop [fork]
+  - govern pwm fans -> external ambient exceeds set threshold? [merge]
+  - govern liquid-cooling loop -> external ambient exceeds set threshold? [merge]
+  - external ambient exceeds set threshold? -> temperature sensor isr triggered [yes]
+  - external ambient exceeds set threshold? -> primary sensor reading erroneous? [no]
+  - sensor over-temperature confirmed? -> priority-based task manages [yes]
+  - priority-based task manages -> activate multiple pwm fans
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fans and a liquid-cooling loop. A temperature sensor ISR, triggered when the external ambient exceeds a set threshold, initiates a data validation sequence; if the primary sensor reading is deemed erroneous, the system fails over to a redundant sensor path. Upon confirmed over-temperature from either sensor, the controller activates multiple PWM fans, managed by a priority-based task, while a separate periodic task, driven by a timer interrupt, monitors the thermal trajectory. If the temperature fails to descend within a defined window, a higher-priority task initializes the liquid-cooling loop to augmen
+- generated_excerpt:
+  @startuml start :Temperature sensor ISR triggered; :Initiate data validation sequence; if (Primary sensor reading erroneous?) then (yes)   :Fail over to redundant sensor path; else (no) endif :Confirm over-temperature; fork   :Activate multiple PWM fans (priority-based task); fork again   :Monitor thermal trajectory (periodic task); end fork if (Temperature descends within defined window?) then (yes) else (no)   :Initialize liquid-cooling loop (higher-priority task); endif repeat   :Poll for temperature fluctuations; repeat while (Values re-enter safe operating range?) is (no) ->yes; fork   :Log operational data to ring buffer;   :Manage fault events with bounded retry and exponential backof
+### rac-0009
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6500
+- relation_f1: 0.5333
+- llm_element_status: success
+- llm_node_f1: 0.8636
+- llm_relation_f1: 0.6667
+- missing_nodes:
+  - high-voltage shutdown request charging/discharging is 2
+  - condition judgement
+  - ignition switch is 2 and front mcu state unchanged
+  - shutdown
+  - ignition switch is 2 and onboard charger command is 1
+  - command becomes 4
+  - remote mode is active and front mcu state unchanged
+  - pet mode request is received
+- extra_nodes:
+  - system starts up
+  - high-voltage shutdown request = 2?
+  - condition?
+  - system shuts down
+  - onboard charger command = 4?
+- missing_relations:
+  - condition judgement -> ignition switch is 2 and front mcu state unchanged [case 1]
+  - ignition switch is 2 and front mcu state unchanged -> stay in state 127
+  - condition judgement -> ignition switch is 2 and onboard charger command is 1 [case 2]
+  - ignition switch is 2 and onboard charger command is 1 -> stay in state 127
+  - stay in state 127 -> command becomes 4
+  - command becomes 4 -> switch to state 12 [yes]
+  - switch to state 12 -> ignition switch is off and slow charging is inactive
+  - condition judgement -> remote mode is active and front mcu state unchanged [case 3]
+- input_excerpt:
+  After the system starts up, if slow charging is active, it enters power-up mode. Then, if the high-voltage shutdown request (for charging or discharging) is set to 2, it switches to state 127. Once in state 127, the following actions apply based on conditions:  1. If the ignition switch is at position 2 and the front MCU state remains unchanged, the system stays in state 127.    a. Should slow charging become inactive and a timeout of 2.2 seconds occur, it switches to state 12. If the ignition switch is off at this point, the system shuts down and ends.    b. Similarly, if slow charging is inactive and the BMS self-check counter reads 1, it switches to state 12. Again, if the ignition switch
+- generated_excerpt:
+  @startuml start :System starts up; if (Slow charging active?) then (Yes)   :Enter power-up mode;   if (High-voltage shutdown request = 2?) then (Yes)     :Switch to state 127;     switch (Condition?)     case (Ignition switch at position 2 & front MCU state unchanged)       :Stay in state 127;       if (Slow charging inactive & timeout 2.2s?) then (Yes)         :Switch to state 12;         if (Ignition switch off?) then (Yes)           :System shuts down;           stop         endif       elseif (Slow charging inactive & BMS self-check counter = 1?) then (Yes)         :Switch to state 12;         if (Ignition switch off?) then (Yes)           :System shuts down;           stop         endif
+### fsd-0103
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6512
+- relation_f1: 0.3273
+- llm_element_status: success
+- llm_node_f1: 0.8511
+- llm_relation_f1: 0.4068
+- missing_nodes:
+  - thermal management controller implemented as deterministic state machine on rtos
+  - govern pwm fan speeds
+  - govern liquid-cooling pump actuators
+  - pmic/fused sensor input indicate ambient temperature > safety threshold?
+  - scheduler initializes high-priority tasks
+  - alarm unit that signals event
+  - data acquisition loop protected by mutex for sensor data integrity
+  - run continuously
+- extra_nodes:
+  - initialize high-priority tasks
+  - signal alarm event
+  - acquire data (mutex protected)
+  - terminate data acquisition loop
+- missing_relations:
+  - thermal management controller implemented as deterministic state machine on rtos -> govern pwm fan speeds [fork]
+  - thermal management controller implemented as deterministic state machine on rtos -> govern liquid-cooling pump actuators [fork]
+  - govern pwm fan speeds -> pmic/fused sensor input indicate ambient temperature > safety threshold? [merge]
+  - govern liquid-cooling pump actuators -> pmic/fused sensor input indicate ambient temperature > safety threshold? [merge]
+  - pmic/fused sensor input indicate ambient temperature > safety threshold? -> scheduler initializes high-priority tasks [yes]
+  - pmic/fused sensor input indicate ambient temperature > safety threshold? -> completion of all fault-handling tasks [no]
+  - data acquisition unit logs timestamped readings to ring buffer -> data acquisition loop protected by mutex for sensor data integrity [merge]
+  - alarm unit that signals event -> data acquisition loop protected by mutex for sensor data integrity [merge]
+- input_excerpt:
+  The thermal management controller, implemented as a deterministic state machine on the RTOS, governs PWM fan speeds and liquid-cooling pump actuators. Upon the PMIC or a fused sensor input indicating an ambient temperature exceeding the safety threshold, the scheduler initializes high-priority tasks, including a data acquisition unit that logs timestamped readings to a ring buffer and an alarm unit that signals the event. This data acquisition loop, protected by a mutex for sensor data integrity, runs continuously until the temperature normalizes, at which point it terminates and a final alarm is issued. Should the fault persist without external intervention via a CAN command, secondary task
+- generated_excerpt:
+  @startuml start :Initialize high-priority tasks; fork   :Log timestamped readings to ring buffer; fork again   :Signal alarm event; end fork  repeat   :Acquire data (mutex protected); repeat while (Temperature normalized?) is (No) -> Yes;  :Terminate data acquisition loop; :Issue final alarm;  if (Fault persists without external CAN command intervention?) then (Yes)   fork     :Run external communication module;     if (Establish link via exponential backoff?) then (Success)       :Transmit CRC-protected status packet;     else (Failure)       :Trigger emergency cooling module maximum cooling profile;     endif   fork again     :Run emergency cooling module;   end fork else (No) endif  :Re-e
+### rac-0020
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7000
+- relation_f1: 0.5287
+- llm_element_status: success
+- llm_node_f1: 0.8116
+- llm_relation_f1: 0.3596
+- missing_nodes:
+  - remote mode is disabled
+  - shutdown
+  - slow charging is inactive
+  - fast charging is inactive
+  - battery soc=20
+  - condition judgement
+  - remote mode is enabled
+  - slow charging is active
+- extra_nodes:
+  - system start up
+  - remote mode handling
+  - shut down and exit
+  - slow charging handling
+  - fast charging handling
+  - fourth step
+  - soc = 20?
+  - additional checks
+- missing_relations:
+  - switch to remote power-up state -> remote mode is disabled
+  - switch to state 28 -> gw_trigger=0 and dcdc state=3
+  - remote mode enabled -> slow charging active [no]
+  - switch to slow charging power-up state -> slow charging is inactive
+  - switch to fast charging power-up state -> fast charging is inactive
+  - fast charging active -> gw_trigger=2 [no]
+  - switch to state 10 -> battery soc=20
+  - battery soc=20 -> switch to state 28 [yes]
+- input_excerpt:
+  After the system starts up, the following steps occur:  First, for remote mode handling: if remote mode is enabled, switch to the remote power-up state; if disabled, switch to state 49. Then, if GW_trigger equals 2 and battery SOC is 20, switch to state 28; if GW_trigger equals 0 and DCDC state is 3, shut down and exit.  Next, for slow charging handling: if slow charging is active, switch to the slow charging power-up state; if inactive, switch to state 129. Then, if GW_trigger equals 2 and SOC is 20, switch to state 28; if GW_trigger equals 0 and DCDC state is 3, shut down and exit.  Then, for fast charging handling: if fast charging is active, switch to the fast charging power-up state; if
+- generated_excerpt:
+  @startuml start :System Start Up;  :Remote Mode Handling; if (Remote mode enabled?) then (Yes)   :Switch to remote power-up state; else (No)   :Switch to state 49; endif if (GW_trigger = 2 and battery SOC = 20?) then (Yes)   :Switch to state 28; elseif (GW_trigger = 0 and DCDC state = 3?) then (Yes)   :Shut down and exit;   stop else (No) endif  :Slow Charging Handling; if (Slow charging active?) then (Yes)   :Switch to slow charging power-up state; else (No)   :Switch to state 129; endif if (GW_trigger = 2 and SOC = 20?) then (Yes)   :Switch to state 28; elseif (GW_trigger = 0 and DCDC state = 3?) then (Yes)   :Shut down and exit;   stop else (No) endif  :Fast Charging Handling; if (Fast ch
+### rac-0015
+- dataset: rac
+- failure_types: missing_activity, extra_activity, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7895
+- relation_f1: 0.8475
+- llm_element_status: success
+- llm_node_f1: 0.9767
+- llm_relation_f1: 0.7765
+- missing_nodes:
+  - condition judgement
+  - shutdown
+  - after 30s?
+- extra_nodes:
+  - system starts up
+  - condition
+  - fast charging becomes inactive?
+  - shut down
+  - wait 30 seconds
+- missing_relations:
+  - switch to state 185 -> after 30s?
+  - after 30s? -> switch to state 180
+- input_excerpt:
+  After the system starts up, if fast charging is active, it enters the "power-up" state. If a high-voltage shutdown request equals 2 and the DCDC state is 1, the system then enters state 175. Following this:  1.  If the DCDC state becomes 0, switch to state 185. Then:     a.  If fast charging becomes inactive, switch to state 180. Shut down and end.     b.  If the power battery relay control equals 0, switch to state 180. Shut down and end.     c.  If a pre-charge failure occurs, switch to state 180. If fast charging is also inactive at this point, shut down and end.  2.  If the DCDC state is 0 and the insulation resistance is low, switch to state 185. After 30 seconds, switch to state 180. I
+- generated_excerpt:
+  @startuml start :System starts up; if (Fast charging active?) then (yes)   :Enter "power-up" state;   if (High-voltage shutdown request == 2\nand DCDC state == 1?) then (yes)     :Enter state 175;          switch (Condition)     case (DCDC state becomes 0)       :Switch to state 185;       if (Fast charging becomes inactive?) then (yes)         :Switch to state 180;         :Shut down;         stop       elseif (Power battery relay control == 0?) then (yes)         :Switch to state 180;         :Shut down;         stop       elseif (Pre-charge failure occurs?) then (yes)         :Switch to state 180;         if (Fast charging is inactive?) then (yes)           :Shut down;           stop     
+### lmc-0044
+- dataset: lmc
+- failure_types: missing_activity, missing_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.8889
+- relation_f1: 0.8571
+- llm_element_status: success
+- llm_node_f1: 0.9231
+- llm_relation_f1: 0.9231
+- missing_nodes:
+  - in cockpit
+- missing_relations:
+  - in cockpit -> autopilot engage switch
+- input_excerpt:
+  Roll Autopilot shall engage when the pilot selects the autopilot engage switch in the cockpit and disengage when the switch is deselected. When not engaged, the command to the roll actuator shall be zero.
+- generated_excerpt:
+  @startuml start switch (Autopilot engage switch) case (Selected)   :Engage Roll Autopilot; case (Deselected)   :Disengage Roll Autopilot;   :Set roll actuator command to zero; endswitch stop @enduml
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

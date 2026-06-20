@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "append",
+      "content": "7. Decompose compound sentences and conjunctive actions: when a single sentence contains multiple actions connected by 'and', 'then', or commas, or describes sequential UI steps, model each action as a separate activity node in sequence rather than merging them into one node.\n8. Decompose compound conditions: when a condition contains multiple criteria joined by 'and', model each criterion as a separate, nested if/endif block to preserve the step-by-step evaluation logic, rather than collapsing them into a single flat branch.\n9. Actively identify concurrency: look for keywords indicating simultaneous actions, parallel processing, or independent items displayed together (e.g., 'simultaneously', 'in parallel', 'displays X, Y, and Z') and model them using fork/end fork constructs.\n10. Use PlantUML partition blocks to represent swimlanes when the requirement explicitly assigns activities to different actors, systems, or organizational units."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "When nesting control structures (e.g., switch inside repeat inside if), close them in the reverse order of opening. Verify that every opened construct is correctly paired with its closing keyword before outputting. Use partition blocks to group activities by actor or system: partition \"ActorName\" { ... }."
+    }
+  ],
+  "rationale": "The edits target the highest-severity failure patterns: merged atomic activities, flattened conditional logic, and missing parallel/fork constructs. Appending decomposition and concurrency rules to the workflow directly addresses these gaps. Appending nesting closure verification and partition syntax to knowledge fixes complex nesting syntax errors and missing swimlanes.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}
+```

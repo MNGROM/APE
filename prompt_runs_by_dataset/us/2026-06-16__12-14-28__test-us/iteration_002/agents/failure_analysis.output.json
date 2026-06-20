@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "missing_parallel_constructs",
+      "problem": "The generator fails to identify and model concurrent or parallel behaviors, omitting `fork`/`fork again`/`end fork` blocks present in the ground truth.",
+      "possible_causes": [
+        "The prompt lacks explicit instructions or examples on how to map simultaneous actions, displayed lists, or concurrent system behaviors to PlantUML's `fork` construct.",
+        "The generator defaults to a strictly sequential interpretation of requirements, missing linguistic cues for parallelism (e.g., 'the following options are displayed', 'transformation and data source are displayed')."
+      ]
+    },
+    {
+      "name": "missing_switch_constructs",
+      "problem": "The generator fails to use `switch`/`case`/`endswitch` for mutually exclusive alternative paths, instead forcing them into nested `if`/`elseif` structures or omitting them.",
+      "possible_causes": [
+        "The prompt does not guide the model to distinguish between conditional branching (`if`) and multi-case decision points (`switch`).",
+        "The generator defaults to `if/elseif` for all conditional logic, losing the semantic clarity and structural representation of distinct cases."
+      ]
+    },
+    {
+      "name": "incorrect_loop_structures",
+      "problem": "The generator misapplies loop constructs (e.g., `repeat`/`repeat while`), creating invalid or overly complex loops for retry/alternative flows instead of simple conditional branches.",
+      "possible_causes": [
+        "The prompt does not clearly specify how to model simple retry or alternative data flows, leading the generator to force a `repeat` loop where a basic `if` checking the condition would suffice.",
+        "The generator over-generalizes any repetitive action in the text as a loop rather than an alternative path that returns to a previous step."
+      ]
+    },
+    {
+      "name": "activity_granularity_mismatch",
+      "problem": "The generator either over-splits single logical actions into multiple unnecessary activities or compresses multiple distinct steps into one, leading to missing and extra activities.",
+      "possible_causes": [
+        "The prompt lacks guidance on how to chunk text into activity nodes, causing the model to treat every clause as a separate activity or merge distinct steps.",
+        "The generator fails to recognize when a single sentence describes a sequence of actions versus a single composite action."
+      ]
+    },
+    {
+      "name": "syntax_errors_in_complex_structures",
+      "problem": "The generated PlantUML contains syntax errors, particularly when attempting to nest loops or handle complex control flows.",
+      "possible_causes": [
+        "The prompt does not enforce strict structural rules or provide templates for correctly nesting complex PlantUML constructs.",
+        "The generator loses track of open/closed blocks (like `repeat`/`endrepeat` or `if`/`endif`) in deeply nested scenarios, producing malformed code."
+      ]
+    }
+  ]
+}
+```

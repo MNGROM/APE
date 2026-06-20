@@ -1,0 +1,63 @@
+{
+  "requirements": [
+    "Requirement\tWhen heading hold mode becomes the active mode the heading hold reference shall be set by the pilot via a cockpit control.",
+    "19.\tcreate a new job by using the LifeCycle Manager tool1. Log into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, click New Job. The \"New Job\"window appears .3. Enter the name, description, and keywords for the job in the appropriatefields.4. In the Save Job in field, browse and select the folder in which you wantto save the job.5. Select the source system and the destination system from the drop-downlists.If the name of the system is not displayed in the drop-down list, click theLogin to a new CMS option. A new window is launched. Enter the nameof the system along with the user name and password.6. Click Create.",
+    "After the system starts up, if slow charging is active and the front MCU initialization is 0, it enters state 82. From there:\n- When the BMS counter reaches 1 with a battery pre-heating demand of 3, the system transitions to state 126. If slow charging becomes inactive afterward, it shuts down and exits.\n- If a pre-charge failure occurs, the system moves to state 126. Should slow charging be inactive at that point, it shuts down and exits.\n- If slow charging deactivates, the system switches to state 126 before shutting down and exiting.\n- For AC charging/discharging system faults, the system waits through a 10-second timeout before shifting to state 126. If slow charging is inactive following this transition, it shuts down and exits.",
+    "The thermal management controller executes as a state machine on the RTOS, governing PWM fans and liquid-cooling actuators. Its primary sequence initiates with a check of the system's rail voltage status via the PMIC; operation proceeds only if this primary power rail is nominal. Upon validation, two high-priority tasks are spawned concurrently: one task samples the current sensor data, and if an overcurrent is detected, it enters an iterative monitoring mode using a ring buffer, holding the system state until the data normalizes. The concurrent task monitors temperature sensor data against safety thresholds; any excursion triggers immediate heat dissipation measures and, if persistent, initiates a controlled cool-down path managed by the BMS/FADEC. Subsequently, and while rail voltage remains stable, two further checks are performed in parallel: verifying power output stability and ensuring frequency output compliance. A final supervisory state confirms all monitored parameters are within nominal ranges, completing the cycle. This core logic is supplemented by a telemetry monitor operating in a periodic loop driven by timer interrupts, which employs bounded retries with exponential backoff on communication faults. Furthermore, sensor fusion and calibration routines execute periodically, with out-of-range readings engaging redundant sensors and mutex-protected priority queues for critical command handling."
+  ],
+  "predictions": [
+    "@startuml\nstart\n:Heading hold mode becomes the active mode;\n:Pilot sets heading hold reference via cockpit control;\nstop\n@enduml",
+    "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:In the \"Promotion Jobs\" home page, click New Job;\n:The \"New Job\" window appears;\n:Enter the name, description, and keywords for the job;\n:In the Save Job in field, browse and select the folder;\n:Select the source system and the destination system from the drop-down lists;\nif (System name displayed in drop-down list?) then (No)\n  :Click the Login to a new CMS option;\n  :A new window is launched;\n  :Enter the system name, user name, and password;\nelse (Yes)\nendif\n:Click Create;\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging active?) then (Yes)\n  if (Front MCU initialization == 0?) then (Yes)\n    :Enter state 82;\n    switch (Condition)\n    case (BMS counter reaches 1\\n& Battery pre-heating demand == 3)\n      :Transition to state 126;\n      if (Slow charging inactive?) then (Yes)\n        :Shut down and exit;\n        stop\n      else (No)\n      endif\n    case (Pre-charge failure)\n      :Transition to state 126;\n      if (Slow charging inactive?) then (Yes)\n        :Shut down and exit;\n        stop\n      else (No)\n      endif\n    case (Slow charging deactivates)\n      :Transition to state 126;\n      :Shut down and exit;\n      stop\n    case (AC charging/discharging system fault)\n      :Wait 10-second timeout;\n      :Transition to state 126;\n      if (Slow charging inactive?) then (Yes)\n        :Shut down and exit;\n        stop\n      else (No)\n      endif\n    endswitch\n  else (No)\n  endif\nelse (No)\nendif\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\nstart\n\n:Check PMIC rail voltage status;\n\nif (Rail voltage nominal?) then (No)\n    stop\nelse (Yes)\nendif\n\nfork\n    :Sample current sensor data;\n    if (Overcurrent detected?) then (Yes)\n        repeat\n            :Enter iterative monitoring mode (ring buffer);\n            :Hold system state;\n        repeat while (Data normalized?) is (No)\n        ->Yes;\n    else (No)\n    endif\nfork again\n    :Monitor temperature sensor data against safety thresholds;\n    if (Temperature excursion?) then (Yes)\n        :Trigger immediate heat dissipation measures;\n        if (Excursion persistent?) then (Yes)\n            :Initiate controlled cool-down path (BMS/FADEC);\n            stop\n        else (No)\n        endif\n    else (No)\n    endif\nend fork\n\nfork\n    :Verify power output stability;\nfork again\n    :Ensure frequency output compliance;\nend fork\n\n:Final supervisory state: Confirm all parameters nominal;\n\npartition \"Supplemental Periodic Operations\" {\n    repeat\n        :Telemetry monitor (timer interrupt);\n        if (Communication fault?) then (Yes)\n            :Bounded retries with exponential backoff;\n        else (No)\n        endif\n    repeat while (Timer interrupt triggered?) is (Yes)\n    ->No;\n\n    repeat\n        :Sensor fusion and calibration routines;\n        if (Out-of-range readings?) then (Yes)\n            :Engage redundant sensors;\n            :Mutex-protected priority queues for critical command handling;\n        else (No)\n        endif\n    repeat while (Periodic trigger?) is (Yes)\n    ->No;\n}\n\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n\n:Requirement When heading hold mode becomes active;\n:Pilot uses cockpit control;\n:Set heading hold reference;\n\nstop",
+    "start\n\n:Log in LifeCycle Manager tool;\n:Go to \"Promotion Jobs\" home page;\n:Click \"New Job\";\n:\"New Job\"window appears;\n\n:Enter information;\nfork \n:Enter name;\nfork again\n:Enter description;\nfork again\n:Enter keywords;\nend fork\n\n:Go to \"Save Job\" field;\n:Browse and select folder;\n\n:Open drop-downlists;\nif (System name is diaplayed?) then (no)\n:Click \"theLogin\";\n:A new CMS option;\n:A new window is launched;\n\n:Enter information;\nfork \n:Enter system name;\nfork again\n:Enter user name;\nfork again\n:Enter password;\nend fork\n\nelse(yes)\n:Select source system;\n:Select destination system;\nendif\n\n:Click \"Create\";\n\nstop",
+    "start\nif (slow charging is active and front MCU initialization=0) then\n  :enter state 82;\n  if (BMS counter=1 and battery pre-heating demand=3) then\n    :switch to state 126;\n    if (slow charging is inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (pre-charge failure occurs) then\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (slow charging is inactive) then\n    :switch to state 126;\n    :shutdown;\n    stop\n  else if (AC charging/discharging system fault) then\n    while(after 10s)\n    endwhile\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend",
+    "@startuml\n\nstart\n\n:Thermal management controller executes as state machine on RTOS;\nfork\n:Govern PWM fans;\nfork again\n:Govern liquid-cooling actuators;\nend fork\n\n:Primary sequence initiates;\n:Check system rail voltage status via PMIC;\nif (Primary power rail nominal?) then (yes)\n  :Operation proceeds;\n  :Two high-priority tasks spawned;\n  fork\n    :Sample current sensor data;\n    if (Overcurrent detected?) then (yes)\n      :Enter iterative monitoring mode using ring buffer;\n      repeat\n        :Hold system state;\n      repeat while (Data normalized?) is (no)\n    else (no)\n    end if\n  fork again\n    :Monitor temperature sensor data against safety thresholds;\n    if (Excursion?) then (yes)\n      :Trigger immediate heat dissipation measures;\n      if (Persistent?) then (yes)\n        :Initiate controlled cool-down path managed by BMS/FADEC;\n      else (no)\n      end if\n    else (no)\n    end if\n  end fork\n\n  while (Rail voltage stable?) is (yes)\n    :Two further checks performed;\n    fork\n      :Verify power output stability;\n    fork again\n      :Ensure frequency output compliance;\n    end fork\n  endwhile\n\n  :Supervisory state confirms all monitored parameters within nominal ranges;\n  :Complete control cycle;\n\nelse (no)\nend if\n\n  :Telemetry monitor operates in periodic loop driven by timer interrupts;\n  :Employ bounded retries with exponential backoff on communication faults;\n  :Supplement core logic;\n\nfork\n  :Sensor fusion and calibration routines execute periodically;\nfork again\n  if (Out-of-range readings?) then (yes)\n    :Engage redundant sensors and mutex-protected priority queues;\n    :Critical command handling;\n  else (no)\n  end if\nend fork\n\nstop\n\n@enduml"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_loop"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel",
+        "wrong_loop"
+      ]
+    ]
+  }
+}

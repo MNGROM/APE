@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1 does not sufficiently enforce strict extraction of all explicitly stated actions and conditions without abstraction, leading to missing activities. Step 2 lacks explicit guidance on identifying concurrent cues (e.g., 'AND' joining independent actions) for false-negative parallelism, and lacks precise instructions for mapping loop boundaries and retry limits to correct nesting levels."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "Rule (4) restricts fork/join to explicit concurrency cues ('simultaneously', 'concurrently') or explicit independence statements, failing to provide positive cues for implicit concurrency (e.g., 'enter X AND a description') which causes false-negative parallelism. Rules (2) and (3) do not adequately distinguish `switch` (categorical choices) from `if/elseif` (conditional logic), leading to extra or wrong relations."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rules lack constraints against fabricating speculative control-flow branches (causing extra activities/relations) and lack specific guidance for handling loop boundaries and retry limits (causing wrong loops). Rule (6) attempts to differentiate `switch` from `if/elseif` but is insufficient to prevent structural misinterpretation."
+    }
+  ]
+}
+```

@@ -1,0 +1,70 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "extra_activity",
+        "problem": "The model consistently fabricates activities not stated in the requirements—decomposing high-level intents into imagined sub-steps (Case 0), inserting 'Check…' nodes for what should be guard conditions (Case 4), and inventing return/result actions (Case 1).",
+        "possible_causes": [
+          "The prompt does not explicitly instruct the model to only include activities directly stated in the requirement text.",
+          "The model defaults to narrative elaboration, filling in implied user actions rather than staying faithful to the source."
+        ]
+      },
+      {
+        "name": "wrong_parallel",
+        "problem": "Mutually exclusive decision paths are rendered as concurrent fork/fork-again branches instead of if/else-if chains (Case 4).",
+        "possible_causes": [
+          "The prompt lacks guidance on distinguishing parallel (concurrent) flows from mutually exclusive (alternative) decision paths.",
+          "When a requirement lists multiple conditional branches, the model defaults to a parallel structure rather than an if/else-if cascade."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The model introduces unsupported branching logic—adding an if/else for a user decision not in the ground truth (Case 0), restructuring a sequential cancel step into a top-level conditional (Case 3), and inserting conditional checks where simple sequential flow is expected.",
+        "possible_causes": [
+          "The prompt does not constrain when decision nodes should be introduced, causing the model to over-branch.",
+          "The model treats every implicit choice point as an explicit if/else, even when the requirement describes it as a sequential activity."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "Required conditional branches and alternative flows are omitted or misstructured—the 'More information?' branch is dropped (Case 2), alternative/retry flows in Case 3 are not modeled as loops back, and the cancel path is placed at the wrong structural level.",
+        "possible_causes": [
+          "The prompt does not instruct the model to preserve all alternative/exception flows from the requirement as separate branches or loops.",
+          "The model flattens alternative data flows into the main path instead of modeling them as distinct branches that rejoin or loop."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "Explicit activities from the requirements are dropped—context-setting actions like 'In NLGuidance' (Case 1), final actions like 'Click Create' (Case 2), and purpose statements like 'Provide data correctness' (Case 0) are omitted.",
+        "possible_causes": [
+          "The model filters out activities it deems non-behavioral (context, purpose) even though the ground truth includes them.",
+          "The prompt does not emphasize that all explicitly mentioned actions, including contextual and purpose-oriented ones, must be preserved as activity nodes."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is empty, providing no step-by-step process for faithfully extracting activities from the text and constructing control-flow, which leads to fabricated or dropped activities and misstructured relations."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is empty, lacking reusable modeling guidance on PlantUML syntax for distinguishing mutually exclusive alternative paths (if/else) from concurrent flows (fork/fork-again) and modeling alternative/exception flows as loops or separate branches."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is empty, missing explicit constraints to only include activities stated in the text, avoid unsupported branching logic, and preserve all explicitly mentioned actions including contextual and purpose-oriented ones."
+      }
+    ]
+  }
+}

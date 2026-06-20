@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "Follow this two-step reasoning process before writing PlantUML:\n1. Extract activities: Identify activities strictly from explicit statements in the requirement. Do not invent low-level UI interactions, sub-steps, or assumed behaviors not explicitly stated. Keep activities at the abstraction level used in the text.\n2. Determine control flow: Identify conditional logic (if, when, case) and concurrent actions (lists of simultaneous items) in the text. Map conditionals to decision constructs and concurrent actions to parallel constructs. Carefully sequence the activities and branches based on the requirement's logic, ensuring correct nesting and flow."
+    },
+    {
+      "section": "knowledge",
+      "operation": "replace",
+      "content": "PlantUML control-flow patterns:\n- Conditional branching: Use if/else/endif or switch/case/endswitch to model decision points based on conditional keywords in the text.\n- Parallel decomposition: Use fork/fork again/end fork to model concurrent actions or multiple items listed together as occurring simultaneously."
+    }
+  ],
+  "rationale": "The workflow edit introduces a two-step reasoning process to address the primary activity granularity mismatch and control-flow errors, explicitly instructing the model to extract activities at the correct abstraction level and reason about control flow before coding. The knowledge edit provides the necessary PlantUML structural patterns for conditional and parallel constructs to fix missing branching and parallelism.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

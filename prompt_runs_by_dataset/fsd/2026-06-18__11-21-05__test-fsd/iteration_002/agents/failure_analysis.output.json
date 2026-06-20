@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The generator fails to identify and model concurrent behaviors, consistently representing parallel actions as sequential steps instead of using PlantUML's fork/end fork constructs.",
+      "possible_causes": [
+        "The prompt may not explicitly instruct the model to look for concurrent, simultaneous, or grouped items and map them to fork/end fork blocks.",
+        "The model defaults to a strictly sequential interpretation of natural language lists, even when items are logically parallel (e.g., displaying multiple fields, handling multiple inputs simultaneously)."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "Control flow is frequently misrepresented, particularly failing to capture mutually exclusive branching (switch/case) and conditional pre-checks, instead using sequential or nested if/else logic.",
+      "possible_causes": [
+        "The prompt lacks guidance on translating mutually exclusive choices (like selecting from a list or distinct cases) into switch/endswitch constructs.",
+        "The model struggles to identify conditional pre-requisites (e.g., 'ensure you have logged into both systems') and incorrectly models them as sequential actions rather than conditional guards."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The generator introduces incorrect control flow paths, often by forcing sequential checks for independent conditions or misinterpreting conditional dependencies as nested logic.",
+      "possible_causes": [
+        "The model treats independent conditional checks described in the text as a sequential chain of if/elseif statements rather than parallel or independent flows.",
+        "Lack of prompt instructions to distinguish between sequential procedural steps and independent state-based rules, leading to artificial nesting and incorrect flow paths."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "Explicit behaviors, system responses, and UI feedback from the requirements are frequently omitted or compressed into single nodes.",
+      "possible_causes": [
+        "The generator tends to summarize or abstract detailed steps (e.g., collapsing a sequence of menu selections or omitting system display confirmations) instead of faithfully enumerating them as distinct activity nodes.",
+        "The prompt does not emphasize the need to preserve granular actions and system responses as separate activities."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The generator adds unsupported activities, often by splitting a single requirement into redundant actions or hallucinating steps not present in the text.",
+      "possible_causes": [
+        "The model over-decomposes simple statements into multiple unnecessary nodes (e.g., duplicating a state transition as both an action and a condition result).",
+        "Lack of constraints in the prompt to strictly adhere to the explicitly mentioned steps without inferring or adding implicit actions."
+      ]
+    }
+  ]
+}
+```

@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a step-by-step process to prevent unconstrained generation, over-specification, and incorrect parallelization.",
+      "change_instruction": "Add a structured workflow with the following steps: 1) Identify and extract only the explicit activities stated in the requirement, preserving their original phrasing and level of abstraction as single nodes. 2) Analyze the control flow between these extracted activities based strictly on the text. 3) Evaluate lists and conjunctions (e.g., 'and', commas) to determine if they represent true concurrent execution or merely alternative choices/attributes, mapping them to fork/join only if they are truly parallel. 4) Generate the PlantUML code using only the activities and relations derived from the previous steps."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide domain-specific modeling guidance to distinguish alternative choices from parallel flows and to preserve requirement abstraction.",
+      "change_instruction": "Add concise knowledge rules: 1) Abstraction preservation: Activity nodes should reflect the requirement's original level of abstraction; do not decompose high-level requirements into granular procedural or programming steps. 2) Concurrency vs. Alternatives: Comma-separated lists or 'or' conditions (e.g., 'XML or CSV', 'ResearcherID or ORCID') represent alternative choices or attributes, not concurrent execution; use if/else or decision branches for these, not fork/fork again. Reserve fork/join strictly for actions that explicitly occur at the same time."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce strict constraints against hallucination, over-specification, and adding unrequired steps.",
+      "change_instruction": "Add explicit rules: 1) Strict mapping: Map only explicitly stated behaviors; do not invent, infer, or add plausible but unrequired steps (e.g., UI interactions like 'User opens application' or 'Clicks button'). 2) No speculative steps: If an action is not explicitly described in the requirement, it must not appear as an activity node. 3) Phrasing fidelity: Use the requirement's original terminology for node labels rather than synthesizing new procedural descriptions."
+    }
+  ]
+}
+```

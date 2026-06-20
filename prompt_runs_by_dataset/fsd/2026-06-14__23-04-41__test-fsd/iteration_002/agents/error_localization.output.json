@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, providing no step-by-step process for the agent to extract activities strictly from the text, identify actors/partitions, or map conditional logic to distinct branching structures. This absence causes the agent to invent steps, flatten parallel roles, and oversimplify complex conditions."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, leaving the agent without reusable modeling guidance on PlantUML constructs such as partitions for actor boundaries, fork/fork again for parallel flows, and if/switch for conditional branching, which leads to overlooked structural constructs and shallow condensation of logic."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, failing to establish strict constraints against hallucinating implicit steps or defaulting to elaborate happy/error paths, and lacking directives to faithfully decompose complex logic rather than collapsing it into a linear narrative."
+    }
+  ]
+}
+```

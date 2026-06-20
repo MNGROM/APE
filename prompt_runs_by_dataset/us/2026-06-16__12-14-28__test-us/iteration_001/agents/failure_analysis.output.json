@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "hallucinated_decomposition",
+      "problem": "The generator decomposes high-level requirements or mathematical constraints into granular, procedural steps that are not present in the source text, leading to extra activities and incorrect control flow.",
+      "possible_causes": [
+        "The prompt lacks instructions to map requirements directly to diagram nodes without inventing implementation steps.",
+        "The generator defaults to a procedural programming mindset (e.g., 'Initialize', 'Compute', 'Evaluate') rather than a requirement-verification mindset."
+      ]
+    },
+    {
+      "name": "flattened_conditional_logic",
+      "problem": "The generator fails to represent alternative paths as proper conditional branches (if/else or switch/case), instead modeling them as sequential or nested steps, which distorts the control flow.",
+      "possible_causes": [
+        "The prompt does not emphasize identifying mutually exclusive decision points and mapping them to PlantUML branching syntax.",
+        "The generator struggles to distinguish between sequential instructions and alternative user actions or system conditions described in the requirements."
+      ]
+    },
+    {
+      "name": "incorrect_concurrency_scope",
+      "problem": "The generator misidentifies which actions should run concurrently, often placing sequential checks inside fork blocks or failing to fork independent tasks mentioned in the same context.",
+      "possible_causes": [
+        "The prompt does not provide clear heuristics for identifying concurrent tasks (e.g., 'spawned concurrently', 'simultaneously') versus sequential checks.",
+        "The generator incorrectly assumes that any list of checks or tasks implies parallel execution."
+      ]
+    },
+    {
+      "name": "misrepresented_loop_conditions",
+      "problem": "The generator uses incorrect loop constructs (e.g., repeat-while) or misplaces the loop exit condition, failing to accurately capture iterative, periodic, or retry behaviors.",
+      "possible_causes": [
+        "The prompt does not specify how to map requirement phrases like 'periodic loop', 'until normalized', or 'retry' to PlantUML's repeat/while constructs.",
+        "The generator confuses the entry condition of a loop with the exit condition."
+      ]
+    }
+  ]
+}
+```

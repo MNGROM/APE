@@ -1,0 +1,85 @@
+```json
+{
+  "summary": "The most useful repair targets are the workflow and knowledge sections. The workflow section is currently empty, leading to poor control-flow reasoning and structural nesting errors. The knowledge section lacks sufficient detail on distinguishing if/else from switch/case and modeling conditions as decision nodes, which directly causes misapplied switch statements and missing decision nodes.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "activity_granularity_mismatch",
+        "missing_decision_nodes",
+        "syntax_and_nesting_errors"
+      ],
+      "section_problem": "The workflow section is currently empty, providing no procedural guidance on how to extract activities, identify conditional logic, or track structural nesting, which leads to collapsed sequential steps, omitted decision nodes, and mismatched PlantUML tags.",
+      "edit_intent": "Add a step-by-step generation procedure requiring the model to first extract distinct actions as separate activities, then identify and model conditional phrases as decision nodes, and finally track opening/closing tags for control structures to ensure valid nesting.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "bp-0014",
+        "bp-0007",
+        "bp-0023",
+        "lmc-0011",
+        "lmc-0038",
+        "lmc-0056",
+        "rac-0012"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "misapplied_switch_for_conditionals",
+        "missing_decision_nodes"
+      ],
+      "section_problem": "The existing knowledge section insufficiently defines the boundary between if/else and switch/case, and lacks guidance on modeling constraints/conditions as decision nodes rather than action nodes.",
+      "edit_intent": "Strengthen the if/else vs. switch/case distinction (reserving if/else for binary/boolean logic and switch for 3+ mutually exclusive alternatives) and add a principle that conditional phrases must be modeled as decision nodes with branch guards.",
+      "knowledge_gap_ids": [
+        "if_vs_switch_distinction",
+        "modeling_conditions_as_decisions"
+      ],
+      "evidence_case_ids": [
+        "lmc-0038",
+        "rac-0004",
+        "lmc-0011",
+        "lmc-0056"
+      ]
+    },
+    {
+      "section": "rule",
+      "priority": "medium",
+      "failure_patterns": [
+        "activity_granularity_mismatch",
+        "inferred_unstated_activities"
+      ],
+      "section_problem": "While the rule section prohibits merging distinct actions and inventing unstated steps, the model frequently violates these constraints, indicating the current phrasing is not strong enough to override default generation habits.",
+      "edit_intent": "Strengthen and clarify the strict grounding rules to explicitly prohibit collapsing sequential steps into summary nodes and inventing computational/preparatory steps not found in the requirement text.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "bp-0014",
+        "bp-0007",
+        "bp-0023",
+        "lmc-0038",
+        "lmc-0056",
+        "rac-0012"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The agent's overall role and scope are correctly defined and do not contribute to the observed granularity or control-flow errors."
+    },
+    {
+      "section": "input",
+      "reason": "The input section accurately describes the input format; the errors stem from processing and modeling, not input misinterpretation."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement (PlantUML only) is appropriate; syntax errors are better addressed by adding structural tracking steps in the workflow section rather than modifying the output directive."
+    }
+  ]
+}
+```

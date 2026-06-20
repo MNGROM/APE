@@ -1,0 +1,25 @@
+{
+  "iteration": 2,
+  "phase": "train_before_evolve",
+  "score": 0.4192872950673463,
+  "summary": {
+    "count": 10.0,
+    "syntax_pass_rate": 0.8,
+    "infrastructure_error_rate": 0.0,
+    "node_precision": 0.3814901477832512,
+    "node_recall": 0.4160197678938308,
+    "node_f1": 0.3581168831168831,
+    "relation_precision": 0.29047619047619044,
+    "relation_recall": 0.31825674325674325,
+    "relation_f1": 0.29010135455148245,
+    "plantuml_compilation_pass_rate": 0.8,
+    "llm_element_evaluated": 0.0,
+    "llm_element_failed": 0.0,
+    "llm_node_precision": 0.0,
+    "llm_node_recall": 0.0,
+    "llm_node_f1": 0.0,
+    "llm_relation_precision": 0.0,
+    "llm_relation_recall": 0.0,
+    "llm_relation_f1": 0.0
+  }
+}

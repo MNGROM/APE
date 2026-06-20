@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section's concurrency rule (4) is overly restrictive, explicitly prohibiting fork/join for comma-separated lists, attribute enumerations, and UI field displays. This directly causes false-negative parallelism when independent items or attributes in such lists should be modeled concurrently, as the rule forces the generator to default to sequential or alternative (switch) control flow instead of recognizing their independence."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section's first rule categorically bans fork/join for comma-separated lists, attribute enumerations, and UI field displays, reinforcing the false-negative parallelism issue. Additionally, it lacks explicit rules to prevent the linearization of nested conditional logic and the insertion of unnecessary 'stop' nodes or speculative sequential edges."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "Step 2 of the workflow section instructs the model to map nested 'if-then' logic and identify retry logic, but it lacks explicit guidance to preserve hierarchical nesting over flattening it into sequential or mutually exclusive branches. It also lacks instructions to verify the independence of listed items before defaulting to sequential or alternative control flows."
+    }
+  ]
+}
+```

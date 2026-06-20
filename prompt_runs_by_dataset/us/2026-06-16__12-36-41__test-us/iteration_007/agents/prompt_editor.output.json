@@ -1,0 +1,66 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Ensure compound actions and lists of concurrent items are decomposed into parallel fork structures.",
+      "change_instruction": "Add a step instructing the model to identify compound actions or lists of items governed by concurrent cues, and to decompose them into separate parallel branches within a `fork`/`end fork` structure rather than collapsing them into a single activity node."
+    },
+    {
+      "section": "workflow",
+      "intent": "Prevent independent system tasks from being incorrectly nested inside conditional blocks.",
+      "change_instruction": "Add a step requiring the model to identify independent system tasks (e.g., background periodic tasks) and place them as sibling parallel branches at the correct control-flow level, explicitly prohibiting their insertion as nested steps within the closest preceding conditional block."
+    },
+    {
+      "section": "workflow",
+      "intent": "Distinguish user-driven iterative workflows from system-level periodic tasks to prevent overgeneralized repeat loops.",
+      "change_instruction": "Add a step to differentiate user-driven iterative workflows (which may use targeted loops) from system-level periodic tasks. Instruct that system-level periodic tasks should be modeled as self-contained loops or parallel continuous flows, explicitly prohibiting the wrapping of the entire main activity sequence in a `repeat` loop to represent periodicity."
+    },
+    {
+      "section": "workflow",
+      "intent": "Enforce flat, early-exit if-stop structures for mutually exclusive state-machine transitions.",
+      "change_instruction": "Add a step instructing the model to identify mutually exclusive conditions that lead to terminal states (state-machine-like transitions) and model them using flat, sequential `if`/`stop` structures (early-exit pattern), rather than deeply nested `if`/`elseif`/`else` or `switch`/`case` blocks."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide explicit guidance on decomposing compound concurrent items into parallel forks.",
+      "change_instruction": "Add a rule stating that compound actions or comma-separated lists of concurrent items (e.g., governing multiple distinct subsystems) must be decomposed into separate parallel branches within a `fork`/`end fork` structure, rather than being collapsed into a single monolithic activity node."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Clarify the mapping of independent system tasks to top-level or sibling parallel structures.",
+      "change_instruction": "Add a rule explaining that independent system tasks, such as background periodic tasks, must be mapped as top-level or sibling parallel branches, and must not be nested inside conditional blocks or sequential flows of dependent tasks."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Differentiate user-driven iterations from system-level periodic tasks.",
+      "change_instruction": "Add a rule distinguishing user-driven iterative workflows (modeled as targeted loops over specific steps) from system-level periodic tasks (modeled as self-contained loops or parallel continuous flows), explicitly stating that periodicity should not cause the entire main sequence to be wrapped in a loop."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Specify the flat, early-exit if-stop pattern for mutually exclusive state-machine transitions.",
+      "change_instruction": "Add a rule specifying that mutually exclusive conditions leading to terminal states (state-machine transitions) must be modeled using flat, sequential `if`/`stop` branches (early-exit pattern) instead of deeply nested `if`/`elseif`/`else` or `switch`/`case` structures."
+    },
+    {
+      "section": "rule",
+      "intent": "Forbid collapsing compound concurrent items into single monolithic nodes.",
+      "change_instruction": "Add a rule explicitly prohibiting the collapsing of compound concurrent items or lists of simultaneous tasks into a single monolithic activity node; they must be decomposed into `fork`/`end fork` parallel branches."
+    },
+    {
+      "section": "rule",
+      "intent": "Forbid nesting independent parallel tasks inside conditional blocks.",
+      "change_instruction": "Add a rule explicitly forbidding the placement of independent parallel tasks or background system tasks inside conditional blocks; they must reside as sibling parallel branches at the correct control-flow level."
+    },
+    {
+      "section": "rule",
+      "intent": "Forbid wrapping the entire activity sequence in a repeat loop for system-level periodic tasks.",
+      "change_instruction": "Add a rule explicitly prohibiting the representation of system-level periodic tasks by wrapping the entire main activity sequence in a `repeat`/`while` loop; periodic behaviors must be self-contained or modeled as parallel continuous flows."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce flat, early-exit if-stop structures for mutually exclusive conditions leading to terminal states.",
+      "change_instruction": "Add a rule explicitly requiring the use of flat, early-exit `if`/`stop` structures for mutually exclusive conditions that lead to terminal states, and prohibiting the use of deeply nested `if`/`elseif`/`else` or `switch`/`case` structures for such state-machine-like transitions."
+    }
+  ]
+}
+```

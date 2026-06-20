@@ -1,0 +1,47 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract and list all explicit activities and conditional/alternative statements strictly from the requirement text, preserving each distinct behavioral step as a separate item.\nStep 2: Construct the PlantUML diagram by mapping only those extracted items to activities and control-flow constructs, prohibiting any additions.",
+    "knowledge": "- fork/join: Used for concurrent, simultaneous actions or parallel information display.\n- if/elseif/else and switch/endswitch: Used for mutually exclusive, alternative paths or user choices.\n- Enumerated sub-steps or listed options represent alternatives (switch/if), not parallelism, unless explicitly stated as simultaneous.",
+    "rule": "(1) Do not invent, infer, or add any activities, steps, or UI interactions (e.g., login, navigation, validation, success/error messages, retry loops) that are not explicitly stated in the requirement.\n(2) Do not merge multiple distinct behavioral steps from the requirement into a single activity node; maintain the original granularity.\n(3) Do not insert speculative control-flow branches (e.g., validation checks, error handling) unless explicitly described in the requirement text."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The model consistently fails to recognize concurrent/parallel behaviors and represent them with fork/fork again/end fork. It defaults to purely sequential activity chains even when the requirement clearly lists items that should execute in parallel (e.g., entering name/description/keywords simultaneously, receiving movement authority alongside other information).",
+        "possible_causes": [
+          "The prompt does not instruct the model to look for parallel or concurrent actions and use PlantUML's fork construct.",
+          "The model treats comma-separated or list-based descriptions as sequential steps rather than concurrent ones."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The model frequently misstructures control flow: it uses switch (mutually-exclusive cases) where if/else if chains are needed, and it introduces conditional branching where the ground truth uses flat sequential activities. Shared-prefix paths are duplicated across switch branches instead of being merged into a common predecessor node.",
+        "possible_causes": [
+          "The prompt does not guide the model to prefer if/else if over switch for non-mutually-exclusive conditions.",
+          "The prompt lacks guidance on merging common predecessor activities before branching, leading to duplicated sub-flows.",
+          "The model defaults to switch for any multi-branch logic without evaluating whether branches are truly exclusive."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The model adds activities not present in the ground truth, such as duplicating shared-prefix actions across branches, inserting spurious stop nodes inside case branches, or fabricating activity labels like 'Invert the Rotation Matrix' that don't correspond to required behaviors.",
+        "possible_causes": [
+          "The prompt does not emphasize minimizing activity nodes to only those explicitly stated in the requirement.",
+          "Duplicating shared prefixes across switch cases creates redundant activity nodes that should exist only once."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The model fails to use loop constructs (while/repeat) for retry flows and timed waits. For example, 'select another folder' and 'type another master key' should loop back rather than proceed linearly, and a 10-second timeout wait should use a while loop instead of a sequential activity.",
+        "possible_causes": [
+          "The prompt does not instruct the model to identify retry, repetition, or timed-wait patterns and represent them with PlantUML loop constructs.",
+          "Alternative/exception flows that return to a prior step are treated as one-time forward paths."
+        ]
+      }
+    ]
+  }
+}

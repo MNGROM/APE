@@ -1,0 +1,92 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "",
+    "knowledge": ""
+  },
+  "failure_analysis": {
+    "summary": "The current prompt severely under-specifies how to translate natural language requirements into UML activity diagrams, leading to two major failure patterns: 1) massive over-specification where the agent hallucinates implementation details not present in the input (user story case), and 2) structural misalignment where the agent fails to use correct PlantUML control flow constructs like switch/case, instead falling back on nested partitions and if/else blocks, resulting in incorrect branching semantics and relation mapping.",
+    "error_patterns": [
+      {
+        "name": "hallucinated_over_specification",
+        "severity": "high",
+        "evidence_case_ids": [
+          "us-0046"
+        ],
+        "problem": "When given a high-level user story, the agent invents a detailed step-by-step implementation workflow rather than extracting the core activities stated in the requirement. This leads to a massive number of extra nodes and relations, completely missing the actual target activities.",
+        "suggested_prompt_direction": "Instruct the agent to strictly extract activities directly mentioned or immediately implied by the input text, explicitly prohibiting the invention of implementation steps, UI interactions, or technical details not present in the requirement.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_switch_construct",
+        "severity": "high",
+        "evidence_case_ids": [
+          "rac-0006"
+        ],
+        "problem": "The agent fails to recognize mutually exclusive conditional branches (e.g., 'If A... 1. If B... 2. If C...') that should be modeled using the PlantUML 'switch/case' construct. Instead, it uses sequential 'if' statements wrapped in 'partition' blocks, which breaks the structural semantics and causes incorrect relation mapping (e.g., missing the 'condition judgement' node).",
+        "suggested_prompt_direction": "Provide explicit knowledge and workflow rules for mapping mutually exclusive conditional paths to the PlantUML 'switch/case/endswitch' construct, and differentiate this from standard 'if/else' branching.",
+        "target_sections": [
+          "knowledge",
+          "workflow"
+        ]
+      },
+      {
+        "name": "inconsistent_activity_labeling",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "rac-0006"
+        ],
+        "problem": "The agent rephrases activity labels from the input text (e.g., 'switch to state 110' becomes 'enter state 110', 'pet mode request handling is finished' becomes 'pet mode request handled'). This causes exact-match evaluation failures and alters the semantic precision of the nodes.",
+        "suggested_prompt_direction": "Instruct the agent to preserve the original phrasing from the input requirement when labeling activity nodes and conditions, avoiding unnecessary paraphrasing or synonym substitution.",
+        "target_sections": [
+          "workflow",
+          "output"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Adding visual styling or theming (e.g., skinparam, title) which wastes tokens and is irrelevant to structural correctness.",
+      "Generating partition blocks to group logic, as this masks the absence of proper control flow constructs like switch/case.",
+      "Maximizing the number of nodes or granularity of the diagram, which exacerbates the hallucination problem."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

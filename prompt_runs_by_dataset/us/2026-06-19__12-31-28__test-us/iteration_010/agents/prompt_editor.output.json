@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Combined intent: Eliminate false-positive parallelism by removing ambiguous decomposition triggers and strictly limiting fork/join to explicit concurrency cues.; Prevent missing activities caused by over-summarization.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise Step 1 to remove the ambiguous exceptions for 'independent data entry fields' and 'simultaneous system state attributes' which cause false-positive fork/join usage on form fields and attribute lists. Replace the decomposition criteria with a strict rule: only decompose compound steps into separate activities if they are joined by explicit concurrency cues (e.g., 'simultaneously', 'in parallel', 'concurrently'). All other lists—including sequential UI steps, configuration options, alternative options, and attribute/parameter listings—must be grouped into a single activity node.; Add a constraint to Step 1 requiring that every distinct explicit action verb or state transition stated in the requirement must map to a distinct activity node. Prohibit collapsing multiple explicitly stated sequential actions into a single abstract node."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Combined intent: Strengthen negative constraints for concurrency modeling to prevent false-positive parallelism.; Improve true concurrency recognition to reduce false-negative parallelism.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise the concurrency modeling knowledge to explicitly list common false-positive triggers that must NOT be modeled as fork/join: sequential UI steps (e.g., 'fill in name, then email'), form field listings, configuration parameters, and alternative options (e.g., 'either/or', 'options include'). State that these must be represented as a single activity node or sequential flow.; Expand the positive linguistic cues for true concurrency to include specific keywords like 'concurrently', 'at the same time', and 'while [Action A], [Action B]'. Clarify that fork/join is strictly reserved for actions linked by these explicit cues."
+    },
+    {
+      "section": "rule",
+      "intent": "Combined intent: Prevent extra activities from inferred implicit steps.; Prevent missing and wrong relations by enforcing strict mapping of textual conditional cues to nested structures.; Prevent extra and wrong relations by prohibiting forced sequential wiring of independent or alternative paths.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise the granularity rule to explicitly prohibit inferring implicit prerequisite actions, intermediate UI interactions, or system responses unless they are explicitly stated as actions in the requirement text.; Add a rule requiring that explicit textual conditional cues (e.g., 'if... then... else if... else') must be mapped directly to nested if/elseif/else PlantUML structures. Prohibit flattening nested conditional logic into sequential checks or dropping alternative paths.; Add a rule prohibiting the creation of sequential control-flow edges between activities that represent mutually exclusive alternative options or independent outcomes. Explicitly state that alternative branches must not be wired sequentially into the main flow, but must converge strictly via their conditional merge points."
+    }
+  ]
+}

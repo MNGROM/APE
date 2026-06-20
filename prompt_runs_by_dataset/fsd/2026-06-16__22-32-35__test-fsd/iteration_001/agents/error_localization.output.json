@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for extracting activities, identifying control flows, or structuring the PlantUML code, which can lead to disorganized or incomplete diagrams."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking essential PlantUML syntax references and UML activity diagram modeling conventions, which can result in syntactically incorrect code and improper use of diagram elements."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, missing critical constraints such as requiring a start/end node, proper naming conventions, or output formatting rules, which can lead to invalid or non-compliant PlantUML generation."
+    }
+  ]
+}
+```

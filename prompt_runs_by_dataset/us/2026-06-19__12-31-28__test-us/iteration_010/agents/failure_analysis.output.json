@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The model predominantly commits false_positive_parallel errors, frequently using fork/join blocks for sequential UI steps, attribute listings, or alternative options rather than true concurrent actions. It also misses true parallelism (false_negative_parallel) when requirements describe concurrent system tasks.",
+      "possible_causes": [
+        "The prompt lacks clear criteria for when to use fork/join, causing the model to treat any list of items (e.g., form fields, UI tabs, configuration parameters) as concurrent actions.",
+        "The model fails to recognize linguistic cues for true concurrency (e.g., 'concurrently', 'simultaneously', 'while') and instead defaults to using fork/join for structural decomposition of a single node's attributes."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction frequently omits explicit behaviors, states, or intermediate steps described in the requirements, collapsing them into broad or abstract activity nodes.",
+      "possible_causes": [
+        "The model over-summarizes requirements, mapping entire paragraphs or multi-step procedures to a single activity instead of preserving the granular steps.",
+        "The prompt does not sufficiently enforce that every explicit action or state transition in the text must be represented as a distinct node in the diagram."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces activities or states that are not grounded in the requirement text, often adding inferred steps or splitting single actions into redundant sub-steps.",
+      "possible_causes": [
+        "The model hallucinates intermediate logical steps or UI interactions that are not explicitly stated in the requirements.",
+        "The prompt allows the model too much latitude to 'fill in gaps' or infer implicit prerequisite actions rather than strictly adhering to the provided text."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction frequently omits required control-flow edges or misrepresents the branching logic, particularly failing to nest conditions correctly or dropping alternative paths.",
+      "possible_causes": [
+        "The model struggles to parse complex conditional logic (e.g., nested ifs, mutually exclusive branches) from natural language, often flattening the structure.",
+        "The prompt does not adequately guide the model to map explicit textual conditional cues (e.g., 'if... then... else if...') into the corresponding PlantUML control structures (if/elseif/else, switch/case)."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds unsupported control-flow edges, often forcing sequential execution where the requirement implies independent or alternative paths, or incorrectly routing transitions after a branch.",
+      "possible_causes": [
+        "The model attempts to force a single linear flow through the diagram, connecting nodes that should represent separate alternative branches or independent outcomes.",
+        "Misinterpretation of the requirement's logical structure leads to incorrect wiring of activities, such as placing subsequent checks inside a branch where they should be outside or parallel."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction mishandles repeated, periodic, or retry behaviors, either omitting required loops or misplacing loop boundaries around the wrong set of actions.",
+      "possible_causes": [
+        "The model fails to identify linguistic markers for iteration (e.g., 'continuously', 'periodically', 'repeat until', 'exponential backoff') and represents them as one-off actions.",
+        "When loops are identified, the model struggles to correctly determine the loop's entry and exit conditions, often placing the loop boundary incorrectly in the control flow."
+      ]
+    }
+  ]
+}
+```

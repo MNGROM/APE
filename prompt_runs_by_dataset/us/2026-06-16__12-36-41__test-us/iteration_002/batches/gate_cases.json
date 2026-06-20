@@ -1,0 +1,42 @@
+[
+  {
+    "dataset": "bp",
+    "case_id": "bp-0010"
+  },
+  {
+    "dataset": "fsd",
+    "case_id": "fsd-0064"
+  },
+  {
+    "dataset": "lmc",
+    "case_id": "lmc-0005"
+  },
+  {
+    "dataset": "pure",
+    "case_id": "pure-0006"
+  },
+  {
+    "dataset": "rac",
+    "case_id": "rac-0010"
+  },
+  {
+    "dataset": "bp",
+    "case_id": "bp-0030"
+  },
+  {
+    "dataset": "fsd",
+    "case_id": "fsd-0077"
+  },
+  {
+    "dataset": "lmc",
+    "case_id": "lmc-0024"
+  },
+  {
+    "dataset": "pure",
+    "case_id": "pure-0089"
+  },
+  {
+    "dataset": "rac",
+    "case_id": "rac-0014"
+  }
+]

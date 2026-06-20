@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "rule",
+      "operation": "append",
+      "content": "1. Strictly ground every activity in the explicit statements of the requirement; do not infer, invent, or over-decompose into unstated implementation or UI steps. 2. Each distinct action explicitly described in the input must map to exactly one activity node; do not merge multiple distinct actions into a single node. 3. Only generate control-flow relations that are directly stated or logically necessary for the explicit sequence and conditions; prohibit assumed validation loops, error branches, or inferred sequential steps."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Use PlantUML 'fork'/'end fork' to model independent or simultaneous actions, rather than combining them into a single activity or forcing a sequential flow. Use PlantUML 'switch'/'case'/'endswitch' when the requirement describes a choice among mutually exclusive alternatives; reserve 'if'/'else' for conditional logic based on a boolean state."
+    }
+  ],
+  "rationale": "The edits address the most severe failure patterns by adding strict grounding and granularity constraints to the 'rule' section to prevent hallucinated extra activities and relations, and by adding reusable PlantUML construct mappings to the 'knowledge' section to fix incorrect control-flow modeling for parallel and mutually exclusive paths.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

@@ -1,0 +1,99 @@
+{
+  "requirements": [
+    "As a camp administrator, I want to be able to add campers, so that I can keep track of each individual camper.",
+    "As a user, I want backend changes for bulk updating one enum value to another.",
+    "[Training Steps]Step 1: Train Real-time Grid Operators annually on system restoration and Black Start use.Step 2: Conduct simulations of system shutdowns and restoration when a simulator becomes available.",
+    "23.\tpromote a jobLog into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, select the job that you want to promote. You can also right-click the home page screen, and click Promote.3. From the source and the destination systems drop-down lists, select the source and destination systems.Note:Ensure that you have logged into both the source and destination systems before you proceed with the promotion process.4. In the External Change Management ID field, enter the appropriate value, and click Save.5. Click Mappings. Click Edit Mappings if you want to create and validate mappings.6. Click Security Settings, if required. The following options are displayed:• Do not Promote Security - This is the default option.• Promote Security - Use this option to promote jobs along with theassociated security rights.• Include application rights - This option is enabled only if you select Promote Security. If the objects in the job inherit any application rights, the job is promoted along with these rights. You can also click View Security to view the security dependencies of the infoobjects in the job.7. Click Test Promote to ensure that there is no conflict between CUIDs in the source and destination systems. The promotion details are displayed. The first column displays the objects to be promoted, and the second column displays the promotion status. The LifeCycle Manager tool classifies the selected objects into users, groups, universes, and so on.Note:Running the Test Promote feature does not commit any infoobjects for promotion. The result of a test promote can be any of the following:• Overwritten - The infoobject in the destination is overwritten by the infoobject in the source system.• Mapped - The following infoobject types are mapped to the destination system: folders, users, user groups, and custom roles. An infoobject is mapped to the destination system and promoted only if the Security option is enabled. Otherwise, the infoobject is not promoted.• Copied - The infoobject in the source system is copied to the destination system.• Dropped - The infoobject is not promoted from the source system to the destination system.• Warning - The infoobject in the destination system is the newer version and you can remove the infoobject from the Job. However, if you want to promote, the infoobject gets promoted.8. Click Schedule Job if you want to schedule the job promotion.9. Click Promote.",
+    "Transferring to Full Supervision shall occur automatically when a movement authority and all other necessary information is received through track-to-train transmission. The trainborne equipment shall remain in Full Supervision until the trainborne equipment is not active any longer, when Shunting is selected, or when Partial Supervision information is received.",
+    "After the system starts up, if slow charging is active, we enter power-up mode. Then:\n\n1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:\n   a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.\n   b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.\n   c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with CP amplitude at 3000, switch to state 130. If slow charging becomes inactive, shut down and end.\n\n2) When the central control charging/discharging command is 2 and the vehicle isn't in charging/discharging mode, switch to state 110. Then:\n   - If the high-voltage shutdown request flag becomes 2, switch to state 115.\n   - If the flag drops to 0 with CP duty cycle at 88%, switch to state 126.\n   - If the central control command is 1 while charging state is 2, switch to state 130.\n   - If slow charging becomes inactive, shut down and end.",
+    "6.\tNLGuidance shall output consistent aim point with a static target without appreciable transient behavior in the command generation other than aim point switching where a transient is required to maintain a counter clockwise loiter (ref requirement 3).  Appreciable transient behavior is defined as erratic changes in the aim point command, beyond the following specific tolerance: a.\tThe change in the magnitude of the output over one frame of execution with T sample period shall not exceed the quantity of the combined velocity of the target plus the velocity of the vehicle multiplied by T.",
+    "4.\tThe Rotation Matrix, DCM321, shall be invertible with the exception of the case where theta = +/- pi/2 radians."
+  ],
+  "predictions": [
+    "@startuml\nstart\n:Camp Administrator selects \"Add Camper\";\n:Enter camper details (name, age, contact info, etc.);\n:Submit camper information;\n:Validate camper details;\nif (Valid details?) then (Yes)\n  :Save camper to database;\n  :Display success message;\nelse (No)\n  :Display validation error message;\n  :Prompt to correct details;\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:User initiates bulk enum update request;\n:Receive request with target enum field, old value, and new value;\n:Validate request parameters;\nif (Valid parameters?) then (No)\n  :Return error response: Invalid input;\n  stop\nelse (Yes)\nendif\n:Query database for records matching the old enum value;\nif (Matching records found?) then (No)\n  :Return success response: No records to update;\n  stop\nelse (Yes)\nendif\n:Perform bulk update in database\\n(Set enum field to new value);\nif (Database update successful?) then (No)\n  :Rollback transaction;\n  :Return error response: Update failed;\n  stop\nelse (Yes)\nendif\n:Commit transaction;\n:Return success response with count of updated records;\nstop\n@enduml",
+    "@startuml\nstart\n:Train Real-time Grid Operators annually on system restoration and Black Start use;\n:Conduct simulations of system shutdowns and restoration when a simulator becomes available;\nstop\n@enduml",
+    "@startuml\nstart\n:Promote a jobLog into the LifeCycle Manager tool;\n:In the \"Promotion Jobs\" home page, select the job to promote\\n(Alternatively, right-click the home page screen and click Promote);\n:Select source and destination systems from drop-down lists;\nnote right: Ensure that you have logged into\\nboth source and destination systems\\nbefore proceeding.\n:Enter appropriate value in External Change Management ID field;\n:Click Save;\n:Click Mappings;\n:Click Edit Mappings to create and validate mappings;\n:Click Security Settings (if required);\nif (Security Settings?) then (Do not Promote Security)\n  :Default option selected;\nelseif (Promote Security?) then (Promote Security)\n  :Promote jobs along with associated security rights;\n  if (Include application rights?) then (Yes)\n    :Promote job with inherited application rights;\n    :Click View Security to view security dependencies (optional);\n  else (No)\n  endif\nelseif (Include application rights?) then (Yes - Invalid without Promote Security)\n  :Option is disabled;\nendif\n:Click Test Promote to check for CUID conflicts;\nnote right: Running Test Promote does not\\ncommit any infoobjects for promotion.\n:Review promotion details and status;\nnote right\n  Possible results:\n  **Overwritten** - Destination object overwritten by source.\n  **Mapped** - Object mapped to destination (only if Security enabled).\n  **Copied** - Source object copied to destination.\n  **Dropped** - Object not promoted.\n  **Warning** - Destination is newer version; can remove from Job or force promote.\nend note\nif (Schedule Job?) then (Yes)\n  :Click Schedule Job to schedule the job promotion;\nelse (No)\nendif\n:Click Promote;\nstop\n@enduml",
+    "@startuml\nstart\n:Receive movement authority and all other necessary information through track-to-train transmission;\n:Transfer automatically to Full Supervision;\nrepeat\n  :Trainborne equipment remains in Full Supervision;\nrepeat while (Trainborne equipment is active?\\nShunting is NOT selected?\\nPartial Supervision is NOT received?) is (Yes)\n->No;\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging active?) then (Yes)\n  :Enter power-up mode;\n  partition \"1) High-voltage shutdown request flag == 2\" {\n    if (High-voltage shutdown request flag == 2?) then (Yes)\n      :Switch to state 115;\n      partition \"1a\" {\n        if (Flag drops to 0 with CP duty cycle at 85%?) then (Yes)\n          :Switch to state 126;\n        elseif (BMS self-check counter == 1?) then (Yes)\n          :Switch to state 130;\n        elseif (Slow charging becomes inactive?) then (Yes)\n          :Shut down;\n          stop\n        endif\n      }\n      partition \"1b\" {\n        if (Flag drops to 0 with CP duty cycle at 85%?) then (Yes)\n          :Switch to state 126;\n        elseif (Battery pre-heating is required?) then (Yes)\n          :Switch to state 130;\n        elseif (Slow charging becomes inactive?) then (Yes)\n          :Shut down;\n          stop\n        endif\n      }\n      partition \"1c\" {\n        if (Flag drops to 0 while BMS self-check counter == 1?) then (Yes)\n          :Switch to state 126;\n        elseif (CP duty cycle hits 85% with CP amplitude at 3000?) then (Yes)\n          :Switch to state 130;\n        elseif (Slow charging becomes inactive?) then (Yes)\n          :Shut down;\n          stop\n        endif\n      }\n    endif\n  }\n  partition \"2) Central control command == 2 & not in charging/discharging mode\" {\n    if (Central control charging/discharging command == 2\\nand vehicle isn't in charging/discharging mode?) then (Yes)\n      :Switch to state 110;\n      if (High-voltage shutdown request flag becomes 2?) then (Yes)\n        :Switch to state 115;\n      elseif (Flag drops to 0 with CP duty cycle at 88%?) then (Yes)\n        :Switch to state 126;\n      elseif (Central control command == 1\\nwhile charging state == 2?) then (Yes)\n        :Switch to state 130;\n      elseif (Slow charging becomes inactive?) then (Yes)\n        :Shut down;\n        stop\n      endif\n    endif\n  }\nelse (No)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n\n:NLGuidance receives static target;\n\n:Generate aim point command;\n\nif (Is aim point switching occurring?) then (No)\n  :Output consistent aim point;\n  \n  :Calculate tolerance:\\nTolerance = (Target Velocity + Vehicle Velocity) * T_sample;\n  \n  :Calculate actual change:\\nDelta_Magnitude = |Output(t) - Output(t-1)|;\n  \n  if (Delta_Magnitude > Tolerance?) then (Yes)\n    :Transient behavior is appreciable\\n(erratic changes detected);\n    :Fail requirement;\n    stop\n  else (No)\n    :Transient behavior is NOT appreciable;\n    :Pass requirement;\n  endif\n  \nelse (Yes, Aim point switching)\n  :Allow transient behavior\\n(to maintain counter-clockwise loiter\\nper requirement 3);\n  \n  :Output aim point with required transient;\n  \n  :Pass requirement;\nendif\n\nstop\n@enduml",
+    "@startuml\nstart\n:Input theta value;\nif (theta == +pi/2 OR theta == -pi/2?) then (yes)\n  :DCM321 is NOT invertible;\n  :Raise exception or handle singular case;\nelse (no)\n  :DCM321 is invertible;\n  :Compute inverse of DCM321;\nendif\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n:Add campers;\n:Keep track of each individual camper;\nstop",
+    "start\n:changes for bulk updating enum value;\nstop",
+    "start\n\n:Train Real-time Grid Operators annually;\nfork\n:System restoration;\nfork again\n:Black Start use;\nend fork\n\nif(Simulator available?) then(yes)\n:Conduct simulations;\nfork\n:System shutdowns;\nfork again\n:System restoration;\nend fork\nelse(no)\nendif\n\nstop",
+    "start\n\n:Log in LifeCycle Manager tool;\nswitch(Selection method)\ncase(1)\n:Go to \"Promotion Jobs\" home page;\n:Select the job want to promote;\ncase(2)\n:Right-click;\n:Click \"Promote\";\nendswitch\n\n:Open source and destination systems drop-down lists;\n:Select source and destination systems;\n\nif(Have logged into both source and destination systems) then(no)\nstop\nelse(yes)\nendif\n\n:Go to External Change Management ID field;\n:Enter appropriate value;\n:Click \"Save\";\n\n:Click \"Mappings\";\nif(Create and validate mappings) then(yes)\n:Click \"Edit Mappings\";\nelse(no)\nendif\n\nif(See Security Settings?) then(yes)\n:Click \"Security Settings\";\n:Options are displayed;\nfork\n:\"Do not Promote Security\";\nnote right:Default option\nfork again\n:\"Promote Security\";\n:Promote jobs along with associated security rights;\nfork again\n:\"Include application rights\";\n\nif (Select \"Promote Security\"?) then(yes)\n:The option is enabled;\n  if(Objects inherit any application rights?) then(yes)\n  :Job is promoted along with these rights;\n  else(no)\n  endif\nelse(no)\nendif\nend fork\n\nif(Click \"View Security\"?) then(yes)\n:View infoobjects security dependencies;\nelse(no)\nendif\nendif\n\n:Click \"Test Promote\";\n:Ensure no conflict between CUIDs in the source and destination systems;\n:Promotion details are displayed;\n\nfork\n:First column;\n:Objects to be promoted;\nfork again\n:Second column;\n:Promotion status;\nend fork\n\n:LifeCycle Manager tool classifies selected objects;\n\n:Run Test Promote feature;\n:Commit no infoobjects for promotion;\n\nswitch(Results)\ncase(Overwritten)\n :Infoobject in destination is overwritten by infoobject in source system;\ncase(Mapped)\n :Infoobject types;\n fork\n :Folders,\n fork again\n :Users;\n fork again\n :User groups;\n fork again\n :Custom roles;\n end fork\n\n if(Security option is enabled?) then(yes)\n :Infoobject is mapped to destination system and promoted;\n else(no)\n :Infoobject is not promoted;\n endif\ncase(Copied)\n :Infoobject in source system is copied to destination system;\ncase(Dropped)\n :Infoobject is not promoted from source system to destination system;\ncase(Warning)\n :Infoobject in destination system is the newer version;\n :Remove infoobject from Job;\nif(Promote?) then(yes)\n :Infoobject gets promoted;\nelse(no)\nendif\nendswitch\n\nif(Schedule job promotion?) then(yes)\n:Click \"Schedule Job\";\nelse(no)\nendif\n\n:Click \"Promote\";\n\nstop",
+    "start\n:Receive through track-to-train transmission;\n\nfork\n:Movement authority;\nfork again\n:All other necessary information;\nend fork\n\n:Transfer to Full Supervision automatically;\n\nif(Trainborne equipment active?) then(yes)\n:Remain in Full Supervision;\nelse(no)\n:Exit Full Supervision;\nstop\nendif\n\nif(Shunting is selected?) then(no)\n:Remain in Full Supervision;\nelse(yes)\n:Exit Full Supervision;\nstop\nendif\n\nif(Partial Supervision information?) then(no)\n:Remain in Full Supervision;\nelse(yes)\n:Exit Full Supervision;\nstop\nendif\n\nstop",
+    "start\nif (slow charging is active) then\n  :enter power-up mode;\n  if (high-voltage shutdown request charging/discharging is 2 and BMS self-check counter is 0) then\n    :switch to state 127;\n    if (slow charging is inactive and front MCU collateral shutdown request flag is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    else if (slow charging is inactive) then\n      :issue 2.2s timeout warning;\n      :switch to state 128;\n      :enter shutdown state;\n      stop\n    else if (slow charging is inactive and BMS self-check counter is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend",
+    "start\n\n:In NLGuidance;\n:Output consistent aim point with static target;\n\nif(Transient is required to maintain counter clockwise loiter?) then(yes)\n:Aim point switching;\nelse(no)\n if(Change with T sample period > (Quantity + Velocity) * T?) then(yes)\n :Erratic changes in aim point command;\n stop\n else(no)\n endif\nendif\n\n:Output consistent aim point with static target;\n\nstop",
+    "start\n\n:Rotation Matrix DCM321;\nif(theta = +/- pi/2 radians?) then(yes)\n:Not invertible;\nelse(no)\n:Invertible;\nendif\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

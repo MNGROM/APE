@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities: Read the requirement and identify every distinct action, event, or system response as a separate, atomic activity. Do not merge multiple distinct steps into a single verbose activity; preserve intermediate states and explicit feedback as individual steps.\n2. Identify control-flow: Analyze the extracted activities for dependencies, conditional branches (if/else), alternative paths (switch/case), and concurrent actions (fork/join). Map these directly to PlantUML structures (if/else, switch, fork).\n3. Evaluate dependencies: Before linking two activities sequentially, confirm that the second activity logically depends on the completion of the first. Do not artificially serialize independent or alternative actions.\n4. Generate PlantUML: Construct the diagram using the extracted activities and identified control-flow structures."
+    },
+    {
+      "section": "rule",
+      "operation": "replace",
+      "content": "- Strict grounding: Only include activities explicitly stated or unambiguously required by the input text. Do not infer or add UI interactions, validation logic, or system responses that are not mentioned.\n- Atomic granularity: Each activity must represent a single, distinct action or state. Avoid combining multiple steps into one node.\n- No artificial serialization: Independent actions must not be linked sequentially. Alternative actions must be placed in separate branches, not a single linear sequence."
+    }
+  ],
+  "rationale": "The workflow edit provides a step-by-step procedure to address missing activities and missing/wrong relations by enforcing fine-grained extraction and explicit control-flow identification. The rule edit addresses extra activities and extra/wrong relations by strictly prohibiting hallucinated UI/system steps and artificial serialization of independent or alternative paths.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

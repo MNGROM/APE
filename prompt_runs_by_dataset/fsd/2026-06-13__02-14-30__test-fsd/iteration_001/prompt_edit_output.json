@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities strictly from the requirement text. Create one activity node for each distinct action or state explicitly mentioned; do not invent UI interactions, system validations, or other unstated implementation details.\n2. Decompose compound actions or sentences describing multiple sequential actions into separate, concise activity nodes.\n3. Identify control-flow keywords in the requirement (e.g., if, unless, alternatively, simultaneously, in parallel) to determine branching and concurrency before writing PlantUML.\n4. Map the identified control-flow semantics to the correct PlantUML constructs and generate the diagram."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "Use 'if/else' for binary conditional paths and 'switch/case' for multiple alternative outcomes based on a single choice or variable. Use 'fork/end fork' only for concurrent parallel actions that happen at the same time. Alternative branches in if/else or switch/case must converge at a merge point and must not be sequentially linked."
+    }
+  ],
+  "rationale": "The workflow edit addresses the empty workflow section by adding a step-by-step procedure that enforces strict extraction from the text, prevents hallucinated elaboration, and guides decomposition of compound actions. The knowledge edit addresses the control-flow construct selection gap by providing reusable UML/PlantUML principles for mapping requirement semantics to the correct branching/parallel constructs and preventing the linearization of alternative paths.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

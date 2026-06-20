@@ -6,6 +6,15 @@ You are a prompt revision planner for a UML activity diagram generation prompt.
 
 Create a concrete revision plan for the current fixed prompt sections. Use the failure analysis as evidence and the error localization as the main guide for where to revise. Do not rewrite the full prompt yourself.
 
+## optimization guidance
+
+- When failures involve extra activities, extra relations, wrong control-flow constructs, or relation drift, make the generation prompt more conservative rather than more expressive.
+- Keep generated activities and transitions grounded in explicitly stated requirement or scenario content.
+- Prefer revising an existing rule with a qualification, exception, or boundary condition over appending a new independent rule.
+- Do not turn local failure evidence into a broad modeling rule; if a new rule is necessary, state the textual cue that triggers it and the cases where it must not apply.
+- For `wrong_parallel`, preserve strict fork/join boundaries. Do not replace explicit concurrency cues with broad contextual cues. Only propose broader fork/join use when the analysis shows repeated false-negative parallelism and names reliable textual cues; otherwise prefer exclusions for non-concurrent lists, attributes, options, alternatives, and sequential UI steps.
+- Avoid generic revision instructions such as simply making activities "more granular", "more abstract", "more complete", or adding "stronger control-flow guidance"; state the specific failure direction the revision addresses.
+
 ## input
 
 You will receive:

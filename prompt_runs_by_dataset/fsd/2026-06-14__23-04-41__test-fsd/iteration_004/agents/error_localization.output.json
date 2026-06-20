@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, providing no constraints against inventing implicit steps, assuming standard CRUD/error-handling flows, or over-structuring simple requirements with unnecessary conditional logic."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, failing to provide guidance on PlantUML fork syntax for parallelism and reusable modeling patterns for preserving conditional guards and exit criteria as distinct branches."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, resulting in no step-by-step process to guide the model in extracting activities faithfully, identifying linguistic cues for concurrent behavior, and matching the granularity of the source text before generating code."
+    }
+  ]
+}
+```

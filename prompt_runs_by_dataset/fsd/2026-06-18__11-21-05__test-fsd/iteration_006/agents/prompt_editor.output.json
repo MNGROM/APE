@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Ensure implicit conditional outcomes are extracted as activity nodes and prevent misuse of fork/join for sequential steps.",
+      "change_instruction": "In Step 1, qualify the extraction rule: alongside explicitly stated activities, also extract the implicit direct outcomes or consequences of conditional checks (e.g., 'Allowed'/'Not allowed' results) as explicit activity nodes, while still prohibiting invented validations or error-handling. In Step 3, add a qualification that sequential multi-part actions (such as sequential data entry fields) must be modeled as sequential activities, and explicitly state that `fork`/`join` must not be used merely as a visual grouping mechanism for sequential or alternative steps."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Clarify when implicit conditional outcomes require nodes and provide guidance for bounded loops with early exits.",
+      "change_instruction": "Add a rule to the conditional logic knowledge: when a requirement specifies a conditional check, the direct mutually exclusive outcomes of that check must be represented as explicit activity nodes, even if only implied by the condition (e.g., a 'granted'/'denied' state), but this must not trigger for unspecified error-handling or validation branches. Add a rule for bounded loops: when a requirement specifies a maximum number of attempts or a loop with an early exit upon success, model this using a `while` loop containing an `if`/`else` construct for the early exit, rather than a flat `repeat` loop."
+    },
+    {
+      "section": "rule",
+      "intent": "Relax the prohibition on implicit steps for conditional outcomes and explicitly ban fork/join for non-concurrent groupings.",
+      "change_instruction": "Qualify the rule prohibiting 'implicit steps' and 'error-handling branches' to explicitly exempt the direct, implicit outcomes of stated conditional checks (e.g., the negative branch of an 'if' statement). Add a new rule stating: 'Do not use `fork`/`join` constructs for sequential steps, grammatical lists of dependent actions, or mutually exclusive alternatives; `fork`/`join` is strictly reserved for concurrent execution explicitly or contextually indicated by the requirement.'"
+    }
+  ]
+}

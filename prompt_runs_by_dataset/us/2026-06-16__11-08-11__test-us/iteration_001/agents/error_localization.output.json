@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, providing no step-by-step process for extracting activities from text, mapping natural language connectives to PlantUML control flow, or validating nodes and edges against the source. This absence directly leads to omitted activities, hallucinated steps, and incorrect or unsupported relations."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, leaving the model without heuristics for identifying parallel boundaries, loop constructs, and conditional alternatives from textual cues. This causes misinterpretation of concurrency, incorrect loop boundaries, and flattened or misplaced conditional branches."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, failing to enforce strict constraints such as a 1:1 mapping between explicit requirement actions and activity nodes, prohibiting hallucinated intermediate steps, and requiring every control-flow transition to be explicitly supported by the source text. This results in both extra and missing activities and relations."
+    }
+  ]
+}
+```

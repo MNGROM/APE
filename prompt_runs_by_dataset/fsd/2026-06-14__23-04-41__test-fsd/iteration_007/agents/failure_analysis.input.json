@@ -1,0 +1,100 @@
+{
+  "requirements": [
+    "As a UI designer, I want to move on to round 2 of Homepage edits, so that I can get approvals from leadership.",
+    "2. Edit Category 2.1. User navigates to a Category (see View Inventory) 2.2. System displays the Edit Category button 2.3. User clicks the Edit Category button 2.4. System displays the appropriate screen for the Category type 2.4.1. Unique Item 2.4.2. Stock Item 2.5. User edits Category data 2.6. System validates the Category data 2.7. System updates the Category information 2.8. User is taken back to the Category screen",
+    "1. trading information release system: send a query 2. central trading system: implement the query 3. central trading system: structuralize the queried data 4. central trading system: send the data to release",
+    "As a camp administrator, I want to be able to delete tasks/activities I scheduled, so that I can keep the schedule clean of unneeded activities.",
+    "As a DAMS manager, I want to know, via the preservation manager, of all files for which the checksum has changed since last registered.",
+    "6.\tLoading Master Data forCharacteristic \"Product\"Go to the Data Warehousing Workbench;in the Modeling area choose Info Provider. The attributes and texts are displayed with transformation and Data source in your Info Area below the characteristic Product.3. Perform the following steps, rst for the attributes of the characteristic and then for the texts of the characteristic.4. From the context menu of the Data source, choose Create Info Package...5. On the next screen, enter a description for the Info Package and choose Save. The Info Package maintenance screen for the scheduler appears.6. Go to the tab page Schedule and choose Start.7. To check the load process, choose Monitor in the toolbar of the Info Package maintenance screen.8 On the next screen, select the date and choose Execute. The monitor for the load process is displayed.9 Select the load process for your Data source from the tree at the left of the screen.",
+    "12.\tSet granular application rights to various functions within LifeCycleManager.1. Log into CMC and select Applications.2. Double-click LifeCycle Manager.3. Click User Security, and select Administrators.The View Security tab is enabled.4. Select the rights you want to set.You can set the following rights:• Create a job• Edit a job• Promote a job• Export a BIAR file• Edit a BIAR file• Delete a job• Rollback a job• Use Administration options• Edit Connections properties• Use Version Management System5. Click OK.",
+    "After the system starts up, if slow charging is active, we enter power-up mode. Then:\n\n1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:\n   a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.\n   b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.\n   c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with CP amplitude at 3000, switch to state 130. If slow charging becomes inactive, shut down and end.\n\n2) When the central control charging/discharging command is 2 and the vehicle isn't in charging/discharging mode, switch to state 110. Then:\n   - If the high-voltage shutdown request flag becomes 2, switch to state 115.\n   - If the flag drops to 0 with CP duty cycle at 88%, switch to state 126.\n   - If the central control command is 1 while charging state is 2, switch to state 130.\n   - If slow charging becomes inactive, shut down and end."
+  ],
+  "predictions": [
+    "@startuml\nskinparam style strictuml\n\ntitle UI Designer - Homepage Edits Round 2\n\nstart\n\n:Complete Round 1 Homepage Edits;\n\n:Initiate Round 2 Homepage Edits;\n\n:Apply design updates and refinements;\n\n:Submit Round 2 designs for review;\n\n:Leadership reviews designs;\n\nif (Leadership approves?) then (Yes)\n  :Round 2 approved;\n  stop\nelse (No)\n  :Receive feedback from leadership;\n  :Revise Homepage designs;\n  note right: Iterate on Round 2\n  :Resubmit designs for review;\n  goto Leadership reviews designs;\nendif\n\n@enduml",
+    "@startuml\nstart\n:User navigates to a Category (see View Inventory);\n:System displays the Edit Category button;\n:User clicks the Edit Category button;\nswitch\ncase (Unique Item)\n  :System displays the Unique Item screen;\ncase (Stock Item)\n  :System displays the Stock Item screen;\nendswitch\n:User edits Category data;\n:System validates the Category data;\n:System updates the Category information;\n:User is taken back to the Category screen;\nstop\n@enduml",
+    "@startuml\nstart\n:trading information release system: send a query;\n:central trading system: implement the query;\n:central trading system: structuralize the queried data;\n:central trading system: send the data to release;\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\nstart\n\n:Camp Administrator selects a scheduled task/activity;\n\n:System displays task/activity details;\n\n:Camp Administrator initiates delete action;\n\n:System prompts for confirmation;\n\nif (Confirm deletion?) then (Yes)\n  :System deletes the task/activity from the schedule;\n  :System updates the schedule;\n  :System displays success message;\nelse (No)\n  :System cancels deletion;\n  :System returns to schedule view;\nendif\n\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\nstart\n\n:DAMS Manager requests checksum change report;\n\nfork\n  :Preservation Manager retrieves list of all registered files;\nfork again\n  :Preservation Manager retrieves current checksums for all files;\nend fork\n\n:Preservation Manager compares current checksums against last registered checksums;\n\n:Filter files with changed checksums;\n\n:Generate report of changed files;\n\n:Preservation Manager notifies DAMS Manager;\n\n:DAMS Manager views report of files with changed checksums;\n\nstop\n@enduml",
+    "@startuml\nstart\n:Go to the Data Warehousing Workbench;\n:In the Modeling area choose InfoProvider;\n:The attributes and texts are displayed\\nwith transformation and Datasource\\nin your InfoArea below the characteristic Product;\nrepeat\n  :From the context menu of the Datasource,\\nchoose Create Info Package...;\n  :On the next screen, enter a description\\nfor the Info Package and choose Save;\n  :The Info Package maintenance screen\\nfor the scheduler appears;\n  :Go to the tab page Schedule and choose Start;\n  :To check the load process, choose Monitor\\nin the toolbar of the Info Package maintenance screen;\n  :On the next screen, select the date\\nand choose Execute;\n  :The monitor for the load process is displayed;\n  :Select the load process for your Datasource\\nfrom the tree at the left of the screen;\nrepeat while (For both attributes and texts of the characteristic?)\nstop\n@enduml",
+    "@startuml\nstart\n:Log into CMC and select Applications;\n:Double-click LifeCycle Manager;\n:Click User Security, and select Administrators;\nnote right: The View Security tab is enabled\nfork\n  :Create a job;\nfork again\n  :Edit a job;\nfork again\n  :Promote a job;\nfork again\n  :Export a BIAR file;\nfork again\n  :Edit a BIAR file;\nfork again\n  :Delete a job;\nfork again\n  :Rollback a job;\nfork again\n  :Use Administration options;\nfork again\n  :Edit Connections properties;\nfork again\n  :Use Version Management System;\nend fork\n:Click OK;\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging active?) then (Yes)\n  :Enter power-up mode;\n  partition \"1) High-voltage shutdown request flag == 2\" {\n    if (High-voltage shutdown request (charging/discharging) flag == 2?) then (Yes)\n      :Switch to state 115;\n      partition \"1a\" {\n        if (Flag drops to 0?) then (Yes)\n          if (CP duty cycle == 85%?) then (Yes)\n            :Switch to state 126;\n          elseif (BMS self-check counter == 1?) then (Yes)\n            :Switch to state 130;\n          endif\n        endif\n      }\n      if (Slow charging becomes inactive?) then (Yes)\n        :Shut down;\n        end\n      endif\n      partition \"1b\" {\n        if (Flag drops to 0?) then (Yes)\n          if (CP duty cycle == 85%?) then (Yes)\n            :Switch to state 126;\n          elseif (Battery pre-heating required?) then (Yes)\n            :Switch to state 130;\n          endif\n        endif\n      }\n      if (Slow charging becomes inactive?) then (Yes)\n        :Shut down;\n        end\n      endif\n      partition \"1c\" {\n        if (Flag drops to 0?) then (Yes)\n          if (BMS self-check counter == 1?) then (Yes)\n            :Switch to state 126;\n          elseif (CP duty cycle == 85% && CP amplitude == 3000?) then (Yes)\n            :Switch to state 130;\n          endif\n        endif\n      }\n      if (Slow charging becomes inactive?) then (Yes)\n        :Shut down;\n        end\n      endif\n    endif\n  }\n  partition \"2) Central control command == 2 && not in charging/discharging mode\" {\n    if (Central control charging/discharging command == 2 && vehicle not in charging/discharging mode?) then (Yes)\n      :Switch to state 110;\n      if (High-voltage shutdown request flag becomes 2?) then (Yes)\n        :Switch to state 115;\n      elseif (Flag drops to 0 && CP duty cycle == 88%?) then (Yes)\n        :Switch to state 126;\n      elseif (Central control command == 1 && charging state == 2?) then (Yes)\n        :Switch to state 130;\n      endif\n      if (Slow charging becomes inactive?) then (Yes)\n        :Shut down;\n        end\n      endif\n    endif\n  }\nelse (No)\nendif\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n:Move on to round 2 of Homepage edits;\n:Get approvals from leadership;\nstop",
+    "start\n\n:See View Inventory;\n:Navigate to Category;\n\n:Display Edit Category button;\n:Click Edit Category button;\n:Display Category type screen;\n\nif(Unique Item?) then(yes)\n:Display Unique Item screen;\nelse(no)\n:Display Stock Item screen;\nendif\n\n:Edit Category data;\n:System validates data;\n\n:System updates information;\n:Back to Category screen;\n\nstop",
+    "start\n\npartition \"Trading information release system\"{\n  :Send a query;\n}\n\npartition \"Central trading system\"{\n  :Implement the query;\n  :Structuralize queried data;\n  :Send data to release;\n}\n\nstop",
+    "start\n:Delete scheduled tasks/activities;\n:Keep schedule clean of unneeded activities;\nstop",
+    "start\n:Get all files that checksum has changed since last registered;\nstop",
+    "start\n\n:Go to Data Warehousing Workbench;\n:Go to Modeling area;\n:Choose \"Info Provider\";\n\n:Info Area displays information;\nfork\n  :Transformation;\nfork again\n  :Data source;\nfork again\n  :Attributes;\nfork again\n  :Texts;\nend fork\n\nrepeat\n    :Open Data source context menu;\n    :Choose \"Create InfoPackage...\";\n    \n    :Enter description;\n    :Choose \"Save\";\n    :The Info Package maintenance screen appears;\n\n    :Go to tab page Schedule;\n    :Choose \"Start\";\n\n    :Open the toolbar;\n    :Choose \"Monitor\";\n    :Check the load process;\n\n    :Select date;\n    :Choose \"Execute\";\n\n    :The monitor is displayed;\n    :Select load process from left tree;\nrepeat while (The texts are completed?) is (no)\n\nstop",
+    "start\n\n:Log in to CMC;\n:Select \"Applications\";\n\n:Double-click \"LifeCycle Manager\";\n\n:Click \"User Security\";\n:Select \"Administrators\";\n:View Security tab is enabled;\n\n:Select rights;\n\nfork\nif (Create a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Edit a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Promote a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Export a BIAR file?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Edit a BIAR file?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Delete a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Rollback a job?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Use Administration options?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Edit Connections properties?) then (yes)\n  :Set;\nelse (no)\nendif\n\nfork again\nif (Use Version Management System?) then (yes)\n  :Set;\nelse (no)\nendif\nendfork\n\n:Click \"OK\";\n\nstop",
+    "start\nif (slow charging is active) then\n  :enter power-up mode;\n  if (high-voltage shutdown request charging/discharging is 2 and BMS self-check counter is 0) then\n    :switch to state 127;\n    if (slow charging is inactive and front MCU collateral shutdown request flag is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    else if (slow charging is inactive) then\n      :issue 2.2s timeout warning;\n      :switch to state 128;\n      :enter shutdown state;\n      stop\n    else if (slow charging is inactive and BMS self-check counter is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "syntax_error",
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "syntax_error",
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

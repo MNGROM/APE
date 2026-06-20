@@ -1,0 +1,703 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 20
+- syntax_pass_rate: 1.0000
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.5312
+- node_recall: 0.4500
+- node_f1: 0.4872
+- relation_precision: 0.3829
+- relation_recall: 0.3565
+- relation_f1: 0.3692
+- plantuml_compilation_pass_rate: 1.0000
+- llm_element_evaluated: 20.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.8841
+- llm_node_recall: 0.7575
+- llm_node_f1: 0.8028
+- llm_relation_precision: 0.6865
+- llm_relation_recall: 0.5830
+- llm_relation_f1: 0.6111
+
+## Failure Types
+- extra_activity: 20
+- extra_or_wrong_relation: 20
+- missing_activity: 19
+- missing_or_wrong_relation: 18
+- wrong_parallel: 8
+- wrong_loop: 4
+
+## Representative Failure Cases
+### pure-0091
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.6000
+- llm_relation_f1: 0.2222
+- missing_nodes:
+  - click ok
+  - close window
+  - display statistics
+- extra_nodes:
+  - player clicks ok
+  - close window and display statistics
+- missing_relations:
+  - click ok -> close window [fork]
+  - click ok -> display statistics [fork]
+  - close window -> click ok [merge]
+  - display statistics -> click ok [merge]
+- input_excerpt:
+  Simple Finish Window Input: Player clicks "OK". Processing: None. Output: Close window and display statistics.
+- generated_excerpt:
+  @startuml start :Player clicks "OK"; :Close window and display statistics; stop @enduml
+### rac-0008
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1818
+- relation_f1: 0.0645
+- llm_element_status: success
+- llm_node_f1: 0.4615
+- llm_relation_f1: 0.2051
+- missing_nodes:
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - switch to state 127
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - switch to state 128
+  - shutdown
+  - slow charging is inactive
+  - issue 2.2s timeout warning
+  - enter shutdown state
+- extra_nodes:
+  - system startup
+  - high-voltage shutdown request flag?
+  - switch to state 115
+  - condition after state 115?
+  - switch to state 126
+  - switch to state 130
+  - shut down and end
+  - switch to state 110
+- missing_relations:
+  - enter power-up mode -> high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0 -> switch to state 127 [yes]
+  - switch to state 127 -> slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1 -> switch to state 128 [yes]
+  - switch to state 128 -> shutdown
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1 -> slow charging is inactive [no]
+  - slow charging is inactive -> issue 2.2s timeout warning [yes]
+  - issue 2.2s timeout warning -> switch to state 128
+- input_excerpt:
+  After the system starts up, if slow charging is active, we enter power-up mode. Then:  1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:    a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.    b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.    c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with 
+- generated_excerpt:
+  @startuml start :System startup; if (Slow charging active?) then (Yes)   :Enter power-up mode;   switch (High-voltage shutdown request flag?)   case (2)     :Switch to state 115;     switch (Condition after state 115?)     case (Flag drops to 0 with CP duty cycle at 85%)       :Switch to state 126;     case (BMS self-check counter shows 1)       :Switch to state 130;     case (Slow charging becomes inactive)       :Shut down and end;       stop     endswitch   case (Flag drops to 0 with CP duty cycle at 85%)     :Switch to state 126;   case (BMS self-check counter is 1)     :Switch to state 126;   case (CP duty cycle hits 85% with CP amplitude at 3000)     :Switch to state 130;   case (Batte
+### lmc-0056
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2500
+- relation_f1: 0.3333
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 1.0000
+- missing_nodes:
+  - =10?
+  - allowed
+  - not allowed
+- extra_nodes:
+  - dcm321 == 1.0?
+  - pass
+  - fail
+- missing_relations:
+  - =10? -> allowed [yes]
+  - =10? -> not allowed [no]
+- input_excerpt:
+  8.	The determinant of the Rotation Matrix, |DCM321|, shall be equal to 1.0.
+- generated_excerpt:
+  @startuml start :Calculate determinant of Rotation Matrix |DCM321|; if (|DCM321| == 1.0?) then (Yes)   :Pass; else (No)   :Fail; endif stop @enduml
+### bp-0019
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3125
+- relation_f1: 0.2162
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 0.3810
+- missing_nodes:
+  - click new job
+  - enter information
+  - enter name
+  - enter description
+  - enter keywords
+  - go to save job field
+  - browse and select folder
+  - open drop-downlists
+- extra_nodes:
+  - enter the name description and keywords for the job in the appropriate fields
+  - in the save job in field browse and select the folder in which you want to save the job
+  - select the source system and the destination system from the drop-down lists
+  - system name not displayed in the drop-down list?
+  - click the login to a new cms option
+  - enter the name of the system along with the user name and password
+- missing_relations:
+  - log in lifecycle manager tool -> go to promotion jobs home page
+  - click new job -> new job window appears
+  - new job window appears -> enter information
+  - enter information -> enter name [fork]
+  - enter information -> enter description [fork]
+  - enter information -> enter keywords [fork]
+  - enter name -> go to save job field [merge]
+  - enter description -> go to save job field [merge]
+- input_excerpt:
+  19.	create a new job by using the LifeCycle Manager tool1. Log into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, click New Job. The "New Job"window appears .3. Enter the name, description, and keywords for the job in the appropriatefields.4. In the Save Job in field, browse and select the folder in which you wantto save the job.5. Select the source system and the destination system from the drop-downlists.If the name of the system is not displayed in the drop-down list, click theLogin to a new CMS option. A new window is launched. Enter the nameof the system along with the user name and password.6. Click Create.
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :In the "Promotion Jobs" home page, click New Job; :The "New Job" window appears; :Enter the name, description, and keywords for the job in the appropriate fields; :In the Save Job in field, browse and select the folder in which you want to save the job; :Select the source system and the destination system from the drop-down lists; if (System name not displayed in the drop-down list?) then (Yes)   :Click the Login to a new CMS option;   :A new window is launched;   :Enter the name of the system along with the user name and password; else (No) endif :Click Create; stop @enduml
+### bp-0026
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3448
+- relation_f1: 0.3448
+- llm_element_status: success
+- llm_node_f1: 0.5294
+- llm_relation_f1: 0.4737
+- missing_nodes:
+  - open the promote window
+  - click mappings
+  - list of crystal reports is displayed
+  - edit crystal report properties tab appears
+  - edited in source system?
+  - edited is displayed
+  - created using universes?
+  - cannot be mapped
+- extra_nodes:
+  - click mappings in the promote window
+  - requirement?
+  - click save
+  - click promote
+- missing_relations:
+  - open the promote window -> click mappings
+  - list of crystal reports is displayed -> select required crystal report
+  - click edit crystal report properties -> edit crystal report properties tab appears
+  - click apply -> edited in source system?
+  - edited in source system? -> edited is displayed [yes]
+  - edited in source system? -> created using universes? [no]
+  - edited is displayed -> created using universes?
+  - created using universes? -> cannot be mapped [yes]
+- input_excerpt:
+  26.	modify the properties of a Crystal report1. In the "Promote" window, click Mappings.2. Click Crystal Report Mappings.The list of Crystal reports in the source system is displayed.3. Select the required Crystal report, and click Edit Crystal Report Properties. The "Edit Crystal Report Properties" tab appears, as shown in the following figure: This tab displays the list of properties and their values.4. Modify the appropriate fields, and click Apply. The Crystal Report Mappings tab appears.Note:• If you edit a Crystal report in the source system, the following message is displayed beside the Crystal report: edited• A Crystal Report created using Universes cannot be mapped in the Crystal Re
+- generated_excerpt:
+  @startuml start :Click Mappings in the "Promote" window; :Click Crystal Report Mappings; :Select the required Crystal report; :Click Edit Crystal Report Properties; :Modify the appropriate fields; :Click Apply; if (Requirement?) then (Save)   :Click Save; else (Promote)   :Click Promote; endif stop @enduml
+### bp-0023
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3488
+- relation_f1: 0.1651
+- llm_element_status: success
+- llm_node_f1: 0.5185
+- llm_relation_f1: 0.4176
+- missing_nodes:
+  - log in lifecycle manager tool
+  - selection method
+  - case 1
+  - go to promotion jobs home page
+  - case 2
+  - right-click
+  - open source and destination systems drop-down lists
+  - select source and destination systems
+- extra_nodes:
+  - promote a joblog into the lifecycle manager tool
+  - select source and destination systems from drop-down lists
+  - security settings required?
+  - security option
+  - select do not promote security (default)
+  - select include application rights
+  - view promotion details and status (overwritten mapped copied dropped warning)
+- missing_relations:
+  - log in lifecycle manager tool -> selection method
+  - selection method -> case 1 [case 1]
+  - case 1 -> go to promotion jobs home page
+  - go to promotion jobs home page -> select the job want to promote
+  - selection method -> case 2 [case 2]
+  - case 2 -> right-click
+  - right-click -> click promote
+  - select the job want to promote -> open source and destination systems drop-down lists [merge]
+- input_excerpt:
+  23.	promote a jobLog into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, select the job that you want to promote. You can also right-click the home page screen, and click Promote.3. From the source and the destination systems drop-down lists, select the source and destination systems.Note:Ensure that you have logged into both the source and destination systems before you proceed with the promotion process.4. In the External Change Management ID field, enter the appropriate value, and click Save.5. Click Mappings. Click Edit Mappings if you want to create and validate mappings.6. Click Security Settings, if required. The following options are displayed:• Do not Promote Secur
+- generated_excerpt:
+  @startuml start :Promote a jobLog into the LifeCycle Manager tool; :Select the job to promote; :Select source and destination systems from drop-down lists; :Enter External Change Management ID and click Save; :Click Mappings; if (Want to create and validate mappings?) then (Yes)   :Click Edit Mappings; else (No) endif if (Security Settings required?) then (Yes)   :Click Security Settings;   switch (Security Option)   case (Do not Promote Security)     :Select Do not Promote Security (Default);   case (Promote Security)     :Select Promote Security;     if (Include application rights?) then (Yes)       :Select Include application rights;     else (No)     endif   endswitch   :Optionally click
+### pure-0069
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3636
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 1.0000
+- missing_nodes:
+  - sudden burst in traffic
+  - hotspot is generated
+  - unable to handle excess load
+  - ws sends initialization request to mediator
+  - trigger peering
+- extra_nodes:
+  - hotspot is generated and provider is unable to handle excess load on its wss
+  - ws sends initialization request to the mediator to trigger peering
+- missing_relations:
+  - request for cdn wss content -> sudden burst in traffic
+  - sudden burst in traffic -> flash crowds occurred
+  - flash crowds occurred -> hotspot is generated
+  - hotspot is generated -> unable to handle excess load
+  - unable to handle excess load -> ws sends initialization request to mediator
+  - ws sends initialization request to mediator -> trigger peering
+- input_excerpt:
+  1. End users request for content from CDN WSs. 2. Flash crowds occurred due to a sudden burst in traffic. 3. Hotspot is generated and provider is unable to handle excess load on its WSs. 4. WS sends initialization request to the mediator to trigger peering.
+- generated_excerpt:
+  @startuml start :End users request for content from CDN WSs; :Flash crowds occurred due to a sudden burst in traffic; :Hotspot is generated and provider is unable to handle excess load on its WSs; :WS sends initialization request to the mediator to trigger peering; stop @enduml
+### bp-0021
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3704
+- relation_f1: 0.1429
+- llm_element_status: success
+- llm_node_f1: 0.7742
+- llm_relation_f1: 0.6667
+- missing_nodes:
+  - click new job
+  - the list of jobs is displayed
+  - select a job from list
+  - cick create
+  - information is displayed
+  - name
+  - keywords
+  - description
+- extra_nodes:
+  - the list of jobs in the promotionjob folder is displayed
+  - select a job from the job list and click create
+  - the name keywords and description of the job are displayed
+  - modify job fields if required
+  - in the save job in field browse and select the folder
+- missing_relations:
+  - log in lifecycle manager tool -> go to promotion jobs home page
+  - click new job -> click the copy an existing job option
+  - click the copy an existing job option -> the list of jobs is displayed
+  - the list of jobs is displayed -> select a job from list
+  - select a job from list -> cick create
+  - cick create -> information is displayed
+  - information is displayed -> name [fork]
+  - information is displayed -> keywords [fork]
+- input_excerpt:
+  21.	create a new job by copying an existing job.To create a new job by copying an existing job, complete the following steps:1. Log into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, click New Job.3. Click the Copy an Existing Job option. The list of jobs in the PromotionJob folder is displayed4. Select a job from the job list, and click Create. The name, keywords, and description of the job are displayed. You can modify these fields, if required. However, you cannot change the source system.5. In the Save Job in field, browse and select the folder in which you want to save the job, and click Create.A new job is created.
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :In the "Promotion Jobs" home page, click New Job; :Click the Copy an Existing Job option; :The list of jobs in the PromotionJob folder is displayed; :Select a job from the job list, and click Create; :The name, keywords, and description of the job are displayed; :Modify job fields if required; :In the Save Job in field, browse and select the folder; :Click Create; :A new job is created; stop @enduml
+### lmc-0014
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4000
+- relation_f1: 0.6667
+- llm_element_status: success
+- llm_node_f1: 0.8889
+- llm_relation_f1: 0.8000
+- missing_nodes:
+  - sensor change states from nominal to fault
+- extra_nodes:
+  - sensor in nominal state
+  - change state to fault
+- input_excerpt:
+  10.	The sensor shall change states from NOMINAL to FAULT when limits are exceeded.
+- generated_excerpt:
+  @startuml start :Sensor in NOMINAL state; if (Limits exceeded?) then (yes)   :Change state to FAULT; else (no) endif stop @enduml
+### fsd-0050
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4583
+- relation_f1: 0.3824
+- llm_element_status: success
+- llm_node_f1: 0.6923
+- llm_relation_f1: 0.4658
+- missing_nodes:
+  - thermal management controller implemented as deterministic state machine on rtos
+  - govern pwm fans
+  - govern liquid-cooling loops
+  - receive user-initiated air conditioner start command
+  - unit in powered-off state?
+  - indoor temperature > setpoint?
+  - high-priority task synchronized via mutexes with bms/pmic interface
+  - continuously monitor compressor status and condenser temperature
+- extra_nodes:
+  - verify unit is in powered-off state
+  - indoor temperature exceeds setpoint?
+  - monitor compressor status and condenser temperature (bms/pmic interface mutex-synchronized)
+  - poll indoor temperature sensors (rtos periodic task)
+  - enter control loop to regulate pwm duty cycle
+  - fault handling with bounded retries and exponential backoff?
+  - execute sensor fusion and calibration routines periodically
+  - continue periodic sensor fusion?
+- missing_relations:
+  - thermal management controller implemented as deterministic state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller implemented as deterministic state machine on rtos -> govern liquid-cooling loops [fork]
+  - govern pwm fans -> receive user-initiated air conditioner start command [merge]
+  - govern liquid-cooling loops -> receive user-initiated air conditioner start command [merge]
+  - receive user-initiated air conditioner start command -> unit in powered-off state?
+  - unit in powered-off state? -> indoor temperature > setpoint? [yes]
+  - unit in powered-off state? -> return to low-power standby state [no]
+  - execute air conditioner startup sequence -> high-priority task synchronized via mutexes with bms/pmic interface [fork]
+- input_excerpt:
+  The thermal management controller, implemented as a deterministic state machine on the RTOS, governs the PWM fans and liquid-cooling loops. Upon receiving a user-initiated air conditioner start command, the system first verifies the unit is in a powered-off state and then checks if the indoor temperature exceeds the setpoint. If both conditions are met, it executes the air conditioner startup sequence, during which a high-priority task, synchronized via mutexes with a BMS/PMIC interface, continuously monitors the compressor status and condenser temperature to ensure operational parameters remain within safe bounds. A medium-priority periodic task, scheduled by the RTOS, polls indoor temperat
+- generated_excerpt:
+  @startuml start :Verify unit is in powered-off state; if (Indoor temperature exceeds setpoint?) then (Yes)   :Execute air conditioner startup sequence;   fork     repeat :Monitor compressor status and condenser temperature (BMS/PMIC interface, mutex-synchronized);     repeat while (Operational parameters within safe bounds?)     fork again       repeat :Poll indoor temperature sensors (RTOS periodic task);       repeat while (Setpoint achieved?)     fork again       repeat :Service wind speed adjustment commands (interrupt-driven priority queue);         :Enter control loop to regulate PWM duty cycle;       repeat while (Actual fan speed matches requested value?)       :Log telemetry data to
+### pure-0024
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4706
+- relation_f1: 0.4444
+- llm_element_status: success
+- llm_node_f1: 0.9524
+- llm_relation_f1: 0.7273
+- missing_nodes:
+  - not stationary?
+  - acknowledge train trip condition
+  - continue movement
+  - backwards?
+  - drive for national value distance
+- extra_nodes:
+  - traction unit is stationary?
+  - driver acknowledges the train trip condition
+  - driver continues the movement
+  - train is driven backwards for a certain distance defined by national value
+- missing_relations:
+  - apply emergency brake -> not stationary?
+  - not stationary? -> apply emergency brake [yes]
+  - not stationary? -> acknowledge train trip condition [no]
+  - continue movement -> backwards?
+  - backwards? -> drive for national value distance [yes]
+  - backwards? -> drive for national value distance [no]
+- input_excerpt:
+  When a traction unit passes a stop-signal, the emergency brake shall be triggered. The emergency brake shall be applied until the traction unit is stationary. When the traction unit is stationary, the driver shall be required to acknowledge the train trip condition. This acknowledgement will release the emergency brake. After the acknowledgement, the driver shall be able to continue the movement. After the acknowledgement, the train shall be able to be driven backwards for a certain distance defined by national value.
+- generated_excerpt:
+  @startuml start :Traction unit passes a stop-signal; :Trigger emergency brake; repeat :Apply emergency brake; repeat while (Traction unit is stationary?) is (No) -> Yes; :Driver acknowledges the train trip condition; :Release emergency brake; :Driver continues the movement; :Train is driven backwards for a certain distance defined by national value; stop @enduml
+### rac-0006
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.4444
+- llm_element_status: success
+- llm_node_f1: 0.8889
+- llm_relation_f1: 0.8372
+- missing_nodes:
+  - condition judgement
+  - remote mode is enabled
+  - shutdown
+  - pet mode request handling is finished
+  - battery soc is 20
+  - battery soc reaches 80 and dcdc state is 3
+- extra_nodes:
+  - system starts up
+  - condition?
+  - enter state 110
+  - slow charging becomes inactive?
+  - go to state 28
+  - shut down
+  - move to state 28
+  - soc reaches 80 and dcdc state is 3?
+- missing_relations:
+  - condition judgement -> remote mode is enabled [case remote mode is enabled]
+  - remote mode is enabled -> switch to state 110
+  - switch to state 28 -> remote mode is disabled
+  - condition judgement -> pet mode request is received [case pet mode request is received]
+  - pet mode request is received -> switch to state 110
+  - condition judgement -> battery soc is 20 [case battery soc is 20]
+  - battery soc is 20 -> switch to state 110
+  - battery soc reaches 80 and dcdc state is 3 -> shutdown [yes]
+- input_excerpt:
+  After the system starts up: If slow charging is active, go into power-up mode. Then: 1.  If remote mode is enabled, enter state 110. Then, if slow charging becomes inactive, go to state 28. Finally, if remote mode is disabled, shut down and end. 2.  If a pet mode request comes in, switch to state 110. Then, if slow charging is inactive, move to state 28. Once the pet mode request is handled, shut down and end. 3.  If the battery SOC is 20, enter state 110. Then, if slow charging is inactive, switch to state 28. If the SOC later reaches 80 and the DCDC state is 3, shut down and end.
+- generated_excerpt:
+  @startuml start :System starts up; if (Slow charging active?) then (yes)   :Enter power-up mode;   switch (Condition?)   case (Remote mode enabled)     :Enter state 110;     if (Slow charging becomes inactive?) then (yes)       :Go to state 28;     endif     if (Remote mode disabled?) then (yes)       :Shut down;       stop     endif   case (Pet mode request comes in)     :Switch to state 110;     if (Slow charging is inactive?) then (yes)       :Move to state 28;     endif     :Pet mode request handled;     :Shut down;     stop   case (Battery SOC is 20)     :Enter state 110;     if (Slow charging is inactive?) then (yes)       :Switch to state 28;     endif     if (SOC reaches 80 and DCDC 
+### fsd-0100
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5217
+- relation_f1: 0.2903
+- llm_element_status: success
+- llm_node_f1: 0.8400
+- llm_relation_f1: 0.7385
+- missing_nodes:
+  - system initialization
+  - thermal management controller implemented as deterministic state machine on rtos
+  - pwm fan speeds
+  - liquid-cooling pump actuators
+  - initiate concurrent data processing tasks
+  - high-priority task executes cyclic data smoothing algorithm
+  - lower-priority task performs outlier rejection
+  - both utilize shared mutex-protected sensor data ring buffer
+- extra_nodes:
+  - govern pwm fan speeds and liquid-cooling pump actuators
+  - execute cyclic data smoothing algorithm with convergence check (high-priority task shared mutex-protected ring buffer)
+  - perform outlier rejection (lower-priority task shared mutex-protected ring buffer)
+  - fault detected during processing?
+  - validate hardware status via pmic/bms (fault diagnosis thread)
+  - validate software parameters (fault diagnosis thread)
+  - periodic task cycle?
+  - initiate exponential backoff recovery procedure
+- missing_relations:
+  - system initialization -> thermal management controller implemented as deterministic state machine on rtos
+  - thermal management controller implemented as deterministic state machine on rtos -> pwm fan speeds [fork]
+  - thermal management controller implemented as deterministic state machine on rtos -> liquid-cooling pump actuators [fork]
+  - pwm fan speeds -> sensor reading > preset threshold? [merge]
+  - liquid-cooling pump actuators -> sensor reading > preset threshold? [merge]
+  - evaluate ambient temperature and humidity against setpoints -> initiate concurrent data processing tasks
+  - initiate concurrent data processing tasks -> high-priority task executes cyclic data smoothing algorithm [fork]
+  - initiate concurrent data processing tasks -> lower-priority task performs outlier rejection [fork]
+- input_excerpt:
+  The thermal management controller, implemented as a deterministic state machine on the RTOS, governs PWM fan speeds and liquid-cooling pump actuators. Upon a sensor reading exceeding its preset threshold, conditional logic—evaluating ambient temperature and humidity against their respective setpoints—initiates concurrent data processing tasks. A high-priority task executes a cyclic data smoothing algorithm with a convergence check, while a lower-priority task performs outlier rejection; both utilize a shared mutex-protected sensor data ring buffer. If a fault is detected during this processing, an ISR triggers the fault diagnosis and alarm handling modules as separate, scheduled threads. The
+- generated_excerpt:
+  @startuml start :Govern PWM fan speeds and liquid-cooling pump actuators;  if (Sensor reading exceeds preset threshold?) then (yes)   :Evaluate ambient temperature and humidity against setpoints;      fork     repeat       :Execute cyclic data smoothing algorithm with convergence check (High-priority task, shared mutex-protected ring buffer);     repeat while (Convergence check passed?)          :Perform outlier rejection (Lower-priority task, shared mutex-protected ring buffer);   end fork    if (Fault detected during processing?) then (yes)     fork       :Validate hardware status via PMIC/BMS (Fault diagnosis thread);       :Validate software parameters (Fault diagnosis thread);     end f
+### fsd-0041
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5957
+- relation_f1: 0.2456
+- llm_element_status: success
+- llm_node_f1: 0.8400
+- llm_relation_f1: 0.4615
+- missing_nodes:
+  - power management subsystem initialization
+  - validate within expected operational envelope
+  - network link
+  - sensor data
+  - spawn concurrent tasks within rtos environment
+  - asynchronously update monitoring data
+  - protected by mutexes for shared resource access
+  - health management task executes periodic device diagnostics
+- extra_nodes:
+  - validate network link
+  - verify sensor data is within expected operational envelope
+  - asynchronously update monitoring data (protected by mutexes)
+  - spawn health management task
+  - execute periodic device diagnostics
+  - periodically
+  - write structured audit logs (incorporating crc for integrity) to non-blocking ring buffer
+  - retry verification
+- missing_relations:
+  - power management subsystem initialization -> perform sequential power-on self-test
+  - validate within expected operational envelope -> network link [fork]
+  - validate within expected operational envelope -> sensor data [fork]
+  - network link -> all checks pass? [merge]
+  - sensor data -> all checks pass? [merge]
+  - all checks pass? -> spawn concurrent tasks within rtos environment [yes]
+  - spawn concurrent tasks within rtos environment -> high-priority main thread scheduled via priority queue [fork]
+  - high-priority main thread scheduled via priority queue -> enter continuous loop
+- input_excerpt:
+  Upon initialization, the power management subsystem performs a sequential power-on self-test, first interrogating the PMIC and BMS for power rail abnormalities before proceeding to validate the network link and verify sensor data is within the expected operational envelope. If all checks pass, the system spawns multiple concurrent tasks within its RTOS environment: a high-priority main thread, scheduled via a priority queue, enters a continuous loop to monitor the device's operational state, while a lower-priority background thread asynchronously updates monitoring data, protected by mutexes for shared resource access. A separate health management task executes periodic device diagnostics, w
+- generated_excerpt:
+  @startuml start :Perform sequential power-on self-test; :Interrogate PMIC and BMS for power rail abnormalities; :Validate network link; :Verify sensor data is within expected operational envelope; if (All checks pass?) then (yes)   fork     :Spawn high-priority main thread (scheduled via priority queue);     repeat       :Monitor device's operational state;     repeat while (continuous loop)   fork again     :Spawn lower-priority background thread;     :Asynchronously update monitoring data (protected by mutexes);   fork again     :Spawn health management task;     repeat       :Execute periodic device diagnostics;     repeat while (periodically)   end fork   :Supervise all tasks by hardware
+### pure-0055
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6000
+- relation_f1: 0.5000
+- llm_element_status: success
+- llm_node_f1: 0.8571
+- llm_relation_f1: 0.8333
+- missing_nodes:
+  - show items to be purchased
+  - system updates inventory
+  - reflect sale
+- extra_nodes:
+  - the system updates the inventory to reflect the sale
+- missing_relations:
+  - buyer arrives at cashier/checkout desk -> show items to be purchased
+  - show items to be purchased -> sales associate scans tags
+  - system updates inventory -> reflect sale
+- input_excerpt:
+  1. Buyer arrives at the cashier or checkout desk with the items to be purchased 2. Sales associate scans the item tags 3. Sales associate processes the sale of the items in QuickBooks POS 4. The system updates the inventory to reflect the sale
+- generated_excerpt:
+  @startuml start :Buyer arrives at the cashier or checkout desk with the items to be purchased; :Sales associate scans the item tags; :Sales associate processes the sale of the items in QuickBooks POS; :The system updates the inventory to reflect the sale; stop @enduml
+### fsd-0061
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6667
+- relation_f1: 0.5429
+- llm_element_status: success
+- llm_node_f1: 0.8889
+- llm_relation_f1: 0.7532
+- missing_nodes:
+  - govern pwm fans
+  - govern liquid-cooling loops
+  - critical system failure?
+  - temperature > safety threshold?
+  - correlate events
+  - locate fault source
+  - validate communication module status
+  - crc check over can bus
+- extra_nodes:
+  - safety threshold exceeded?
+  - correlate events to locate fault source
+  - validate communication module status with crc check over can bus
+  - interface with pmic or bms to detect power rail instability
+  - execute repair operations based on detection results (e.g. reset sequences with exponential backoff)
+  - bounded retries exhausted?
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller executes as state machine on rtos -> govern liquid-cooling loops [fork]
+  - govern pwm fans -> detect external signal abnormality? [merge]
+  - govern liquid-cooling loops -> detect external signal abnormality? [merge]
+  - detect external signal abnormality? -> all audit logs written to ring buffer [no]
+  - primary diagnostic -> critical system failure?
+  - critical system failure? -> initiate separate parallel process [no]
+  - temperature > safety threshold? -> terminate operation [yes]
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fans and liquid-cooling loops. Upon detecting an external signal abnormality, a primary diagnostic determines if it constitutes a critical system failure. If critical, a high-priority task is spawned: its first thread continuously monitors temperature sensor data via a protected ring buffer, terminating operation and triggering an alarm via the system watchdog if a safety threshold is exceeded, while its second thread, using a mutex to access the structured audit log, correlates events to locate the fault source. For non-critical faults, a separate parallel process is initiated, where one thread validate
+- generated_excerpt:
+  @startuml start :Execute thermal management state machine on RTOS; :Detect external signal abnormality; switch (Primary diagnostic) case (Critical system failure)   :Spawn high-priority task;   fork     :Continuously monitor temperature sensor data via protected ring buffer;     if (Safety threshold exceeded?) then (yes)       :Terminate operation;       :Trigger alarm via system watchdog;       stop     else (no)     endif   fork again     :Access structured audit log using mutex;     :Correlate events to locate fault source;   end fork case (Non-critical fault)   :Initiate separate parallel process;   fork     :Validate communication module status with CRC check over CAN bus;   fork again 
+### rac-0020
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7000
+- relation_f1: 0.5412
+- llm_element_status: success
+- llm_node_f1: 0.7576
+- llm_relation_f1: 0.5435
+- missing_nodes:
+  - remote mode is disabled
+  - shutdown
+  - slow charging is inactive
+  - fast charging is inactive
+  - battery soc=20
+  - condition judgement
+  - remote mode is enabled
+  - slow charging is active
+- extra_nodes:
+  - system startup
+  - remote mode handling
+  - shut down and exit
+  - slow charging handling
+  - fast charging handling
+  - fourth step checks
+  - soc = 20?
+  - additional checks
+- missing_relations:
+  - switch to remote power-up state -> remote mode is disabled
+  - switch to state 28 -> gw_trigger=0 and dcdc state=3
+  - remote mode enabled -> slow charging active [no]
+  - switch to slow charging power-up state -> slow charging is inactive
+  - switch to fast charging power-up state -> fast charging is inactive
+  - fast charging active -> gw_trigger=2 [no]
+  - switch to state 10 -> battery soc=20
+  - battery soc=20 -> switch to state 28 [yes]
+- input_excerpt:
+  After the system starts up, the following steps occur:  First, for remote mode handling: if remote mode is enabled, switch to the remote power-up state; if disabled, switch to state 49. Then, if GW_trigger equals 2 and battery SOC is 20, switch to state 28; if GW_trigger equals 0 and DCDC state is 3, shut down and exit.  Next, for slow charging handling: if slow charging is active, switch to the slow charging power-up state; if inactive, switch to state 129. Then, if GW_trigger equals 2 and SOC is 20, switch to state 28; if GW_trigger equals 0 and DCDC state is 3, shut down and exit.  Then, for fast charging handling: if fast charging is active, switch to the fast charging power-up state; if
+- generated_excerpt:
+  @startuml start :System startup;  :Remote mode handling; if (Remote mode enabled?) then (Yes)   :Switch to remote power-up state; else (No)   :Switch to state 49; endif if (GW_trigger = 2 and battery SOC = 20?) then (Yes)   :Switch to state 28; elseif (GW_trigger = 0 and DCDC state = 3?) then (Yes)   :Shut down and exit;   stop else (No) endif  :Slow charging handling; if (Slow charging active?) then (Yes)   :Switch to slow charging power-up state; else (No)   :Switch to state 129; endif if (GW_trigger = 2 and SOC = 20?) then (Yes)   :Switch to state 28; elseif (GW_trigger = 0 and DCDC state = 3?) then (Yes)   :Shut down and exit;   stop else (No) endif  :Fast charging handling; if (Fast cha
+### lmc-0039
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7500
+- relation_f1: 0.2857
+- llm_element_status: success
+- llm_node_f1: 0.8333
+- llm_relation_f1: 0.5455
+- missing_nodes:
+  - b(inv(wp )b matrix inversion be accurate to 6 digits precision
+- extra_nodes:
+  - invert b(inv(wp ))b matrix
+- missing_relations:
+  - determinant of b(inv(wp )b <= 1e-12 -> each element with respect to 3x3 identity matrix elements < 1e-6 tolerance
+  - each element with respect to 3x3 identity matrix elements < 1e-6 tolerance -> b(inv(wp )b matrix inversion be accurate to 6 digits precision
+- input_excerpt:
+  1.	When the determinant of B(inv(Wp’)B’ is <= 1e-12 as indicated by ridge_on set to True, the inversion of the B(inv(Wp’)B’ matrix should be accurate to 6 digits precision in that each element in the check output matrix is within a 1e-6 tolerance with respect to the elements of a 3x3 identity matrix.
+- generated_excerpt:
+  @startuml start :Check determinant of B(inv(Wp'))B' <= 1e-12; if (ridge_on is True?) then (yes)   :Invert B(inv(Wp'))B' matrix;   :Verify check output matrix elements are within 1e-6 tolerance of 3x3 identity matrix; else (no) endif stop @enduml
+### rac-0019
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.8000
+- relation_f1: 0.6557
+- llm_element_status: success
+- llm_node_f1: 0.8451
+- llm_relation_f1: 0.4835
+- missing_nodes:
+  - ignition switch=0 and slow charging is inactive
+  - remote mode is disabled
+  - slow charging is inactive
+  - fast charging is inactive
+  - switch to state 189
+- extra_nodes:
+  - system starts up
+  - move to state 49
+  - proceed to state 49
+  - move to state 110
+  - go to state 189
+  - transition to state 28
+- missing_relations:
+  - switch to state 29 -> ignition switch=0 and vcc2=12
+  - fast charge vcc2=6 -> slow charging is active and charging system command=1 [no]
+  - switch to state 110 -> charging system command=4
+  - switch to state 29 -> ignition switch=0 and slow charging is inactive
+  - ignition switch=0 and slow charging is inactive -> switch to state 49 [yes]
+  - switch to state 28 -> remote mode is disabled
+  - remote mode enabled -> slow charging is active [no]
+  - switch to state 110 -> slow charging is inactive
+- input_excerpt:
+  After the system starts up, if the ignition switch is set to 2, transition to state 30. Then, under that condition: - If the ignition switch becomes 0, move to state 49 and exit. - If the fast charge Vcc2 is 6, observe the charging gun indicator. Should the charging system command be 4, switch to state 29. - If the ignition switch is 0 and Vcc2 is 12, proceed to state 49 and exit. - If slow charging is active and the charging system command is 1, transition to state 110. If the command is 4 instead, go to state 29. Also, if the ignition switch is 0 and slow charging is not active, shift to state 49 and exit.  If remote mode is enabled, switch to state 28. If it's disabled, transition to stat
+- generated_excerpt:
+  @startuml start :System starts up; if (Ignition switch is 2?) then (Yes)   :Transition to state 30;   if (Ignition switch becomes 0?) then (Yes)     :Move to state 49;     stop   elseif (Fast charge Vcc2 is 6?) then (Yes)     :Observe the charging gun indicator;     if (Charging system command is 4?) then (Yes)       :Switch to state 29;       stop     else (No)       stop     endif   elseif (Ignition switch is 0 and Vcc2 is 12?) then (Yes)     :Proceed to state 49;     stop   else (Slow charging is active and charging system command is 1?)     :Transition to state 110;     stop   endif else (No)   if (Remote mode is enabled?) then (Yes)     :Switch to state 28;     stop   else (No)     :Tra
+### lmc-0012
+- dataset: lmc
+- failure_types: extra_activity, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.8000
+- relation_f1: 0.6667
+- llm_element_status: success
+- llm_node_f1: 0.8889
+- llm_relation_f1: 0.6667
+- extra_nodes:
+  - change state to transition
+- input_excerpt:
+  8.	The autopilot shall change states from STANDBY to TRANSITION when the pilot is not in control (not standby).
+- generated_excerpt:
+  @startuml start :Autopilot in STANDBY state; if (Pilot is not in control?) then (yes)   :Change state to TRANSITION; else (no) endif stop @enduml
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

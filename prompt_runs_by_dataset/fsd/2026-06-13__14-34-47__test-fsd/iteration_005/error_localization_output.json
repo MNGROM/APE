@@ -1,0 +1,67 @@
+```json
+{
+  "summary": "The most critical repairs are in workflow and knowledge: workflow contains the actively harmful 'do not decompose' instruction causing granularity errors, while knowledge lacks reusable principles for compound splitting, constraints, and loops.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "activity_granularity_conflict",
+        "relation_errors_from_granularity",
+        "loop_modeling_weakness"
+      ],
+      "section_problem": "Step 1 explicitly prohibits decomposing single stated actions into sub-steps, which directly contradicts the gold standard and causes missing activities. Step 2 lacks guidance on identifying iterative patterns.",
+      "edit_intent": "Remove the 'do not decompose' clause and replace it with guidance to split compound sequential actions. Add a step for identifying and modeling iterative/repetitive behavior.",
+      "knowledge_gap_ids": [
+        "compound_action_splitting",
+        "repeat_loop_pattern"
+      ],
+      "evidence_case_ids": [
+        "bp-0021",
+        "bp-0005",
+        "us-0165"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "activity_granularity_conflict",
+        "extra_inferred_activities",
+        "loop_modeling_weakness"
+      ],
+      "section_problem": "Lacks reusable modeling principles for when to split compound actions, how to handle constraints (as notes vs decision nodes), and how to model repeat loops.",
+      "edit_intent": "Add concise modeling principles for compound action splitting, constraint-as-note, and repeat loop patterns based on the identified knowledge gaps.",
+      "knowledge_gap_ids": [
+        "compound_action_splitting",
+        "constraint_as_note_vs_decision",
+        "repeat_loop_pattern"
+      ],
+      "evidence_case_ids": [
+        "bp-0021",
+        "bp-0005",
+        "us-0165",
+        "pure-0029"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The agent's role and scope are correctly defined and do not contribute to the observed failures."
+    },
+    {
+      "section": "input",
+      "reason": "The input specification is standard and unrelated to the granularity, label, or control-flow errors."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement (PlantUML only) is appropriate and not a source of error."
+    }
+  ]
+}
+```

@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "rule",
+      "intent": "Prevent hallucinated control flows and over-granular decomposition.",
+      "change_instruction": "Add strict constraints: 1) Do not invent implicit system behaviors, validations, error-handling branches, or UI interactions (e.g., 'display error', 'retry', 'click button') unless explicitly stated in the input. 2) Preserve the abstraction level of the requirement; do not decompose a single high-level requirement statement into assumed granular sub-steps or UI actions."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide mapping guidance for parallel forks and conditional branching.",
+      "change_instruction": "Add modeling guidance: 1) When the requirement introduces multiple items or attributes simultaneously (e.g., lists like 'name, description, and keywords'), map them to PlantUML fork/fork again/end fork constructs to represent structural parallelism. 2) When the requirement describes alternative choices, enumerated options, or mutually exclusive paths (e.g., 'All Universes' vs. 'Other options'), map them to PlantUML switch/case or if/elseif/else constructs."
+    },
+    {
+      "section": "workflow",
+      "intent": "Enforce an extraction-first process that identifies parallel and alternative structures before code generation.",
+      "change_instruction": "Define a step-by-step process: 1) Extract explicit activities from the requirement at the stated abstraction level, without adding sub-steps. 2) Identify and label parallel structures (simultaneous attributes/items) and conditional branches (alternative choices/enumerated options). 3) Construct the control flow connecting the extracted activities, parallel forks, and conditional branches. 4) Generate the final PlantUML code based on this structured plan."
+    }
+  ]
+}
+```

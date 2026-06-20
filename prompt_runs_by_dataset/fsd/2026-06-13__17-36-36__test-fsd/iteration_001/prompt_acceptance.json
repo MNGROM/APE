@@ -1,0 +1,82 @@
+{
+  "accepted": false,
+  "metric_deltas": {
+    "plantuml_compilation_pass_rate": -0.09999999999999998,
+    "node_f1": 0.13983501668162607,
+    "relation_f1": 0.18569109357794927,
+    "infrastructure_error_rate": 0.0
+  },
+  "compile_delta": -0.09999999999999998,
+  "node_delta": 0.13983501668162607,
+  "relation_delta": 0.18569109357794927,
+  "infrastructure_delta": 0.0,
+  "min_compile_delta": -0.05,
+  "min_node_delta": -0.02,
+  "min_relation_delta": -0.01,
+  "relation_accept_delta": 0.01,
+  "node_accept_delta": 0.02,
+  "compile_accept_delta": 0.05,
+  "safety_gate": {
+    "compile_not_significantly_worse": false,
+    "node_not_significantly_worse": true,
+    "relation_not_significantly_worse": true,
+    "semantic_metrics_not_both_down": true,
+    "infrastructure_delta_ok": true,
+    "prompt_size_ok": true
+  },
+  "benefit_gate": {
+    "relation_improved": true,
+    "node_improved": true,
+    "compile_improved_without_semantic_regression": false
+  },
+  "rejection_reasons": [
+    "compile_not_significantly_worse"
+  ],
+  "acceptance_policy": "accept when every safety gate passes and at least one metric benefit gate passes; no aggregate weighted score is used",
+  "prompt_chars_before": 341,
+  "prompt_chars_candidate": 995,
+  "prompt_growth_ratio": 2.9178885630498534,
+  "max_prompt_growth_ratio": 6.0,
+  "max_prompt_chars": 9000,
+  "prompt_size_ok": true,
+  "baseline_summary": {
+    "count": 20.0,
+    "syntax_pass_rate": 1.0,
+    "infrastructure_error_rate": 0.0,
+    "node_precision": 0.2653084553979695,
+    "node_recall": 0.21349668755841442,
+    "node_f1": 0.21463872183444654,
+    "relation_precision": 0.12037070164977141,
+    "relation_recall": 0.0956626273697885,
+    "relation_f1": 0.09286423308985758,
+    "plantuml_compilation_pass_rate": 1.0,
+    "llm_element_evaluated": 0.0,
+    "llm_element_failed": 0.0,
+    "llm_node_precision": 0.0,
+    "llm_node_recall": 0.0,
+    "llm_node_f1": 0.0,
+    "llm_relation_precision": 0.0,
+    "llm_relation_recall": 0.0,
+    "llm_relation_f1": 0.0
+  },
+  "candidate_summary": {
+    "count": 20.0,
+    "syntax_pass_rate": 0.9,
+    "infrastructure_error_rate": 0.0,
+    "node_precision": 0.3845587708606688,
+    "node_recall": 0.3491485631032885,
+    "node_f1": 0.3544737385160726,
+    "relation_precision": 0.29254150659638467,
+    "relation_recall": 0.2729787446379518,
+    "relation_f1": 0.27855532666780686,
+    "plantuml_compilation_pass_rate": 0.9,
+    "llm_element_evaluated": 0.0,
+    "llm_element_failed": 0.0,
+    "llm_node_precision": 0.0,
+    "llm_node_recall": 0.0,
+    "llm_node_f1": 0.0,
+    "llm_relation_precision": 0.0,
+    "llm_relation_recall": 0.0,
+    "llm_relation_f1": 0.0
+  }
+}

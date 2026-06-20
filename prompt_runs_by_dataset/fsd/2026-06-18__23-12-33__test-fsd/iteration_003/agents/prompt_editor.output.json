@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "knowledge",
+      "intent": "Combined intent: Eliminate false-positive parallelism by removing the over-broad trigger for fork/join.; Differentiate conditional logic from alternative options and preserve nested conditions.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise knowledge rule (4) to remove the phrase 'lists of attributes, options, or grouped items that represent independent properties or simultaneous display states' as a trigger for `fork`/`join`. Restrict the positive trigger for `fork`/`join` exclusively to actions explicitly described by concurrency keywords (e.g., 'simultaneously', 'concurrently', 'in parallel', 'while') or structural cues of independent concurrent execution (e.g., multiple independent monitors running at the same time). Explicitly state that itemized lists, sequential form fields, alternative purposes, and grouped display attributes are NOT concurrent.; Revise knowledge rule (3) to clearly distinguish `switch`/`case` from `if`/`elseif`/`else`. Specify that `switch`/`case` is for selecting among discrete alternative options or enumerated types, whereas `if`/`elseif`/`else` is for evaluating conditional logic, guarded outcomes, or boolean state checks. Add a rule that nested 'if-then' or state-dependent logic must be mapped using nested PlantUML control structures, explicitly prohibiting flattening nested conditions into a single-level sequential or independent branch structure."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent trivial else branches and misuse of stop for flow merging.",
+      "change_instruction": "Add a rule prohibiting the generation of empty or trivial 'else' branches (e.g., containing 'perform no function' or 'do nothing'); if an 'else' condition has no explicit action in the requirement, the branch must be omitted entirely. Add a rule restricting the use of 'stop' to true process termination explicitly stated in the requirement (e.g., system shutdown, end of lifecycle), explicitly prohibiting the use of 'stop' as a substitute for proper flow merging (e.g., closing an `endif`, `endswitch`, or `endfork`)."
+    },
+    {
+      "section": "workflow",
+      "intent": "Strictly constrain activity extraction to explicit text and prevent collapsing sequential steps.",
+      "change_instruction": "Revise Step 1 to explicitly state that activity extraction must be strictly limited to actions explicitly stated in the text, prohibiting the inference of sub-steps, the decomposition of high-level goals, or the creation of activity nodes from actor names or swimlane headers. Revise Step 2 to mandate that all extracted intermediate sequential steps, system responses, and state transitions must be preserved as distinct nodes in the control-flow, explicitly prohibiting the compression or collapsing of multiple sequential actions into a single broad node to simplify the overall diagram shape."
+    }
+  ]
+}

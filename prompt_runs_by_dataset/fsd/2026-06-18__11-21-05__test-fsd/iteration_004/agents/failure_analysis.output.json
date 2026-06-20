@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The generator fails to identify and model concurrent behaviors, frequently replacing parallel forks with sequential activities or incorrect conditional branches.",
+      "possible_causes": [
+        "The prompt lacks explicit instructions to identify simultaneous actions (e.g., 'fork'/'split' for parallel execution) and defaults to sequential modeling.",
+        "Listed items or attributes in the requirements are interpreted as sequential steps rather than concurrent flows."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "Control flow is frequently misrouted, with conditions incorrectly nested, mutually exclusive paths chained sequentially, or early exits omitted.",
+      "possible_causes": [
+        "The prompt does not adequately guide the model to distinguish between nested conditions and mutually exclusive alternative flows (e.g., 'else if' vs. sequential 'if').",
+        "The model struggles to map complex state transitions and termination conditions from natural language, resulting in missing 'stop' nodes or incorrect state paths."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The generator introduces speculative or hallucinated activities, often by decomposing single actions into multiple granular steps or adding unmentioned decision nodes.",
+      "possible_causes": [
+        "The prompt encourages over-decomposition of actions, leading the model to invent intermediate steps not present in the requirements.",
+        "The model attempts to make implicit checks explicit by adding conditional nodes (e.g., 'Is X required?') where the requirement only specifies a direct action."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "Explicit behaviors, states, and alternative flows from the requirements are frequently omitted or oversimplified.",
+      "possible_causes": [
+        "The model prioritizes establishing the main control-flow shape and drops alternative or edge-case paths to reduce complexity.",
+        "Lengthy or highly nested requirements cause the model to truncate or compress later steps and conditions."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "Retry or periodic behaviors specified in the requirements are not represented as loops in the diagram.",
+      "possible_causes": [
+        "The prompt does not provide clear heuristics for mapping repetitive or corrective user actions (like re-entering a password) into 'while' or 'repeat' loops.",
+        "The model interprets corrective alternative flows as one-time sequential branches rather than iterative cycles."
+      ]
+    }
+  ]
+}
+```

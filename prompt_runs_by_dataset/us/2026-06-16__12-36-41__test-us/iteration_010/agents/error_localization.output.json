@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow does not enforce a strict separation between identifying structural boundaries (forks, loops, conditions) and placing activities within them, causing the model to tangle independent concurrent paths with iterative/conditional paths and misalign control flow. It also lacks a step to validate the correct termination and nesting of blocks, leading to syntax errors in complex structures."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks concrete PlantUML syntax templates or examples for correctly nesting and terminating complex structures (like fork inside repeat), which causes syntax errors. It also does not provide sufficient negative constraints to prevent the model from converting descriptive text into hallucinated conditional logic, leading to granularity mismatches with extra nodes."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rules section lacks an explicit prohibition against representing concurrent tasks sequentially, failing to counteract the model's sequential default. It also lacks a rule enforcing the matching and proper termination of open PlantUML blocks (fork/end fork, repeat/repeat while) to prevent syntax errors in complex, nested diagrams."
+    }
+  ]
+}
+```

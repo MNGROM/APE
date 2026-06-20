@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction predominantly introduces false_positive_parallel by using fork/join for sequential steps, attributes, form fields, or alternative options, while also occasionally missing true parallelism (false_negative_parallel).",
+      "possible_causes": [
+        "The prompt lacks clear criteria for when to use fork/join, leading the model to treat any list of items (e.g., form fields, attributes, sequential sub-steps) as concurrent actions.",
+        "The model fails to distinguish between entering multiple attributes simultaneously (which warrants a fork) versus entering them sequentially or as a single grouped activity.",
+        "For user stories, the model incorrectly assumes simultaneous execution (false_negative_parallel) instead of sequential steps."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction frequently omits explicit activities, system responses, or intermediate states described in the requirements.",
+      "possible_causes": [
+        "The model compresses multiple explicit actions into a single broad activity node, losing granular steps.",
+        "System responses and automatic transitions (e.g., 'window appears', 'tree is displayed') are dropped because the prompt does not emphasize preserving them as distinct activity nodes."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces activities that are not supported by the requirements, often by decomposing single actions into unnecessary sub-steps or adding redundant decision nodes.",
+      "possible_causes": [
+        "The model over-decomposes simple statements (e.g., splitting 'Enter details' into separate 'Enter X', 'Enter Y' nodes without requirement justification) or adds implicit user intents as explicit activities.",
+        "For simple constraints or state descriptions, the model fabricates action nodes (e.g., 'Output u vector as a 5x1 vector' instead of a check)."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction omits or misrepresents control-flow relations, particularly by flattening nested conditional logic, misplacing switch/case boundaries, or losing hierarchical state transitions.",
+      "possible_causes": [
+        "The model struggles to map complex nested 'if-else' or 'switch-case' structures from natural language into correct PlantUML nesting, often pulling inner conditions to the outer level.",
+        "Sequential or hierarchical state transitions (e.g., state 115 -> state 126 -> state 130) are incorrectly modeled as sibling branches rather than nested flows."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds unsupported or incorrect control-flow relations, frequently by introducing invalid branching, duplicating logic, or creating dead ends.",
+      "possible_causes": [
+        "The model duplicates conditional branches (e.g., repeating the same speed threshold check in both the 'yes' and 'no' paths) instead of correctly structuring the flow.",
+        "Unnecessary 'if' conditions are inserted where simple sequential activities or switch cases are required, altering the intended control flow."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction mishandles loop behavior by using incorrect loop constructs or misplacing loop boundaries.",
+      "possible_causes": [
+        "The model uses 'repeat' loops where 'while' loops or simple switch/conditional iterations are appropriate, or nests loop keywords incorrectly (e.g., multiple 'repeat' without matching 'repeat while')."
+      ]
+    }
+  ]
+}
+```

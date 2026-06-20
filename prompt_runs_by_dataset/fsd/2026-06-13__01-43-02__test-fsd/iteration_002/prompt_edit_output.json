@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities: Read the requirement and map each distinct clause or sentence to exactly one activity. Do not decompose a single stated action into inferred sub-steps (e.g., UI clicks, system validations). Use the exact phrasing from the requirement for activity labels.\n2. Identify control-flow: Before linking activities, scan the requirement for linguistic markers of concurrency (e.g., 'and', 'simultaneously', lists of parallel triggers) and alternatives (e.g., 'or', 'if/else', 'case'). Map these directly to PlantUML fork/join and switch/case structures.\n3. Evaluate dependencies: Before linking two activities sequentially, confirm that the second activity logically depends on the completion of the first. Do not artificially serialize independent or alternative actions into a linear flow.\n4. Generate PlantUML: Construct the diagram using the extracted activities and identified control-flow structures. Ensure nested conditional logic is placed inside its respective branch rather than flattening sequential conditions into alternative cases."
+    },
+    {
+      "section": "rule",
+      "operation": "append",
+      "content": "- No inferred implementation: Explicitly prohibit inventing UI interactions, system responses, or implementation details not stated in the text. A single stated action must remain a single activity.\n- Exact phrasing: Activity labels must use the exact wording from the requirement to prevent paraphrasing or merging distinct clauses.\n- No flattening alternatives: Alternative or independent actions must not be serialized into a single linear sequence; they must be placed in separate branches."
+    }
+  ],
+  "rationale": "The workflow edit enforces a 1:1 clause-to-activity mapping to prevent over-decomposition, mandates exact phrasing to preserve structural intent, and adds explicit linguistic marker scanning for concurrency/alternatives. The rule edit strengthens grounding against inferred implementation steps and artificial serialization of alternative paths.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

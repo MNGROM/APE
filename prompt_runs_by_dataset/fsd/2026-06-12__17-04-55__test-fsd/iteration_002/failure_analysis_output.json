@@ -1,0 +1,63 @@
+```json
+{
+  "summary": "The current prompt is entirely devoid of structural and semantic guidance, causing the model to flatten complex control flows (parallelism, switches) into simple sequences and to hallucinate implicit behaviors (like 'Remain in state') that are not stated in the requirements. The model also lacks instructions on how to decompose compound actions or how to phrase activity nodes neutrally.",
+  "error_patterns": [
+    {
+      "name": "missing_parallel_and_switch_constructs",
+      "severity": "high",
+      "evidence_case_ids": [
+        "pure-0043"
+      ],
+      "problem": "The model fails to recognize and model parallel execution (fork/fork again) and multi-branch choice (switch/case) constructs from the text. It flattens 'all existing item attributes and their attribute x department assignments' into a single activity and collapses a 3-way status filter (active, inactive, all) into a generic if/else statement.",
+      "suggested_prompt_direction": "Add explicit mapping rules in the knowledge section for identifying and translating parallel actions (using fork/end fork) and mutually exclusive or categorical choices (using switch/case/endswitch) from the requirement text.",
+      "target_sections": [
+        "knowledge",
+        "workflow"
+      ]
+    },
+    {
+      "name": "hallucinated_implicit_behaviors",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0011"
+      ],
+      "problem": "The model invents activities for implicit or negative outcomes, such as 'Remain in PULLUP state' for the 'no' branches of conditions, and adds an initial state activity 'Autopilot in PULLUP state' that isn't in the requirement. This adds extra nodes and incorrect relations.",
+      "suggested_prompt_direction": "Instruct the agent to strictly model only the behaviors and transitions explicitly described in the input requirement. Explicitly forbid adding fallback, default, or 'remain' actions unless they are specified in the text.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "activity_granularity_mismatch",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "pure-0043"
+      ],
+      "problem": "The model merges compound displays into a single activity node instead of decomposing them. For example, 'displays all existing item attributes and their attribute x department assignments' should be split into two parallel activities, but the model crams them into one.",
+      "suggested_prompt_direction": "Provide guidelines on decomposing compound actions (especially those joined by 'and') into separate activity nodes, and specify when to use parallel forks to represent them.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "subject_prefix_in_activity_labels",
+      "severity": "low",
+      "evidence_case_ids": [
+        "pure-0043"
+      ],
+      "problem": "The model includes the actor/subject in the activity labels (e.g., 'User clicks the Edit Attributes button', 'System displays...') whereas the ground truth uses neutral, action-oriented phrasing (e.g., 'Click Edit Attributes button', 'Display Edit Attributes screen').",
+      "suggested_prompt_direction": "Add a formatting rule for activity labels to use imperative/neutral verb phrases without the actor/subject prefix (e.g., 'Click button' instead of 'User clicks button').",
+      "target_sections": [
+        "output",
+        "knowledge"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "PlantUML syntax correctness, as all generated diagrams compile successfully.",
+    "Adding diagram metadata like titles or skinparam styling, which are irrelevant to the structural accuracy."
+  ]
+}
+```

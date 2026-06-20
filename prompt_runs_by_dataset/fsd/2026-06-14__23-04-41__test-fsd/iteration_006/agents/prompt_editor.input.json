@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "hallucinated_control_flow",
+        "problem": "The generator adds unsupported decision branches, loops, or conditional logic that are not specified in the requirements, leading to extra activities and extra/wrong relations.",
+        "possible_causes": [
+          "The prompt may encourage the model to make diagrams 'more complete' or 'robust' by inferring implicit error handling or alternative paths (e.g., adding an 'else' branch for clamping a value when only a constraint is stated, or adding a 'repeat' loop for user assignment when none is specified).",
+          "Lack of explicit instructions to strictly adhere to the provided text without inferring unstated behaviors or alternative scenarios."
+        ]
+      },
+      {
+        "name": "flattened_control_flow",
+        "problem": "The generator collapses explicit conditional, switch, or alternative logic described in the requirements into a flat, sequential list of activities, resulting in missing activities and missing/wrong relations.",
+        "possible_causes": [
+          "The prompt may not sufficiently emphasize the need to actively identify and model alternative paths (e.g., 'if/else', 'either/or', 'optionally') as distinct control flow nodes rather than just sequential steps.",
+          "The model might prioritize a quick linear reading of the text, treating alternative methods or optional steps as sequential actions."
+        ]
+      },
+      {
+        "name": "mishandled_parallelism",
+        "problem": "The generator fails to correctly use parallel constructs (fork/fork again) for concurrent or independent actions, either omitting them entirely or misapplying them to mutually exclusive choices.",
+        "possible_causes": [
+          "The prompt lacks clear guidance on mapping linguistic cues for simultaneity or independent sub-tasks to PlantUML's `fork`/`end fork` syntax.",
+          "The model conflates 'multiple ways to do X' (mutually exclusive, requiring switch/if) with 'multiple things to do for X' (concurrent, requiring fork)."
+        ]
+      },
+      {
+        "name": "granularity_mismatch",
+        "problem": "The generator either consolidates multiple explicit steps into a single coarse activity or decomposes a single high-level step into unwarranted sub-activities, causing missing or extra activities.",
+        "possible_causes": [
+          "Absence of a clear rule in the prompt dictating whether to preserve the exact step granularity of the requirement or to summarize/decompose it.",
+          "The model applies inconsistent heuristics for when to break down UI navigation paths versus when to leave them as a single step."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is empty, providing no step-by-step process for the model to first extract activities at the correct granularity and then construct the control flow, which leads to hallucinated steps, flattened logic, and granularity mismatches."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is empty, lacking reusable modeling guidance on how to map linguistic cues for conditionals, alternatives, and parallelism to PlantUML syntax, causing the model to conflate mutually exclusive choices with concurrent actions and flatten control flows."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is empty, missing critical constraints such as strictly adhering to the provided text without inferring unstated behaviors, preserving the exact step granularity of the requirement, and correctly distinguishing between sequential, alternative, and parallel control flows."
+      }
+    ]
+  }
+}

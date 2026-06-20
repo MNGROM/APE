@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Extract explicit activities strictly as stated in the requirement, preserving granular steps without compressing multiple actions into one node.\n2. Identify control-flow patterns (concurrency, loops, conditional dependencies) and their specific linguistic markers in the text.\n3. Construct the control-flow relations among the extracted activities based on the identified patterns.\n4. Map the resulting structure to PlantUML syntax.",
+    "knowledge": "- Concurrency: Map natural-language parallel markers (e.g., 'concurrently', 'in parallel', 'simultaneously') to PlantUML `fork`/`end fork` constructs.\n- Loops: Map time-based delays, periodic triggers, and retries to PlantUML `repeat`/`while` loop syntax.\n- Branching vs. Looping: Conditional branching (`if`/`elseif`/`else`) is for mutually exclusive paths; iterative looping (`while`/`repeat`) is for repeated execution.",
+    "rule": "1. Prohibit inventing unsupported intermediate states, UI feedback, or confirmation nodes not explicitly stated in the requirement.\n2. Prohibit compressing explicitly listed actions into a single broad activity.\n3. Require that conditional and parallel branches are properly nested and terminated correctly, explicitly forbidding premature or fragmented stop/end nodes within branches unless directly specified by the requirement."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The model fails to identify and represent concurrent behaviors, often rendering parallel tasks as sequential steps instead of using fork/fork again/end fork constructs.",
+        "possible_causes": [
+          "The prompt lacks explicit instructions to identify keywords indicating concurrency (e.g., 'concurrently', 'separate task', 'periodically') and map them to PlantUML parallel blocks.",
+          "The model defaults to a strictly top-down sequential interpretation of the requirement text without recognizing structural parallelism."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The model misrepresents loop structures, such as using incorrect loop types (e.g., repeat instead of while for a duration/timeout) or placing loop boundaries incorrectly relative to conditional logic.",
+        "possible_causes": [
+          "The prompt does not provide clear mapping rules for distinguishing between different loop semantics in PlantUML (e.g., 'repeat until' vs. 'while' for timeouts vs. periodic sampling).",
+          "The model struggles to correctly scope the body of a loop when it is nested within complex conditional branches."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "Key activities or states explicitly mentioned in the requirements and ground truth are omitted from the generated diagram.",
+        "possible_causes": [
+          "The model tends to compress or abstract multiple explicit actions into a single broad activity node, losing granular steps.",
+          "When handling complex nested logic, the model focuses on getting the control flow right and drops leaf-level actions in the process."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The model introduces activities or states that are not supported by the requirements, often by hallucinating steps or over-decomposing simple statements.",
+        "possible_causes": [
+          "The model over-fragments a single requirement statement into multiple unnecessary activity nodes.",
+          "The model infers implicit intermediate steps that are not actually specified in the source text."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "Control-flow relations present in the ground truth are omitted or incorrectly represented in the prediction.",
+        "possible_causes": [
+          "The model fails to capture the correct nesting of conditional logic, leading to flattened or incorrectly scoped branches.",
+          "Transitions between activities are lost when the model attempts to simplify complex requirement structures."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction includes unsupported or incorrect control-flow relations, such as invalid branches or improper loop-back flows.",
+        "possible_causes": [
+          "The model creates artificial loop-back relations (e.g., a 'repeat while' returning to the wrong scope) to handle complex state transitions.",
+          "Misinterpretation of conditional exit paths leads to the addition of spurious transitions that do not exist in the requirements."
+        ]
+      }
+    ]
+  }
+}

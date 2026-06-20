@@ -1,0 +1,86 @@
+```json
+{
+  "summary": "The most useful repairs target the workflow and knowledge sections. The workflow section needs a new procedural step to identify and decompose grammatical lists and parallel actions, while the knowledge section needs reusable modeling principles for parallel list decomposition and constraint-to-decision mapping.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "activity_granularity_mismatch",
+        "missing_parallel_decomposition",
+        "missing_conditional_decomposition"
+      ],
+      "section_problem": "The workflow currently lacks a procedural step for decomposing grammatical lists of items/actions into separate nodes and fails to guide the agent to recognize simultaneous actions for fork blocks. It also does not explicitly instruct the agent to treat property constraints as decision nodes during the extraction phase.",
+      "edit_intent": "Add a workflow step to identify grammatical lists and simultaneous actions, decomposing them into separate activity nodes (using fork/end fork where appropriate), and reinforce extracting constraints as decision nodes rather than procedural actions.",
+      "knowledge_gap_ids": [
+        "parallel_list_decomposition",
+        "constraint_to_decision"
+      ],
+      "evidence_case_ids": [
+        "bp-0030",
+        "bp-0015",
+        "pure-0082",
+        "pure-0095",
+        "us-0129",
+        "lmc-0050",
+        "lmc-0052"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_parallel_decomposition",
+        "missing_conditional_decomposition"
+      ],
+      "section_problem": "The knowledge section lacks reusable modeling concepts for handling grammatical lists of independent items as parallel forks and for translating property constraints into decision outcomes.",
+      "edit_intent": "Add reusable modeling principles: (1) how to model grammatical lists of independent/simultaneous items using fork/end fork blocks, and (2) how to model property constraints or validations as if/else decision nodes with distinct outcomes rather than single action nodes.",
+      "knowledge_gap_ids": [
+        "parallel_list_decomposition",
+        "constraint_to_decision"
+      ],
+      "evidence_case_ids": [
+        "bp-0030",
+        "bp-0015",
+        "pure-0095",
+        "us-0129",
+        "lmc-0050",
+        "lmc-0052"
+      ]
+    },
+    {
+      "section": "rule",
+      "priority": "medium",
+      "failure_patterns": [
+        "activity_granularity_mismatch"
+      ],
+      "section_problem": "Rule 2 prohibits merging distinct actions but is currently interpreted too narrowly, failing to prevent the merging of items in grammatical lists or compound phrases due to the strict anti-inference stance of Rule 1.",
+      "edit_intent": "Clarify Rule 2 to explicitly cover grammatical lists and compound phrases, ensuring each listed item maps to its own activity node, overriding the anti-inference rule for explicit textual lists.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "bp-0030",
+        "bp-0015",
+        "pure-0082"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The agent's overall role and scope are correctly defined and do not contribute to the granularity or parallelism failures."
+    },
+    {
+      "section": "input",
+      "reason": "The input section accurately describes the input format; the failure stems from processing logic, not input reading."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement (PlantUML only) is appropriate; editing it would not fix semantic or structural modeling errors."
+    }
+  ]
+}
+```

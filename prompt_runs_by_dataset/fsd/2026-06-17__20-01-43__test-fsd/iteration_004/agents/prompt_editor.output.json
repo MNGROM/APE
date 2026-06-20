@@ -1,0 +1,41 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "knowledge",
+      "intent": "Add guidance for identifying and modeling parallel behaviors.",
+      "change_instruction": "Add a rule explaining that when a requirement describes actions occurring simultaneously, concurrently, or 'at the same time' (e.g., comma-separated lists of concurrent inputs or parallel information receipt), they must be modeled using PlantUML fork/fork again/end fork constructs rather than sequential chains."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Clarify when to use if/elseif/else versus switch.",
+      "change_instruction": "Add a rule specifying that if/elseif/else should be used for non-mutually-exclusive conditions or cascading checks, whereas switch should be strictly reserved for mutually exclusive choices or enumerated options. Emphasize not defaulting to switch for all multi-branch logic."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Add guidance for merging common predecessor activities.",
+      "change_instruction": "Add a strategy instructing the model to identify shared predecessor activities that lead into multiple branches. These common activities must be modeled as a single node before the branch point, rather than duplicated within each branch."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Add guidance for identifying and modeling loop constructs.",
+      "change_instruction": "Add a rule explaining that retry flows, repetition patterns, or timed waits (e.g., 'select another', 'type another', 'wait X seconds') must be represented using PlantUML loop constructs (repeat/while) rather than linear forward paths."
+    },
+    {
+      "section": "workflow",
+      "intent": "Integrate parallel and loop pattern identification into the extraction step.",
+      "change_instruction": "Update Step 1 to explicitly require identifying and tagging concurrent/parallel actions and retry/repetition/timed-wait patterns alongside explicit activities and conditional statements."
+    },
+    {
+      "section": "workflow",
+      "intent": "Integrate shared predecessor merging and construct selection into the construction step.",
+      "change_instruction": "Update Step 2 to require: (a) merging shared predecessor activities into a single node before any branch point, (b) selecting the correct control-flow construct based on the extracted tags (fork for parallel, loop for retries/repetition, if/elseif for non-exclusive conditions, switch for exclusive choices)."
+    },
+    {
+      "section": "rule",
+      "intent": "Prohibit duplication of shared activities across branches.",
+      "change_instruction": "Add a rule explicitly stating: 'Do not duplicate shared-prefix or common predecessor activities across conditional branches; model them as a single activity node before the branch point.'"
+    }
+  ]
+}
+```

@@ -1,0 +1,24 @@
+{"ts": "2026-06-18T10:15:59+0800", "event": "run_start", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-workflow-glm51-parallel", "total_cases": 20, "workers": 2}
+{"ts": "2026-06-18T10:15:59+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 20, "worker_slot": 1}
+{"ts": "2026-06-18T10:15:59+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 20, "worker_slot": 2}
+{"ts": "2026-06-18T10:16:00+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 20, "worker_slot": 1}
+{"ts": "2026-06-18T10:16:00+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 20, "worker_slot": 2}
+{"ts": "2026-06-18T10:45:31+0800", "event": "run_start", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-workflow-glm51-parallel", "total_cases": 20, "workers": 2}
+{"ts": "2026-06-18T10:45:31+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 20, "worker_slot": 1}
+{"ts": "2026-06-18T10:45:31+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 20, "worker_slot": 2}
+{"ts": "2026-06-18T10:45:31+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 20, "worker_slot": 1}
+{"ts": "2026-06-18T10:45:31+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 20, "worker_slot": 2}
+{"ts": "2026-06-18T10:46:01+0800", "event": "workflow_ready", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 20, "worker_slot": 1}
+{"ts": "2026-06-18T10:46:01+0800", "event": "stage_start", "stage": "activity_identification", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 20, "worker_slot": 1}
+{"ts": "2026-06-18T10:46:01+0800", "event": "workflow_ready", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 20, "worker_slot": 2}
+{"ts": "2026-06-18T10:46:01+0800", "event": "stage_start", "stage": "activity_identification", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 20, "worker_slot": 2}
+{"ts": "2026-06-18T10:49:12+0800", "event": "stage_end", "stage": "activity_identification", "elapsed_sec": 190.735, "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 20, "worker_slot": 2}
+{"ts": "2026-06-18T10:49:12+0800", "event": "stage_start", "stage": "relation_decomposition", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 20, "worker_slot": 2}
+{"ts": "2026-06-18T11:06:14+0800", "event": "stage_end", "stage": "activity_identification", "elapsed_sec": 1213.016, "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 20, "worker_slot": 1}
+{"ts": "2026-06-18T11:06:14+0800", "event": "stage_start", "stage": "relation_decomposition", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 20, "worker_slot": 1}
+{"ts": "2026-06-18T11:15:31+0800", "event": "case_error", "dataset": "fsd", "case_id": "fsd-0001", "idx": 1, "total": 20, "elapsed_sec": 1800.219, "error_type": "TimeoutError"}
+{"ts": "2026-06-18T11:15:31+0800", "event": "case_error", "dataset": "fsd", "case_id": "fsd-0002", "idx": 2, "total": 20, "elapsed_sec": 1800.36, "error_type": "TimeoutError"}
+{"ts": "2026-06-18T11:15:32+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0003", "idx": 3, "total": 20, "worker_slot": 3}
+{"ts": "2026-06-18T11:15:32+0800", "event": "case_start", "dataset": "fsd", "case_id": "fsd-0004", "idx": 4, "total": 20, "worker_slot": 4}
+{"ts": "2026-06-18T11:15:32+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0003", "idx": 3, "total": 20, "worker_slot": 3}
+{"ts": "2026-06-18T11:15:32+0800", "event": "worker_start", "dataset": "fsd", "case_id": "fsd-0004", "idx": 4, "total": 20, "worker_slot": 4}

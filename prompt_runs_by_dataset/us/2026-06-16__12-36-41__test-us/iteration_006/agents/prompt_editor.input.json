@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Identify all actions, decisions, and constraints from the text.\n2. Scan for cyclic, periodic, or repetitive keywords (e.g., 'repeat', 'until', 'periodically', 'cyclically') and map them to `repeat`/`while` structures.\n3. Scan for linguistic cues of parallelism and alternative conditions; explicitly distinguish mutually exclusive alternative conditions (mapped to `switch`/`case` or `if`/`elseif`/`else`) from true concurrent tasks (identified by positive cues like 'concurrently', 'simultaneously', 'at the same time', or comma-separated lists of simultaneous tasks, and mapped to `fork`/`end fork`) before constructing the control flow.\n4. Enforce a 1-to-1 mapping of explicitly stated actions, UI interactions, and system responses to individual activity nodes, prohibiting summarization or merging of distinct steps.\n5. Classify each condition as either a high-level constraint (mapped directly to a single decision branch) or a procedural step (requiring intermediate actions).\n6. Determine the exact nesting hierarchy of control structures before writing code.\n7. Generate PlantUML code strictly following the mapped hierarchy without adding or flattening levels.",
+    "knowledge": "1. Use `fork`/`end fork` ONLY for explicitly stated true parallel execution, identified by positive linguistic cues such as simultaneous system tasks, comma-separated lists of concurrent displays/updates, and explicit words like 'concurrently', 'simultaneously', or 'at the same time'.\n2. Use `if`/`else` or `switch` for mutually exclusive choices or alternative user actions.\n3. Map implicit natural language conditions (e.g., 'if needed', 'optional', 'can') directly to explicit branching constructs rather than omitting them.\n4. High-level constraints or validations should be modeled as single decision points, not decomposed into multi-step procedural activities.\n5. Distinct UI interactions, system responses, and descriptive clauses mentioned in the text must be represented as separate activity nodes to maintain fine-grained granularity.\n6. Cyclic, periodic, or repeated behaviors indicated by keywords like 'repeat', 'until', 'periodically', or 'cyclically' must be mapped to PlantUML `repeat`/`while` loops.\n7. Multi-branch mutually exclusive conditions (e.g., evaluating a variable against multiple distinct values) should be modeled using `switch`/`case`, not `fork`.\n8. Secondary checks, fallback conditions, and specific timeout/counter values must be explicitly preserved as separate activity nodes or conditional branches to prevent missing activities.",
+    "rule": "1. Do NOT decompose simple conditional checks into intermediate processing steps (e.g., do not add 'compute' or 'receive' nodes before a validation if the requirement only specifies the validation).\n2. ALWAYS preserve the exact nesting depth of control structures as identified in the text (e.g., `switch` inside `if`, `if` inside `repeat`).\n3. NEVER use `fork`/`end fork` for independent, alternative, or mutually exclusive actions.\n4. NEVER omit optional paths or contextual checks—every user choice or conditional step must be represented as a branch.\n5. NEVER introduce decision branches, loops, or error handling not explicitly stated in the text (explicitly prohibit hallucinating error handling, loops, or recovery steps not stated in the text).\n6. Alternative flows, exception handling, and recovery steps (e.g., 'select another folder') MUST be modeled as linear paths within if/else or switch conditional branches; explicitly forbid representing them as loops or incorrectly placing them in the main sequential flow.\n7. NEVER represent cyclic, periodic, or repeated behaviors as sequential or conditional flows instead of `repeat`/`while` loops.\n8. NEVER misplace loop boundaries (e.g., looping the wrong set of activities or missing the correct exit condition).\n9. NEVER over-decompose a single stated action into multiple redundant activity nodes."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "over_literal_transcription",
+        "problem": "The generator copies UI text, descriptions, and notes verbatim into activity nodes instead of abstracting them into concise behavioral steps, leading to extra or imprecise activities.",
+        "possible_causes": [
+          "The prompt lacks instructions to abstract and summarize requirements into discrete, action-oriented steps.",
+          "The prompt does not instruct the model to exclude descriptive notes, conditions, or static UI text from activity nodes."
+        ]
+      },
+      {
+        "name": "incorrect_control_flow_construct",
+        "problem": "The generator misidentifies the appropriate control flow structure, such as using a switch/case for mutually exclusive conditions that should be if/else, or misplacing branching logic.",
+        "possible_causes": [
+          "The prompt does not clearly define when to use switch/case (for distinct values of a single variable) versus if/else (for boolean conditions or independent variables).",
+          "The prompt fails to guide the model to map requirement logic (e.g., conditional guards, alternative flows) to the correct PlantUML control flow syntax."
+        ]
+      },
+      {
+        "name": "missing_conditional_guards_and_prerequisites",
+        "problem": "The generator omits explicit conditional checks and prerequisite steps that are present in the ground truth, such as checking user expertise before allowing an action or evaluating state flags.",
+        "possible_causes": [
+          "The prompt does not emphasize extracting and explicitly modeling implicit or stated preconditions as decision nodes.",
+          "The prompt treats background constraints (e.g., 'must be performed by an expert') as annotations rather than executable flow logic."
+        ]
+      },
+      {
+        "name": "mishandled_parallel_and_loop_structures",
+        "problem": "The generator fails to correctly model concurrent processes and iterative loops, often placing parallel tasks sequentially or misrepresenting loop conditions and exits.",
+        "possible_causes": [
+          "The prompt lacks specific guidance on mapping concurrent requirements to PlantUML fork/end fork constructs.",
+          "The prompt does not provide clear instructions on translating iterative or repetitive logic into repeat/while loops with proper exit conditions."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow focuses on extracting actions, decisions, and constraints verbatim (Step 1) and enforcing a 1-to-1 mapping of explicitly stated text to nodes (Step 4), but it lacks a step to abstract or summarize verbose UI text, descriptions, and notes into concise behavioral steps, directly causing over-literal transcription."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section does not clearly differentiate when to use `switch`/`case` (evaluating a single variable against distinct values) versus `if`/`else` (evaluating boolean conditions or independent variables), leading to incorrect control flow constructs. It also lacks guidance to treat background constraints and prerequisites (e.g., 'must be performed by an expert') as executable decision logic rather than static annotations, causing missing conditional guards."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rules strictly prohibit adding unstated elements (Rule 5) and over-decomposing single actions (Rule 9), but they do not prohibit copying verbatim UI text or descriptive clauses into activity nodes, thereby failing to prevent over-literal transcription. Additionally, while Rule 8 forbids misplacing loop boundaries, the rules lack explicit prohibitions against representing parallel tasks sequentially or misrepresenting loop exit conditions."
+      }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+```json
+{
+  "summary": "The current batch contains no failures, yielding perfect metric scores. However, the current prompt is entirely empty in its workflow, knowledge, and rule sections, making it highly fragile and likely to fail on more complex requirements involving control flow, parallelism, or loops.",
+  "error_patterns": [],
+  "knowledge_gaps": [
+    {
+      "id": "uml_control_flow_constructs",
+      "related_failure_patterns": [
+        "missing_or_wrong_relation",
+        "wrong_loop",
+        "wrong_parallel"
+      ],
+      "evidence_case_ids": [],
+      "gap": "The prompt provides no guidance on how to model standard UML activity diagram control flows, such as decision/merge nodes, fork/join nodes, and loops using PlantUML syntax.",
+      "suggested_knowledge": "Provide general PlantUML syntax for control flow: use 'if/else/endif' for decisions and merges, 'fork/fork again/end fork' for parallel execution, and 'while/end while' or 'repeat/repeat while' for loops."
+    },
+    {
+      "id": "activity_extraction_granularity",
+      "related_failure_patterns": [
+        "missing_activity",
+        "extra_activity"
+      ],
+      "evidence_case_ids": [],
+      "gap": "The prompt lacks instructions on how to identify activities from the text and what level of granularity is expected, risking over-splitting or over-compression.",
+      "suggested_knowledge": "Define an activity as a distinct, actionable step or state transition described in the requirement. Avoid creating activities for implicit sub-steps not explicitly mentioned, and do not compress multiple explicit actions into a single activity."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples.",
+    "Do not assume the current empty prompt is sufficient just because this specific batch had no errors."
+  ]
+}
+```

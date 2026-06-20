@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Read the requirement and identify every explicitly stated activity, trigger, condition, task, thread, loop, retry, logging step, and terminal outcome.\n2. Extract only activities and conditions explicitly stated in the input. Strictly forbid inventing unstated implementation details, sub-steps, or speculative control flows.\n3. Keep explicitly listed actions, checks, or triggers as separate activity or decision nodes unless the input clearly presents them as a single undivided action. Do not merge multiple atomic actions into one broad node.\n4. Separate actors or systems from activity actions. Map actors to PlantUML partitions or swimlanes, keeping the activity node text purely action-oriented without actor prefixes.\n5. Identify concurrent or parallel tasks in the input and explicitly model them using PlantUML fork/end fork constructs.\n6. Carefully preserve the nesting and hierarchy of conditional logic as described in the input, mapping embedded conditions to nested PlantUML if/else/endif blocks.\n7. Generate the PlantUML code following the extracted structure and syntax rules."
+    },
+    {
+      "section": "knowledge",
+      "operation": "replace",
+      "content": "Use standard PlantUML activity diagram syntax only. Use if/else/endif for conditional branches, repeat/repeat while for polling, retry, or until-style loops, and fork/fork again/end fork only for explicitly concurrent tasks, threads, periodic routines, or parallel activities. Ensure every opened control structure is properly closed. Explicitly forbid experimental or unsupported constructs such as switch/case. Use partitions or swimlanes to represent actors or systems, keeping activity node text purely action-oriented."
+    }
+  ],
+  "rationale": "The workflow section is replaced to address the highest-severity patterns: hallucinated implementation steps, merged atomic activities, actor embedding, missing parallel forks, and flattened nested conditionals. The knowledge section is replaced to provide standard PlantUML syntax constraints, addressing syntax errors and unsupported constructs. These edits target the root causes of low node and relation metrics while preserving prompt structure.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}
+```

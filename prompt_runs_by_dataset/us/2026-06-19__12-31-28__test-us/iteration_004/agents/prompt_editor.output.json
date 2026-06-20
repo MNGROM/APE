@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Resolve the conflict between grouping and decomposing by making decomposition conditional on concurrency.",
+      "change_instruction": "Revise Step 1 to add an exception: group lists of attributes, parameters, or properties into a single activity node *unless* they are joined by explicit concurrency cues (e.g., 'simultaneously', 'in parallel') or represent simultaneous system behaviors (e.g., 'Close window and display statistics'). In those specific cases, decompose the compound step into separate activities for parallel branching. Revise Step 2 to explicitly include this decomposition step before constructing fork/join blocks."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Correct the false-negative parallelism caused by blanket exclusion of lists, and add boundaries to prevent false positives.",
+      "change_instruction": "Revise the concurrency modeling rule to remove the blanket exclusion of comma-separated lists and attributes from fork/join usage. Replace it with a qualified rule: comma-separated lists or 'and'-joined clauses must be decomposed into fork/join blocks *only* when accompanied by explicit concurrency cues or when describing simultaneous system behaviors (e.g., 'Close window and display statistics'). Explicitly exclude comma-separated lists that represent sequential UI steps, configuration options, or sequentially dependent steps in multi-threaded contexts from fork/join usage."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent over-compression of distinct concurrent actions and premature termination of conditional branches.",
+      "change_instruction": "Revise the granularity rule to add an exception: do not collapse multiple distinct specified actions into one broad node if they represent simultaneous actions or concurrent behaviors explicitly described in the requirement. Revise the convergence rule to explicitly state that 'stop' nodes must not be placed inside conditional branches unless the requirement explicitly states an immediate process termination for that specific branch; instead, conditional paths must merge."
+    }
+  ]
+}

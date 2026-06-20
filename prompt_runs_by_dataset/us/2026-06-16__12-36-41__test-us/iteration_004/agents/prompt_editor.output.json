@@ -1,0 +1,46 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Guide the model to identify list-based parallelism and distinguish background concurrency from conditional sub-tasks.",
+      "change_instruction": "Add a step instructing the model to scan for lists of simultaneous attributes or items (e.g., 'name, description, and keywords') as candidates for `fork`/`fork again` decomposition. Also, add a step to explicitly distinguish truly concurrent background tasks (which belong at the main flow level) from conditional sub-tasks (which belong inside branches) to prevent incorrect nesting."
+    },
+    {
+      "section": "workflow",
+      "intent": "Provide heuristics for correctly mapping loop conditions and preserving hierarchical nesting.",
+      "change_instruction": "Add a step providing clear heuristics for translating 'until' or 'while' conditions into `repeat`/`while` structures rather than `if`/`else`. Add another step requiring the model to explicitly map complex state-machine logic and mutually exclusive conditions into hierarchically nested structures (e.g., `elseif` chains or nested `if`/`endif`), strictly preventing the flattening of nested logic into sequential independent if-blocks."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Expand triggers for fork decomposition and clarify background concurrency.",
+      "change_instruction": "Update the fork rule to explicitly include lists of simultaneous attributes or items (e.g., 'name, description, and keywords') as triggers for `fork`/`fork again` decomposition. Add a rule clarifying that truly concurrent background tasks (e.g., telemetry monitors) must be placed at the main flow level using `fork`, not nested inside conditional branches."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Expand loop triggers and heuristics.",
+      "change_instruction": "Expand the loop rule to include keywords like 'continuously' or 'with bounded retries' as explicit triggers for `repeat`/`while` loops. Add a heuristic specifying that 'until' or 'while' conditions must map to `repeat`/`while` structures, not `if`/`else` blocks."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Filter UI side-effects and consolidate trivial checks.",
+      "change_instruction": "Add a rule instructing the model to filter out UI feedback, notes, or system display updates (e.g., 'window appears', 'list is displayed') as side-effects rather than distinct activity nodes. Add a rule to consolidate implicit or trivial checks into guard conditions on control flow arrows instead of creating separate activity nodes."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Preserve deep nesting for complex state-machine logic.",
+      "change_instruction": "Add a rule guiding the model to map complex state-machine logic into PlantUML's structured control flow, ensuring that deep nesting and dependencies are preserved rather than flattened."
+    },
+    {
+      "section": "rule",
+      "intent": "Prohibit generating explicit nodes for UI side-effects and trivial checks.",
+      "change_instruction": "Add a rule explicitly prohibiting the conversion of UI feedback, notes, or implicit conditions into explicit action nodes. Add a rule requiring that trivial or implicit checks be consolidated into guard conditions on arrows instead of being represented as separate activity nodes."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce hierarchical nesting and prevent conditional-to-loop misrepresentation.",
+      "change_instruction": "Add a rule enforcing the preservation of hierarchical nesting for mutually exclusive conditions (e.g., using `elseif` chains or nested `if`/`endif`), explicitly forbidding the flattening of these into sequential independent if-blocks. Add a rule strictly prohibiting the misrepresentation of simple conditional checks as loop conditions."
+    }
+  ]
+}
+```

@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a systematic step-by-step process to prevent defaulting to linear, sequential generation and to ensure correct control-flow mapping.",
+      "change_instruction": "Add a multi-step workflow requiring the model to: (1) Extract all explicit activities, state changes, and conditional behaviors from the text, ensuring nothing is dismissed as a mere note; (2) Identify and classify control-flow patterns (loops, parallelism, conditionals) based on linguistic cues; (3) Map the identified patterns to their corresponding PlantUML constructs; (4) Construct the diagram by assembling the mapped constructs, ensuring all extracted activities are included as nodes."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide explicit mapping rules from linguistic cues to PlantUML constructs for loops, parallelism, and conditionals.",
+      "change_instruction": "Add concise mapping guidelines: (1) Loop mapping: Map linguistic cues like 'until', 'repeatedly', 'periodic', or 'retry' to PlantUML `repeat`/`while` loop constructs, ensuring sustained operations are modeled as loops rather than linear actions. (2) Parallel mapping: Map concurrent phrases like 'concurrently', 'while its second thread', or grouped compound actions (e.g., 'enter name, description, and keywords') to `fork`/`end fork` blocks. (3) Conditional mapping: Map 'if-then', mutually exclusive states, or nested conditions to `if`/`elseif`/`else`/`endif` structures, preserving the correct topology for multi-branch logic."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent hallucinated activities and enforce the modeling of all explicitly stated actions.",
+      "change_instruction": "Add strict constraints: (1) Do not hallucinate speculative activities, unmentioned 'else' branches, or failure paths; only model what is explicitly stated in the requirement. (2) Every explicitly stated action, state change, and conditional behavior must be modeled as a node, even if embedded in notes, bullet points, or conditional branches—never discard or treat them as non-actionable text."
+    }
+  ]
+}
+```

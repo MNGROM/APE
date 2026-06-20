@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "failure_to_decompose_parallel_lists_into_fork_blocks",
+      "problem": "When the requirement lists multiple attributes, items, or concurrent actions, the generator serializes them as sequential activities instead of using PlantUML fork/end fork blocks for parallelism.",
+      "possible_causes": [
+        "The prompt does not explicitly instruct the model to identify lists of attributes, items, or concurrent actions and represent them as parallel branches using fork/end fork.",
+        "The model defaults to a safe sequential representation when encountering comma-separated or bulleted lists rather than recognizing them as concurrent structural elements."
+      ]
+    },
+    {
+      "name": "incorrect_control_flow_for_conditional_and_alternative_paths",
+      "problem": "The generator misrepresents mutually exclusive choices (e.g., switch/case) as sequential or nested steps, and incorrectly models conditional optional actions (e.g., 'optionally') as loops or sequential dependencies.",
+      "possible_causes": [
+        "The prompt lacks clear guidance on mapping mutually exclusive discrete states (like 'select/deselect') to switch/case structures.",
+        "The prompt does not distinguish between optional actions (if/else) and repeated/looping actions (repeat/while), leading the model to use repeat loops for simple optional steps."
+      ]
+    },
+    {
+      "name": "over_literal_translation_of_text_into_activities",
+      "problem": "The generator creates extra, unnecessary activity nodes by directly translating conversational phrases, conditions, or UI states into actions (e.g., 'Is modification required?', 'The list is displayed'), rather than abstracting them into control flow logic or guard conditions.",
+      "possible_causes": [
+        "The prompt emphasizes capturing all text verbatim without instructing the model to abstract conditions into if/switch branches or to omit descriptive UI states that aren't actual user/system actions.",
+        "Lack of rules preventing the model from turning conditional checks into explicit activity nodes."
+      ]
+    },
+    {
+      "name": "missing_implicit_or_contextual_activities",
+      "problem": "The generator omits activities that are implied by the requirement's context or structural cues, such as cross-references (e.g., 'see View Acquisitions') or overarching actions (e.g., 'Evaluate' before listing what is evaluated).",
+      "possible_causes": [
+        "The prompt focuses only on explicit action verbs, causing the model to drop contextual or referential steps.",
+        "The model fails to recognize that a leading verb in a requirement step applies as a distinct action to the subsequent list of items."
+      ]
+    }
+  ]
+}
+```

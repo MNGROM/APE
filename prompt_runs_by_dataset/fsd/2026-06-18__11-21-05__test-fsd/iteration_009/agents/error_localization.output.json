@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 3 provides insufficient boundaries against false-positive parallelism by allowing fork/join for lists of 'independent actions' without strictly defining independence, leading to over-application on alternative choices or grouped attributes. It also lacks explicit positive cues for true concurrency beyond 'simultaneously'/'concurrently', contributing to false-negative parallelism. Additionally, the control flow construction step does not adequately enforce the mapping of nested conditional logic or conditional guards, leading to missing or wrong relations."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section's rule for fork/join permits modeling enumerations or lists containing 'independent actions' as concurrent, which directly causes false-positive parallelism when the generator misjudges alternative options or sequential attributes as independent. It also lacks sufficient positive textual cues for true concurrency, causing false negatives. Furthermore, it provides insufficient guidance on translating complex conditional logic and state-dependent guards into properly nested PlantUML structures, resulting in missing or incorrect relations."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section lacks an explicit prohibition against modeling alternative choices or mutually exclusive options as parallel flows, failing to prevent false-positive parallelism. It also does not strictly enforce the preservation of all explicitly stated system responses and intermediate states as distinct nodes, allowing them to be collapsed into vague abstractions (missing_activity). Finally, it lacks a specific rule against forcing sequential dependencies between independent actions or misrouting mutually exclusive branches, leading to extra or wrong relations."
+    }
+  ]
+}
+```

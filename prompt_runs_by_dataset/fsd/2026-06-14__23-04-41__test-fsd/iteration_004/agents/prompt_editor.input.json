@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "hallucinated_detail_inflation",
+        "problem": "The prediction injects fabricated activities, validations, and error-handling branches not stated in the requirements, leading to extra activities and extra relations.",
+        "possible_causes": [
+          "The prompt may lack constraints against inventing implicit steps or assuming standard CRUD/error-handling flows.",
+          "The model defaults to a 'helpful' implementation mindset, fleshing out plausible but unspecified operational details."
+        ]
+      },
+      {
+        "name": "parallelism_omission",
+        "problem": "Concurrent behaviors explicitly modeled with fork/end fork in the ground truth are flattened into sequential steps in the prediction.",
+        "possible_causes": [
+          "The prompt may not sufficiently emphasize identifying and representing concurrent/parallel actions using PlantUML's fork syntax.",
+          "The model struggles to recognize linguistic cues for parallelism (e.g., lists of items received simultaneously, concurrent training topics) and defaults to sequential activity flow."
+        ]
+      },
+      {
+        "name": "over_structuring_simple_requirements",
+        "problem": "Simple, flat requirements are over-engineered into complex conditional logic, causing missing ground-truth activities, extra activities, and distorted relations.",
+        "possible_causes": [
+          "The prompt may implicitly encourage the use of control-flow structures (if/else, switches) even when a minimal, linear activity flow is more faithful to the text.",
+          "Lack of guidance to match the granularity and structural complexity of the source text, leading the model to impose unnecessary decision nodes."
+        ]
+      },
+      {
+        "name": "lost_conditional_exit_conditions",
+        "problem": "Explicit exit conditions and state transitions described in the requirements are omitted or merged incorrectly, simplifying the control flow at the expense of accuracy.",
+        "possible_causes": [
+          "The prompt may not instruct the model to carefully extract and preserve all conditional guards and exit criteria as distinct branches.",
+          "The model prioritizes creating a single happy-path flow, dropping alternative or terminating conditions that lack explicit 'else' phrasing in the text."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "rule",
+        "section_problem": "The rule section is missing, providing no constraints against inventing implicit steps, assuming standard CRUD/error-handling flows, or over-structuring simple requirements with unnecessary conditional logic."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is missing, failing to provide guidance on PlantUML fork syntax for parallelism and reusable modeling patterns for preserving conditional guards and exit criteria as distinct branches."
+      },
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is missing, resulting in no step-by-step process to guide the model in extracting activities faithfully, identifying linguistic cues for concurrent behavior, and matching the granularity of the source text before generating code."
+      }
+    ]
+  }
+}

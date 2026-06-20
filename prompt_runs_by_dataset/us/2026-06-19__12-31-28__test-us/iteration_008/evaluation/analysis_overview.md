@@ -1,0 +1,702 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 20
+- syntax_pass_rate: 0.9500
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.5571
+- node_recall: 0.4948
+- node_f1: 0.5241
+- relation_precision: 0.4220
+- relation_recall: 0.3520
+- relation_f1: 0.3838
+- plantuml_compilation_pass_rate: 0.9500
+- llm_element_evaluated: 20.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.8704
+- llm_node_recall: 0.7629
+- llm_node_f1: 0.8038
+- llm_relation_precision: 0.6088
+- llm_relation_recall: 0.4937
+- llm_relation_f1: 0.5299
+
+## Failure Types
+- missing_activity: 19
+- missing_or_wrong_relation: 19
+- extra_activity: 18
+- extra_or_wrong_relation: 18
+- wrong_parallel: 9
+- wrong_loop: 5
+- syntax_error: 1
+
+## Representative Failure Cases
+### fsd-0031
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.6500
+- relation_f1: 0.5000
+- llm_element_status: success
+- llm_node_f1: 0.8636
+- llm_relation_f1: 0.7778
+- missing_nodes:
+  - supervisory network stack initializes
+  - under fixed-priority preemptive model
+  - deterministic multi-threaded scheduler within rtos launches concurrent tasks
+  - high-priority periodic task
+  - spawn second set of deterministic tasks
+  - timer-driven telemetry loop
+  - dispatch data to cloud server via can bus/similar protocol
+  - bounded retries and backoff on transmission faults
+- extra_nodes:
+  - initialize supervisory network stack (exponential backoff keep-alive heartbeats link-state monitoring)
+  - launch deterministic multi-threaded scheduler (fixed-priority preemptive model)
+  - timer-driven telemetry loop (dispatch data to cloud server via can bus with bounded retries and backoff on faults)
+  - mutex-protected priority queue for concurrent parsing and publishing
+- missing_relations:
+  - supervisory network stack initializes -> validate external environmental conditions meet operating specifications
+  - validate external environmental conditions meet operating specifications -> check device interface connectivity
+  - prerequisites satisfied? -> verify sensor data validity via crc check [yes]
+  - initialize data acquisition module -> under fixed-priority preemptive model
+  - under fixed-priority preemptive model -> deterministic multi-threaded scheduler within rtos launches concurrent tasks
+  - deterministic multi-threaded scheduler within rtos launches concurrent tasks -> high-priority periodic task [fork]
+  - deterministic multi-threaded scheduler within rtos launches concurrent tasks -> parallel threads for network communication [fork]
+  - high-priority periodic task -> continuous device status monitoring managed by watchdog
+- input_excerpt:
+  Upon system initialization, the supervisory network stack, employing exponential backoff, keep-alive heartbeats, and link-state monitoring, first validates that external environmental conditions meet operating specifications before checking device interface connectivity. If these prerequisites are satisfied, the system verifies sensor data validity via a CRC check before initializing the data acquisition module. Subsequently, a deterministic, multi-threaded scheduler within the RTOS launches concurrent tasks under a fixed-priority preemptive model. These tasks include a high-priority periodic task for continuous device status monitoring, managed by a watchdog, alongside other parallel thread
+- generated_excerpt:
+  @startuml start :Initialize supervisory network stack\n(Exponential backoff, keep-alive heartbeats, link-state monitoring); :Validate external environmental conditions\nmeet operating specifications; if (Prerequisites satisfied?) then (yes)   :Check device interface connectivity;   :Verify sensor data validity via CRC check;   :Initialize data acquisition module;   :Launch deterministic multi-threaded scheduler\n(fixed-priority preemptive model);   fork     :High-priority periodic task\nfor continuous device status monitoring\n(managed by watchdog);   fork     :Parallel thread for\nring buffer management;   fork     :Parallel thread for\nnetwork communication;   end fork   :Initialize networ
+### lmc-0007
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.6000
+- llm_relation_f1: 0.1818
+- missing_nodes:
+  - system is supported?
+  - sensor data is good?
+  - autopilot change states from transition to nominal
+- extra_nodes:
+  - change state to transition
+  - system is supported and sensor data is good?
+  - change state to nominal
+- missing_relations:
+  - system is supported? -> sensor data is good? [yes]
+  - sensor data is good? -> autopilot change states from transition to nominal [yes]
+  - sensor data is good? -> system is supported? [no]
+- input_excerpt:
+  3.	The autopilot shall change states from TRANSITION to NOMINAL when the system is supported and sensor data is good.
+- generated_excerpt:
+  @startuml start :Change state to TRANSITION; if (System is supported and sensor data is good?) then (yes)   :Change state to NOMINAL; else (no) endif stop @enduml
+### bp-0030
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2000
+- relation_f1: 0.1765
+- llm_element_status: success
+- llm_node_f1: 0.9756
+- llm_relation_f1: 0.3158
+- missing_nodes:
+  - log in
+  - go to promotion jobs
+  - click new job
+  - enter name
+  - enter description
+  - enter keywords
+  - go to save job field
+  - browse and select the folder
+- extra_nodes:
+  - log into the lifecycle manager tool
+  - in the promotion jobs home page click new job
+  - enter the name description and keywords for the job
+  - in the save job in field browse and select the folder
+  - select the source system and the destination system from the drop-down lists
+  - system name not displayed in the drop-down list?
+  - click the login to a new cms option
+  - enter the name of the system along with the user name and password
+- missing_relations:
+  - log in -> go to promotion jobs
+  - click new job -> new job window appears
+  - new job window appears -> enter name [fork]
+  - new job window appears -> enter description [fork]
+  - new job window appears -> enter keywords [fork]
+  - enter name -> go to save job field [merge]
+  - enter description -> go to save job field [merge]
+  - enter keywords -> go to save job field [merge]
+- input_excerpt:
+  30.	Creating a New Job1. Log into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, click New Job. The "New Job"window appears .3. Enter the name, description, and keywords for the job in the appropriate fields.4. In the Save Job in field, browse and select the folder in which you want to save the job.5. Select the source system and the destination system from the drop-down lists. If the name of the system is not displayed in the drop-down list, click the Login to a new CMS option. A new window is launched. Enter the name of the system along with the user name and password.6. Click Create.
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :In the "Promotion Jobs" home page,\nclick New Job; :"New Job" window appears; :Enter the name, description,\nand keywords for the job; :In the Save Job in field,\nbrowse and select the folder; :Select the source system and\nthe destination system from\nthe drop-down lists; if (System name not displayed\nin the drop-down list?) then (Yes)   :Click the Login to a new CMS option;   :A new window is launched;   :Enter the name of the system\nalong with the user name and password; else (No) endif :Click Create; stop @enduml
+### lmc-0022
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2222
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.3077
+- llm_relation_f1: 0.4286
+- missing_nodes:
+  - in inner loop height regulator
+  - command translational height accelerations <= 32 ft/sec2
+- extra_nodes:
+  - monitor commanded translational height acceleration
+  - acceleration > 32 ft/sec2?
+  - start duration counter
+  - continue commanding acceleration
+  - limit commanded acceleration
+- missing_relations:
+  - in inner loop height regulator -> durations > 100 frames?
+  - durations > 100 frames? -> command translational height accelerations <= 32 ft/sec2 [yes]
+- input_excerpt:
+  5.	The Inner Loop Height Regulator Shall not command translational height accelerations greater than the capability of the system (32 ft/sec2) for durations exceeding 100 frames (1 second @ 100 hz).
+- generated_excerpt:
+  @startuml start :Monitor commanded translational height acceleration; if (Acceleration > 32 ft/sec2?) then (Yes)   :Start duration counter;   while (Duration <= 100 frames?) is (Yes)     :Continue commanding acceleration;   endwhile (No)   :Limit commanded acceleration; else (No) endif stop @enduml
+### bp-0020
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3158
+- relation_f1: 0.1905
+- llm_element_status: success
+- llm_node_f1: 0.6207
+- llm_relation_f1: 0.5714
+- missing_nodes:
+  - more information?
+  - see creating a new job on page 37
+  - open source system drop-down list
+  - select login
+  - to a new cms
+  - enter user credentials
+  - select appropriate authentication type
+  - click login
+- extra_nodes:
+  - select login to a new cms from source system drop-down list
+  - enter user credentials select authentication type and click login
+  - select login to a new cms from destination system drop-down list
+- missing_relations:
+  - create a new job -> more information?
+  - more information? -> see creating a new job on page 37 [yes]
+  - more information? -> open source system drop-down list [no]
+  - see creating a new job on page 37 -> open source system drop-down list [merge]
+  - open source system drop-down list -> select login
+  - select login -> to a new cms
+  - to a new cms -> login to system dialog box appears
+  - enter user credentials -> select appropriate authentication type
+- input_excerpt:
+  20.	log into a new CMS1. Log into the LifeCycle Manager tool.2. Create a new job.For more information on creating a new job, see Creating a New Job onpage 37.3. From the Source System drop-down list, select Login to a New CMS.The "Login to System" dialog box appears.4. Enter the user credentials, select the appropriate authentication type, andclick Login.5. From the Destination System drop-down list, select Login to a NewCMS.6. Enter the user credentials, select the appropriate authentication type, andclick Login.
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :Create a new job; :Select "Login to a New CMS" from Source System drop-down list; :"Login to System" dialog box appears; :Enter user credentials, select authentication type, and click Login; :Select "Login to a New CMS" from Destination System drop-down list; :Enter user credentials, select authentication type, and click Login; stop @enduml
+### bp-0003
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3333
+- relation_f1: 0.3556
+- llm_element_status: success
+- llm_node_f1: 0.8148
+- llm_relation_f1: 0.5490
+- missing_nodes:
+  - info provider tree is displayed
+  - the info area is displayed
+  - open context menu
+  - choose create info cube
+  - enter sales overview as the description
+  - screen for info cube editing is shown
+  - choose create new dimensions
+  - enter product as the new dimension description
+- extra_nodes:
+  - view info provider tree and info area
+  - choose create info cube in context menu of info area
+  - choose create new dimensions in context menu of dimensions folder
+  - enter product as description and choose create another dimension
+  - enter sales organization as description and choose continue
+  - choose info object catalog in toolbar
+  - assign characteristics to dimensions with drag and drop
+  - choose info object direct input in context menu of sales organization dimension
+- missing_relations:
+  - choose info provider -> info provider tree is displayed
+  - the info area is displayed -> open context menu
+  - open context menu -> choose create info cube
+  - choose create info cube -> enter zd_sales as the technical name [fork]
+  - choose create info cube -> enter sales overview as the description [fork]
+  - enter sales overview as the description -> select standard info cube as info provider type [merge]
+  - choose create -> screen for info cube editing is shown
+  - screen for info cube editing is shown -> open context menu
+- input_excerpt:
+  3.	Creating Data sources for Master Data of Characteristic "Product"1. You are in the Modeling functional area of the Data Warehousing Workbench2. Choose Info Provider. The Info Provider tree is displayed. The Info Area created previously in the Info Object tree is also displayed in the Info Provider tree. It contains the characteristics that were dened as Info Provider and is used to group further objects.3. In the context menu of the Info Area, choose Create Info Cube.4. In the next screen, enter ZD_SALES as the technical name under Info Cube and Sales Overview as the description.5. Select Standard Info Cube as Info Provider Type and choose Create. You go to the screen for Info Cube editin
+- generated_excerpt:
+  @startuml start :Choose Info Provider; :View Info Provider tree\nand Info Area; :Choose Create Info Cube\nin context menu of Info Area; :Enter ZD_SALES as technical name\nand Sales Overview as description; :Select Standard Info Cube\nas Info Provider Type; :Choose Create; :Choose Create New Dimensions\nin context menu of Dimensions folder; :Enter Product as description\nand choose Create Another Dimension; :Enter Sales Organization as description\nand choose Continue; :Choose Info Object Catalog\nin toolbar; :Select Info Object catalog\nfor characteristics as template; :Choose Continue; :Assign characteristics to dimensions\nwith drag and drop; :Choose Info Object Direct Input\nin context me
+### pure-0014
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3478
+- relation_f1: 0.1071
+- llm_element_status: success
+- llm_node_f1: 0.7600
+- llm_relation_f1: 0.2258
+- missing_nodes:
+  - employ multiple active traction vehicles
+  - connect to on-train wire?
+  - establish permanent radio connection between active cabs
+  - whilst on-going
+  - display multi-drivers indication permanently
+  - not affect other communications
+  - terminate entire call
+  - disconnected from multi-driver call?
+- extra_nodes:
+  - connect call to loudspeaker in each cab (handset on-hook)
+  - display multi-drivers indication permanently at all cab radios
+  - driver action / event?
+  - continue communications between remaining members
+  - give clear indication of disconnection in that cab
+  - call fails in lead traction vehicle
+  - provide audible and visual indication in lead cab
+  - call fails in another cab
+- missing_relations:
+  - employ multiple active traction vehicles -> connect to on-train wire?
+  - connect to on-train wire? -> establish permanent radio connection between active cabs [no]
+  - connect to on-train wire? -> establish call from lead traction vehicle active cab [yes]
+  - establish permanent radio connection between active cabs -> establish call from lead traction vehicle active cab [merge]
+  - establish call from lead traction vehicle active cab -> whilst on-going
+  - whilst on-going -> display multi-drivers indication permanently
+  - display multi-drivers indication permanently -> group member places call on hold?
+  - group member places call on hold? -> not affect other communications [yes]
+- input_excerpt:
+  5.2.2.26 Many trains employ multiple active traction vehicles. Where these vehicles are not connected by on-train wire connections, it shall be possible for the lead driver to establish a permanent radio connection between each of the active cabs. (M) 5.2.2.27 The call will be established from the active cab of the lead traction vehicle. (I) 5.2.2.28 Whilst on-going, a ‘multi-drivers’ indication shall be displayed permanently at all Cab radios. (M) 5.2.2.29 The lead driver shall be notified if a member of the group has placed the call on hold, although this shall not affect communications between the remaining members of the group. (M) 5.2.2.30 At any time during the call, the lead driver sh
+- generated_excerpt:
+  @startuml start  :Establish multi-driver call from active cab of lead traction vehicle; note right: Simplified using automation or guidance  fork   :Connect call to loudspeaker in each cab (handset on-hook); fork again   :Display 'multi-drivers' indication permanently at all Cab radios; end fork  repeat   switch (Driver Action / Event?)   case (Member places call on hold)     :Notify lead driver;     :Continue communications between remaining members;   case (Lead driver removes a member)     :Remove member from group;     :Give clear indication of disconnection in that cab;   case (Call fails in lead traction vehicle)     :Provide audible and visual indication in lead cab;     :Lead driver 
+### bp-0021
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3704
+- relation_f1: 0.1429
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 0.6875
+- missing_nodes:
+  - click new job
+  - the list of jobs is displayed
+  - select a job from list
+  - cick create
+  - information is displayed
+  - name
+  - keywords
+  - description
+- extra_nodes:
+  - the list of jobs in the promotionjob folder is displayed
+  - select a job from the job list and click create
+  - the name keywords and description of the job are displayed
+  - modify fields if required
+  - in the save job in field browse and select the folder
+- missing_relations:
+  - log in lifecycle manager tool -> go to promotion jobs home page
+  - click new job -> click the copy an existing job option
+  - click the copy an existing job option -> the list of jobs is displayed
+  - the list of jobs is displayed -> select a job from list
+  - select a job from list -> cick create
+  - cick create -> information is displayed
+  - information is displayed -> name [fork]
+  - information is displayed -> keywords [fork]
+- input_excerpt:
+  21.	create a new job by copying an existing job.To create a new job by copying an existing job, complete the following steps:1. Log into the LifeCycle Manager tool.2. In the "Promotion Jobs" home page, click New Job.3. Click the Copy an Existing Job option. The list of jobs in the PromotionJob folder is displayed4. Select a job from the job list, and click Create. The name, keywords, and description of the job are displayed. You can modify these fields, if required. However, you cannot change the source system.5. In the Save Job in field, browse and select the folder in which you want to save the job, and click Create.A new job is created.
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :In the "Promotion Jobs" home page, click New Job; :Click the Copy an Existing Job option; :The list of jobs in the PromotionJob folder is displayed; :Select a job from the job list, and click Create; :The name, keywords, and description of the job are displayed; :Modify fields if required; :In the Save Job in field, browse and select the folder; :Click Create; :A new job is created; stop @enduml
+### rac-0013
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3846
+- relation_f1: 0.2222
+- llm_element_status: success
+- llm_node_f1: 0.7302
+- llm_relation_f1: 0.3836
+- missing_nodes:
+  - condtion judgement
+  - bms-fast charger handshake flag=1
+  - dcdc state 1 or 3s elapsed
+  - shutdown
+  - eas state 1 or 3s elapsed
+  - power battery current=6.1
+  - current<6.1 or 3s elapsed
+  - wtch state 1
+- extra_nodes:
+  - system startup
+  - dcdc state monitoring
+  - shut down
+  - bms handshake flag = 1?
+  - transition to state 156
+  - move to state 157
+  - eas state monitoring
+  - handshake flag = 1?
+- missing_relations:
+  - enter state 155 -> condtion judgement
+  - condtion judgement -> dcdc state=1 [case dcdc state=1]
+  - stay in state 155 -> bms-fast charger handshake flag=1
+  - bms-fast charger handshake flag=1 -> switch to state 156 [yes]
+  - switch to state 156 -> dcdc state 1 or 3s elapsed
+  - dcdc state 1 or 3s elapsed -> switch to state 157 [yes]
+  - switch to state 157 -> fast charging is inactive
+  - condtion judgement -> eas state=1 [case eas state=1]
+- input_excerpt:
+  After the system starts up: if fast charging is active and the BMS manual charging/discharging flag is 0, the system enters state 155. While in state 155:  1. For DCDC state monitoring:    - If DCDC state remains 1, stay in state 155.    - If the BMS-fast charger handshake flag becomes 1, transition to state 156.    - If DCDC state is not 1 or 3 seconds pass, move to state 157.    - If fast charging becomes inactive at any point, shut down and end the process.  2. For EAS state monitoring:    - If EAS state stays at 1, remain in state 155.    - If the handshake flag turns to 1, switch to state 156.    - If EAS state isn’t 1 or 3 seconds elapse, shift to state 157.    - Should fast charging d
+- generated_excerpt:
+  @startuml start :System startup; if (Fast charging active\nand BMS flag = 0?) then (yes)   :Enter state 155;   fork     :DCDC state monitoring;     if (Fast charging inactive?) then (yes)       :Shut down;       stop     else (no)       if (BMS handshake flag = 1?) then (yes)         :Transition to state 156;       else (no)         if (DCDC state = 1?) then (yes)           :Stay in state 155;         else (no)           :Move to state 157;         endif       endif     endif   fork again     :EAS state monitoring;     if (Fast charging inactive?) then (yes)       :Shut down;       stop     else (no)       if (Handshake flag = 1?) then (yes)         :Switch to state 156;       else (no)     
+### fsd-0022
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5306
+- relation_f1: 0.3051
+- llm_element_status: success
+- llm_node_f1: 0.6923
+- llm_relation_f1: 0.3143
+- missing_nodes:
+  - thermal management controller implemented as state machine on rtos
+  - regulate pwm fans
+  - regulate liquid-cooling loop
+  - battery rail voltage < threshold?
+  - initiate primary control logic
+  - trigger conditional verification sequence
+  - charging current within safe range?
+  - battery temperature < upper limit?
+- extra_nodes:
+  - initiate control logic (battery rail voltage < threshold)
+  - verify conditions
+  - charging current within safe range and battery temperature < upper limit and battery health status confirmed good
+  - pass checks
+  - iterative monitoring
+  - synchronize tasks
+  - conditions not met
+  - fault?
+- missing_relations:
+  - thermal management controller implemented as state machine on rtos -> regulate pwm fans [fork]
+  - thermal management controller implemented as state machine on rtos -> regulate liquid-cooling loop [fork]
+  - regulate pwm fans -> battery rail voltage < threshold? [merge]
+  - regulate liquid-cooling loop -> battery rail voltage < threshold? [merge]
+  - initiate primary control logic -> trigger conditional verification sequence
+  - trigger conditional verification sequence -> charging current within safe range?
+  - charging current within safe range? -> battery temperature < upper limit? [yes]
+  - battery temperature < upper limit? -> battery health status confirmed good? [yes]
+- input_excerpt:
+  The thermal management controller, implemented as a state machine on the RTOS, regulates PWM fans and liquid-cooling loops. Its primary control logic is initiated when the battery rail voltage falls below a set threshold, triggering a conditional sequence to verify the charging current is within a safe range, the battery temperature is below its upper limit, and the battery health status is confirmed as good. Upon passing these checks, the system spawns concurrent RTOS tasks for charge and discharge cycles. The charging task, initialized with a higher priority, iteratively monitors the battery rail voltage and temperature, while the discharge task monitors output power. These tasks are synch
+- generated_excerpt:
+  @startuml start :Initiate control logic (Battery rail voltage < threshold); switch (Verify conditions) case (Charging current within safe range AND Battery temperature < upper limit AND Battery health status confirmed good)   :Pass checks;   repeat     fork       :Charging task (Higher priority);       repeat         :Monitor battery rail voltage and temperature;       repeat while (Iterative monitoring)     fork again       :Discharge task;       :Monitor output power;     end fork     :Synchronize tasks;     if (Rail voltage remains below threshold?) then (Yes)       :Restart tasks with expanded monitoring scope (includes health status);     else (No)     endif   repeat while (Voltage setp
+### pure-0051
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5333
+- relation_f1: 0.2857
+- llm_element_status: success
+- llm_node_f1: 0.8421
+- llm_relation_f1: 0.6316
+- missing_nodes:
+  - display inventory departments
+  - see view inventory
+  - display item history screen
+  - current inventory item information
+  - historical inventory item information
+- extra_nodes:
+  - the screen displays all inventory departments in matrix format
+  - the system displays the item history screen containing current and historical information about the inventory item
+- missing_relations:
+  - access main inventory screen -> display inventory departments
+  - display inventory departments -> see view inventory
+  - see view inventory -> drill down to desired existing inventory item
+  - click item history button -> display item history screen
+  - display item history screen -> current inventory item information [fork]
+  - display item history screen -> historical inventory item information [fork]
+  - current inventory item information -> historical inventory item information [merge]
+- input_excerpt:
+  4. View Inventory Item History 4.1. User accesses the main inventory screen 4.2. The screen displays all inventory departments in matrix format 4.3. User drills down to the desired existing inventory item (see View Inventory) 4.4. The item detail screen is presented 4.5. User clicks the Item History button 4.6. The system displays the Item History screen containing current and historical information about the inventory item
+- generated_excerpt:
+  @startuml start :Access the main inventory screen; :The screen displays all inventory departments in matrix format; :Drill down to the desired existing inventory item; :The item detail screen is presented; :Click the Item History button; :The system displays the Item History screen containing current and historical information about the inventory item; stop @enduml
+### pure-0064
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5333
+- relation_f1: 0.5714
+- llm_element_status: success
+- llm_node_f1: 0.9474
+- llm_relation_f1: 0.9474
+- missing_nodes:
+  - open keepass
+  - select group/subgroup
+  - message is appeared to confirm
+  - selection
+- extra_nodes:
+  - user opens keepass and selects a group/subgroup
+  - a message is appeared to confirm the delete
+  - user selection
+- missing_relations:
+  - open keepass -> select group/subgroup
+  - select group/subgroup -> select to delete group/subgroup
+  - message is appeared to confirm -> selection
+- input_excerpt:
+  1. User opens KeePass and selects a group/subgroup 2. User selects to delete the group/subgroup 3. A message is appeared to confirm the delete 4. User selects yes 5. The group/subgroup is deleted 6. The main window opens 3.8.2.2 Alternative Data Flows 3.8.2.2.1 Alternative Data Flow 1 4. User selects no 5. The group/subgroup is not deleted
+- generated_excerpt:
+  @startuml start :User opens KeePass and selects a group/subgroup; :User selects to delete the group/subgroup; :A message is appeared to confirm the delete; switch (User selection) case (Yes)   :The group/subgroup is deleted;   :The main window opens; case (No)   :The group/subgroup is not deleted; endswitch stop @enduml
+### fsd-0069
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5854
+- relation_f1: 0.3077
+- llm_element_status: success
+- llm_node_f1: 0.8000
+- llm_relation_f1: 0.3934
+- missing_nodes:
+  - thermal management controller operates as state machine within rtos
+  - govern pwm fan speeds
+  - govern liquid-cooling pumps
+  - high-priority task potentially serviced by isr
+  - monitor via sensor fusion algorithm
+  - temperature
+  - ambient humidity
+  - validated temperature > safety threshold?
+- extra_nodes:
+  - monitor temperature and ambient humidity via sensor fusion algorithm
+  - validate temperature reading with crc check
+  - temperature exceeds safety threshold?
+  - monitor battery rail voltage and current (pmic/bms data)
+  - voltage drops below safe level or current surpasses rated maximum?
+- missing_relations:
+  - thermal management controller operates as state machine within rtos -> govern pwm fan speeds [fork]
+  - thermal management controller operates as state machine within rtos -> govern liquid-cooling pumps [fork]
+  - govern pwm fan speeds -> high-priority task potentially serviced by isr [merge]
+  - govern liquid-cooling pumps -> high-priority task potentially serviced by isr [merge]
+  - high-priority task potentially serviced by isr -> monitor via sensor fusion algorithm
+  - monitor via sensor fusion algorithm -> temperature [fork]
+  - monitor via sensor fusion algorithm -> ambient humidity [fork]
+  - temperature -> validated temperature > safety threshold? [merge]
+- input_excerpt:
+  Operating as a state machine within a real-time operating system (RTOS), the thermal management controller governs PWM fans and liquid-cooling pumps. A high-priority task, potentially serviced by an ISR, continuously monitors temperature and ambient humidity via a sensor fusion algorithm. If the temperature reading, validated by a CRC check, exceeds its safety threshold, the controller executes a closed-loop cooling operation, cycling the cooling assets until the temperature normalizes. Concurrently, a lower-priority task monitors the battery rail voltage and current, leveraging data from the PMIC or BMS. Should the voltage drop below a safe level or the current surpass its rated maximum, a 
+- generated_excerpt:
+  @startuml start :Monitor temperature and ambient humidity via sensor fusion algorithm; :Validate temperature reading with CRC check; if (Temperature exceeds safety threshold?) then (yes)   repeat     :Execute closed-loop cooling operation (cycling cooling assets);   repeat while (Temperature normalizes?) is (no)   ->yes; endif fork   :Monitor battery rail voltage and current (PMIC/BMS data); fork again   :Ensure system liveness (Watchdog task); fork again   :Protect shared sensor data in ring buffer (Mutex); end fork if (Voltage drops below safe level OR Current surpasses rated maximum?) then (yes)   :Trigger protection mechanism immediately (FADEC/Safety monitor);   :Log fault with timestam
+### rac-0011
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6111
+- relation_f1: 0.6522
+- llm_element_status: success
+- llm_node_f1: 0.7222
+- llm_relation_f1: 0.4490
+- missing_nodes:
+  - enter power-up mode
+  - shutdown
+  - high-voltage shutdown request charging/discharging is 2
+  - slow charging is active and charging/discharging power-up readiness=3
+  - switch to state 105
+  - ac discharge system fault=1
+  - recharge demand =1 and ac discharge system no fault
+- extra_nodes:
+  - system starts up
+  - enter power-up state
+  - condition?
+  - enter state 82
+  - high-voltage shutdown request is 2
+  - enter state 127
+  - system shuts down
+- missing_relations:
+  - enter power-up mode -> ac charging system fault=1
+  - switch to state 82 -> slow charging is inactive
+  - ac charging system fault=1 -> high-voltage shutdown request charging/discharging is 2 [no]
+  - high-voltage shutdown request charging/discharging is 2 -> high-voltage shutdown request charging/discharging is 2 and bms counter=2 [no]
+  - slow charging is active -> slow charging is active and charging/discharging power-up readiness=3 [no]
+  - slow charging is active and charging/discharging power-up readiness=3 -> switch to state 105 [yes]
+  - switch to state 105 -> ac discharge system fault=1
+  - ac discharge system fault=1 -> switch to state 127 [yes]
+- input_excerpt:
+  After the system starts up, the following logic applies:  1. If slow charging is active, the system enters the "power-up" state. Then:    a. When the AC charging system fault is 1, the system switches to state 127. If recharge demand is 1 and front MCU initialization state is 0, it enters state 82. Should slow charging become inactive at any point, the system shuts down and ends.    b. If a high-voltage shutdown request (for charging/discharging) is 2, the system switches to state 126. When recharge demand is 1 and the front MCU low-voltage shutdown flag is 0, it enters state 127. If the front MCU low-voltage flag becomes 1 or a 2.2-second timeout occurs, it switches to state 82. Should slow
+- generated_excerpt:
+  @startuml start :System starts up; if (Slow charging active?) then (yes)   :Enter "power-up" state;   switch (Condition?)   case (AC charging system fault is 1)     :Switch to state 127;     if (Recharge demand is 1\nand front MCU initialization state is 0?) then (yes)       :Enter state 82;     else (no)     endif   case (High-voltage shutdown request is 2)     :Switch to state 126;     if (Recharge demand is 1\nand front MCU low-voltage shutdown flag is 0?) then (yes)       :Enter state 127;     else (no)     endif     if (Front MCU low-voltage flag becomes 1\nor 2.2-second timeout occurs?) then (yes)       :Switch to state 82;     else (no)     endif   case (High-voltage shutdown request 
+### rac-0001
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6364
+- relation_f1: 0.7143
+- llm_element_status: success
+- llm_node_f1: 0.9677
+- llm_relation_f1: 0.6667
+- missing_nodes:
+  - initial judgement
+  - vehicle status > 9 and 30 and <= 49
+  - vehicle status == 28 or 29 or 30
+  - switch to new state
+  - query cumulative discharge distance
+  - set instantaneous driving mileage gradient = cumulative discharge distance * driving error correction coefficient /2
+  - switch to another state
+- extra_nodes:
+  - check vehicle s status value
+  - status > 9 and 30 and <= 49?
+  - status is 28 29 or 30?
+  - transition to new state
+  - transition to another state
+  - move to new state
+  - use call() to get cumulative discharge distance
+  - calculate gradient as (cumulative discharge distance driving error correction coefficient 2)
+- missing_relations:
+  - initial judgement -> vehicle status > 9 and 30 and <= 49 [case vehicle status > 9 and 30 and <= 49]
+  - initial judgement -> vehicle status == 28 or 29 or 30 [case vehicle status == 28 or 29 or 30]
+  - vehicle status == 28 or 29 or 30 -> switch to new state
+  - vehicle speed > speed threshold (kph) -> switch to new state [yes]
+  - energy recovery mileage >1 -> cumulative discharge distance < energy recovery mileage [no]
+  - query cumulative discharge distance -> cumulative discharge distance >0.1?
+  - switch to new state -> set instantaneous driving mileage gradient = cumulative discharge distance * driving error correction coefficient /2
+  - vehicle speed < speed threshold (kph) -> vehicle speed > speed threshold (kph) [no]
+- input_excerpt:
+  Once the system starts up, it checks the vehicle's status value first.  If the status is greater than 9 but less than 28, or greater than 30 but 49 or less, the system sets the instantaneous driving mileage gradient to 0 and ends.  For a status of 28, 29, or 30, the system transitions to a new state and sets the instantaneous driving mileage to 10. After this state change, it performs additional checks:  *   If the current stays between -Current Threshold A and Current Threshold A, the system sets the instantaneous driving mileage gradient to 0 and ends. *   If the vehicle speed exceeds the speed threshold (kph), the system enters a new state and resets the cumulative discharge distance to 0
+- generated_excerpt:
+  @startuml start :Check vehicle's status value; if (Status > 9 and < 28, or > 30 and <= 49?) then (yes)   :Set instantaneous driving mileage gradient to 0;   stop elseif (Status is 28, 29, or 30?) then (yes)   :Transition to new state;   :Set instantaneous driving mileage to 10;   if (Current between -Current Threshold A and Current Threshold A?) then (yes)     :Set instantaneous driving mileage gradient to 0;   elseif (Vehicle speed exceeds speed threshold (kph)?) then (yes)     :Enter new state;     :Reset cumulative discharge distance to 0;     if (Energy recovery mileage exceeds 1?) then (yes)       :Transition to another state;       :Reset energy recovery mileage to 0;     else (no)    
+### fsd-0102
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6667
+- relation_f1: 0.3793
+- llm_element_status: success
+- llm_node_f1: 0.8571
+- llm_relation_f1: 0.3692
+- missing_nodes:
+  - thermal management controller executes as state machine on rtos
+  - govern pwm fans
+  - govern liquid-cooling pumps
+  - high-priority task concurrently activates temperature adjustment module
+  - separate high-priority task triggered by humidity alert
+  - humidity normalized?
+  - run in periodic loop
+  - controller returns to low-power standby mode
+- extra_nodes:
+  - execute as state machine on rtos
+  - activate temperature adjustment module
+  - humidity alert
+  - stop humidity monitor and dehumidifier once humidity normalizes
+  - periodic loop continues?
+  - return to low-power standby mode
+  - periodic execution continues?
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller executes as state machine on rtos -> govern liquid-cooling pumps [fork]
+  - govern pwm fans -> ambient temperature threshold breach? [merge]
+  - govern liquid-cooling pumps -> ambient temperature threshold breach? [merge]
+  - ambient temperature threshold breach? -> high-priority task concurrently activates temperature adjustment module [yes]
+  - ambient temperature threshold breach? -> telemetry monitor driven by timer isr [no]
+  - high-priority task concurrently activates temperature adjustment module -> enable fan cooling
+  - temperature continues to rise? -> telemetry monitor driven by timer isr [no]
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fans and liquid-cooling pumps. Upon an ambient temperature threshold breach, a high-priority task concurrently activates the temperature adjustment module and enables fan cooling. If the temperature continues to rise, a rapid cooling subroutine executes in a controlled loop with exponential backoff until the temperature re-enters the safe range, at which point the fan is disabled and the adjustment module is halted. Concurrently, a separate high-priority task, triggered by a humidity alert, initializes a humidity monitor and activates the dehumidifier; both are stopped once humidity normalizes. Throughou
+- generated_excerpt:
+  @startuml start :Execute as state machine on RTOS; fork   :Ambient temperature threshold breach;   fork     :Activate temperature adjustment module;   fork again     :Enable fan cooling;   end fork   if (Temperature continues to rise?) then (yes)     repeat       :Execute rapid cooling subroutine with exponential backoff;     repeat while (Temperature re-enters safe range?) is (no)     ->yes;     :Disable fan;     :Halt adjustment module;   endif fork again   :Humidity alert;   fork     :Initialize humidity monitor;   fork again     :Activate dehumidifier;   end fork   :Stop humidity monitor and dehumidifier once humidity normalizes; fork again   repeat     :Execute telemetry monitor driven 
+### rac-0009
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7111
+- relation_f1: 0.7576
+- llm_element_status: success
+- llm_node_f1: 0.8182
+- llm_relation_f1: 0.6154
+- missing_nodes:
+  - high-voltage shutdown request charging/discharging is 2
+  - condition judgement
+  - ignition switch is 2 and front mcu state unchanged
+  - shutdown
+  - ignition switch is 2 and onboard charger command is 1
+  - command becomes 4
+- extra_nodes:
+  - system starts up
+  - high-voltage shutdown request == 2?
+  - condition?
+  - ignition at position 2 front mcu unchanged
+  - system shuts down
+  - ignition at position 2 onboard charger command == 1
+  - onboard charger command == 4?
+- missing_relations:
+  - condition judgement -> ignition switch is 2 and front mcu state unchanged [case 1]
+  - stay in state 127 -> command becomes 4
+  - command becomes 4 -> switch to state 12 [yes]
+  - switch to state 12 -> ignition switch is off and slow charging is inactive
+  - switch to state 12 -> remote mode is disabled
+  - switch to state 12 -> pet request mode ends
+  - switch to state 12 -> soc reaches 100 and dcdc state is 2
+- input_excerpt:
+  After the system starts up, if slow charging is active, it enters power-up mode. Then, if the high-voltage shutdown request (for charging or discharging) is set to 2, it switches to state 127. Once in state 127, the following actions apply based on conditions:  1. If the ignition switch is at position 2 and the front MCU state remains unchanged, the system stays in state 127.    a. Should slow charging become inactive and a timeout of 2.2 seconds occur, it switches to state 12. If the ignition switch is off at this point, the system shuts down and ends.    b. Similarly, if slow charging is inactive and the BMS self-check counter reads 1, it switches to state 12. Again, if the ignition switch
+- generated_excerpt:
+  @startuml start :System starts up; if (Slow charging active?) then (Yes)   :Enter power-up mode;   if (High-voltage shutdown request == 2?) then (Yes)     :Switch to state 127;     switch (Condition?)     case (Ignition at position 2 & front MCU unchanged)       :Stay in state 127;       if (Slow charging inactive & timeout 2.2s?) then (Yes)         :Switch to state 12;         if (Ignition switch off?) then (Yes)           :System shuts down;           stop         else (No)         endif       elseif (Slow charging inactive & BMS self-check counter == 1?) then (Yes)         :Switch to state 12;         if (Ignition switch off?) then (Yes)           :System shuts down;           stop       
+### pure-0096
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7500
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.8333
+- llm_relation_f1: 0.1667
+- missing_nodes:
+  - validate migration rapidly
+- extra_nodes:
+  - sample a random percentage of records for rapid verification
+- missing_relations:
+  - use command arc_warc_verify options -> validate migration rapidly
+  - validate migration rapidly -> compare arc and warc records checksums [fork]
+  - validate migration rapidly -> optionally sample random records percentage [fork]
+  - compare arc and warc records checksums -> validate migration rapidly [merge]
+  - optionally sample random records percentage -> validate migration rapidly [merge]
+- input_excerpt:
+  Validation Tool Execution: Use the command arc_warc_verify <ARCFILE> <WARCFILE> <USER_DEFINED_ARG_READER> [options] to validate the migration. Compare checksums of records in ARC and WARC files, and optionally sample a random percentage of records for rapid verification.
+- generated_excerpt:
+  @startuml start :Execute command `arc_warc_verify <ARCFILE> <WARCFILE> <USER_DEFINED_ARG_READER> [options]`; :Compare checksums of records in ARC and WARC files; if (Sample a random percentage of records?) then (yes)   :Sample a random percentage of records for rapid verification; else (no) endif stop @enduml
+### lmc-0044
+- dataset: lmc
+- failure_types: missing_activity, missing_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.8889
+- relation_f1: 0.8571
+- llm_element_status: success
+- llm_node_f1: 0.9231
+- llm_relation_f1: 0.9231
+- missing_nodes:
+  - in cockpit
+- missing_relations:
+  - in cockpit -> autopilot engage switch
+- input_excerpt:
+  Roll Autopilot shall engage when the pilot selects the autopilot engage switch in the cockpit and disengage when the switch is deselected. When not engaged, the command to the roll actuator shall be zero.
+- generated_excerpt:
+  @startuml start switch (Autopilot engage switch) case (Selected)   :Engage Roll Autopilot; case (Deselected)   :Disengage Roll Autopilot;   :Set roll actuator command to zero; endswitch stop @enduml
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

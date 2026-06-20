@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks guidance on loop constructs (repeat/while), hierarchical nesting of conditionals, representing state labels/outcomes as activities, and the syntactic dependencies of PlantUML control-flow keywords (e.g., elseif requires if, endswitch closure)."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section lacks steps to identify parallel or iterative behaviors and does not emphasize preserving the hierarchical nesting of conditions. Additionally, Step 1's focus on extracting only 'explicit activities and conditional/alternative statements' causes the model to filter out contextual states and outcome labels."
+    },
+    {
+      "section": "rule",
+      "section_problem": "Rule 1's strict prohibition against inventing or inferring activities likely causes the model to drop valid contextual states and outcome labels that are not explicit 'activities', contributing to missing activity nodes."
+    }
+  ]
+}
+```

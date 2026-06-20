@@ -1,0 +1,75 @@
+```json
+{
+  "summary": "The most useful repair appears to be in workflow and knowledge. The workflow lacks procedural guidance for extracting activities from lists, system responses, and conditional language, while the knowledge section lacks reusable UML modeling principles for these concepts and for distinguishing switch/case from fork.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "compressed_list_or_collection",
+        "missing_system_response_activity",
+        "inferred_extra_activities",
+        "paraphrased_activity_labels",
+        "condition_not_modeled_as_decision"
+      ],
+      "section_problem": "The activity extraction step gives weak guidance on handling enumerated lists, system responses, and conditional language, and does not adequately enforce preservation of requirement phrasing or prohibition of inferred steps.",
+      "edit_intent": "Enhance the activity extraction and control-flow steps to explicitly handle enumerated lists, system responses, and conditional language, and reinforce strict adherence to requirement text without paraphrasing or inferring steps.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "bp-0015",
+        "bp-0022",
+        "pure-0082",
+        "lmc-0050",
+        "lmc-0016",
+        "pure-0026",
+        "us-0129"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "compressed_list_or_collection",
+        "missing_system_response_activity",
+        "fork_vs_switch_misclassification",
+        "condition_not_modeled_as_decision"
+      ],
+      "section_problem": "The knowledge section lacks reusable modeling principles for handling enumerated lists, separating system responses from user actions, modeling conditional requirements as decisions, and distinguishing switch/case for mutually exclusive categories.",
+      "edit_intent": "Add concise modeling principles for list decomposition to parallel activities, separating system responses, modeling conditional requirements as decision nodes, and using switch/case for mutually exclusive monitoring categories.",
+      "knowledge_gap_ids": [
+        "list_decomposition_to_parallel",
+        "system_response_separation",
+        "conditional_requirement_as_decision",
+        "switch_case_for_mutually_exclusive_categories"
+      ],
+      "evidence_case_ids": [
+        "bp-0015",
+        "bp-0022",
+        "pure-0082",
+        "rac-0013",
+        "us-0129",
+        "lmc-0016",
+        "lmc-0050"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The overall role definition is appropriate and does not contribute to the observed granularity or control-flow errors."
+    },
+    {
+      "section": "input",
+      "reason": "The input specification is standard and unrelated to the extraction and modeling failures."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement is correct and editing it would not fix activity or relation errors."
+    }
+  ]
+}
+```

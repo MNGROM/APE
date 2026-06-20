@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a step-by-step process to identify concurrent tasks, conditional logic, and state monitors, and map them to correct PlantUML control-flow constructs.",
+      "change_instruction": "Add a multi-step workflow requiring the model to: (1) Extract explicit activities from the requirement at the stated level of abstraction without inferring extra sub-steps; (2) Identify concurrent or parallel sub-tasks (e.g., lists of items, attributes, or simultaneous actions) and map them to fork/fork again structures; (3) Identify explicit or implicit conditional logic (e.g., 'if', 'with offset', 'upon request') and map them to if/elseif/else structures; (4) Identify mutually exclusive state monitors or alternative states and map them to switch/case structures; (5) Construct the final diagram by assembling the activities with the identified control-flow relations."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide reusable modeling guidance on PlantUML syntax and patterns for parallel decomposition, conditional branching, and state monitoring.",
+      "change_instruction": "Add concise knowledge entries explaining: (1) PlantUML syntax for parallel execution using 'fork' / 'fork again' / 'end fork'; (2) PlantUML syntax for conditional branching using 'if' / 'elseif' / 'else' / 'endif'; (3) PlantUML syntax for mutually exclusive states or state monitoring using 'switch' / 'case' / 'endswitch'; (4) The distinction between independent concurrent tasks (fork) and mutually exclusive alternative paths (switch/if)."
+    },
+    {
+      "section": "rule",
+      "intent": "Constrain activity granularity to prevent hallucination and enforce preservation of logical decision points.",
+      "change_instruction": "Add explicit rules stating: (1) Do not invent intermediate steps, validation checks, or sub-tasks that are not explicitly stated in the requirement; (2) Activity nodes must represent the exact logical steps described in the text without over-decomposition; (3) Never flatten conditional logic or decision points into unconditional sequential activities—always preserve them using if/else or switch/case constructs; (4) Lists of items or concurrent actions must not be compressed into a single sequential node but must be represented using fork/end fork."
+    }
+  ]
+}
+```

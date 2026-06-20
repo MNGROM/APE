@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, providing no step-by-step process for the model to identify concurrent sub-tasks, conditional logic, or state monitors in the text and map them to the correct PlantUML control-flow constructs (fork/end fork, if/else, switch/case). This absence causes the model to default to a strictly sequential interpretation."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, leaving the model without reusable modeling guidance on PlantUML syntax and patterns for parallel decomposition, conditional branching, and mutually exclusive state monitoring, which leads to incorrect control flow representations."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, failing to constrain the model's granularity and prevent over-decomposition or hallucination of intermediate steps, and lacking explicit instructions to preserve logical decision points rather than flattening them into linear sequences."
+    }
+  ]
+}
+```

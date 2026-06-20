@@ -1,0 +1,149 @@
+{
+  "iteration": 1,
+  "paths": {
+    "prompts": {
+      "before": "prompts/before.md",
+      "candidate": "prompts/candidate.md",
+      "after": "prompts/after.md"
+    },
+    "batches": {
+      "analysis_cases": "batches/analysis_cases.json",
+      "gate_cases": "batches/gate_cases.json"
+    },
+    "evaluation": {
+      "analysis_records": "evaluation/analysis_records.jsonl",
+      "analysis_summary": "evaluation/analysis_summary.json",
+      "analysis_overview": "evaluation/analysis_overview.md",
+      "gate_candidate_records": "evaluation/gate_candidate_records.jsonl",
+      "gate_candidate_summary": "evaluation/gate_candidate_summary.json",
+      "gate_baseline_records": "evaluation/gate_baseline_records.jsonl",
+      "gate_baseline_summary": "evaluation/gate_baseline_summary.json"
+    },
+    "agents": {
+      "failure_analysis": {
+        "input": "agents/failure_analysis.input.json",
+        "output": "agents/failure_analysis.output.json"
+      },
+      "error_localization": {
+        "input": "agents/error_localization.input.json",
+        "output": "agents/error_localization.output.json"
+      },
+      "prompt_editor": {
+        "input": "agents/prompt_editor.input.json",
+        "output": "agents/prompt_editor.output.json"
+      },
+      "prompt_rewriter": {
+        "input": "agents/prompt_rewriter.input.json",
+        "output": "agents/prompt_rewriter.output.json"
+      }
+    },
+    "decision": {
+      "acceptance": "decision/acceptance.json",
+      "rejected_by_gate": "decision/rejected_by_gate.json",
+      "update_skipped": "decision/update_skipped.txt"
+    },
+    "reports": {
+      "prompt_change": "reports/prompt_change.md",
+      "metrics": "reports/metrics_report.md"
+    }
+  },
+  "stages": {
+    "analysis_batch_sampling": {
+      "status": "success",
+      "outputs": {
+        "cases": "batches/analysis_cases.json"
+      }
+    },
+    "analysis_evaluation": {
+      "status": "success",
+      "inputs": {
+        "prompt": "prompts/before.md",
+        "cases": "batches/analysis_cases.json"
+      },
+      "outputs": {
+        "records": "evaluation/analysis_records.jsonl",
+        "summary": "evaluation/analysis_summary.json"
+      }
+    },
+    "failure_analysis": {
+      "status": "success",
+      "inputs": {
+        "records": "evaluation/analysis_records.jsonl"
+      },
+      "outputs": {
+        "input": "agents/failure_analysis.input.json",
+        "output": "agents/failure_analysis.output.json"
+      }
+    },
+    "error_localization": {
+      "status": "success",
+      "inputs": {
+        "prompt_before": "prompts/before.md",
+        "failure_analysis": "agents/failure_analysis.output.json"
+      },
+      "outputs": {
+        "input": "agents/error_localization.input.json",
+        "output": "agents/error_localization.output.json"
+      }
+    },
+    "prompt_editor": {
+      "status": "success",
+      "inputs": {
+        "prompt_before": "prompts/before.md",
+        "failure_analysis": "agents/failure_analysis.output.json",
+        "error_localization": "agents/error_localization.output.json"
+      },
+      "outputs": {
+        "input": "agents/prompt_editor.input.json",
+        "output": "agents/prompt_editor.output.json"
+      }
+    },
+    "prompt_rewriter": {
+      "status": "success",
+      "inputs": {
+        "prompt_before": "prompts/before.md",
+        "revision_plan": "agents/prompt_editor.output.json"
+      },
+      "outputs": {
+        "input": "agents/prompt_rewriter.input.json",
+        "output": "agents/prompt_rewriter.output.json",
+        "candidate_prompt": "prompts/candidate.md"
+      }
+    },
+    "gate_candidate_evaluation": {
+      "status": "success",
+      "inputs": {
+        "candidate_prompt": "prompts/candidate.md",
+        "cases": "batches/gate_cases.json"
+      },
+      "outputs": {
+        "records": "evaluation/gate_candidate_records.jsonl",
+        "summary": "evaluation/gate_candidate_summary.json"
+      }
+    },
+    "gate_baseline_evaluation": {
+      "status": "success",
+      "inputs": {
+        "prompt_before": "prompts/before.md",
+        "cases": "batches/gate_cases.json"
+      },
+      "outputs": {
+        "records": "evaluation/gate_baseline_records.jsonl",
+        "summary": "evaluation/gate_baseline_summary.json"
+      }
+    },
+    "acceptance": {
+      "status": "rejected",
+      "inputs": {
+        "baseline_summary": "evaluation/gate_baseline_summary.json",
+        "candidate_summary": "evaluation/gate_candidate_summary.json",
+        "candidate_prompt": "prompts/candidate.md"
+      },
+      "outputs": {
+        "decision": "decision/acceptance.json",
+        "rejection_copy": "decision/rejected_by_gate.json",
+        "prompt_after": "prompts/after.md"
+      }
+    }
+  }
+}

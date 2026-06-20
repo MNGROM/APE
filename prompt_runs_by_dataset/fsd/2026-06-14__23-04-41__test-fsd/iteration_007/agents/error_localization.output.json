@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, providing no step-by-step process for the model to extract activities, determine control flow, or map actors. This absence allows the model to follow its default behavior of inferring unstated steps, misinterpreting lists as parallel forks, and flattening multi-actor flows."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, leaving the model without specific guidance on PlantUML constructs for partitions/swimlanes or how to appropriately map bulleted lists and conditional logic. This leads to missing swimlanes and incorrect parallel fork structures."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, resulting in no strict constraints against hallucinating implicit control flows (like confirmation dialogs) and no directives to match the granularity of the requirement. This causes overcomplicated abstractions and fabricated control flows."
+    }
+  ]
+}
+```

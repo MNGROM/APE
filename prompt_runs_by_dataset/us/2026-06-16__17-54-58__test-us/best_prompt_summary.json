@@ -1,0 +1,32 @@
+{
+  "iteration": 1,
+  "phase": "train_before_evolve",
+  "selection_policy": "relation_f1, then node_f1, then plantuml_compilation_pass_rate, with infrastructure_error_rate as a hard priority",
+  "metric_priority_key": [
+    -0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "summary": {
+    "count": 4.0,
+    "syntax_pass_rate": 0.0,
+    "infrastructure_error_rate": 0.0,
+    "node_precision": 0.0,
+    "node_recall": 0.0,
+    "node_f1": 0.0,
+    "relation_precision": 0.0,
+    "relation_recall": 0.0,
+    "relation_f1": 0.0,
+    "plantuml_compilation_pass_rate": 0.0,
+    "llm_element_evaluated": 0.0,
+    "llm_element_failed": 0.0,
+    "llm_node_precision": 0.0,
+    "llm_node_recall": 0.0,
+    "llm_node_f1": 0.0,
+    "llm_relation_precision": 0.0,
+    "llm_relation_recall": 0.0,
+    "llm_relation_f1": 0.0
+  }
+}

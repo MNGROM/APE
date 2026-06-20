@@ -1,0 +1,46 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "missing_parallel_decomposition",
+        "problem": "The generator fails to decompose composite actions or lists into parallel (fork/fork again) structures, instead representing them as single sequential activities or omitting them entirely.",
+        "possible_causes": [
+          "The prompt does not explicitly instruct the model to identify lists of items, attributes, or concurrent sub-tasks and represent them using PlantUML's fork/end fork construct.",
+          "The model defaults to a strictly sequential interpretation of requirements, flattening concurrent or compositional structures into linear steps."
+        ]
+      },
+      {
+        "name": "missing_conditional_branching",
+        "problem": "The generator omits conditional checks and branching logic that are explicitly stated or implied in the requirements, representing them as unconditional sequential activities instead.",
+        "possible_causes": [
+          "The prompt lacks guidance on extracting implicit and explicit conditional logic (e.g., 'if', 'with offset', 'upon request') and mapping them to if/else or switch/case nodes.",
+          "The model prioritizes a linear activity flow over preserving the logical decision points required by the specification."
+        ]
+      },
+      {
+        "name": "extra_activity_granularity_mismatch",
+        "problem": "The generator creates overly granular or hallucinated activity nodes by splitting single logical steps or inventing intermediate checks not present in the requirement.",
+        "possible_causes": [
+          "The prompt does not provide clear rules for the appropriate level of abstraction, causing the model to over-decompose actions.",
+          "The model attempts to fill out the diagram structure by inferring sub-steps or validation checks that are not actually specified in the text."
+        ]
+      },
+      {
+        "name": "wrong_control_flow_for_state_monitoring",
+        "problem": "The generator misrepresents mutually exclusive monitoring conditions or state transitions as sequential if-else chains, rather than using switch/case or parallel partitions.",
+        "possible_causes": [
+          "The prompt fails to guide the model on how to map multiple simultaneous or alternative state monitors (e.g., monitoring DCDC, EAS, and WTCH states concurrently) into appropriate PlantUML control flow.",
+          "The model defaults to sequential evaluation of independent conditions, leading to incorrect relation structures and premature termination of the diagram."
+        ]
+      }
+    ]
+  }
+}

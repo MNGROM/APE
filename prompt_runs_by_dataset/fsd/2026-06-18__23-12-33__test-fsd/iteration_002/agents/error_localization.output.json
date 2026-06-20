@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section restricts fork/join to actions explicitly stated as concurrent or simultaneous, but the failure analysis shows false-negative parallelism where lists of attributes, options, or grouped items should be modeled as parallel structures. The section lacks positive cues for recognizing implicit concurrency from grouped items."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section prohibits using fork/join for alternative options and attribute listings, which directly conflicts with the failure analysis indicating that such grouped items should be modeled as parallel structures. Additionally, it lacks a strict constraint against inventing implicit sub-steps for high-level goals, leading to extra_activity errors."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section does not provide guidance on preserving structural elements like swimlanes/partitions during activity extraction, contributing to missing_activity errors. It also lacks a step for mapping nested conditional logic, leading to flattened or incorrect control-flow relations."
+    }
+  ]
+}
+```

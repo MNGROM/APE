@@ -1,0 +1,179 @@
+{
+  "task": "Localize analyzed prompt failures to the fixed prompt sections before editing.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\error_localization.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "",
+    "knowledge": "",
+    "rule": ""
+  },
+  "failure_analysis": {
+    "summary": "The batch predominantly fails due to severe activity granularity mismatch and hallucinated elaboration. The model consistently over-decomposes high-level requirements into fine-grained, assumed implementation steps (causing extra activities and relations) while failing to extract and preserve the explicit, concise activities and control-flow structures defined in the gold standard (causing missing activities and relations).",
+    "error_patterns": [
+      {
+        "name": "extra_activity_elaboration",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0055",
+          "us-0098",
+          "us-0092",
+          "bp-0010",
+          "bp-0028"
+        ],
+        "problem": "The model hallucinates implementation details and decomposes single requirement statements into multiple fine-grained steps that are not present in the input, leading to a massive amount of extra activities.",
+        "suggested_prompt_direction": "Instruct the model to strictly extract activities only from the explicit text of the requirement without inferring or adding unstated implementation steps. Emphasize a one-to-one mapping between requirement actions and diagram activities.",
+        "target_sections": [
+          "workflow",
+          "rule"
+        ]
+      },
+      {
+        "name": "missing_activity_concise_extraction",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0055",
+          "us-0098",
+          "us-0092",
+          "lmc-0048",
+          "pure-0078",
+          "pure-0046"
+        ],
+        "problem": "The model fails to identify and preserve the specific, concise activity phrasing used in the gold standard, often merging multiple distinct actions or losing the exact action verb.",
+        "suggested_prompt_direction": "Guide the model to identify distinct actions in the text and represent them as separate, concise activities, preserving the core action and object rather than paraphrasing or merging them.",
+        "target_sections": [
+          "workflow",
+          "input"
+        ]
+      },
+      {
+        "name": "missing_control_flow_constructs",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0010",
+          "bp-0028",
+          "pure-0078",
+          "pure-0046"
+        ],
+        "problem": "The model misses conditional branches, switch statements, and parallel forks that are explicitly or implicitly required by the input, flattening the control flow into a simple sequence.",
+        "suggested_prompt_direction": "Add explicit workflow steps to identify alternative paths (if/else), multiple mutually exclusive cases (switch), and concurrent actions (fork) from the requirement before generating the sequence.",
+        "target_sections": [
+          "workflow"
+        ]
+      },
+      {
+        "name": "wrong_relation_from_granularity_mismatch",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0055",
+          "us-0098",
+          "us-0092",
+          "bp-0010",
+          "pure-0046"
+        ],
+        "problem": "Because the model generates the wrong set of activities (extra or missing), the resulting control-flow relations naturally fail to match the gold standard, leading to entirely incorrect diagram topologies.",
+        "suggested_prompt_direction": "Fixing the activity extraction and control-flow construct identification will cascade into correcting the relations. Emphasize that relations must strictly follow the extracted activities and identified control-flow patterns.",
+        "target_sections": [
+          "workflow"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "switch_vs_if_else",
+        "related_failure_patterns": [
+          "missing_control_flow_constructs"
+        ],
+        "evidence_case_ids": [
+          "pure-0078",
+          "bp-0028"
+        ],
+        "gap": "The prompt lacks guidance on when to use a switch/case construct versus an if/else construct for mutually exclusive alternatives based on distinct values or operation types.",
+        "suggested_knowledge": "Use the PlantUML `switch`/`case`/`endswitch` construct when the requirement describes multiple mutually exclusive paths based on different values of a single variable or category (e.g., 'File System' vs 'FTP', 'Expand' vs 'Contract'). Use `if`/`else` for simple boolean or binary conditions."
+      },
+      {
+        "id": "parallel_fork_representation",
+        "related_failure_patterns": [
+          "missing_control_flow_constructs"
+        ],
+        "evidence_case_ids": [
+          "pure-0046"
+        ],
+        "gap": "The prompt does not specify how to model concurrent or parallel behaviors in PlantUML activity diagrams.",
+        "suggested_knowledge": "Use the PlantUML `fork`/`fork again`/`end fork` construct when the requirement indicates that multiple actions happen concurrently or represent independent parallel components of a display/action."
+      },
+      {
+        "id": "activity_granularity_and_decomposition",
+        "related_failure_patterns": [
+          "extra_activity_elaboration",
+          "missing_activity_concise_extraction"
+        ],
+        "evidence_case_ids": [
+          "lmc-0055",
+          "us-0098",
+          "us-0092",
+          "lmc-0048"
+        ],
+        "gap": "The prompt does not define the appropriate level of granularity for an activity, leading the model to either over-decompose or merge distinct steps.",
+        "suggested_knowledge": "An activity should represent a single distinct action stated in the requirement. Do not decompose a single stated action into sub-steps (e.g., do not split 'Edit profile' into 'Click edit button', 'Modify fields', 'Submit'). Do not merge sequential distinct actions into one activity."
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML into the prompt.",
+      "Do not add dataset-specific examples or memorized answers.",
+      "Do not attempt to fix relation errors by directly hardcoding relation rules; they will resolve by fixing activity extraction and control-flow identification."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge",
+      "rule"
+    ],
+    "max_sections_per_edit": 2,
+    "prefer_general_rules_over_dataset_specific_examples": true
+  },
+  "section_routing_policy": {
+    "workflow": "how the agent should proceed from requirement reading to PlantUML generation",
+    "knowledge": "reusable UML or PlantUML modeling knowledge such as branch, loop, fork/join, merge, guard labels, start/stop, and valid structure patterns",
+    "rule": "short hard constraints or priorities that should override normal generation habits",
+    "prefer_knowledge_when": [
+      "failure_analysis contains knowledge_gaps",
+      "the repair is a reusable UML/PlantUML concept rather than a procedural step",
+      "similar relation, loop, parallel, guard-label, or syntax mistakes repeat across cases"
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "section_diagnoses": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "priority": "low|medium|high",
+        "failure_patterns": [
+          "error pattern names from failure_analysis"
+        ],
+        "section_problem": "what this prompt section currently fails to specify or overstates",
+        "edit_intent": "what kind of prompt change should be made in this section",
+        "knowledge_gap_ids": [
+          "ids from failure_analysis.knowledge_gaps when relevant"
+        ],
+        "evidence_case_ids": [
+          "case id strings from failure_analysis"
+        ]
+      }
+    ],
+    "recommended_edit_sections": [
+      "section names in priority order"
+    ],
+    "do_not_edit_sections": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "reason": "why editing this section would be unnecessary or risky"
+      }
+    ]
+  }
+}

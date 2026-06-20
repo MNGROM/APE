@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks guidance on PlantUML's `switch`/`case`/`endswitch` construct for multi-case decision points, causing the model to default to `if/elseif` for all conditional logic. It also fails to provide sufficient linguistic cues or mapping rules for identifying parallel behaviors from implicit cues (e.g., 'displayed lists', 'simultaneous actions'), leading to missed `fork`/`fork again`/`end fork` blocks."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "The workflow does not provide a step for determining the correct granularity of activities, leading to over-splitting or over-merging of actions. It also lacks structural validation or block-tracking steps to ensure correct nesting and closing of complex PlantUML constructs, resulting in syntax errors."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section's strict prohibition against inferring implementation steps may be too rigid, preventing the model from recognizing implicit concurrent system behaviors (like displaying multiple options simultaneously) which require `fork` constructs. It also lacks rules for distinguishing when a repetitive action should be modeled as a loop versus a simple conditional branch returning to a previous step."
+    }
+  ]
+}
+```

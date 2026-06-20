@@ -1,0 +1,16 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Address flattened concurrent monitoring loops by adding a step for nesting constructs, and fix spurious control flow by adding a step to distinguish triggers from conditional guards.",
+      "change_instruction": "1) Insert a new step after step 4 (or modify step 5) that explicitly requires analyzing the interaction and nesting of identified constructs, specifically instructing the model to place parallel forks inside loops when concurrent actions occur within an iterative cycle. 2) Add a step between step 1 and step 2 (or expand step 4) requiring the model to distinguish between unconditional triggers (e.g., 'when X happens', 'upon Y') and conditional guards (e.g., 'if X', 'in case of Y'), specifying that only conditional guards should be mapped to if/else branching, while unconditional triggers must be modeled as sequential activities."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide explicit rules for modeling passive delays, nesting forks within loops, and distinguishing triggers from guards.",
+      "change_instruction": "1) Add a rule differentiating passive time-based delays/timeouts from active iterative loops: passive delays (e.g., 'wait for X ms', 'timeout') must be modeled using `while`/`end while`, whereas active iterative actions (e.g., 'poll', 'monitor continuously') must be modeled using `repeat`/`repeat while`. 2) Add a rule explicitly stating that when multiple concurrent actions occur within an iterative cycle, the `fork`/`end fork` construct must be nested inside the `while` or `repeat` loop construct. 3) Add a rule distinguishing conditional guards from unconditional triggers: 'if/in case' clauses that represent mutually exclusive decision paths must use `if`/`else`, whereas 'when/upon/after' clauses that simply trigger an action must be modeled as sequential activities without branching."
+    }
+  ]
+}
+```

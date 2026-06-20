@@ -1,0 +1,98 @@
+{
+  "requirements": [
+    "2. Edit Category 2.1. User navigates to a Category (see View Inventory) 2.2. System displays the Edit Category button 2.3. User clicks the Edit Category button 2.4. System displays the appropriate screen for the Category type 2.4.1. Unique Item 2.4.2. Stock Item 2.5. User edits Category data 2.6. System validates the Category data 2.7. System updates the Category information 2.8. User is taken back to the Category screen",
+    "23.\tpromote a jobLog into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, select the job that you want to promote. You can also right-click the home page screen, and click Promote.3. From the source and the destination systems drop-down lists, select the source and destination systems.Note:Ensure that you have logged into both the source and destination systems before you proceed with the promotion process.4. In the External Change Management ID field, enter the appropriate value, and click Save.5. Click Mappings. Click Edit Mappings if you want to create and validate mappings.6. Click Security Settings, if required. The following options are displayed:• Do not Promote Security - This is the default option.• Promote Security - Use this option to promote jobs along with theassociated security rights.• Include application rights - This option is enabled only if you select Promote Security. If the objects in the job inherit any application rights, the job is promoted along with these rights. You can also click View Security to view the security dependencies of the infoobjects in the job.7. Click Test Promote to ensure that there is no conflict between CUIDs in the source and destination systems. The promotion details are displayed. The first column displays the objects to be promoted, and the second column displays the promotion status. The LifeCycle Manager tool classifies the selected objects into users, groups, universes, and so on.Note:Running the Test Promote feature does not commit any infoobjects for promotion. The result of a test promote can be any of the following:• Overwritten - The infoobject in the destination is overwritten by the infoobject in the source system.• Mapped - The following infoobject types are mapped to the destination system: folders, users, user groups, and custom roles. An infoobject is mapped to the destination system and promoted only if the Security option is enabled. Otherwise, the infoobject is not promoted.• Copied - The infoobject in the source system is copied to the destination system.• Dropped - The infoobject is not promoted from the source system to the destination system.• Warning - The infoobject in the destination system is the newer version and you can remove the infoobject from the Job. However, if you want to promote, the infoobject gets promoted.8. Click Schedule Job if you want to schedule the job promotion.9. Click Promote.",
+    "1. central trading system: give out the successful trade information 2. security account management: save the trade information",
+    "As a Postgraduate Convenor, I want to receive regular summary reports of research data, so that I understand trends in data use among staff and postgraduate students.",
+    "As a Zooniverse admin, I want to identify the number of whales heard in a single audio file.",
+    "As a designer, I want to know what early indications of hypotheses might be, so that I can start planning for the first prototype.",
+    "As an archivist, I want to restrict a group of files from view.",
+    "4.\tThe absolute error between the zt truth data and the output z shall never exceed a tolerance of 0.01, for the equivalent input of (xt, yt)."
+  ],
+  "predictions": [
+    "@startuml\nstart\n:User navigates to a Category (see View Inventory);\n:System displays the Edit Category button;\n:User clicks the Edit Category button;\nswitch\ncase (Unique Item)\n  :System displays the Unique Item screen;\ncase (Stock Item)\n  :System displays the Stock Item screen;\nendswitch\n:User edits Category data;\n:System validates the Category data;\n:System updates the Category information;\n:User is taken back to the Category screen;\nstop\n@enduml",
+    "@startuml\nstart\n:Promote a jobLog into the LifeCycle Manager tool;\n:In the \"Promotion Jobs\" home page, select the job to promote\\n(Alternatively, right-click the home page screen and click Promote);\n:Select source and destination systems from drop-down lists;\nnote right: Ensure that you have logged into\\nboth source and destination systems\\nbefore proceeding.\n:Enter appropriate value in External Change Management ID field;\n:Click Save;\n:Click Mappings;\n:Click Edit Mappings to create and validate mappings;\n:Click Security Settings (if required);\nif (Security Settings?) then (Do not Promote Security)\n  :Default option selected;\nelseif (Promote Security?) then (Promote Security)\n  :Promote jobs along with associated security rights;\n  if (Include application rights?) then (Yes)\n    :Promote job with inherited application rights;\n    :Click View Security to view security dependencies (optional);\n  else (No)\n  endif\nelseif (Include application rights?) then (Yes - Invalid without Promote Security)\n  :Option is disabled;\nendif\n:Click Test Promote to check for CUID conflicts;\nnote right: Running Test Promote does not\\ncommit any infoobjects for promotion.\n:Review promotion details and status:\\n- Overwritten\\n- Mapped\\n- Copied\\n- Dropped\\n- Warning;\nif (Schedule Job?) then (Yes)\n  :Click Schedule Job to schedule the job promotion;\nelse (No)\nendif\n:Click Promote;\nstop\n@enduml",
+    "@startuml\nstart\n:Central Trading System: Give out the successful trade information;\n:Security Account Management: Save the trade information;\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\nstart\n\n:Schedule regular report generation;\n\n:Collect research data usage logs;\n\n:Aggregate data for staff and postgraduate students;\n\n:Analyze data usage trends;\n\n:Generate summary report;\n\n:Send summary report to Postgraduate Convenor;\n\n:Postgraduate Convenor reviews report;\n\n:Convenor understands data use trends;\n\nstop\n\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Zooniverse Admin: Identify Number of Whales in an Audio File\n\nstart\n\n:Admin selects an audio file;\n\n:Load audio file into analysis tool;\n\n:Play audio file;\n\n:Admin listens for whale sounds;\n\nif (Whale sounds detected?) then (Yes)\n  :Count distinct whale sounds;\n  :Enter number of whales identified;\nelse (No)\n  :Enter 0 for number of whales;\nendif\n\n:Submit whale count;\n\n:Save results to database;\n\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Activity Diagram: Early Indications of Hypotheses for Prototype Planning\n\nstart\n\n:Identify Design Goal;\n\n:Gather User Data\n(Observations, Interviews, Analytics);\n\n:Analyze Data for Patterns;\n\nif (Patterns Found?) then (Yes)\n  :Extract Early Indications\n  of Hypotheses;\n  \n  :Evaluate Indications\n  for Prototype Viability;\n  \n  if (Viable for Prototype?) then (Yes)\n    :Formulate Initial Hypotheses;\n    :Start Planning for\n    First Prototype;\n    stop\n  else (No)\n    :Refine Data Gathering\n    Approach;\n  endif\n  \nelse (No)\n  :Expand Research Scope;\nendif\n\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Archivist - Restrict a group of files from view\n\nstart\n\n:Select a group of files;\n\n:Choose \"Restrict from view\" option;\n\n:Confirm restriction action;\n\nif (Restriction applied successfully?) then (Yes)\n  :Update file group access permissions;\n  :Hide files from public view;\n  :Display success message;\nelse (No)\n  :Display error message;\nendif\n\nstop\n@enduml",
+    "@startuml\nstart\n:Receive input (xt, yt);\n:Compute output z from (xt, yt);\n:Retrieve zt truth data for (xt, yt);\n:Calculate absolute error = |zt - z|;\nif (Absolute error <= 0.01?) then (Yes)\n  :Validation passed;\nelse (No)\n  :Validation failed;\n  :Raise error or flag violation;\nendif\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n\n:See View Inventory;\n:Navigate to Category;\n\n:Display Edit Category button;\n:Click Edit Category button;\n:Display Category type screen;\n\nif(Unique Item?) then(yes)\n:Display Unique Item screen;\nelse(no)\n:Display Stock Item screen;\nendif\n\n:Edit Category data;\n:System validates data;\n\n:System updates information;\n:Back to Category screen;\n\nstop",
+    "start\n\n:Log in LifeCycle Manager tool;\nswitch(Selection method)\ncase(1)\n:Go to \"Promotion Jobs\" home page;\n:Select the job want to promote;\ncase(2)\n:Right-click;\n:Click \"Promote\";\nendswitch\n\n:Open source and destination systems drop-down lists;\n:Select source and destination systems;\n\nif(Have logged into both source and destination systems) then(no)\nstop\nelse(yes)\nendif\n\n:Go to External Change Management ID field;\n:Enter appropriate value;\n:Click \"Save\";\n\n:Click \"Mappings\";\nif(Create and validate mappings) then(yes)\n:Click \"Edit Mappings\";\nelse(no)\nendif\n\nif(See Security Settings?) then(yes)\n:Click \"Security Settings\";\n:Options are displayed;\nfork\n:\"Do not Promote Security\";\nnote right:Default option\nfork again\n:\"Promote Security\";\n:Promote jobs along with associated security rights;\nfork again\n:\"Include application rights\";\n\nif (Select \"Promote Security\"?) then(yes)\n:The option is enabled;\n  if(Objects inherit any application rights?) then(yes)\n  :Job is promoted along with these rights;\n  else(no)\n  endif\nelse(no)\nendif\nend fork\n\nif(Click \"View Security\"?) then(yes)\n:View infoobjects security dependencies;\nelse(no)\nendif\nendif\n\n:Click \"Test Promote\";\n:Ensure no conflict between CUIDs in the source and destination systems;\n:Promotion details are displayed;\n\nfork\n:First column;\n:Objects to be promoted;\nfork again\n:Second column;\n:Promotion status;\nend fork\n\n:LifeCycle Manager tool classifies selected objects;\n\n:Run Test Promote feature;\n:Commit no infoobjects for promotion;\n\nswitch(Results)\ncase(Overwritten)\n :Infoobject in destination is overwritten by infoobject in source system;\ncase(Mapped)\n :Infoobject types;\n fork\n :Folders,\n fork again\n :Users;\n fork again\n :User groups;\n fork again\n :Custom roles;\n end fork\n\n if(Security option is enabled?) then(yes)\n :Infoobject is mapped to destination system and promoted;\n else(no)\n :Infoobject is not promoted;\n endif\ncase(Copied)\n :Infoobject in source system is copied to destination system;\ncase(Dropped)\n :Infoobject is not promoted from source system to destination system;\ncase(Warning)\n :Infoobject in destination system is the newer version;\n :Remove infoobject from Job;\nif(Promote?) then(yes)\n :Infoobject gets promoted;\nelse(no)\nendif\nendswitch\n\nif(Schedule job promotion?) then(yes)\n:Click \"Schedule Job\";\nelse(no)\nendif\n\n:Click \"Promote\";\n\nstop",
+    "start\n\npartition \"Central trading system\"{\n  :Give out successful trade information;\n}\n\npartition \"Security account management\"{\n  :Save trade instruction;\n}\n\nstop",
+    "start\n:receive regular summary reports of research data;\n:get trends in data use among staff and postgraduate students;\nstop",
+    "start\n:identify the number of whales heard in a single audio file;\nstop",
+    "start\n:Get early indications of hypothesess;\n:Start planning for first prototype;\nstop",
+    "start\n:Restrict a group of files from view;\nstop",
+    "start\n\n:For equivalent input of (xt, yt);\n\nif(absolute error between zt truth data and output z <= 0.01?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "syntax_error",
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

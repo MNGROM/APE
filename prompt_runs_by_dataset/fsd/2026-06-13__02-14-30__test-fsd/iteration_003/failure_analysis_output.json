@@ -1,0 +1,107 @@
+```json
+{
+  "summary": "The batch suffers from severe activity and relation mismatches across all cases. The model frequently invents unstated implementation activities (extra_activity) while failing to extract explicit requirement actions (missing_activity). It also heavily compresses multi-step behaviors and compound conditions into single nodes, leading to missing relations and incorrect control-flow structures.",
+  "error_patterns": [
+    {
+      "name": "invented_implementation_activities",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0056",
+        "lmc-0050"
+      ],
+      "problem": "The model hallucinates UI interactions or system validations not stated in the requirement, violating the strict extraction rule.",
+      "suggested_prompt_direction": "Strengthen the grounding constraint to forbid inventing actions and emphasize extracting only explicitly mentioned behaviors.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "over_compressed_activities",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0015",
+        "lmc-0016",
+        "bp-0022"
+      ],
+      "problem": "Compound actions, lists of items, or sequential sub-steps are merged into a single activity node instead of being decomposed, causing missing activities and relations.",
+      "suggested_prompt_direction": "Instruct the model to decompose compound phrases, lists, and multi-action sentences into separate activity nodes.",
+      "target_sections": [
+        "workflow"
+      ]
+    },
+    {
+      "name": "flattened_control_flow",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0050",
+        "lmc-0016",
+        "bp-0022"
+      ],
+      "problem": "Multiple conditional checks or alternative paths are collapsed into a single combined condition or sequential flow, losing the correct branching structure and relations.",
+      "suggested_prompt_direction": "Guide the model to preserve each distinct condition as a separate decision node and map alternative outcomes to proper branching constructs.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "missing_parallel_decomposition",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "us-0129",
+        "bp-0015"
+      ],
+      "problem": "Concurrent actions or items listed as occurring simultaneously are modeled sequentially instead of with parallel fork constructs.",
+      "suggested_prompt_direction": "Highlight the need to identify simultaneous or listed concurrent actions and explicitly map them to fork/fork again constructs.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "compound_condition_decomposition",
+      "related_failure_patterns": [
+        "flattened_control_flow"
+      ],
+      "evidence_case_ids": [
+        "lmc-0016",
+        "lmc-0050"
+      ],
+      "gap": "The prompt does not specify how to handle requirements with multiple joined conditions (e.g., 'A and B') or nested logic.",
+      "suggested_knowledge": "When a requirement specifies a compound condition (e.g., 'if A and B'), model each condition as a separate, nested if/else branch to preserve the individual decision points and their sequential relations."
+    },
+    {
+      "id": "list_and_compound_decomposition_to_fork",
+      "related_failure_patterns": [
+        "over_compressed_activities",
+        "missing_parallel_decomposition"
+      ],
+      "evidence_case_ids": [
+        "bp-0015",
+        "us-0129"
+      ],
+      "gap": "The prompt lacks guidance on how to model lists of items or simultaneous outcomes in activity diagrams.",
+      "suggested_knowledge": "When the requirement lists multiple items produced, displayed, or occurring simultaneously (e.g., 'A, B, and C are displayed'), decompose the list into separate activity nodes within a fork/end fork block to represent concurrency or parallel data flow."
+    },
+    {
+      "id": "switch_case_for_alternative_outcomes",
+      "related_failure_patterns": [
+        "flattened_control_flow"
+      ],
+      "evidence_case_ids": [
+        "bp-0022"
+      ],
+      "gap": "The prompt mentions switch/case for multiple alternative outcomes but does not clarify how to handle distinct enumerated options in the requirement text.",
+      "suggested_knowledge": "When the requirement enumerates distinct alternative choices or outcomes based on a single variable or selection (e.g., 'select option X, Y, or Z'), use a switch/case construct. Model each enumerated option as a separate case branch, preserving the exact option label as the case condition."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not attempt to fix infrastructure or provider errors via prompt changes."
+  ]
+}
+```

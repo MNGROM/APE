@@ -1,0 +1,54 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "extra_activity",
+        "problem": "The generator frequently hallucinates activities, validations, and error-handling branches that are not stated or implied in the requirements.",
+        "possible_causes": [
+          "The prompt may lack constraints against inventing implicit steps, causing the LLM to 'fill in' typical UI or system workflows (e.g., validation loops, error messages, search steps).",
+          "The generator defaults to a standard 'happy path + error path' template for user stories, inserting speculative logic instead of strictly adhering to the provided text."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "Explicitly stated actions, system responses, and conditional states from the requirements are often omitted or overly compressed into single nodes.",
+        "possible_causes": [
+          "The prompt may not emphasize preserving all discrete behaviors and system responses as distinct activity nodes.",
+          "The generator may be summarizing or abstracting multi-step procedures (like UI navigation or data entry) instead of mapping them 1-to-1 to diagram activities."
+        ]
+      },
+      {
+        "name": "wrong_parallel",
+        "problem": "The generator misinterprets listed items, alternative options, or sequential inputs as concurrent/parallel flows, overusing the `fork` construct.",
+        "possible_causes": [
+          "The prompt fails to distinguish between true concurrent execution and mere structural grouping (e.g., listing multiple controller types or sequential data entry fields).",
+          "Grammatical lists in the requirements (e.g., 'enter name and description') trigger a false parallel split instead of sequential activities."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "Control flow is frequently misrepresented, particularly by flattening nested conditional logic or misplacing branching conditions.",
+        "possible_causes": [
+          "The generator struggles to map complex, nested 'if-else' or 'switch-case' logic from natural language into properly nested PlantUML constructs, often placing mutually exclusive conditions sequentially.",
+          "The prompt may not provide clear guidelines on how to handle hierarchical state transitions or nested decision trees, leading to flattened or incorrectly ordered relations."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The generator introduces unsupported control flow edges, often by forcing sequential dependencies where none exist or by misrouting branches.",
+        "possible_causes": [
+          "Over-scaffolding from the 'extra_activity' issue leads to additional edges connecting hallucinated steps.",
+          "Misinterpretation of the requirement's logical structure causes unrelated steps to be chained together sequentially instead of being correctly isolated as independent branches or alternatives."
+        ]
+      }
+    ]
+  }
+}

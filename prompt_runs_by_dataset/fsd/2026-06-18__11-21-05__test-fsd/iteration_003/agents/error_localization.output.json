@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1 instructs the model to extract a 'minimal' list of activities, which encourages the model to abstract or compress granular steps (causing missing_activity) rather than preserving them as distinct nodes. Step 2 lacks explicit guidance on how to identify and construct parallel flows, causing the model to default to a strictly sequential interpretation (causing wrong_parallel)."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section only warns against *incorrectly* using `fork`/`join` for grammatical lists, but provides no positive guidance or linguistic cues for when parallelism *should* be used (causing wrong_parallel). It also explicitly prescribes `if`/`elseif`/`else` for mutually exclusive conditions, failing to mention `switch`/`endswitch` for state-based transitions (causing missing_or_wrong_relation)."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rules against inventing implicit steps and adding unsupported control flow edges are insufficient to prevent extra_activity, as they do not explicitly prohibit decomposing single specified actions into multiple assumed sub-steps. Additionally, they lack strict constraints forcing the model to preserve granular UI elements or intermediate states as distinct nodes (causing missing_activity)."
+    }
+  ]
+}
+```

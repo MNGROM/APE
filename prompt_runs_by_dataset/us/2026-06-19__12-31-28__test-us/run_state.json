@@ -1,0 +1,20 @@
+{
+  "updated_at": "2026-06-19T20:20:22",
+  "phase": "iteration_009:analysis_batch:llm_judge:extract",
+  "attempt": 1,
+  "max_retries": 20,
+  "retryable": true,
+  "rate_limited": false,
+  "wait_seconds": 32,
+  "retry_at": "2026-06-19T20:20:54",
+  "context": {
+    "dataset": "rac",
+    "case_id": "rac-0002",
+    "judge_step": "gt_extract",
+    "json_retry_attempt": 1
+  },
+  "error": {
+    "type": "RemoteDisconnected",
+    "message": "Remote end closed connection without response"
+  }
+}

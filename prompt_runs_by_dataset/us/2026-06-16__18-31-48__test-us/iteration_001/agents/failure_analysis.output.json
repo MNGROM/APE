@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "extra_activity",
+      "problem": "The generator frequently hallucinates activities and decision branches that are not stated in the requirements or ground truth, such as adding error-handling branches, validation checks, and speculative conditions.",
+      "possible_causes": [
+        "The prompt may lack constraints preventing the model from inventing implicit error-handling or validation logic.",
+        "The model defaults to a standard 'happy path vs. error path' template, inserting extra activities to cover cases not requested by the requirements."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The generator omits explicitly stated activities, particularly concurrent sub-tasks, structural setup nodes, and specific parameter details.",
+      "possible_causes": [
+        "The prompt may not adequately emphasize preserving all explicit behaviors and structural nodes from the requirements.",
+        "The model may be collapsing multiple distinct actions into broader, generalized activity nodes, losing granular details."
+      ]
+    },
+    {
+      "name": "wrong_parallel",
+      "problem": "The generator fails to correctly model concurrency, either by omitting required parallel forks or by prematurely terminating parallel branches with stops instead of allowing them to synchronize.",
+      "possible_causes": [
+        "The prompt lacks clear instructions on how to handle concurrent tasks in PlantUML, specifically regarding the use of fork/end fork and avoiding premature stop statements within parallel branches.",
+        "The model struggles to distinguish between mutually exclusive alternative flows and truly concurrent parallel flows."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The generator misrepresents wait states, periodic tasks, and retry mechanisms, often using incorrect PlantUML loop constructs or omitting them entirely.",
+      "possible_causes": [
+        "The prompt does not provide specific guidance on mapping temporal requirements (like timeouts, waits, or periodic polling) to appropriate PlantUML loop or delay constructs.",
+        "The model misinterprets duration-based conditions (e.g., 'wait 10 seconds') as standard conditional logic rather than loop/wait constructs."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The generator introduces incorrect control flows, such as routing flows through hallucinated decision branches or creating invalid transitions from prematurely stopped parallel branches.",
+      "possible_causes": [
+        "This is often a cascading effect of adding extra activities (extra_activity) and mishandling parallel branches (wrong_parallel), forcing the control flow to adapt to the incorrect structural elements.",
+        "Lack of strict flow validation rules in the prompt allows the model to connect nodes in ways that violate the original requirement's logic."
+      ]
+    }
+  ]
+}
+```

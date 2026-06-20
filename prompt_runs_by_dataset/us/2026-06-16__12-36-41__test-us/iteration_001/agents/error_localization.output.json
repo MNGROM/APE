@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for the generator to distinguish between high-level constraints (which should be single decision points) and procedural steps, nor any procedure for identifying and preserving nested control structures versus flattening them."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking essential modeling guidance on PlantUML control-flow semantics, such as when to correctly use fork/end fork (for true concurrency) versus if/else or switch (for mutually exclusive paths), and how to map implicit natural language conditions (like optional steps) into explicit branching constructs."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, missing critical constraints to prevent over-decomposition of simple conditions into intermediate processing steps, rules to enforce preserving exact nesting depth of control structures, and strict prohibitions against defaulting to concurrency for independent or alternative actions."
+    }
+  ]
+}
+```

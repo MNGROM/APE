@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a structured, step-by-step process to extract activities at the correct granularity and construct accurate control flow.",
+      "change_instruction": "Add a multi-step workflow requiring the model to: (1) Extract explicit activities from the requirement text, preserving the exact granularity as stated without summarizing or decomposing; (2) Identify and classify control-flow relationships between extracted activities as sequential, alternative (mutually exclusive), or parallel (concurrent); (3) Construct the PlantUML code by mapping the classified relationships to their corresponding syntax, ensuring no unmentioned steps are added."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide clear mapping rules from linguistic cues to PlantUML control-flow constructs to prevent conflation of alternatives and parallelism.",
+      "change_instruction": "Add concise modeling guidance explaining: (1) Mutually exclusive choices (e.g., 'if/else', 'either/or', 'case') must use `if/elseif/else` or `switch` syntax; (2) Concurrent or independent actions (e.g., 'simultaneously', 'at the same time', or independent sub-tasks) must use `fork/fork again/end fork` syntax; (3) Sequential steps must use standard arrow transitions. Emphasize that 'multiple ways to do X' is alternative, while 'multiple things to do for X' is parallel."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce strict adherence to the requirement text and prevent hallucinated or flattened control flows.",
+      "change_instruction": "Add explicit constraints: (1) Strict adherence: Do not infer, add, or invent any behaviors, error handling, loops, or alternative paths not explicitly stated in the text; (2) Granularity preservation: Keep activities at the exact granularity mentioned in the requirement—do not merge multiple steps into one, and do not decompose a single step into sub-steps; (3) Control-flow fidelity: Model all stated conditionals and alternatives explicitly; do not flatten them into a sequential list."
+    }
+  ]
+}
+```

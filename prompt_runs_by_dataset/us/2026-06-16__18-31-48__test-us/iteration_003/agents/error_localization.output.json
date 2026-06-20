@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow processes activities and control-flow patterns sequentially, causing the model to drop leaf-level activities when focusing on complex nested logic, and defaulting to a strictly top-down sequential interpretation that misses structural parallelism."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks sufficient mapping rules for distinguishing between different loop semantics (e.g., 'repeat' vs. 'while' for timeouts/periodic sampling) and does not provide guidance on correctly scoping loops nested within conditional branches. It also misses linguistic markers for implicit parallelism (e.g., 'separate task', 'periodically') and rules for preventing over-fragmentation of simple statements into unnecessary nodes."
+    },
+    {
+      "section": "rule",
+      "section_problem": "While the rule section prohibits compressing actions and inventing unsupported states, it lacks explicit constraints against over-decomposing simple statements into multiple unnecessary activities and lacks rules for maintaining correct transition scope and preventing artificial loop-back flows in complex nested structures."
+    }
+  ]
+}
+```

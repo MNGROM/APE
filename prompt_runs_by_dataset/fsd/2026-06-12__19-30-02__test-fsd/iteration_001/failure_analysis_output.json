@@ -1,0 +1,72 @@
+```json
+{
+  "summary": "The batch suffers from extremely low node and relation recall and precision because the prompt is essentially empty. Without workflow or knowledge guidance, the generation agent over-decomposes high-level requirements into speculative, fine-grained UI or system implementation steps, and fails to preserve the exact activity labels and control-flow structures (like switch/case and fork) present in the ground truth.",
+  "error_patterns": [
+    {
+      "name": "speculative_over_decomposition",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0092",
+        "lmc-0055"
+      ],
+      "problem": "The model splits simple, high-level requirements into speculative, fine-grained UI interactions and system validations that are not present in the input, causing massive extra activities and relations while missing the required abstract activities.",
+      "suggested_prompt_direction": "Instruct the agent to strictly extract activities as they are stated in the requirement without inventing implementation details, UI steps, or system validations unless explicitly mentioned in the input.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "missing_switch_and_fork_constructs",
+      "severity": "high",
+      "evidence_case_ids": [
+        "pure-0078",
+        "pure-0046",
+        "bp-0010"
+      ],
+      "problem": "The generated diagrams use basic if/else or linear flows where the ground truth requires PlantUML switch/case for mutually exclusive options or fork/end fork for concurrent actions, leading to missing nodes and fundamentally wrong control-flow relations.",
+      "suggested_prompt_direction": "Add explicit knowledge about PlantUML control-flow constructs, instructing the agent to use switch/endswitch for mutually exclusive alternatives and fork/end fork for parallel concurrent actions.",
+      "target_sections": [
+        "knowledge",
+        "workflow"
+      ]
+    },
+    {
+      "name": "activity_label_mismatch",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0048",
+        "bp-0028",
+        "pure-0046"
+      ],
+      "problem": "The model rephrases or merges activity labels from the input instead of preserving the original wording, causing zero node overlap with the ground truth even when the semantic intent is similar.",
+      "suggested_prompt_direction": "Direct the agent to use the exact phrasing from the input requirement for activity and condition labels, keeping atomic actions separate rather than merging them into compound sentences.",
+      "target_sections": [
+        "workflow",
+        "output"
+      ]
+    },
+    {
+      "name": "missing_optional_or_conditional_flows",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "bp-0028",
+        "bp-0010",
+        "pure-0046"
+      ],
+      "problem": "The model omits optional paths or conditional checks that are explicitly stated in the requirement, flattening the diagram into a single main sequence and losing necessary branching relations.",
+      "suggested_prompt_direction": "Instruct the agent to actively identify and model optional steps, alternative paths, and conditional checks as distinct branching control flows (e.g., if/else or switch) rather than omitting them or treating them as sequential.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not add dataset-specific examples or memorized ground-truth PlantUML snippets to the prompt.",
+    "Do not instruct the model to copy exact ground-truth node names that are not present in the input text.",
+    "Do not add speculative implementation steps just to increase node recall."
+  ]
+}
+```

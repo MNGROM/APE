@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction predominantly introduces false-positive parallelism by using fork/join for non-concurrent lists, attributes, options, or sequential steps, while occasionally missing true concurrent tasks.",
+      "possible_causes": [
+        "The prompt may not clearly distinguish between enumerations (e.g., lists of attributes, sequential UI steps, or alternative options) and genuinely concurrent actions, leading the model to interpret any comma-separated or bulleted list as a fork/join construct.",
+        "In cases like the thermal management controller, the model correctly identifies concurrent tasks but then incorrectly nests subsequent sequential or conditional logic inside the fork block instead of placing it after the join."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction frequently omits explicit behaviors, states, or intermediate steps described in the requirements.",
+      "possible_causes": [
+        "The model tends to compress multiple explicit actions into broad, abstract activity nodes (e.g., collapsing 'Open dropdown -> Select 08.2007 -> Select 07.2007' into a single step).",
+        "It often skips intermediate conditional checks or state transitions, particularly in complex state-machine logic, resulting in truncated control flows that jump directly to end states."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction adds activities, states, or error-handling branches that are not specified in the requirements.",
+      "possible_causes": [
+        "The model hallucinates standard error-handling or validation flows (e.g., adding 'Clamp/Reject output z' or 'Handle POST Failure') even when the requirement only specifies a simple check.",
+        "It introduces redundant or overlapping conditional branches, especially in procedural requirements, creating unnecessary nodes that diverge from the specified logic."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction omits or misrepresents control-flow relations, particularly failing to capture nested conditional logic and state transitions.",
+      "possible_causes": [
+        "The model struggles to map complex, multi-level conditional requirements (like nested 'if-else' or 'switch' statements) into correct PlantUML branching, often flattening the structure or misplacing the exit points.",
+        "It fails to represent the 'include' or dependency relations specified in the text, treating them as separate parallel flows rather than integrated sub-activities."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction introduces incorrect control-flow edges, often by forcing sequential steps into alternative branches or misrouting loop continuations.",
+      "possible_causes": [
+        "The model misinterprets sequential procedural steps as mutually exclusive alternatives, routing them through 'if/else' or 'switch' blocks instead of a linear flow.",
+        "In loop constructs, it incorrectly connects the exit condition or loop body, creating cycles that do not match the required repeat/until logic."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction mishandles repeated, periodic, or retry behaviors, either by omitting the loop construct or misplacing the loop condition.",
+      "possible_causes": [
+        "The model fails to recognize explicit loop indicators (e.g., 'repeatable in the chain', 'periodic loop', 'iterative monitoring mode') and models them as single-pass sequential or conditional flows.",
+        "When it does identify a loop, it often uses a 'while' loop where a 'repeat-until' is required (or vice versa), or it places the loop condition check at the wrong point in the control flow."
+      ]
+    }
+  ]
+}
+```

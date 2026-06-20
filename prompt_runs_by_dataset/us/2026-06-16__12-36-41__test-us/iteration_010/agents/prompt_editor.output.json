@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Enforce structural boundary definition before activity placement and add syntax validation for nested blocks.",
+      "change_instruction": "Restructure the workflow to explicitly separate structural boundary definition from activity placement. Add a step requiring the model to first define and nest all control structure boundaries (fork/end fork, repeat/repeat while, if/else, switch/case) as empty skeleton blocks before assigning any activities into them. Additionally, add a final mandatory validation step to check that every opened PlantUML block is correctly matched and terminated, especially in deeply nested combinations (e.g., fork inside repeat)."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide syntax templates for complex nesting and add constraints to prevent hallucinating conditional logic from descriptive text.",
+      "change_instruction": "Add concrete PlantUML syntax templates demonstrating the correct structure and termination for complex nested combinations, specifically including a 'fork' inside a 'repeat' and an 'if' inside a 'fork'. Also, add a negative constraint explicitly stating that descriptive clauses, static attributes, or non-behavioral text must not be converted into conditional logic (if/switch) or decision nodes unless an explicit conditional cue (e.g., 'if', 'when', 'whether') is present in the text."
+    },
+    {
+      "section": "rule",
+      "intent": "Explicitly prohibit sequential representation of concurrent tasks and enforce block matching/termination to prevent syntax errors.",
+      "change_instruction": "Add a strict rule explicitly prohibiting the representation of explicitly concurrent tasks as sequential steps (e.g., 'NEVER represent tasks identified as concurrent or simultaneous as sequential activities; they MUST use fork/end fork'). Add a second strict rule enforcing PlantUML block matching: 'ALWAYS ensure every opened control block (fork, repeat, if, switch) is explicitly matched with its corresponding terminator (end fork, repeat while, endif, endswitch) at the correct nesting level before outputting the final code.'"
+    }
+  ]
+}
+```

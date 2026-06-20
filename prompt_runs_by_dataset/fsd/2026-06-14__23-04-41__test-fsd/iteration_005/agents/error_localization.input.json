@@ -1,0 +1,46 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "hallucinated_control_flow",
+        "problem": "The generator consistently adds decision branches, loops, and error-handling paths that are not specified in the requirements, resulting in extra activities and extra/wrong relations.",
+        "possible_causes": [
+          "The prompt lacks an explicit constraint forbidding the invention of control-flow logic (e.g., validation checks, error handling, retry loops) not stated in the requirement.",
+          "The generator defaults to a 'complete system design' mindset rather than strictly modeling only the explicitly requested behavior."
+        ]
+      },
+      {
+        "name": "over_decomposition_of_activities",
+        "problem": "The generator breaks down high-level requirements into granular, assumed sub-steps, causing extra activities and diverging from the ground truth's abstract representation.",
+        "possible_causes": [
+          "The prompt does not instruct the model to preserve the original requirement's level of abstraction and avoid speculative decomposition.",
+          "The model treats user stories or simple statements as invitations to design a full user journey rather than a direct activity mapping."
+        ]
+      },
+      {
+        "name": "missing_structural_constructs",
+        "problem": "The generator fails to use PlantUML structural features like partitions/swimlanes to represent system boundaries or actors, flattening the diagram and missing ground-truth activities.",
+        "possible_causes": [
+          "The prompt does not guide the model to identify distinct actors/systems and represent them using partitions.",
+          "The model loses contextual grouping when translating sequential steps, omitting the required structural organization."
+        ]
+      },
+      {
+        "name": "wrong_diagram_type_for_state_requirements",
+        "problem": "For requirements describing state transitions, the generator produces an activity diagram instead of a state diagram, leading to missing activities and wrong relations.",
+        "possible_causes": [
+          "The prompt rigidly enforces activity diagram generation regardless of the requirement's semantic nature.",
+          "There is no instruction to map state-change requirements (e.g., 'change states from X to Y') into conditional activity flows (e.g., if condition then action)."
+        ]
+      }
+    ]
+  }
+}

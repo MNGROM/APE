@@ -1,0 +1,70 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Identify all actions, decisions, and constraints from the text.\n2. Scan for linguistic cues of parallelism (e.g., 'concurrently', 'simultaneously', 'at the same time', comma-separated lists of simultaneous tasks) and map them to fork/end fork structures.\n3. Enforce a 1-to-1 mapping of explicitly stated actions, UI interactions, and system responses to individual activity nodes, prohibiting summarization or merging of distinct steps.\n4. Classify each condition as either a high-level constraint (mapped directly to a single decision branch) or a procedural step (requiring intermediate actions).\n5. Determine the exact nesting hierarchy of control structures before writing code.\n6. Generate PlantUML code strictly following the mapped hierarchy without adding or flattening levels.",
+    "knowledge": "1. Use `fork`/`end fork` ONLY for explicitly stated true parallel execution, identified by positive linguistic cues such as simultaneous system tasks, comma-separated lists of concurrent displays/updates, and explicit words like 'concurrently', 'simultaneously', or 'at the same time'.\n2. Use `if`/`else` or `switch` for mutually exclusive choices or alternative user actions.\n3. Map implicit natural language conditions (e.g., 'if needed', 'optional', 'can') directly to explicit branching constructs rather than omitting them.\n4. High-level constraints or validations should be modeled as single decision points, not decomposed into multi-step procedural activities.\n5. Distinct UI interactions, system responses, and descriptive clauses mentioned in the text must be represented as separate activity nodes to maintain fine-grained granularity.",
+    "rule": "1. Do NOT decompose simple conditional checks into intermediate processing steps (e.g., do not add 'compute' or 'receive' nodes before a validation if the requirement only specifies the validation).\n2. ALWAYS preserve the exact nesting depth of control structures as identified in the text (e.g., `switch` inside `if`, `if` inside `repeat`).\n3. NEVER use `fork`/`end fork` for independent, alternative, or mutually exclusive actions.\n4. NEVER omit optional paths or contextual checks—every user choice or conditional step must be represented as a branch.\n5. NEVER introduce decision branches, loops, or error handling not explicitly stated in the text (no inferred implicit flows).\n6. Alternative flows, exception handling, and recovery steps (e.g., 'select another folder') MUST be modeled as linear paths within if/else or switch conditional branches; explicitly forbid representing them as loops or incorrectly placing them in the main sequential flow."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The generator fails to identify and model concurrent behaviors using PlantUML fork/fork-again/end-fork constructs, instead representing them as sequential activities.",
+        "possible_causes": [
+          "The prompt may lack explicit instructions or examples on how to map lists of parallel attributes, concurrent tasks, or simultaneous conditions to the fork/fork-again/end-fork syntax.",
+          "The generator defaults to a strictly sequential activity flow when encountering comma-separated lists or multiple simultaneous conditions, failing to recognize the semantic cues for concurrency."
+        ]
+      },
+      {
+        "name": "wrong_control_flow_for_conditions",
+        "problem": "The generator misinterprets mutually exclusive conditions (e.g., switch/case) as parallel forks, and incorrectly nests sequential if-else logic for conditions that should be evaluated as alternative branches.",
+        "possible_causes": [
+          "The prompt does not clearly differentiate between parallel execution (fork) and mutually exclusive decision paths (switch/case or if/else if), leading the generator to use fork for distinct state conditions.",
+          "Lack of guidance on how to structure complex nested state machines, causing the generator to flatten or improperly nest conditional transitions."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction omits explicit activities, states, or conditional checks that are present in the requirements and ground truth.",
+        "possible_causes": [
+          "The generator tends to compress or abstract multiple explicit actions into single broad nodes, losing granular steps.",
+          "When translating complex conditional logic, the generator may drop secondary checks or fallback conditions (e.g., specific timeout or counter values) in favor of the primary path."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction introduces unsupported activities, redundant actions, or over-specifies the flow with unnecessary nodes.",
+        "possible_causes": [
+          "The generator over-decomposes single actions into multiple redundant nodes (e.g., repeating 'Click Apply Changes' instead of capturing the full step).",
+          "It hallucinates control flow or actions not explicitly stated in the requirements, particularly when trying to resolve ambiguous or complex logic."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The generator fails to correctly represent repeated, periodic, or cyclic behavior using repeat/while loops.",
+        "possible_causes": [
+          "The prompt lacks clear mapping rules for translating requirement keywords like 'cyclically', 'periodic', or 'until' into PlantUML repeat loops.",
+          "The generator misplaces loop boundaries, either placing the loop around the wrong set of activities or failing to capture the correct exit condition."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section does not adequately guide the extraction and mapping of loop constructs, lacking a step to identify cyclic/periodic keywords and map them to repeat/while structures. It also fails to clearly separate the identification of mutually exclusive conditions from parallel ones during the initial analysis phase, leading to misclassification."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section lacks explicit mapping rules for translating cyclic or periodic behaviors into PlantUML repeat/while loops. It also does not provide sufficient guidance on distinguishing multi-branch mutually exclusive conditions (using switch/case) from parallel forks, nor does it address the preservation of secondary or fallback conditions to prevent missing activities."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section lacks strict prohibitions against representing cyclic or periodic behaviors as sequential or conditional flows instead of loops, and lacks rules against misplacing loop boundaries. It also needs stronger constraints against over-decomposing single actions into redundant nodes and hallucinating unstated control flows."
+      }
+    ]
+  }
+}

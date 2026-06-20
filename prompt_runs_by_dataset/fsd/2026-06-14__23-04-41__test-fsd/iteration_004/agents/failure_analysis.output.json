@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "hallucinated_detail_inflation",
+      "problem": "The prediction injects fabricated activities, validations, and error-handling branches not stated in the requirements, leading to extra activities and extra relations.",
+      "possible_causes": [
+        "The prompt may lack constraints against inventing implicit steps or assuming standard CRUD/error-handling flows.",
+        "The model defaults to a 'helpful' implementation mindset, fleshing out plausible but unspecified operational details."
+      ]
+    },
+    {
+      "name": "parallelism_omission",
+      "problem": "Concurrent behaviors explicitly modeled with fork/end fork in the ground truth are flattened into sequential steps in the prediction.",
+      "possible_causes": [
+        "The prompt may not sufficiently emphasize identifying and representing concurrent/parallel actions using PlantUML's fork syntax.",
+        "The model struggles to recognize linguistic cues for parallelism (e.g., lists of items received simultaneously, concurrent training topics) and defaults to sequential activity flow."
+      ]
+    },
+    {
+      "name": "over_structuring_simple_requirements",
+      "problem": "Simple, flat requirements are over-engineered into complex conditional logic, causing missing ground-truth activities, extra activities, and distorted relations.",
+      "possible_causes": [
+        "The prompt may implicitly encourage the use of control-flow structures (if/else, switches) even when a minimal, linear activity flow is more faithful to the text.",
+        "Lack of guidance to match the granularity and structural complexity of the source text, leading the model to impose unnecessary decision nodes."
+      ]
+    },
+    {
+      "name": "lost_conditional_exit_conditions",
+      "problem": "Explicit exit conditions and state transitions described in the requirements are omitted or merged incorrectly, simplifying the control flow at the expense of accuracy.",
+      "possible_causes": [
+        "The prompt may not instruct the model to carefully extract and preserve all conditional guards and exit criteria as distinct branches.",
+        "The model prioritizes creating a single happy-path flow, dropping alternative or terminating conditions that lack explicit 'else' phrasing in the text."
+      ]
+    }
+  ]
+}
+```

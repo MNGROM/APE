@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section lacks steps for identifying and modeling iterative/looping behaviors and for extracting structural elements like swimlanes (partitions). It also over-constrains parallelism by only recognizing explicit linguistic cues, failing to guide the model on inferring parallelism from contextual cues (e.g., multiple attributes or simultaneous sub-tasks)."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks reusable modeling guidance for PlantUML loop constructs (`repeat`/`while`) and swimlane constructs (`partition`). Additionally, its rule for parallel flows is too restrictive, reinforcing a sequential bias by strictly prohibiting parallel modeling unless explicit concurrency words are present, which fails to address the model's inability to recognize implicit concurrent behaviors."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section lacks constraints against hallucinating implicit steps for high-level requirements (like user stories) and lacks instructions to preserve alternative paths, error checks, or specific conditional outcomes, leading to dropped activities. It also lacks rules enforcing the preservation of actor/system boundaries into `partition` blocks."
+    }
+  ]
+}
+```

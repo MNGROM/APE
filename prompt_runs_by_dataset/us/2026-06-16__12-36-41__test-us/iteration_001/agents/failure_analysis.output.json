@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "over_decomposition_of_simple_conditions",
+      "problem": "The generator decomposes single conditional requirements into multi-step procedural activities, adding unsupported nodes and relations not present in the ground truth.",
+      "possible_causes": [
+        "The prompt may encourage breaking down high-level constraints into procedural steps (e.g., computing a matrix multiplication before checking it, or receiving inputs before validating them) rather than treating them as single decision points.",
+        "Lack of explicit instruction to map simple constraints directly to conditional branches without intermediate processing steps."
+      ]
+    },
+    {
+      "name": "incorrect_concurrency_modeling",
+      "problem": "The generator frequently misidentifies sequential or mutually exclusive behaviors as concurrent (using `fork`/`end fork`), or fails to correctly nest parallel tasks within conditional boundaries.",
+      "possible_causes": [
+        "The prompt lacks clear guidelines on when to use concurrency (e.g., only for explicitly stated parallel tasks) versus standard branching.",
+        "The generator defaults to placing alternative user actions or independent checks in a `fork` block instead of using `if/else` or `switch` for mutually exclusive choices."
+      ]
+    },
+    {
+      "name": "flattening_of_nested_control_flow",
+      "problem": "Complex nested logic (such as conditions within loops, or sequential checks inside a state) is often flattened into a single level, losing the structural hierarchy present in the requirements.",
+      "possible_causes": [
+        "The prompt does not sufficiently emphasize preserving the exact nesting depth of control structures (e.g., `switch` inside an `if`, or `if` inside a `repeat`).",
+        "The generator struggles to maintain context over long descriptions, resulting in sequential or flattened representations of deeply nested logic."
+      ]
+    },
+    {
+      "name": "omission_of_optional_or_contextual_paths",
+      "problem": "The generator omits optional user decisions or contextual checks (e.g., 'if more information needed', 'if adding a comment'), collapsing them into a single mandatory path.",
+      "possible_causes": [
+        "The prompt may bias the generator towards a 'happy path' or primary flow, causing it to ignore optional or alternative branches described in the text.",
+        "Implicit conditions in natural language (like optional steps or user choices) are not translated into explicit PlantUML branching constructs."
+      ]
+    }
+  ]
+}
+```

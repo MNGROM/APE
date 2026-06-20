@@ -1,0 +1,70 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract a complete and granular, exhaustive list of discrete activities explicitly stated in the text, mapping them 1-to-1 to activity nodes. Extract only activities explicitly stated as actions in the text. A single stated action must remain a single node, and multiple distinct actions must remain distinct nodes, prohibiting both decomposition into assumed sub-steps and compression of multiple actions into one.\nStep 2: Identify iterative or repetitive behaviors triggered by textual cues (e.g., 'repeat', 'every', 'until', 'while') and structural elements such as distinct actors or systems. Map these iterative cues to `repeat`/`while` constructs and distinct actors/systems to `partition` blocks.\nStep 3: Construct the control flow strictly among these extracted nodes, using the text's explicit sequencing and conditional logic, without adding or merging nodes. Identify only explicit linguistic cues (e.g., 'simultaneously', 'at the same time', 'concurrently') for simultaneous execution, and construct parallel flows using `fork`/`join` for those cases. Grammatical lists of items, attributes, or options must NOT be interpreted as concurrent flows; they must be modeled as sequential activities or `if`/`else` branches.",
+    "knowledge": "- Map iterative keywords (e.g., 'repeat', 'until', 'while') to PlantUML `repeat`/`while` loop constructs rather than linearized sequences. When distinct actors or systems are mentioned, their actions should be enclosed in `partition` blocks named after the actor/system to preserve behavioral boundaries.\n- Distinguish sequential actions from concurrent flows: `fork`/`join` must only be used when the text explicitly states simultaneous execution. Enumerations, lists of attributes, or lists of options are sequential or alternative, not concurrent, and must not be modeled with `fork`/`join`. Mutually exclusive alternatives must be modeled as sequential activities or `if`/`else` branches.\n- Map nested conditional logic: map mutually exclusive conditions (e.g., 'if X, else if Y') using nested `if`/`elseif`/`else` constructs rather than flattening them into sequential or unrelated branches. However, for mutually exclusive state-based transitions or case-like logic (e.g., 'depending on state X'), use `switch`/`endswitch` constructs instead of `if`/`elseif`/`else`. When the requirement specifies an early termination or exit from a branch, model it using a `stop` node within that branch rather than forcing the flow to merge back. The exact nesting and topological structure of the requirement's conditional logic must be preserved without flattening.",
+    "rule": "- Do not invent implicit steps, validations, error-handling branches, or system responses unless they are explicitly stated in the requirement; specifically, prohibit inventing user actions, validations, or interactions for high-level requirements (like user stories) when the text only states a goal—the model must only model what is explicitly detailed without filling in assumed interactions. Additionally, explicitly prohibit compressing multiple explicitly stated actions or conditional branches into a single broad abstract node; all specified behaviors, conditional outcomes, and state transitions must be preserved as distinct nodes without abstraction.\n- Do not add control flow edges that are not directly supported by the requirement's stated sequence or logic; specifically, do not force sequential dependencies between unrelated steps or misroute branches.\n- Do not decompose a single stated action into multiple assumed sub-steps unless those sub-steps are explicitly detailed as distinct actions in the text; specifically, prohibit decomposing a single stated action into multiple granular sub-steps (e.g., breaking a single verification step into multiple parallel element checks) unless explicitly detailed.\n- Preserve granular UI elements, data entry fields, and intermediate system states as distinct activity nodes; do not compress them into broad abstract activities.\n- Preserve all alternative paths, error checks, and specific conditional outcomes explicitly stated in the text; do not drop these activities in favor of only representing the main success path.\n- When distinct actors or systems are mentioned in the requirement, their corresponding activities must be grouped into `partition` blocks; do not omit these structural boundaries."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The prediction consistently fails to use fork/join for concurrent actions, instead representing them as sequential steps. This is a false_negative_parallel issue, where the model misses parallelism when the requirement clearly lists concurrent items, attributes, or options.",
+        "possible_causes": [
+          "The prompt lacks explicit instructions to identify lists of attributes, multiple inputs, or independent options as parallel activities using fork/join constructs.",
+          "The model defaults to a strictly sequential interpretation of comma-separated lists or bullet points in the requirement text."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction frequently introduces unnecessary partition blocks or over-fragments the activity flow, adding structural nodes not present in the ground truth.",
+        "possible_causes": [
+          "The prompt may over-encourage the use of partitions or swimlanes, causing the model to insert them even for simple, single-actor flows or user stories.",
+          "The model is splitting single logical actions into multiple granular activities based on phrasing rather than meaningful behavioral steps."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction often misrepresents control-flow by using flat if/elseif chains for mutually exclusive state transitions or nested conditions, instead of using switch/case or nested if blocks as required by the ground truth.",
+        "possible_causes": [
+          "The prompt does not adequately guide the model to distinguish between alternative conditions (elseif) and distinct state-based branching (switch/case).",
+          "Lack of instructions on how to properly nest conditions for complex state machines, leading to flattened and logically incorrect control flows."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction introduces incorrect control-flow paths, such as adding 'else (no) -> stop' branches for conditions that should implicitly continue, or creating invalid sequential flows from mutually exclusive branches.",
+        "possible_causes": [
+          "The model applies a rigid template where every 'if' must have an explicit else/stop, even when the ground truth expects the flow to fall through or continue.",
+          "Misinterpretation of the requirement's logic, treating independent sequential checks as a single mutually exclusive if/elseif chain, which artificially constrains the flow."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction omits key activities, often collapsing multiple explicit actions into a single vague step or dropping secondary actions mentioned in the requirement.",
+        "possible_causes": [
+          "The prompt does not emphasize preserving all explicit behavioral steps, leading the model to summarize or compress detailed requirements.",
+          "The model prioritizes establishing the high-level control flow at the expense of granular activity recall."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "Step 3 strictly limits fork/join to explicit linguistic cues like 'simultaneously' or 'concurrently', and explicitly prohibits interpreting grammatical lists of items, attributes, or options as concurrent flows. This directly causes the false-negative parallelism error, as the model is instructed to default such lists to sequential or alternative branches rather than recognizing independent concurrent actions."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section reinforces the false-negative parallelism by explicitly stating that enumerations, lists of attributes, or lists of options are sequential or alternative and must not be modeled with fork/join. Additionally, it lacks clear guidance on distinguishing when independent items in a list represent concurrent activities versus sequential/alternative steps. It also does not adequately differentiate the structural cues for switch/case versus if/elseif, leading to flattened conditional logic."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule prohibiting adding control flow edges not directly supported by the requirement's stated sequence, combined with the strict sequential interpretation of lists, prevents the model from inferring valid parallel control flow for independent actions. The rule against compressing multiple explicitly stated actions is contradicted by the sequentialization of lists, contributing to missing activities. Furthermore, the rules lack constraints against forcing explicit else/stop branches when the logic should implicitly continue."
+      }
+    ]
+  }
+}

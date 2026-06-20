@@ -1,0 +1,87 @@
+```json
+{
+  "summary": "The batch suffers from severe wording and granularity misalignment between generated and ground-truth diagrams. While the model correctly identifies the high-level actions and control structures, it consistently paraphrases activity labels and merges or splits steps differently than the gold standard, leading to near-zero node and relation overlap. It also over-applies partition constructs and invents speculative implementation steps not present in the requirements.",
+  "error_patterns": [
+    {
+      "name": "paraphrased_activity_labels",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0050",
+        "us-0129",
+        "pure-0026",
+        "us-0056"
+      ],
+      "problem": "The model rephrases requirement text into its own wording instead of extracting verbatim phrases, causing deterministic node precision and recall to drop to zero even when the semantic intent is correct (e.g., 'Get results' vs 'Record results', 'Correct problems' vs 'Correct problems for the member').",
+      "suggested_prompt_direction": "Strengthen the instruction to extract and use the exact noun and verb phrases from the requirement verbatim as activity labels, avoiding any paraphrasing, summarization, or elaboration.",
+      "target_sections": [
+        "workflow",
+        "input"
+      ]
+    },
+    {
+      "name": "merged_compound_steps",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0015",
+        "bp-0022"
+      ],
+      "problem": "The model merges sequential UI actions and system responses described in separate sentences or list items into single coarse-grained nodes (e.g., combining 'Go to window' and 'Click button' into one activity, or merging multiple distinct display items into one 'Display list' node).",
+      "suggested_prompt_direction": "Emphasize that sequential sentences, numbered steps, or distinct UI interactions must be decomposed into separate activity nodes with explicit sequential control-flow edges between them, even if they seem logically grouped.",
+      "target_sections": [
+        "workflow"
+      ]
+    },
+    {
+      "name": "speculative_implementation_steps",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0050",
+        "us-0056",
+        "lmc-0016"
+      ],
+      "problem": "The model adds speculative implementation details not stated in the requirement, such as 'Receive input', 'Select a profile', or 'Save changes', which appear as extra nodes and disrupt the correct relation flow.",
+      "suggested_prompt_direction": "Reinforce the prohibition against adding any steps not explicitly stated in the text, including assumed pre-conditions, UI navigation, or post-action saves, unless they are explicitly mentioned in the input.",
+      "target_sections": [
+        "workflow"
+      ]
+    },
+    {
+      "name": "missing_or_flattened_control_structures",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "bp-0015",
+        "bp-0022",
+        "lmc-0050"
+      ],
+      "problem": "The model flattens explicitly concurrent items (like lists of displayed details) into sequential flows and misses optional conditional branches (like 'if more information'), failing to use fork/switch constructs as required by the ground truth.",
+      "suggested_prompt_direction": "Add explicit workflow guidance to detect lists of concurrently displayed items or alternative options and model them using fork or switch constructs, and to model any optional or conditional hints as explicit decision nodes.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "overuse_of_partition_constructs",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "bp-0015",
+        "pure-0082",
+        "us-0129",
+        "pure-0026"
+      ],
+      "problem": "The model frequently wraps activities in partition constructs based on inferred actors (User, System, etc.), which alters the node matching and is often not present in the ground truth, leading to extra nodes and disrupted relations.",
+      "suggested_prompt_direction": "Instruct the model to only use partition constructs when the requirement explicitly and unambiguously assigns activities to named actors or components, and to avoid inferring or assigning actors when not explicitly stated.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML snippets into the prompt.",
+    "Do not add dataset-specific examples or case-specific vocabulary.",
+    "Do not add speculative implementation steps merely to increase node recall.",
+    "Do not instruct the model to memorize specific structural templates that mirror the ground truth exactly."
+  ]
+}
+```

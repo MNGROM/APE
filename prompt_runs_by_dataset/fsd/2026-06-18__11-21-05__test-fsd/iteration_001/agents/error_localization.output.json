@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for the LLM to follow. This causes the generator to rely on default behaviors, leading to hallucinated activities (extra_activity), omitted steps (missing_activity), and misinterpretation of lists as concurrent flows (wrong_parallel) instead of systematically extracting and structuring elements from the text."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking essential modeling guidance on PlantUML syntax and semantics. Without explicit rules distinguishing sequential actions from concurrent forks, or guidelines on mapping nested conditional logic, the generator defaults to overusing fork/join constructs (wrong_parallel) and flattening complex decision trees (missing_or_wrong_relation)."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, failing to constrain the generator's output. This absence allows the LLM to invent implicit steps and error-handling branches (extra_activity), compress multiple explicit steps into single nodes (missing_activity), and introduce unsupported control flow edges (extra_or_wrong_relation) rather than strictly adhering to the provided requirements."
+    }
+  ]
+}
+```

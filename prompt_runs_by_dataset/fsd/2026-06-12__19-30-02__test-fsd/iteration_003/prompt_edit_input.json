@@ -1,0 +1,123 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Read the requirement and identify every explicitly stated activity, trigger, condition, optional step, and terminal outcome.\n2. Extract activities strictly as stated in the text. Do not invent implementation details, UI interactions, or system validations that are not explicitly mentioned. Do not merge separate atomic actions into compound sentences.\n3. Preserve the exact phrasing from the input requirement for all activity and condition labels.\n4. Map the extracted activities to the control flow described in the requirement:\n   - Use switch/endswitch for mutually exclusive alternative paths.\n   - Use fork/end fork for explicitly concurrent or parallel actions.\n   - Use if/else/endif for conditional checks or optional steps.\n   - Use repeat/repeat while for loops or retries.\n5. Maintain the sequential order of activities as presented in the requirement unless a branch, loop, or concurrent path is explicitly indicated.\n6. Output the PlantUML code representing the extracted activities and control flow.\n\n7. Decompose compound sentences and conjunctive actions: when a single sentence contains multiple actions connected by 'and', 'then', or commas, or describes sequential UI steps, model each action as a separate activity node in sequence rather than merging them into one node.\n8. Decompose compound conditions: when a condition contains multiple criteria joined by 'and', model each criterion as a separate, nested if/endif block to preserve the step-by-step evaluation logic, rather than collapsing them into a single flat branch.\n9. Actively identify concurrency: look for keywords indicating simultaneous actions, parallel processing, or independent items displayed together (e.g., 'simultaneously', 'in parallel', 'displays X, Y, and Z') and model them using fork/end fork constructs.\n10. Use PlantUML partition blocks to represent swimlanes when the requirement explicitly assigns activities to different actors, systems, or organizational units.",
+    "knowledge": "PlantUML activity diagram syntax rules:\n- Start with @startuml and end with @enduml.\n- Use switch/endswitch for mutually exclusive alternatives. Each branch starts with case and ends with endcase.\n- Use fork/end fork for concurrent parallel actions. Separate concurrent threads with fork again.\n- Use if/then/else/endif for conditional branches and optional paths.\n- Use repeat/repeat while for loops that execute at least once.\n- Ensure every opened control structure (switch, fork, if, repeat) is properly closed (endswitch, end fork, endif, repeat while).\n- Model each explicitly stated atomic action as a separate activity node. Do not decompose high-level requirements into speculative fine-grained steps.\n\nWhen nesting control structures (e.g., switch inside repeat inside if), close them in the reverse order of opening. Verify that every opened construct is correctly paired with its closing keyword before outputting. Use partition blocks to group activities by actor or system: partition \"ActorName\" { ... }."
+  },
+  "failure_analysis": {
+    "summary": "The batch primarily fails due to a severe label phrasing mismatch and a structural mismatch in control flow. The prompt instructs the model to 'Preserve the exact phrasing from the input requirement,' which causes the generator to copy long, verbatim sentences as node labels. The ground truth, however, uses concise, abstracted labels. This single issue accounts for nearly all 'missing' and 'extra' node/relation errors, as deterministic metrics cannot match the verbose predictions to the concise gold labels. Additionally, the model frequently misinterprets mutually exclusive alternative paths as concurrent parallel actions (using fork instead of switch) and invents speculative implementation steps not present in the input.",
+    "error_patterns": [
+      {
+        "name": "verbatim_label_mismatch",
+        "severity": "high",
+        "evidence_case_ids": [
+          "pure-0026",
+          "pure-0082",
+          "bp-0015",
+          "us-0129",
+          "us-0056",
+          "bp-0022"
+        ],
+        "problem": "The prompt mandates preserving exact phrasing from the input, leading the model to generate verbose, full-sentence activity labels (e.g., 'The ETCS trainborne equipment shall immediately command the emergency brake'). The ground truth uses concise, abstracted labels (e.g., 'ETCS trainborne equipment command emergency brake'). This causes deterministic node and relation metrics to register both low recall and low precision, as the exact string matches fail.",
+        "suggested_prompt_direction": "Revise the workflow to instruct the agent to generate concise, abstracted activity and condition labels rather than copying verbatim text. The prompt should guide the agent to extract the core action and object, dropping auxiliary verbs and unnecessary prose.",
+        "target_sections": [
+          "workflow"
+        ]
+      },
+      {
+        "name": "switch_misinterpreted_as_fork",
+        "severity": "high",
+        "evidence_case_ids": [
+          "pure-0026",
+          "rac-0013"
+        ],
+        "problem": "The model incorrectly models mutually exclusive alternative paths (e.g., 'Option 1 / Option 2 / Option 3', or different monitoring conditions) as concurrent parallel actions using fork/end fork, whereas the ground truth correctly uses switch/endswitch. This introduces wrong control-flow relations and extra nodes.",
+        "suggested_prompt_direction": "Strengthen the workflow guidance to explicitly differentiate between mutually exclusive alternatives (switch) and concurrent parallel actions (fork). Emphasize that if the requirement presents distinct choices, cases, or independent monitoring conditions that cannot happen simultaneously, they must be modeled with switch/endswitch.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "speculative_extra_activities",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "us-0056"
+        ],
+        "problem": "The model invents speculative implementation steps or UI interactions not stated in the requirement (e.g., 'Calculate the 3x3 Rotation Matrix', 'Select a site member profile', 'Save the profile'). This lowers node precision and creates extra, unsupported relation edges.",
+        "suggested_prompt_direction": "Reinforce the constraint in the workflow to strictly extract only explicitly stated activities. Add a negative constraint to avoid inferring prerequisite UI clicks, calculation steps, or save operations unless they are explicitly described in the input text.",
+        "target_sections": [
+          "workflow"
+        ]
+      },
+      {
+        "name": "missing_conditional_and_switch_structures",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "bp-0022"
+        ],
+        "problem": "The model flattens conditional logic and alternative paths into a single sequential flow, missing if/else and switch constructs entirely (e.g., missing the validation check in lmc-0050, missing the 'More information?' branch and 'Selection' switch in bp-0022). This results in missing activities, missing conditions, and missing relation edges.",
+        "suggested_prompt_direction": "Add a workflow step requiring the agent to actively identify optional steps, validation checks, and alternative outcomes before mapping the sequential flow, ensuring they are modeled as if/endif or switch/endswitch blocks rather than omitted or linearized.",
+        "target_sections": [
+          "workflow"
+        ]
+      },
+      {
+        "name": "nested_control_structure_syntax_errors",
+        "severity": "low",
+        "evidence_case_ids": [
+          "pure-0026"
+        ],
+        "problem": "When nesting different control structures (e.g., an if/endif block wrapping a switch/endswitch block), the model produces invalid PlantUML syntax, leading to compilation errors.",
+        "suggested_prompt_direction": "In the knowledge section, emphasize strict pairing of opening and closing keywords for nested structures and advise keeping the nesting logic as flat as possible to avoid syntax pairing errors.",
+        "target_sections": [
+          "knowledge"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML snippets or dataset-specific label phrasing into the prompt.",
+      "Do not add dataset-specific examples or case-specific vocabulary.",
+      "Do not add speculative implementation steps merely to increase node recall.",
+      "Do not change the deterministic evaluation metrics to be more lenient; fix the prompt's label generation instead."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

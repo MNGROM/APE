@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Read the requirement and identify every explicitly stated activity, trigger, condition, optional step, and terminal outcome.\n2. Extract activities strictly as stated in the text. Do not invent implementation details, UI interactions, or system validations that are not explicitly mentioned. Do not merge separate atomic actions into compound sentences.\n3. Preserve the exact phrasing from the input requirement for all activity and condition labels.\n4. Map the extracted activities to the control flow described in the requirement:\n   - Use switch/endswitch for mutually exclusive alternative paths.\n   - Use fork/end fork for explicitly concurrent or parallel actions.\n   - Use if/else/endif for conditional checks or optional steps.\n   - Use repeat/repeat while for loops or retries.\n5. Maintain the sequential order of activities as presented in the requirement unless a branch, loop, or concurrent path is explicitly indicated.\n6. Output the PlantUML code representing the extracted activities and control flow."
+    },
+    {
+      "section": "knowledge",
+      "operation": "replace",
+      "content": "PlantUML activity diagram syntax rules:\n- Start with @startuml and end with @enduml.\n- Use switch/endswitch for mutually exclusive alternatives. Each branch starts with case and ends with endcase.\n- Use fork/end fork for concurrent parallel actions. Separate concurrent threads with fork again.\n- Use if/then/else/endif for conditional branches and optional paths.\n- Use repeat/repeat while for loops that execute at least once.\n- Ensure every opened control structure (switch, fork, if, repeat) is properly closed (endswitch, end fork, endif, repeat while).\n- Model each explicitly stated atomic action as a separate activity node. Do not decompose high-level requirements into speculative fine-grained steps."
+    }
+  ],
+  "rationale": "The current prompt lacks workflow and knowledge sections, causing the agent to over-decompose requirements, rephrase labels, and miss key control-flow constructs like switch and fork. Replacing the empty workflow with a strict extraction and mapping procedure addresses speculative over-decomposition and label mismatch. Replacing the empty knowledge section with explicit PlantUML syntax rules for switch, fork, if, and repeat addresses missing control-flow constructs and ensures proper syntax closure.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}
+```

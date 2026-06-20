@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "When a requirement states that multiple items are received, available, or provided together (e.g., 'X and Y are received', 'enter name, description, and keywords'), model each item as a separate activity within fork/end fork rather than combining them or listing them sequentially. Use if/elseif when the requirement describes multiple conditions checked independently or in sequence (alternative data flows, exit conditions, error scenarios); switch/case applies only when a single variable or discriminant takes one of several discrete mutually exclusive values. If the conditions involve different variables or are not mutually exclusive choices on one thing, use if/elseif. A single stated action in the requirement must remain a single activity; do not decompose it into separate 'user requests' and 'system performs' activities unless the requirement explicitly describes both steps."
+    },
+    {
+      "section": "rule",
+      "operation": "append",
+      "content": "Do not invent actor-role decomposition (e.g., 'User requests X' + 'System performs X') when the requirement describes a single action. Do not add contextual preamble activities not stated in the requirement. Do not use switch/case for conditions that are not mutually exclusive alternatives on a single discriminant; use if/elseif instead."
+    }
+  ],
+  "rationale": "The knowledge append addresses three identified gaps: (1) when simultaneous items warrant fork/end fork, (2) how to distinguish if/elseif from switch/case for independent conditions, and (3) prohibiting actor-role decomposition of single stated actions. The rule append adds hard constraints against inventing actor-role splits, adding unstated preambles, and misusing switch/case—all high-severity error patterns with no existing rule coverage.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

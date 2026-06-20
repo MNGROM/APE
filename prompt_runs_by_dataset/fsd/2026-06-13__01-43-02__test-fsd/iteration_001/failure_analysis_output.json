@@ -1,0 +1,80 @@
+```json
+{
+  "summary": "The batch primarily fails due to severe activity granularity and grounding issues, resulting in both missing and extra activities across all cases. The model either over-decomposes simple requirements into hallucinated UI/system steps or under-decomposes complex requirements by merging multiple distinct steps into single verbose activities. This fundamental activity mismatch cascades into completely missing or incorrect control-flow relations, as the generated diagram structure diverges heavily from the expected gold standard.",
+  "error_patterns": [
+    {
+      "name": "missing_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0010",
+        "lmc-0055",
+        "us-0098",
+        "lmc-0048",
+        "us-0092",
+        "bp-0028",
+        "pure-0078",
+        "pure-0046"
+      ],
+      "problem": "The model fails to extract and represent explicit behaviors at the expected granularity. It compresses multiple distinct steps into single, verbose activities (e.g., merging 'Pilot uses cockpit control' and 'Set heading hold reference' into one node) and omits intermediate system states or UI feedback mentioned in the requirement.",
+      "suggested_prompt_direction": "Instruct the model to decompose requirements into fine-grained, atomic activities where each action or system response is a distinct step. Emphasize preserving intermediate states and explicit system feedback as separate activities.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0092",
+        "lmc-0055",
+        "bp-0028"
+      ],
+      "problem": "The model hallucinates activities not present in the requirement, particularly for user stories where it invents detailed UI interactions (e.g., 'System displays success message', 'System validates input') or decomposes implied setup steps (e.g., 'Initialize Rotation Matrix').",
+      "suggested_prompt_direction": "Strengthen grounding constraints to ensure the model only generates activities explicitly stated or unambiguously required by the input text, strictly forbidding inferred UI steps, validation logic, or system responses not mentioned.",
+      "target_sections": [
+        "rule",
+        "input"
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0010",
+        "pure-0078",
+        "pure-0046",
+        "bp-0028"
+      ],
+      "problem": "Control-flow relations are frequently missing or incorrect because the model fails to identify conditional branches, parallel forks, and switches explicitly described in the text. It defaults to a flat, sequential flow, missing alternative paths (if/else) and concurrent paths (fork).",
+      "suggested_prompt_direction": "Provide explicit workflow guidance to identify decision points (if/else), alternative paths (switch/case), and concurrent actions (fork) from the requirement text, and map them to the corresponding PlantUML control-flow structures.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0092",
+        "lmc-0055",
+        "pure-0078"
+      ],
+      "problem": "The model introduces incorrect sequential relations between activities that should be parallel or alternative, often stringing together hallucinated steps or merging separate branches into a single linear flow.",
+      "suggested_prompt_direction": "Encourage the model to evaluate the dependency between activities before linking them sequentially, ensuring that independent or alternative actions are not artificially serialized.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not attempt to fix syntax errors as the compilation pass rate is already 100%."
+  ]
+}
+```

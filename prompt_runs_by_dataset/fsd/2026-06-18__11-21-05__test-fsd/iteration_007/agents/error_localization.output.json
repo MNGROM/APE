@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1 instructs the model to extract a 'granular, exhaustive list' and to preserve 'distinct UI elements, data entry fields, and intermediate states as separate nodes', which directly encourages over-decomposition and hallucination of sub-steps (causing extra_activity). Simultaneously, it lacks explicit instructions to prevent the model from collapsing multiple stated actions or dropping conditional branches (causing missing_activity). Step 3's instruction to identify 'contextual cues' for simultaneous execution is too vague, leading the model to misinterpret grammatical lists or alternative options as concurrent parallel flows (causing wrong_parallel and extra_or_wrong_relation)."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section's rule for contextual cues ('multiple independent attributes processed at once') provides a loophole that causes the model to map sequential enumerations or alternative lists into `fork`/`join` blocks (causing wrong_parallel). It also lacks concrete examples or rules for handling nested conditional logic, early terminations, and exact topological flow, which leads the model to flatten or misrepresent complex nested conditions and drop early exits (causing missing_or_wrong_relation)."
+    },
+    {
+      "section": "rule",
+      "section_problem": "While the rule section prohibits inventing implicit steps, it lacks a specific prohibition against decomposing single explicit actions into multiple granular sub-steps unless detailed, failing to prevent over-decomposition (causing extra_activity). It also lacks a strict rule enforcing the preservation of all explicitly stated conditional branches and state transitions without abstraction (causing missing_activity), and lacks rules enforcing exact topological flow and early exits (causing missing_or_wrong_relation)."
+    }
+  ]
+}
+```

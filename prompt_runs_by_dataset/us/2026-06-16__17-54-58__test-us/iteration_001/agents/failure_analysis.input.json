@@ -1,0 +1,60 @@
+{
+  "requirements": [
+    "2. Adjust Item Quantity 2.1. User accesses the main inventory screen 2.2. The screen displays all inventory departments in matrix format 2.3. User drills down to the desired existing inventory item (see View Inventory) 2.4. The item detail screen is presented 2.5. User changes the item quantity 2.6. The system displays a confirmation screen where a reason for the adjustment must be specified by the user 2.7. The system validates the item change 2.8. Item information is updated in the inventory",
+    "After the system starts up, if slow charging is active and the front MCU initialization is 0, it enters state 82. From there:\n- When the BMS counter reaches 1 with a battery pre-heating demand of 3, the system transitions to state 126. If slow charging becomes inactive afterward, it shuts down and exits.\n- If a pre-charge failure occurs, the system moves to state 126. Should slow charging be inactive at that point, it shuts down and exits.\n- If slow charging deactivates, the system switches to state 126 before shutting down and exiting.\n- For AC charging/discharging system faults, the system waits through a 10-second timeout before shifting to state 126. If slow charging is inactive following this transition, it shuts down and exits.",
+    "2.\tWhen the determinant of B(inv(Wp’)B’ is > 1e-12 as indicated by ridge_on set to False, the inversion of the B(inv(Wp’)B’ matrix should be accurate to 12 digits precision in that each element in the check output matrix is within a 1e-12 tolerance with respect to the elements of a 3x3 identity matrix.",
+    "The thermal management controller, implemented as a deterministic state machine on the RTOS, governs the PWM fans and liquid-cooling loops. Upon receiving a user-initiated air conditioner start command, the system first verifies the unit is in a powered-off state and then checks if the indoor temperature exceeds the setpoint. If both conditions are met, it executes the air conditioner startup sequence, during which a high-priority task, synchronized via mutexes with a BMS/PMIC interface, continuously monitors the compressor status and condenser temperature to ensure operational parameters remain within safe bounds. A medium-priority periodic task, scheduled by the RTOS, polls indoor temperature sensors until the setpoint is achieved. Concurrently, user commands for wind speed adjustment are serviced through an interrupt-driven priority queue; the system enters a control loop to regulate the PWM duty cycle until the actual fan speed matches the requested value, with telemetry data logged to a ring buffer. A separate, timer-driven telemetry monitor task runs with bounded retries and exponential backoff for fault handling, while sensor fusion and calibration routines execute periodically, with out-of-range readings triggering redundant sensor checks and initiating a controlled cool-down safety path. Following all operations, the system returns to a low-power standby state."
+  ],
+  "predictions": [
+    "",
+    "",
+    "",
+    ""
+  ],
+  "ground_truths": [
+    "start\n\n:Access main inventory screen;\n:Display inventory departments;\n\n:See View Inventory;\n:Drill down to desired existing inventory item;\n\n:Item detail screen is presented;\n:Change item quantity;\n:Display confirmation screen;\n:Specify adjustment reason;\n\n:System validates item change;\n:Item information is updated in inventory;\n\nstop",
+    "start\nif (slow charging is active and front MCU initialization=0) then\n  :enter state 82;\n  if (BMS counter=1 and battery pre-heating demand=3) then\n    :switch to state 126;\n    if (slow charging is inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (pre-charge failure occurs) then\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (slow charging is inactive) then\n    :switch to state 126;\n    :shutdown;\n    stop\n  else if (AC charging/discharging system fault) then\n    while(after 10s)\n    endwhile\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend",
+    "start\n\n:Ridge_on set to False;\n:Determinant of B(inv(Wp’)B’> 1e-12;\n:Each element with respect to 3x3 identity matrix elements < 1e-12 tolerance;\n:B(inv(Wp’)B’matrix inversion be accurate to 12 digits precision;\n\nstop",
+    "@startuml\n\nstart\n\n:Thermal management controller implemented as deterministic state machine on RTOS;\nfork\n:Govern PWM fans;\nfork again\n:Govern liquid-cooling loops;\nend fork\n\n:Receive user-initiated air conditioner start command;\nif (Unit in powered-off state?) then (yes)\n  if (Indoor temperature > setpoint?) then (yes)\n    :Execute air conditioner startup sequence;\n\n    fork\n      :High-priority task synchronized via mutexes with BMS/PMIC interface;\n      :Continuously monitor compressor status and condenser temperature;\n       :Ensure operational parameters within safe bounds;\n\n    fork again\n      :Medium-priority periodic task scheduled by RTOS;\n      repeat\n      :Poll indoor temperature sensors;\n      repeat while(Setpoint achieved?) is(no)\n\n    fork again\n    :User commands for wind speed adjustment serviced via interrupt-driven priority queue;\n    :Enter control loop;\n    repeat\n    :Regulate PWM duty cycle;\n    repeat while(Actual fan speed matches requested value) is(no)\n    :Log telemetry data to ring buffer;\n\n    fork again\n    :Timer-driven telemetry monitor task runs;\n     fork\n       fork\n      :Bounded retries;\n       fork again\n      :Exponential backoff;\n       end fork\n      :For fault handling;\n     fork again\n      fork\n      :Sensor fusion;\n      fork again\n      :Calibration routines;\n       end fork\n      :Execute periodically;\n     fork again\n     if (Out-of-range readings?) then (yes)\n      :Trigger redundant sensor checks;\n      :Initiate controlled cool-down safety path;\n    else (no)\n    end if\n    end fork\n   end fork\n  else (no)\n  end if\nelse (no)\nend if\n\n:Return to low-power standby state;\n\nstop\n\n@enduml"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "generation_error",
+        "syntax_error",
+        "missing_activity",
+        "missing_or_wrong_relation"
+      ],
+      [
+        "generation_error",
+        "syntax_error",
+        "missing_activity",
+        "missing_or_wrong_relation"
+      ],
+      [
+        "generation_error",
+        "syntax_error",
+        "missing_activity",
+        "missing_or_wrong_relation"
+      ],
+      [
+        "generation_error",
+        "syntax_error",
+        "missing_activity",
+        "missing_or_wrong_relation"
+      ]
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+```json
+{
+  "summary": "The failures primarily stem from a lack of procedural guidance for extracting and decomposing activities, and missing reusable PlantUML modeling knowledge for control-flow constructs. The most effective repair targets the workflow and knowledge sections to address activity granularity and correct construct mapping.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "over_decomposition_hallucination",
+        "activity_conflation",
+        "missing_control_flow_constructs"
+      ],
+      "section_problem": "The workflow section is currently empty, providing no procedural steps for moving from a natural language requirement to activity extraction, decomposition, and control-flow reasoning.",
+      "edit_intent": "Add a step-by-step procedure requiring the model to first extract strictly stated activities, separate actors from actions, and then explicitly analyze for concurrency, alternatives, and conditional logic before generating PlantUML.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "us-0216",
+        "us-0153",
+        "lmc-0038",
+        "pure-0010",
+        "bp-0007",
+        "pure-0030",
+        "bp-0023",
+        "lmc-0011"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_control_flow_constructs",
+        "activity_conflation"
+      ],
+      "section_problem": "The knowledge section is empty, leaving the model without reusable UML/PlantUML modeling principles for mapping requirement semantics to the correct control-flow constructs and partitions.",
+      "edit_intent": "Provide reusable modeling knowledge for distinguishing parallel vs. alternative constructs, representing conditional guards as decision nodes without inventing implementation steps, and using partitions to separate actors from actions.",
+      "knowledge_gap_ids": [
+        "parallel_vs_alternative_constructs",
+        "conditional_guard_representation",
+        "partition_usage"
+      ],
+      "evidence_case_ids": [
+        "pure-0030",
+        "bp-0023",
+        "lmc-0011",
+        "lmc-0038",
+        "pure-0010"
+      ]
+    },
+    {
+      "section": "rule",
+      "priority": "medium",
+      "failure_patterns": [
+        "over_decomposition_hallucination",
+        "activity_conflation"
+      ],
+      "section_problem": "The rule section is empty, failing to provide hard constraints to prevent the model's default habit of hallucinating implementation steps or conflating actors with actions.",
+      "edit_intent": "Add strict prohibitions against inventing unstated implementation steps and against embedding actor names inside activity labels.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "us-0216",
+        "us-0153",
+        "lmc-0038",
+        "pure-0010",
+        "bp-0007"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The current agent task accurately defines the role and scope; the failures are caused by missing procedural and domain knowledge, not a misdefined role."
+    },
+    {
+      "section": "input",
+      "reason": "The input section correctly specifies the nature of the input; the failure to extract the right activities is a processing/guidance issue, not an input reading issue."
+    },
+    {
+      "section": "output",
+      "reason": "The output section correctly mandates PlantUML-only output, and the failure analysis notes a 100% compilation pass rate, meaning output formatting constraints are already sufficient."
+    }
+  ]
+}
+```

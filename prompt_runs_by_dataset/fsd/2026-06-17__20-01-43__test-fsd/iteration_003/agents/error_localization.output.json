@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks reusable modeling guidance for distinguishing parallel execution from mutually exclusive alternatives, handling nested and optional conditions, decomposing grouped items into parallel branches, and representing time-based delays as loops."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section does not guide the extraction of composite descriptions (e.g., lists of items) into distinct sub-activities, nor does it instruct on mapping time-based delays to loop constructs or preserving the logical nesting of conditions during control-flow construction."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section prohibits adding inferred activities but does not explicitly forbid operationalizing static constraints or mathematical equations into procedural steps, and it lacks a rule enforcing the decomposition of composite descriptions into distinct sub-activities."
+    }
+  ]
+}
+```

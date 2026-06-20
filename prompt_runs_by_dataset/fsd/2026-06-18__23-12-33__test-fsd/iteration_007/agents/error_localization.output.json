@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section's Step 2 instructs the model to map items joined by 'AND' or 'and' using fork/join, which directly causes false-positive parallelism by treating sequential UI data entries or attribute lists as concurrent flows. It also fails to provide a clear mechanism for distinguishing true concurrency from mere enumerations, and does not adequately enforce the preservation of nested conditional logic, leading to flattened relations and missing activities."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section's rule (4) explicitly triggers fork/join for independent actions joined by 'AND' or 'and', which is a primary driver of false-positive parallelism for sequential inputs. It also lacks sufficient negative constraints to prevent the model from treating bulleted lists or attribute enumerations as parallel branches, and does not provide clear enough cues to identify true concurrent sub-processes (false-negative parallelism)."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section prohibits fork/join for 'sequential UI steps' but does not explicitly exclude enumerations, attribute lists, or data entry fields, allowing false-positive parallelism to slip through. It also fails to enforce the correct mapping of mutually exclusive alternatives versus conditional evaluations, leading to extra or wrong relations (e.g., substituting if/elseif for switch/case). Furthermore, while it forbids inventing implicit error-handling branches, it lacks a strict constraint against decomposing high-level goals into assumed granular sub-steps, causing extra activities."
+    }
+  ]
+}
+```

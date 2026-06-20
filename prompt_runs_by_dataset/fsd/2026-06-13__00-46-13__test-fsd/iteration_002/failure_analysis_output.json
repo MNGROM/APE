@@ -1,0 +1,83 @@
+```json
+{
+  "summary": "The batch primarily fails due to severe activity granularity and grounding issues. The model consistently over-decomposes requirements into inferred implementation steps while merging explicit requirement statements into composite nodes. This leads to universal missing and extra activity errors, which in turn cascade into completely broken control-flow relations. The prompt currently provides no guidance on activity extraction, granularity, or structural modeling.",
+  "error_patterns": [
+    {
+      "name": "extra_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0216",
+        "us-0153",
+        "lmc-0038"
+      ],
+      "problem": "The model hallucinates implementation details and over-decomposes high-level requirements into granular steps not stated in the input (e.g., adding 'Load audio file', 'Compute zt truth data', 'Schedule regular reporting interval').",
+      "suggested_prompt_direction": "Instruct the agent to strictly ground activities in the explicit statements of the requirement and forbid inventing implicit implementation or operational steps.",
+      "target_sections": [
+        "rule",
+        "workflow"
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0007",
+        "pure-0010",
+        "pure-0030"
+      ],
+      "problem": "The model merges multiple distinct requirement actions into single composite activity nodes (e.g., combining 'Go to Modeling area' and 'Choose Info Provider' into one node), causing the individual activities to be lost.",
+      "suggested_prompt_direction": "Direct the agent to decompose requirements into fine-grained activities where each node represents a single, distinct action or state described in the text.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "severity": "high",
+      "evidence_case_ids": [
+        "rac-0004",
+        "bp-0023",
+        "pure-0030"
+      ],
+      "problem": "Because activities are incorrectly identified (merged or hallucinated), the control-flow relations between the true activities are entirely missing or structurally wrong. The model also fails to map explicit conditional logic correctly.",
+      "suggested_prompt_direction": "Add a workflow step to first identify the core activities, and then explicitly reason about and map the control-flow relations (sequence, branching) between those extracted activities before generating PlantUML.",
+      "target_sections": [
+        "workflow"
+      ]
+    },
+    {
+      "name": "wrong_parallel",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "pure-0030",
+        "bp-0023"
+      ],
+      "problem": "The model misinterprets listed items or alternative paths as mutually exclusive switch/case constructs instead of parallel concurrent flows (e.g., using 'switch' for parallel inputs instead of 'fork').",
+      "suggested_prompt_direction": "Provide guidance on distinguishing between alternative choices (if/switch) and concurrent parallel actions (fork) based on the requirement semantics.",
+      "target_sections": [
+        "knowledge",
+        "rule"
+      ]
+    },
+    {
+      "name": "syntax_error",
+      "severity": "low",
+      "evidence_case_ids": [
+        "rac-0004"
+      ],
+      "problem": "Complex nested control structures (like backward loops within if/else blocks) result in invalid PlantUML syntax.",
+      "suggested_prompt_direction": "Advise keeping control flow structures simple and properly nested, and remind the agent of valid PlantUML loop/branch syntax.",
+      "target_sections": [
+        "output",
+        "knowledge"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not attempt to fix isolated syntax errors at the expense of the major activity grounding problem."
+  ]
+}
+```

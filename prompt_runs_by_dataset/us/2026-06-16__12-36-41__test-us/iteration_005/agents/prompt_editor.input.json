@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Identify all actions, decisions, and constraints from the text.\n2. Scan for cyclic, periodic, or repetitive keywords (e.g., 'repeat', 'until', 'periodically', 'cyclically') and map them to `repeat`/`while` structures.\n3. Scan for linguistic cues of parallelism and alternative conditions; explicitly distinguish mutually exclusive alternative conditions (mapped to `switch`/`case` or `if`/`elseif`/`else`) from true concurrent tasks (identified by positive cues like 'concurrently', 'simultaneously', 'at the same time', or comma-separated lists of simultaneous tasks, and mapped to `fork`/`end fork`) before constructing the control flow.\n4. Enforce a 1-to-1 mapping of explicitly stated actions, UI interactions, and system responses to individual activity nodes, prohibiting summarization or merging of distinct steps.\n5. Classify each condition as either a high-level constraint (mapped directly to a single decision branch) or a procedural step (requiring intermediate actions).\n6. Determine the exact nesting hierarchy of control structures before writing code.\n7. Generate PlantUML code strictly following the mapped hierarchy without adding or flattening levels.",
+    "knowledge": "1. Use `fork`/`end fork` ONLY for explicitly stated true parallel execution, identified by positive linguistic cues such as simultaneous system tasks, comma-separated lists of concurrent displays/updates, and explicit words like 'concurrently', 'simultaneously', or 'at the same time'.\n2. Use `if`/`else` or `switch` for mutually exclusive choices or alternative user actions.\n3. Map implicit natural language conditions (e.g., 'if needed', 'optional', 'can') directly to explicit branching constructs rather than omitting them.\n4. High-level constraints or validations should be modeled as single decision points, not decomposed into multi-step procedural activities.\n5. Distinct UI interactions, system responses, and descriptive clauses mentioned in the text must be represented as separate activity nodes to maintain fine-grained granularity.\n6. Cyclic, periodic, or repeated behaviors indicated by keywords like 'repeat', 'until', 'periodically', or 'cyclically' must be mapped to PlantUML `repeat`/`while` loops.\n7. Multi-branch mutually exclusive conditions (e.g., evaluating a variable against multiple distinct values) should be modeled using `switch`/`case`, not `fork`.\n8. Secondary checks, fallback conditions, and specific timeout/counter values must be explicitly preserved as separate activity nodes or conditional branches to prevent missing activities.",
+    "rule": "1. Do NOT decompose simple conditional checks into intermediate processing steps (e.g., do not add 'compute' or 'receive' nodes before a validation if the requirement only specifies the validation).\n2. ALWAYS preserve the exact nesting depth of control structures as identified in the text (e.g., `switch` inside `if`, `if` inside `repeat`).\n3. NEVER use `fork`/`end fork` for independent, alternative, or mutually exclusive actions.\n4. NEVER omit optional paths or contextual checks—every user choice or conditional step must be represented as a branch.\n5. NEVER introduce decision branches, loops, or error handling not explicitly stated in the text (explicitly prohibit hallucinating error handling, loops, or recovery steps not stated in the text).\n6. Alternative flows, exception handling, and recovery steps (e.g., 'select another folder') MUST be modeled as linear paths within if/else or switch conditional branches; explicitly forbid representing them as loops or incorrectly placing them in the main sequential flow.\n7. NEVER represent cyclic, periodic, or repeated behaviors as sequential or conditional flows instead of `repeat`/`while` loops.\n8. NEVER misplace loop boundaries (e.g., looping the wrong set of activities or missing the correct exit condition).\n9. NEVER over-decompose a single stated action into multiple redundant activity nodes."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "failure_to_decompose_parallel_lists_into_fork_blocks",
+        "problem": "When the requirement lists multiple attributes, items, or concurrent actions, the generator serializes them as sequential activities instead of using PlantUML fork/end fork blocks for parallelism.",
+        "possible_causes": [
+          "The prompt does not explicitly instruct the model to identify lists of attributes, items, or concurrent actions and represent them as parallel branches using fork/end fork.",
+          "The model defaults to a safe sequential representation when encountering comma-separated or bulleted lists rather than recognizing them as concurrent structural elements."
+        ]
+      },
+      {
+        "name": "incorrect_control_flow_for_conditional_and_alternative_paths",
+        "problem": "The generator misrepresents mutually exclusive choices (e.g., switch/case) as sequential or nested steps, and incorrectly models conditional optional actions (e.g., 'optionally') as loops or sequential dependencies.",
+        "possible_causes": [
+          "The prompt lacks clear guidance on mapping mutually exclusive discrete states (like 'select/deselect') to switch/case structures.",
+          "The prompt does not distinguish between optional actions (if/else) and repeated/looping actions (repeat/while), leading the model to use repeat loops for simple optional steps."
+        ]
+      },
+      {
+        "name": "over_literal_translation_of_text_into_activities",
+        "problem": "The generator creates extra, unnecessary activity nodes by directly translating conversational phrases, conditions, or UI states into actions (e.g., 'Is modification required?', 'The list is displayed'), rather than abstracting them into control flow logic or guard conditions.",
+        "possible_causes": [
+          "The prompt emphasizes capturing all text verbatim without instructing the model to abstract conditions into if/switch branches or to omit descriptive UI states that aren't actual user/system actions.",
+          "Lack of rules preventing the model from turning conditional checks into explicit activity nodes."
+        ]
+      },
+      {
+        "name": "missing_implicit_or_contextual_activities",
+        "problem": "The generator omits activities that are implied by the requirement's context or structural cues, such as cross-references (e.g., 'see View Acquisitions') or overarching actions (e.g., 'Evaluate' before listing what is evaluated).",
+        "possible_causes": [
+          "The prompt focuses only on explicit action verbs, causing the model to drop contextual or referential steps.",
+          "The model fails to recognize that a leading verb in a requirement step applies as a distinct action to the subsequent list of items."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "Step 1 and Step 4 emphasize extracting and mapping every explicitly stated action and clause to individual activity nodes without first establishing a rule to abstract conditions and conversational phrases into control flow logic, leading to over-literal translation. Additionally, Step 3 fails to instruct the model to recognize lists of attributes or items as concurrent actions, causing such lists to default to sequential serialization."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "Rule 1 restricts fork/end fork identification to positive linguistic cues ('concurrently', 'simultaneously') but omits structural cues like comma-separated or bulleted lists of attributes/items, failing to prevent their sequential serialization. Rule 2 lacks guidance for mapping discrete mutually exclusive states (e.g., select/deselect) to switch/case. Rule 3 mandates mapping implicit conditions to branching constructs but does not clarify that conditional checks should act as branch guards rather than separate activity nodes, causing over-decomposition. Furthermore, the section lacks guidance on inferring implicit overarching actions (e.g., a leading verb applying to a list) and cross-references."
+      },
+      {
+        "section": "rule",
+        "section_problem": "Rule 1 prohibits decomposing simple conditional checks into intermediate processing steps, but lacks a corresponding rule to prevent turning the conditional checks themselves into explicit activity nodes (over-literal translation). Rule 4 mandates representing every conditional step as a branch, but does not distinguish between optional actions (if/else) and repeated actions (repeat/while), allowing optional steps to be mismodeled as loops. Rule 9 prohibits over-decomposing a single action, but lacks a rule against creating unnecessary activity nodes out of descriptive UI states or conversational phrases that should be abstracted into control flow."
+      }
+    ]
+  }
+}

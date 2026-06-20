@@ -1,0 +1,55 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction frequently introduces fork/join blocks for items that are sequential steps, UI tabs, or alternative options (false_positive_parallel), and misses fork/join when the requirement explicitly describes concurrent actions (false_negative_parallel).",
+      "possible_causes": [
+        "The prompt lacks clear guidance on distinguishing true concurrent execution from sequential lists, UI display tabs, or alternative choices, leading the model to treat any bulleted or listed items as parallel branches.",
+        "The model defaults to using fork/join for any multi-item list, failing to recognize that items like 'Connection Mappings / QaaWS Mappings / Crystal Report Mappings / Federation Mappings' are sequential tabs or options rather than simultaneous actions.",
+        "For requirements with explicit concurrent phrasing (e.g., 'identify persons... and receive related information'), the model misses the parallel structure entirely (false_negative_parallel), indicating insufficient instruction on mapping simultaneous behaviors to fork/join."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction often decomposes single high-level actions or implicit conditions into multiple granular activities that are not present in the ground truth.",
+      "possible_causes": [
+        "The prompt does not constrain the granularity of activity nodes, causing the model to over-fragment actions (e.g., splitting 'Enter username and password' into two separate nodes).",
+        "The model treats implicit conditions or UI states as explicit activity steps (e.g., adding 'Receive videos' or 'Observe the charging gun indicator' when not required)."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction omits explicit behaviors, state transitions, or required actions described in the requirement.",
+      "possible_causes": [
+        "The model collapses multiple explicitly stated steps into a single broad node, losing required behavioral detail.",
+        "The model fails to extract and represent state transitions or specific conditional outcomes as distinct activities in the diagram."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction frequently omits required control-flow edges or misrepresents the correct sequence and nesting of conditions, particularly flattening nested if-else structures.",
+      "possible_causes": [
+        "The prompt provides insufficient guidance on how to map complex, nested conditional logic (e.g., else-if chains) into PlantUML, leading the model to flatten or misplace branches.",
+        "The model struggles to maintain the correct sequential dependencies between activities, often dropping edges that connect conditional checks to their subsequent state transitions."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction introduces unsupported control-flow edges, often by making mutually exclusive conditions sequential or by adding incorrect branching paths.",
+      "possible_causes": [
+        "The model misinterprets independent conditional checks as sequential steps, adding edges where none should exist.",
+        "The model incorrectly structures alternative flows, creating sequential dependencies between mutually exclusive branches instead of proper switch/if-else logic."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction incorrectly models retry or alternative flows as loops, or misplaces the loop boundaries.",
+      "possible_causes": [
+        "The prompt lacks specific instructions on how to differentiate between a true iterative loop and an alternative exception-handling flow, causing the model to wrap conditional error recovery in a repeat block.",
+        "The model applies loop constructs too broadly, capturing the main success path inside the loop rather than isolating the retry logic."
+      ]
+    }
+  ]
+}
+```

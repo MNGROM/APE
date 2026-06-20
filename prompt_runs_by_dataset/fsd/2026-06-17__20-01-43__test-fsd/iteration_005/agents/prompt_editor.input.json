@@ -1,0 +1,71 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract and list all explicit activities and conditional/alternative statements strictly from the requirement text, preserving each distinct behavioral step as a separate item.\nStep 2: Construct the PlantUML diagram by mapping only those extracted items to activities and control-flow constructs, prohibiting any additions.",
+    "knowledge": "- fork/join: Used for concurrent, simultaneous actions or parallel information display.\n- if/elseif/else and switch/endswitch: Used for mutually exclusive, alternative paths or user choices.\n- Enumerated sub-steps or listed options represent alternatives (switch/if), not parallelism, unless explicitly stated as simultaneous.",
+    "rule": "(1) Do not invent, infer, or add any activities, steps, or UI interactions (e.g., login, navigation, validation, success/error messages, retry loops) that are not explicitly stated in the requirement.\n(2) Do not merge multiple distinct behavioral steps from the requirement into a single activity node; maintain the original granularity.\n(3) Do not insert speculative control-flow branches (e.g., validation checks, error handling) unless explicitly described in the requirement text."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The model never generates fork/join constructs, flattening all concurrent or co-occurring behaviors into sequential steps.",
+        "possible_causes": [
+          "The prompt does not instruct the model to look for simultaneous or co-equal sub-tasks (e.g., entering multiple fields, displaying multiple attributes, performing independent checks) and represent them with fork/fork-again/end-fork.",
+          "The model defaults to a linear reading of the requirement, treating every listed item as a sequential step rather than recognizing structural cues for parallelism."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "Repeat/loop constructs are never produced even when the requirement explicitly describes repetition (e.g., 'repeat steps', 'until processing is complete').",
+        "possible_causes": [
+          "The prompt lacks guidance on mapping iterative or periodic language in requirements to PlantUML repeat/while loops.",
+          "The model collapses loop bodies into a single pass or a linear sequence of steps, losing the iterative semantics entirely."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "Control-flow relations are frequently misstructured: nested conditionals are flattened into sequential independent ifs, if/elseif chains are replaced by disconnected if blocks, and switch/case nesting is incorrect.",
+        "possible_causes": [
+          "The prompt does not emphasize preserving the hierarchical nesting of conditions as described in the requirement (e.g., 'under that condition' implies a nested scope).",
+          "The model treats each conditional rule as an independent top-level branch rather than recognizing dependency chains and sub-conditions.",
+          "Insufficient examples of properly nested if/elseif and switch structures in the prompt lead the model to default to flat sequential conditionals."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "Activities present in the ground truth—such as intermediate state labels, context-setting actions (e.g., 'In no-fail state'), and conditional-branch outcomes (e.g., 'Allowed'/'Not allowed')—are omitted.",
+        "possible_causes": [
+          "The model filters out descriptive or contextual statements as non-actionable, even when they serve as meaningful activity nodes in the diagram.",
+          "The prompt does not clarify that outcome labels, state descriptions, and contextual setup statements should be represented as activity nodes."
+        ]
+      },
+      {
+        "name": "syntax_error",
+        "problem": "Invalid PlantUML is generated when conditional structures are opened incorrectly (e.g., elseif without a preceding if).",
+        "possible_causes": [
+          "The prompt does not enforce or demonstrate that every elseif must follow an if, and that switch/case blocks require proper endswitch closure.",
+          "The model attempts to use advanced PlantUML control-flow keywords without understanding their syntactic dependencies."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section lacks guidance on loop constructs (repeat/while), hierarchical nesting of conditionals, representing state labels/outcomes as activities, and the syntactic dependencies of PlantUML control-flow keywords (e.g., elseif requires if, endswitch closure)."
+      },
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section lacks steps to identify parallel or iterative behaviors and does not emphasize preserving the hierarchical nesting of conditions. Additionally, Step 1's focus on extracting only 'explicit activities and conditional/alternative statements' causes the model to filter out contextual states and outcome labels."
+      },
+      {
+        "section": "rule",
+        "section_problem": "Rule 1's strict prohibition against inventing or inferring activities likely causes the model to drop valid contextual states and outcome labels that are not explicit 'activities', contributing to missing activity nodes."
+      }
+    ]
+  }
+}

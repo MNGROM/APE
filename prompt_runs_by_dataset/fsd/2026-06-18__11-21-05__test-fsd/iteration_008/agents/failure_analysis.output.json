@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction consistently fails to use fork/join for concurrent actions, instead representing them as sequential steps. This is a false_negative_parallel issue, where the model misses parallelism when the requirement clearly lists concurrent items, attributes, or options.",
+      "possible_causes": [
+        "The prompt lacks explicit instructions to identify lists of attributes, multiple inputs, or independent options as parallel activities using fork/join constructs.",
+        "The model defaults to a strictly sequential interpretation of comma-separated lists or bullet points in the requirement text."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction frequently introduces unnecessary partition blocks or over-fragments the activity flow, adding structural nodes not present in the ground truth.",
+      "possible_causes": [
+        "The prompt may over-encourage the use of partitions or swimlanes, causing the model to insert them even for simple, single-actor flows or user stories.",
+        "The model is splitting single logical actions into multiple granular activities based on phrasing rather than meaningful behavioral steps."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction often misrepresents control-flow by using flat if/elseif chains for mutually exclusive state transitions or nested conditions, instead of using switch/case or nested if blocks as required by the ground truth.",
+      "possible_causes": [
+        "The prompt does not adequately guide the model to distinguish between alternative conditions (elseif) and distinct state-based branching (switch/case).",
+        "Lack of instructions on how to properly nest conditions for complex state machines, leading to flattened and logically incorrect control flows."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction introduces incorrect control-flow paths, such as adding 'else (no) -> stop' branches for conditions that should implicitly continue, or creating invalid sequential flows from mutually exclusive branches.",
+      "possible_causes": [
+        "The model applies a rigid template where every 'if' must have an explicit else/stop, even when the ground truth expects the flow to fall through or continue.",
+        "Misinterpretation of the requirement's logic, treating independent sequential checks as a single mutually exclusive if/elseif chain, which artificially constrains the flow."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction omits key activities, often collapsing multiple explicit actions into a single vague step or dropping secondary actions mentioned in the requirement.",
+      "possible_causes": [
+        "The prompt does not emphasize preserving all explicit behavioral steps, leading the model to summarize or compress detailed requirements.",
+        "The model prioritizes establishing the high-level control flow at the expense of granular activity recall."
+      ]
+    }
+  ]
+}
+```

@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Prevent activity compression and ensure proper control-flow construct identification.",
+      "change_instruction": "In Step 1, change 'minimal, exhaustive list' to 'exhaustive list' and remove the word 'summarizing'. Add an instruction to preserve granular actions and system responses (e.g., UI feedback, confirmations) as distinct activity nodes. In Step 2, add an explicit instruction to identify and construct parallel flows using `fork`/`end fork` for simultaneous actions, and mutually exclusive choices using `switch`/`endswitch`, in addition to the existing sequencing and conditional logic."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Add missing modeling knowledge for parallel flows, switch constructs, and conditional guards.",
+      "change_instruction": "Add a rule for concurrent flows: explicitly instruct the model to look for textual cues indicating simultaneous execution (e.g., 'simultaneously', 'at the same time', 'in parallel') and map them to `fork`/`end fork` blocks, reiterating that grammatical lists without these cues remain sequential. Add a rule for mutually exclusive choices: instruct the model to map distinct, non-conditional choices (e.g., 'select from options A, B, or C') to `switch`/`endswitch` constructs rather than `if`/`else`. Add a rule for conditional pre-requisites: instruct the model to model conditional prerequisites (e.g., 'ensure X') as guard conditions on transitions rather than sequential activity nodes."
+    },
+    {
+      "section": "rule",
+      "intent": "Prohibit over-decomposition and incorrect chaining of independent conditions.",
+      "change_instruction": "Add a rule prohibiting over-decomposition: do not split a single explicit requirement step into multiple redundant activity nodes. Add a rule for independent conditions: do not force independent conditional checks or state-based rules into a sequential chain of `if`/`elseif` statements; model them as independent flows or separate branches unless the text explicitly specifies a sequential dependency between them. Add a rule enforcing the preservation of explicitly stated system responses and UI feedback as separate activity nodes."
+    }
+  ]
+}

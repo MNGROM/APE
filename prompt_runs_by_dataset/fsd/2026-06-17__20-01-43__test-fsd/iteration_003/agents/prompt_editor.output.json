@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "knowledge",
+      "intent": "Provide explicit modeling guidance for parallel vs. alternative constructs, nested/optional conditions, grouped item decomposition, and time-based delays.",
+      "change_instruction": "Add the following concise rules: (1) Use fork/join when actions are simultaneous or when displaying/inputting a list of fields concurrently; use switch/if for mutually exclusive choices. (2) Preserve the exact logical nesting of conditions; do not flatten nested conditions into a single level. (3) Model time-based delays or waits (e.g., 'after X seconds') using `while` or `repeat` loop constructs, not as sequential activity nodes. (4) Decompose composite descriptions (e.g., lists of displayed items or input fields) into distinct parallel branches rather than a single activity."
+    },
+    {
+      "section": "workflow",
+      "intent": "Guide the extraction of composite items into sub-activities, mapping of temporal conditions to loops, and preservation of nested logic.",
+      "change_instruction": "Update Step 1 to include: When extracting activities, decompose composite descriptions (e.g., lists of items or fields) into distinct sub-activities, identify time-based delays as loop boundaries rather than sequential steps, and note the exact logical nesting of any conditions. Update Step 2 to include: Map time-based delays to `while`/`repeat` constructs, map decomposed grouped items to parallel `fork`/`join` branches, and preserve the identified logical nesting of conditions using nested `if`/`switch` structures."
+    },
+    {
+      "section": "rule",
+      "intent": "Forbid operationalizing static constraints into procedural steps and enforce decomposition of grouped items.",
+      "change_instruction": "Add the following rules: (4) Do not operationalize static constraints, mathematical equations, or formulas into procedural calculation steps; represent them as a single activity or condition. (5) Do not collapse explicitly listed grouped items (e.g., lists of fields or options) into a single activity node; they must be decomposed into distinct sub-activities."
+    }
+  ]
+}
+```

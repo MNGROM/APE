@@ -1,0 +1,42 @@
+{
+  "ape": {
+    "count": 10.0,
+    "syntax_pass_rate": 1.0,
+    "infrastructure_error_rate": 0.0,
+    "node_precision": 0.49372733722733725,
+    "node_recall": 0.40684523238199705,
+    "node_f1": 0.4460953398452669,
+    "relation_precision": 0.29213783597915566,
+    "relation_recall": 0.2333386294531472,
+    "relation_f1": 0.2594485071855857,
+    "plantuml_compilation_pass_rate": 1.0,
+    "llm_element_evaluated": 10.0,
+    "llm_element_failed": 0.0,
+    "llm_node_precision": 0.8432700000000001,
+    "llm_node_recall": 0.6979,
+    "llm_node_f1": 0.76056,
+    "llm_relation_precision": 0.47664999999999996,
+    "llm_relation_recall": 0.38677,
+    "llm_relation_f1": 0.42432
+  },
+  "lato-zero-shot": {
+    "count": 10.0,
+    "syntax_pass_rate": 0.9,
+    "infrastructure_error_rate": 0.0,
+    "node_precision": 0.642794073457689,
+    "node_recall": 0.38228500094676565,
+    "node_f1": 0.4794372241441204,
+    "relation_precision": 0.3960374320174683,
+    "relation_recall": 0.25828710400826255,
+    "relation_f1": 0.3126624656809095,
+    "plantuml_compilation_pass_rate": 0.9,
+    "llm_element_evaluated": 10.0,
+    "llm_element_failed": 0.0,
+    "llm_node_precision": 0.8991300000000001,
+    "llm_node_recall": 0.68595,
+    "llm_node_f1": 0.76873,
+    "llm_relation_precision": 0.54434,
+    "llm_relation_recall": 0.36995,
+    "llm_relation_f1": 0.43861
+  }
+}

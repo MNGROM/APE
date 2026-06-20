@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Identify all actions, decisions, and constraints from the text.\n2. Classify each condition as either a high-level constraint (mapped directly to a single decision branch) or a procedural step (requiring intermediate actions).\n3. Determine the exact nesting hierarchy of control structures before writing code.\n4. Generate PlantUML code strictly following the mapped hierarchy without adding or flattening levels.",
+    "knowledge": "1. Use `fork`/`end fork` ONLY for explicitly stated true parallel execution.\n2. Use `if`/`else` or `switch` for mutually exclusive choices or alternative user actions.\n3. Map implicit natural language conditions (e.g., 'if needed', 'optional', 'can') directly to explicit branching constructs rather than omitting them.\n4. High-level constraints or validations should be modeled as single decision points, not decomposed into multi-step procedural activities.",
+    "rule": "1. Do NOT decompose simple conditional checks into intermediate processing steps (e.g., do not add 'compute' or 'receive' nodes before a validation if the requirement only specifies the validation).\n2. ALWAYS preserve the exact nesting depth of control structures as identified in the text (e.g., `switch` inside `if`, `if` inside `repeat`).\n3. NEVER use `fork`/`end fork` for independent, alternative, or mutually exclusive actions.\n4. NEVER omit optional paths or contextual checks—every user choice or conditional step must be represented as a branch."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "missing_parallel_decomposition",
+        "problem": "The generator fails to identify and model concurrent behaviors using PlantUML fork/end fork constructs, instead representing them as sequential activities or omitting them entirely.",
+        "possible_causes": [
+          "The prompt does not explicitly instruct the model to decompose lists, multiple attributes, or concurrent system tasks into parallel forks.",
+          "The model defaults to a strictly sequential interpretation of requirements, missing linguistic cues for parallelism (e.g., 'concurrently', 'displays... description, type, source and target', comma-separated lists)."
+        ]
+      },
+      {
+        "name": "over_condensing_activities",
+        "problem": "The generator frequently merges multiple distinct actions or UI interactions described in the requirements into single, overly broad activity nodes, reducing node recall.",
+        "possible_causes": [
+          "The prompt lacks guidance on the desired granularity, leading the model to summarize steps rather than mapping them 1-to-1 to activity nodes.",
+          "The model treats descriptive clauses or intermediate system responses as unworthy of separate nodes, collapsing them into the preceding or succeeding action."
+        ]
+      },
+      {
+        "name": "hallucinated_control_flow",
+        "problem": "The generator introduces unsupported decision branches, loops, or conditional logic that are not specified in the requirements, resulting in extra relations and activities.",
+        "possible_causes": [
+          "The model attempts to make the diagram 'more complete' by inferring implicit error handling or alternative flows where none are stated.",
+          "Lack of strict constraints in the prompt against adding assumptions or behaviors not explicitly present in the source text."
+        ]
+      },
+      {
+        "name": "misaligned_alternative_flows",
+        "problem": "The generator struggles to correctly structure alternative or exception flows, often embedding them as nested loops or misplacing them in the main sequence rather than modeling them as distinct conditional branches.",
+        "possible_causes": [
+          "The prompt does not provide clear structural patterns for handling 'if-then' exceptions or alternative data flows within a main flow.",
+          "The model misinterprets recovery steps (e.g., 'select another folder') as loop conditions rather than linear recovery actions within a conditional branch."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section does not instruct the model to identify concurrent behaviors or decompose them into parallel forks, causing it to default to sequential interpretation. It also lacks a step to enforce 1-to-1 mapping of individual actions to activity nodes, allowing the model to over-condense multiple distinct actions into single broad nodes."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section tells the model when NOT to use fork/end fork (for mutually exclusive actions) but fails to provide positive linguistic cues or patterns for identifying true parallelism (e.g., comma-separated lists, 'concurrently', simultaneous system tasks). It also lacks guidance on maintaining fine-grained activity granularity for distinct UI interactions or system responses."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section lacks strict constraints against hallucinating implicit error handling or alternative flows not present in the text, leading to fabricated control flow. It also lacks explicit structural patterns for modeling alternative or exception flows as conditional branches, causing the model to misrepresent them as loops or misplace them in the main sequence."
+      }
+    ]
+  }
+}

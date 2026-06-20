@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section does not adequately guide the extraction and mapping of loop constructs, lacking a step to identify cyclic/periodic keywords and map them to repeat/while structures. It also fails to clearly separate the identification of mutually exclusive conditions from parallel ones during the initial analysis phase, leading to misclassification."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks explicit mapping rules for translating cyclic or periodic behaviors into PlantUML repeat/while loops. It also does not provide sufficient guidance on distinguishing multi-branch mutually exclusive conditions (using switch/case) from parallel forks, nor does it address the preservation of secondary or fallback conditions to prevent missing activities."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section lacks strict prohibitions against representing cyclic or periodic behaviors as sequential or conditional flows instead of loops, and lacks rules against misplacing loop boundaries. It also needs stronger constraints against over-decomposing single actions into redundant nodes and hallucinating unstated control flows."
+    }
+  ]
+}
+```

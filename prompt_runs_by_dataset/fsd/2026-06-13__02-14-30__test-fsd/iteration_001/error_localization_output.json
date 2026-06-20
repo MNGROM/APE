@@ -1,0 +1,67 @@
+```json
+{
+  "summary": "The most useful repair targets are the workflow and knowledge sections. The workflow section is completely empty, providing no procedural steps to prevent hallucinated elaboration or guide activity decomposition. The knowledge section lacks reusable UML/PlantUML control-flow modeling concepts, causing incorrect construct selection and branch linearization. A hard rule against elaboration is also strongly indicated but constrained by the 2-section limit, making workflow (which can embed procedural constraints) and knowledge the highest priorities.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_activity_elaboration",
+        "missing_activity_decomposition",
+        "missing_or_wrong_relation_control_flow"
+      ],
+      "section_problem": "The workflow section is empty, giving the model no procedural guidance on how to extract activities strictly from the text or how to decompose compound actions, leading to hallucinated steps and missing intermediate activities.",
+      "edit_intent": "Add a step-by-step generation procedure that enforces strict extraction of activities from the requirement text, decomposes compound actions, and identifies control-flow keywords before generating PlantUML.",
+      "knowledge_gap_ids": [
+        "activity_granularity_and_grounding"
+      ],
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0092",
+        "lmc-0055",
+        "lmc-0048",
+        "pure-0078",
+        "bp-0010"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_or_wrong_relation_control_flow",
+        "extra_or_wrong_relation_linearization"
+      ],
+      "section_problem": "The knowledge section is empty, providing no reusable UML/PlantUML modeling concepts for control-flow constructs, which causes the model to select wrong constructs (e.g., fork instead of switch) and incorrectly linearize alternative branches.",
+      "edit_intent": "Provide reusable modeling knowledge mapping requirement semantics to PlantUML control-flow constructs (if/else, switch/case, fork/end fork) and emphasizing that alternative branches must converge rather than sequence.",
+      "knowledge_gap_ids": [
+        "control_flow_construct_selection"
+      ],
+      "evidence_case_ids": [
+        "bp-0028",
+        "pure-0046",
+        "pure-0078",
+        "us-0098",
+        "bp-0010"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The current agent task correctly defines the role and scope; the failures stem from missing procedural and conceptual guidance, not an incorrect role definition."
+    },
+    {
+      "section": "input",
+      "reason": "The input section accurately describes the input format; the issue is how the model processes the input, not the input definition itself."
+    },
+    {
+      "section": "output",
+      "reason": "The output section correctly specifies PlantUML-only output; the errors are in the content and structure of the generated code, not the output format constraint."
+    }
+  ]
+}
+```

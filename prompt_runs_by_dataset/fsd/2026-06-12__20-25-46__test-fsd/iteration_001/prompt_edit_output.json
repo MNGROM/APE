@@ -1,0 +1,20 @@
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Read the requirement and identify every explicitly stated activity, trigger, condition, task, thread, loop, retry, logging step, and terminal outcome.\n2. Preserve atomic actions as separate activity nodes when the requirement lists them separately; do not merge multiple distinct steps into a single coarse-grained node unless the input clearly groups them as one action.\n3. Do not add speculative implementation steps, UI interactions, or error handling that are not explicitly stated in the requirement.\n4. Identify conditional branches using keywords like 'if', 'optionally', 'either/or', or 'otherwise' and model them explicitly as decision nodes.\n5. Identify concurrent or parallel tasks using keywords like 'simultaneously', 'in parallel', or 'at the same time' and model them using fork constructs.\n6. Identify iterative, polling, or retry logic and model it using loop constructs.\n7. Maintain the sequential order of activities as presented in the requirement unless a branch, loop, or fork is explicitly indicated.\n8. Generate the PlantUML code reflecting the extracted structure."
+    },
+    {
+      "section": "knowledge",
+      "operation": "replace",
+      "content": "Use 'if/then/else/endif' for conditional branches. Use 'switch/switch/endswitch' for multi-branch choices. Use 'fork/fork again/end fork' only for explicitly concurrent tasks or parallel activities. Use 'repeat/repeat while' for polling, retry, or until-style loops, and 'while/endwhile' for condition-checked loops. Ensure every opened control structure is correctly paired and closed to prevent compilation failures."
+    }
+  ],
+  "rationale": "The current prompt has empty workflow and knowledge sections, leading to low node and relation recall/precision. Replacing the workflow section provides step-by-step extraction rules that prevent speculative additions, preserve atomic activity granularity, and explicitly handle conditional, parallel, and loop flows. Replacing the knowledge section provides the necessary PlantUML syntax rules for control structures, ensuring correct pairing and compilation.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}

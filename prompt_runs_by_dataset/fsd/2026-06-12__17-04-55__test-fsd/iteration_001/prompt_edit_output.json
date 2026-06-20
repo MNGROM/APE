@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Read the input requirement and identify the core activities and control flow directly stated or immediately implied by the text.\n2. Strictly extract activities explicitly mentioned in the input. Do not invent, infer, or add implementation steps, UI interactions, or technical details not present in the requirement.\n3. Preserve the original phrasing from the input requirement when labeling activity nodes and conditions. Do not paraphrase, reword, or substitute synonyms.\n4. Map mutually exclusive conditional branches (e.g., multiple distinct conditions where exactly one applies) to the PlantUML switch/case/endswitch construct. Use if/else/endif only for standard binary or nested conditional logic. Do not use partition blocks as a substitute for proper control flow constructs."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "PlantUML switch/case/endswitch is used to model mutually exclusive conditional paths where exactly one branch is taken based on a condition. This differs from if/else/endif, which is used for standard binary branching. Avoid using partition blocks to group conditional logic; always use the appropriate control flow construct (switch/case or if/else). Over-specification, such as adding steps or details not present in the input, violates the requirement scope and must be avoided."
+    }
+  ],
+  "rationale": "The edits address the three major failure patterns: hallucinated over-specification is prevented by strict extraction rules, missing switch constructs are resolved by explicitly defining when and how to use switch/case versus if/else, and inconsistent labeling is fixed by mandating exact phrasing preservation from the input text.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}
+```

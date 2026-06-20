@@ -1,0 +1,128 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Read the requirement and identify every explicitly stated activity, trigger, condition, task, thread, loop, retry, logging step, and terminal outcome.\n2. Preserve atomic actions as separate activity nodes when the requirement lists them separately; do not merge multiple distinct steps into a single coarse-grained node unless the input clearly groups them as one action.\n3. Do not add speculative implementation steps, UI interactions, or error handling that are not explicitly stated in the requirement.\n4. Identify conditional branches using keywords like 'if', 'optionally', 'either/or', or 'otherwise' and model them explicitly as decision nodes.\n5. Identify concurrent or parallel tasks using keywords like 'simultaneously', 'in parallel', or 'at the same time' and model them using fork constructs.\n6. Identify iterative, polling, or retry logic and model it using loop constructs.\n7. Maintain the sequential order of activities as presented in the requirement unless a branch, loop, or fork is explicitly indicated.\n8. Generate the PlantUML code reflecting the extracted structure.\n\n9. Strictly decompose compound sentences or listed steps into separate, atomic activity nodes. If a sentence contains multiple verbs or sequential actions (e.g., 'go to X and choose Y'), each action must be a distinct node with a sequential control-flow relation between them.\n10. Extract and use the exact actions, goals, and conditions stated in the requirement verbatim, even if they seem high-level. Never invent speculative implementation steps, UI interactions, or error handling to replace or expand upon the stated activities.\n11. When the requirement lists multiple concurrent items, displayed details, or alternative options, model them using fork or switch constructs rather than flattening them into a sequential flow.\n12. Detect explicit system, actor, or component assignments in the requirement and use PlantUML partition constructs to group activities under their respective responsible entities.\n13. Decompose compound conditions joined by 'and'/'or' into separate, sequential or nested decision nodes, preserving the explicit evaluation of each individual condition.",
+    "knowledge": "Use 'if/then/else/endif' for conditional branches. Use 'switch/switch/endswitch' for multi-branch choices. Use 'fork/fork again/end fork' only for explicitly concurrent tasks or parallel activities. Use 'repeat/repeat while' for polling, retry, or until-style loops, and 'while/endwhile' for condition-checked loops. Ensure every opened control structure is correctly paired and closed to prevent compilation failures.\n\nUse PlantUML 'partition' constructs to group activities under their explicitly assigned actors, systems, or components. When a requirement lists multiple concurrent items, displayed details, or alternative options, represent them using 'fork/fork again/end fork' or 'switch/switch/endswitch' rather than sequential activities."
+  },
+  "failure_analysis": {
+    "summary": "The batch suffers from severe wording and granularity misalignment between generated and ground-truth diagrams. While the model correctly identifies the high-level actions and control structures, it consistently paraphrases activity labels and merges or splits steps differently than the gold standard, leading to near-zero node and relation overlap. It also over-applies partition constructs and invents speculative implementation steps not present in the requirements.",
+    "error_patterns": [
+      {
+        "name": "paraphrased_activity_labels",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "us-0129",
+          "pure-0026",
+          "us-0056"
+        ],
+        "problem": "The model rephrases requirement text into its own wording instead of extracting verbatim phrases, causing deterministic node precision and recall to drop to zero even when the semantic intent is correct (e.g., 'Get results' vs 'Record results', 'Correct problems' vs 'Correct problems for the member').",
+        "suggested_prompt_direction": "Strengthen the instruction to extract and use the exact noun and verb phrases from the requirement verbatim as activity labels, avoiding any paraphrasing, summarization, or elaboration.",
+        "target_sections": [
+          "workflow",
+          "input"
+        ]
+      },
+      {
+        "name": "merged_compound_steps",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0015",
+          "bp-0022"
+        ],
+        "problem": "The model merges sequential UI actions and system responses described in separate sentences or list items into single coarse-grained nodes (e.g., combining 'Go to window' and 'Click button' into one activity, or merging multiple distinct display items into one 'Display list' node).",
+        "suggested_prompt_direction": "Emphasize that sequential sentences, numbered steps, or distinct UI interactions must be decomposed into separate activity nodes with explicit sequential control-flow edges between them, even if they seem logically grouped.",
+        "target_sections": [
+          "workflow"
+        ]
+      },
+      {
+        "name": "speculative_implementation_steps",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "us-0056",
+          "lmc-0016"
+        ],
+        "problem": "The model adds speculative implementation details not stated in the requirement, such as 'Receive input', 'Select a profile', or 'Save changes', which appear as extra nodes and disrupt the correct relation flow.",
+        "suggested_prompt_direction": "Reinforce the prohibition against adding any steps not explicitly stated in the text, including assumed pre-conditions, UI navigation, or post-action saves, unless they are explicitly mentioned in the input.",
+        "target_sections": [
+          "workflow"
+        ]
+      },
+      {
+        "name": "missing_or_flattened_control_structures",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "bp-0015",
+          "bp-0022",
+          "lmc-0050"
+        ],
+        "problem": "The model flattens explicitly concurrent items (like lists of displayed details) into sequential flows and misses optional conditional branches (like 'if more information'), failing to use fork/switch constructs as required by the ground truth.",
+        "suggested_prompt_direction": "Add explicit workflow guidance to detect lists of concurrently displayed items or alternative options and model them using fork or switch constructs, and to model any optional or conditional hints as explicit decision nodes.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "overuse_of_partition_constructs",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "bp-0015",
+          "pure-0082",
+          "us-0129",
+          "pure-0026"
+        ],
+        "problem": "The model frequently wraps activities in partition constructs based on inferred actors (User, System, etc.), which alters the node matching and is often not present in the ground truth, leading to extra nodes and disrupted relations.",
+        "suggested_prompt_direction": "Instruct the model to only use partition constructs when the requirement explicitly and unambiguously assigns activities to named actors or components, and to avoid inferring or assigning actors when not explicitly stated.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML snippets into the prompt.",
+      "Do not add dataset-specific examples or case-specific vocabulary.",
+      "Do not add speculative implementation steps merely to increase node recall.",
+      "Do not instruct the model to memorize specific structural templates that mirror the ground truth exactly."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

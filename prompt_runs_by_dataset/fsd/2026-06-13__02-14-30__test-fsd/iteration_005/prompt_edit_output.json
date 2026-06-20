@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities strictly from the requirement text. Create one activity node for each distinct action or state explicitly mentioned; do not invent UI interactions, system validations, implicit prerequisites, setup steps, or termination steps (e.g., 'Exit', 'Start up') that are not directly stated.\n2. Keep compound actions joined by 'and' as a single activity node unless the requirement uses explicit sequential markers (e.g., 'then', 'followed by') or lists discrete sequential steps. Do not decompose a single cohesive action into granular sub-steps.\n3. Identify control-flow keywords in the requirement (e.g., if, unless, alternatively, simultaneously, in parallel) to determine branching and concurrency before writing PlantUML.\n4. Map the identified control-flow semantics to the correct PlantUML constructs. When a condition specifies resulting states or allowed/disallowed outcomes, model those outcomes as explicit activity nodes within the branches rather than omitting them or treating them as notes."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "When a requirement states a condition and specifies the resulting states or outcomes, model the condition as an if/else branch and the outcomes as explicit activity nodes within the respective branches. Do not invent prerequisite steps (e.g., 'Select file'), computational steps (e.g., 'Compute value'), or termination steps (e.g., 'Exit') unless they are explicitly stated as actions in the requirement."
+    }
+  ],
+  "rationale": "The workflow edit directly addresses the over-decomposition and hallucination failures by refining the extraction and decomposition rules to keep compound actions as single nodes and broadly forbidding inferred implicit steps. The knowledge edit adds reusable modeling principles for explicitly representing conditional outcomes and reinforces the constraint against inventing unstated actions.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

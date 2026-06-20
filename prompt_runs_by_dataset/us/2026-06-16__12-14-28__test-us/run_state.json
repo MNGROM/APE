@@ -1,0 +1,21 @@
+{
+  "updated_at": "2026-06-16T12:29:55",
+  "phase": "test_eval:us",
+  "attempt": 1,
+  "max_retries": 20,
+  "retryable": true,
+  "rate_limited": false,
+  "wait_seconds": 30,
+  "retry_at": "2026-06-16T12:30:25",
+  "context": {
+    "dataset": "us",
+    "case_id": "us-0025"
+  },
+  "error": {
+    "type": "ProviderHTTPError",
+    "prefix": "LLM",
+    "status_code": 500,
+    "provider_error_code": "1234",
+    "body_excerpt": "{\"error\":{\"code\":\"1234\",\"message\":\"网络错误，错误id：20260616122913c5b6e257cf0f46ae，请稍后重试\"}}"
+  }
+}

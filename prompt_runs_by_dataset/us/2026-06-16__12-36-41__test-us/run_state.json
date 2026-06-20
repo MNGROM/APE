@@ -1,0 +1,21 @@
+{
+  "updated_at": "2026-06-16T12:48:33",
+  "phase": "iteration_003:baseline_gate_eval",
+  "attempt": 1,
+  "max_retries": 20,
+  "retryable": true,
+  "rate_limited": false,
+  "wait_seconds": 31,
+  "retry_at": "2026-06-16T12:49:04",
+  "context": {
+    "dataset": "bp",
+    "case_id": "bp-0009"
+  },
+  "error": {
+    "type": "ProviderHTTPError",
+    "prefix": "LLM",
+    "status_code": 500,
+    "provider_error_code": "1234",
+    "body_excerpt": "{\"error\":{\"code\":\"1234\",\"message\":\"网络错误，错误id：20260616124751067ece77b9a640dd，请稍后重试\"}}"
+  }
+}

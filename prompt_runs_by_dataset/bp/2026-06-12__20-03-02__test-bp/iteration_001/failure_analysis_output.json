@@ -1,0 +1,98 @@
+```json
+{
+  "summary": "The batch suffers from extremely low node and relation metrics primarily because the prompt lacks guidance on activity granularity and strict adherence to the input text. The generation model frequently over-specifies simple requirements by hallucinating implementation details, splits or merges atomic actions incorrectly, and embeds actor or system names into activity nodes instead of using PlantUML structural features like partitions or swimlanes. Additionally, the model struggles with complex control flows (forks, nested conditions) and PlantUML syntax, producing invalid code.",
+  "error_patterns": [
+    {
+      "name": "hallucinated_implementation_steps",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0028",
+        "us-0062",
+        "us-0099",
+        "lmc-0025"
+      ],
+      "problem": "For simple or high-level requirements, the model fabricates detailed implementation steps (e.g., adding loops, checks, and sub-tasks) that are not stated in the input, leading to very low node precision and extra relations.",
+      "suggested_prompt_direction": "Instruct the agent to extract only activities and conditions explicitly stated in the input requirement and strictly forbid inventing unstated implementation details, sub-steps, or speculative control flows.",
+      "target_sections": [
+        "workflow",
+        "agent task"
+      ]
+    },
+    {
+      "name": "actor_embedded_in_activity_nodes",
+      "severity": "high",
+      "evidence_case_ids": [
+        "pure-0007",
+        "fsd-0108"
+      ],
+      "problem": "The model includes actor or system names within the activity text (e.g., 'Central Trading System: Save...') instead of using PlantUML partitions or swimlanes, causing a mismatch with the ground truth and zero node overlap.",
+      "suggested_prompt_direction": "Require the agent to separate actors or systems from activity actions by mapping actors to PlantUML partitions or swimlanes, keeping the activity node text purely action-oriented.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "merged_atomic_activities",
+      "severity": "high",
+      "evidence_case_ids": [
+        "fsd-0095",
+        "fsd-0108"
+      ],
+      "problem": "Explicitly listed parallel checks or sequential actions in the input are merged into single broad activity nodes (e.g., merging 'Check ID', 'Check DLC', 'Check CRC' into 'Validate CAN Frame'), causing low node recall and missing parallel relations.",
+      "suggested_prompt_direction": "Instruct the agent to keep explicitly listed actions, checks, or triggers as separate activity or decision nodes unless the input clearly presents them as a single undivided action.",
+      "target_sections": [
+        "workflow",
+        "input"
+      ]
+    },
+    {
+      "name": "missing_or_wrong_parallel_forks",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "fsd-0095",
+        "fsd-0108"
+      ],
+      "problem": "Concurrent tasks or parallel checks described in the input are modeled sequentially or omitted entirely, failing to represent the required fork/end fork control-flow relations.",
+      "suggested_prompt_direction": "Add workflow guidance that requires the agent to identify concurrent or parallel tasks in the input and explicitly model them using PlantUML fork/end fork constructs.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "plantuml_syntax_and_construct_errors",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "fsd-0095",
+        "rac-0019"
+      ],
+      "problem": "Generated PlantUML code contains syntax errors or uses invalid/unsupported constructs (e.g., 'switch/case', incorrect 'repeat until' arrows), causing compilation failures.",
+      "suggested_prompt_direction": "Provide knowledge constraints that restrict the agent to standard PlantUML activity diagram syntax (if/else/endif, repeat/while, fork/end fork) and explicitly forbid experimental or unsupported constructs.",
+      "target_sections": [
+        "knowledge",
+        "output"
+      ]
+    },
+    {
+      "name": "flattened_nested_conditionals",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "rac-0019"
+      ],
+      "problem": "Deeply nested conditional logic described in the input is flattened into sequential or disconnected if-statements, breaking the required control-flow hierarchy and relation recall.",
+      "suggested_prompt_direction": "Instruct the agent to carefully preserve the nesting and hierarchy of conditional logic as described in the input, mapping embedded conditions to nested PlantUML if/else/endif blocks.",
+      "target_sections": [
+        "workflow",
+        "input"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML snippets into the prompt.",
+    "Do not add dataset-specific examples or case-specific vocabulary.",
+    "Do not add speculative implementation steps merely to increase node recall.",
+    "Do not hardcode formatting rules that override standard PlantUML partition/swimlane syntax."
+  ]
+}
+```

@@ -1,0 +1,1205 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 30
+- syntax_pass_rate: 0.9333
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.6790
+- node_recall: 0.4716
+- node_f1: 0.5566
+- relation_precision: 0.4213
+- relation_recall: 0.2912
+- relation_f1: 0.3444
+- plantuml_compilation_pass_rate: 0.9333
+- llm_element_evaluated: 30.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.9072
+- llm_node_recall: 0.6468
+- llm_node_f1: 0.7503
+- llm_relation_precision: 0.5341
+- llm_relation_recall: 0.3777
+- llm_relation_f1: 0.4387
+
+## Failure Types
+- missing_activity: 30
+- missing_or_wrong_relation: 30
+- extra_or_wrong_relation: 30
+- wrong_parallel: 29
+- extra_activity: 28
+- wrong_loop: 25
+- syntax_error: 2
+
+## Representative Failure Cases
+### fsd-0019
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.4255
+- relation_f1: 0.3000
+- llm_element_status: success
+- llm_node_f1: 0.7755
+- llm_relation_f1: 0.4063
+- missing_nodes:
+  - employ fsm to orchestrate interactions between
+  - high-priority isrs
+  - lower-priority deferred tasks managed by rtos
+  - overarching fail-safe policies
+  - fsm transitions to redundant sensor path
+  - persistent fault?
+  - trigger recovery loop
+  - execute data acquisition
+- extra_nodes:
+  - transition to redundant sensor path
+  - perform crc check for error detection
+  - execute data acquisition under priority-based scheduler
+  - execute calibration tasks under priority-based scheduler
+  - employ mutex to protect shared sensor control registers
+  - apply exponential backoff strategy to limit retries
+  - data normalization occurs or maximum attempt threshold is reached
+  - final arbitration by fsm potentially involving higher-level controller (fadec or vehicle bms)
+- missing_relations:
+  - employ fsm to orchestrate interactions between -> high-priority isrs [fork]
+  - employ fsm to orchestrate interactions between -> lower-priority deferred tasks managed by rtos [fork]
+  - employ fsm to orchestrate interactions between -> overarching fail-safe policies [fork]
+  - high-priority isrs -> detcet anomalous air pressure data via monitored isr? [merge]
+  - lower-priority deferred tasks managed by rtos -> detcet anomalous air pressure data via monitored isr? [merge]
+  - overarching fail-safe policies -> detcet anomalous air pressure data via monitored isr? [merge]
+  - calibration fails? -> fsm transitions to redundant sensor path [yes]
+  - fsm transitions to redundant sensor path -> initialize data acquisition
+- input_excerpt:
+  The embedded control platform employs a finite-state machine (FSM) to orchestrate complex interactions between high-priority Interrupt Service Routines (ISRs), lower-priority deferred tasks managed by a Real-Time Operating System (RTOS), and overarching fail-safe policies. Upon detection of anomalous air pressure data via a monitored ISR, the system initiates a sensor calibration sequence. Should this calibration fail, the FSM transitions to a redundant sensor path, where data acquisition is initialized and a concurrent data verification process—scheduled via RTOS priority queues—is launched, incorporating a CRC check for error detection. If the CRC validates the redundant data, the system r
+- generated_excerpt:
+  @startuml start :Detect anomalous air pressure data via monitored ISR; :Initiate sensor calibration sequence; if (Calibration fails?) then (yes)   :Transition to redundant sensor path;   :Initialize data acquisition;   fork     :Launch concurrent data verification process scheduled via RTOS priority queues;     :Perform CRC check for error detection;   end fork   if (CRC validates redundant data?) then (yes)     :Resume normal operation;   else (no - persistent fault)     repeat       fork         :Execute data acquisition under priority-based scheduler;       fork again         :Execute calibration tasks under priority-based scheduler;       end fork       :Employ mutex to protect shared se
+### fsd-0017
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.5106
+- relation_f1: 0.5091
+- llm_element_status: success
+- llm_node_f1: 0.7843
+- llm_relation_f1: 0.4746
+- missing_nodes:
+  - avionics stack (fms/fadec) executes on rtos
+  - high-frequency isr-driven sensor samples
+  - lower-priority worker tasks
+  - realize control law computations
+  - dedicated telemetry monitor operates within periodic timer-interrupt loop
+  - perform multi-stage validation of flight data
+  - format correctness
+  - data completeness
+- extra_nodes:
+  - fms and fadec execute on deterministic rtos with hardware and task-level redundancy
+  - perform control law computations via high-frequency isr-driven sensor sampling
+  - perform control law computations via lower-priority worker tasks
+  - telemetry monitor performs multi-stage validation of flight data within periodic timer-interrupt loop
+  - check format correctness
+  - check data completeness
+  - anomaly detected?
+  - root-cause investigation fails?
+- missing_relations:
+  - avionics stack (fms/fadec) executes on rtos -> high-frequency isr-driven sensor samples [fork]
+  - avionics stack (fms/fadec) executes on rtos -> lower-priority worker tasks [fork]
+  - high-frequency isr-driven sensor samples -> realize control law computations [merge]
+  - lower-priority worker tasks -> realize control law computations [merge]
+  - realize control law computations -> dedicated telemetry monitor operates within periodic timer-interrupt loop
+  - perform multi-stage validation of flight data -> source legitimacy
+  - format correctness -> data completeness
+  - fail? -> log structured audit event to ring buffer [yes]
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), executes on a deterministic Real-Time Operating System (RTOS) featuring hardware and task-level redundancy. Control law computations are realized through high-frequency ISR-driven sensor sampling and lower-priority worker tasks. A dedicated telemetry monitor, operating within a periodic timer-interrupt loop, performs multi-stage validation of flight data, sequentially checking for source legitimacy, format correctness, data completeness, and logical consistency. Upon detecting an anomaly, such as a data conflict, the system initiates a root-cause investigation; if this fails, 
+- generated_excerpt:
+  @startuml start :FMS and FADEC execute on deterministic RTOS with hardware and task-level redundancy; :Perform control law computations via high-frequency ISR-driven sensor sampling; :Perform control law computations via lower-priority worker tasks; :Telemetry monitor performs multi-stage validation of flight data within periodic timer-interrupt loop; :Check source legitimacy; :Check format correctness; :Check data completeness; :Check logical consistency; if (Anomaly detected?) then (yes)   :Initiate root-cause investigation;   if (Root-cause investigation fails?) then (yes)     :Log structured audit event to ring buffer;     :Trigger automatic data retransmission mechanism;     :Watchdog-m
+### fsd-0010
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3429
+- relation_f1: 0.0870
+- llm_element_status: success
+- llm_node_f1: 0.5641
+- llm_relation_f1: 0.1200
+- missing_nodes:
+  - validate incoming can frames
+  - check id
+  - check dlc
+  - check crc
+  - decouple
+  - validate
+  - confirm adherence to security protocol
+  - adequate system resources
+- extra_nodes:
+  - validate incoming can frames (id dlc crc)
+  - successful validation confirming security protocol adequate system resources non-full buffer system state not in low-power mode nor fault condition (pmic/bms)?
+  - write resultant structured data to protected shared memory area (access synchronized via mutex)
+- missing_relations:
+  - validate incoming can frames -> check id [fork]
+  - validate incoming can frames -> check dlc [fork]
+  - validate incoming can frames -> check crc [fork]
+  - check id -> place into lock-free ring buffer [merge]
+  - check dlc -> place into lock-free ring buffer [merge]
+  - check crc -> place into lock-free ring buffer [merge]
+  - place into lock-free ring buffer -> decouple
+  - decouple -> validate
+- input_excerpt:
+  The embedded communications layer validates incoming CAN frames, checking the ID, DLC, and CRC, before placing them into a lock-free ring buffer for decoupling. Upon successful validation, which also confirms adherence to the security protocol, adequate system resources, a non-full buffer, and that the system state is neither in a low-power mode nor a fault condition as monitored by the PMIC/BMS, a primary processing task is spawned. This task utilizes concurrent threads—one for the cyclic parsing and format conversion of the data, and another for writing the resultant structured data to a protected shared memory area, with access synchronized via a mutex. Should the parsing logic detect an 
+- generated_excerpt:
+  @startuml start :Validate incoming CAN frames (ID, DLC, CRC); :Place frames into lock-free ring buffer; if (Successful validation\nconfirming security protocol,\nadequate system resources,\nnon-full buffer,\nsystem state not in low-power mode\nnor fault condition (PMIC/BMS)?) then (yes)   fork     :Cyclic parsing and format conversion of the data;   fork again     :Write resultant structured data to protected shared memory area (access synchronized via mutex);   end fork   :Re-arm CAN ISR;   :Await subsequent frames; else (no)   fork     :Cyclic error logging with exponential backoff for retries;   fork again     :Issue status feedback message to upper-layer application via priority queue to
+### fsd-0006
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3830
+- relation_f1: 0.3175
+- llm_element_status: success
+- llm_node_f1: 0.5882
+- llm_relation_f1: 0.5588
+- missing_nodes:
+  - govern pwm fans
+  - govern liquid-cooling pump duty cycles
+  - multi-source fault condition triggered by deviations in
+  - temperature
+  - pressure
+  - humidity
+  - system rail voltage from pmic
+  - rf signal strength
+- extra_nodes:
+  - govern pwm fan speeds and liquid-cooling pump duty cycles
+  - multi-source fault condition triggered by deviations in temperature pressure humidity system rail voltage from the pmic rf signal strength or data uplink rate?
+  - high-priority isr for real-time environmental monitoring
+  - medium-priority task for cyclic equipment status checks using a watchdog
+  - lower-priority thread for continuous system load assessment and resource optimization via a mutex-protected priority queue
+  - escalation?
+  - asynchronously record structured audit logs to a ring buffer for eventual flushing to non-volatile storage within i/o budget limits
+  - periodically evaluate the system performance envelope while updating the fault diagnosis report
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller executes as state machine on rtos -> govern liquid-cooling pump duty cycles [fork]
+  - govern pwm fans -> multi-source fault condition triggered by deviations in [merge]
+  - govern liquid-cooling pump duty cycles -> multi-source fault condition triggered by deviations in [merge]
+  - multi-source fault condition triggered by deviations in -> temperature [fork]
+  - multi-source fault condition triggered by deviations in -> pressure [fork]
+  - multi-source fault condition triggered by deviations in -> humidity [fork]
+  - multi-source fault condition triggered by deviations in -> system rail voltage from pmic [fork]
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fan speeds and liquid-cooling pump duty cycles. A multi-source fault condition—triggered by deviations in temperature, pressure, humidity, system rail voltage from the PMIC, RF signal strength, or data uplink rate—activates the level-1 fault handler. This initiates concurrent tasks: a high-priority ISR for real-time environmental monitoring, a medium-priority task for cyclic equipment status checks using a watchdog, and a lower-priority thread for continuous system load assessment and resource optimization via a mutex-protected priority queue. Upon escalation, the level-2 fault management routine spawns 
+- generated_excerpt:
+  @startuml start :Execute thermal management state machine on RTOS; :Govern PWM fan speeds and liquid-cooling pump duty cycles; if (Multi-source fault condition triggered by deviations in temperature, pressure, humidity, system rail voltage from the PMIC, RF signal strength, or data uplink rate?) then (yes)   :Activate level-1 fault handler;   fork     :High-priority ISR for real-time environmental monitoring;   fork again     :Medium-priority task for cyclic equipment status checks using a watchdog;   fork again     :Lower-priority thread for continuous system load assessment and resource optimization via a mutex-protected priority queue;   end fork   if (Escalation?) then (yes)     :Level-2
+### fsd-0020
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4000
+- relation_f1: 0.3704
+- llm_element_status: success
+- llm_node_f1: 0.7755
+- llm_relation_f1: 0.5614
+- missing_nodes:
+  - avionics stack (fms/fadec) operates on deterministic rtos
+  - high-frequency isrs manage control law execution
+  - lower-priority worker tasks process
+  - sensor a reports anomaly?
+  - altitude > 10 000 feet and air pressure substandard?
+  - trigger fault condition
+  - condition incoming stream
+  - critical tasks
+- extra_nodes:
+  - execute control law via high-frequency isrs to sample sensor data
+  - process sampled data by lower-priority worker tasks
+  - sensor a reports an anomaly? altitude > 10 000 feet? air pressure reading is substandard?
+  - dispatch cooling system diagnostics as concurrent preemptible thread
+  - dispatch fuel pressure monitoring as concurrent preemptible thread
+  - manage threads via priority queue
+  - any parameter breaches its safety envelope during real-time analysis?
+  - uplink fault code to ground control center via can bus using exponential backoff retry mechanism
+- missing_relations:
+  - avionics stack (fms/fadec) operates on deterministic rtos -> high-frequency isrs manage control law execution
+  - high-frequency isrs manage control law execution -> lower-priority worker tasks process
+  - lower-priority worker tasks process -> sensor a reports anomaly?
+  - altitude > 10 000 feet and air pressure substandard? -> trigger fault condition [yes]
+  - trigger fault condition -> initiate emergency processing module
+  - apply digital filter in real-time via ring buffer -> condition incoming stream
+  - condition incoming stream -> multiple submodules require synchronized activation?
+  - initialize engine monitoring unit -> critical tasks
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), operates on a deterministic Real-Time Operating System (RTOS) with redundant channels. Control law execution is managed through high-frequency ISRs that sample sensor data, which is subsequently processed by lower-priority worker tasks. A fault condition is triggered when sensor A reports an anomaly, provided the altitude exceeds 10,000 feet and the air pressure reading is substandard. This initiates the emergency processing module, which performs environmental data acquisition at a preset frequency, applying a digital filter in real-time via a ring buffer to condition the inc
+- generated_excerpt:
+  @startuml start :Execute control law via high-frequency ISRs to sample sensor data; :Process sampled data by lower-priority worker tasks; if (Sensor A reports an anomaly?\nAltitude > 10,000 feet?\nAir pressure reading is substandard?) then (yes)   :Initiate emergency processing module;   :Perform environmental data acquisition at preset frequency;   :Apply digital filter in real-time via ring buffer;   if (Multiple submodules require synchronized activation?) then (yes)     :Initialize engine monitoring unit;   else (no)   endif;   fork     :Dispatch cooling system diagnostics as concurrent preemptible thread;   fork again     :Dispatch fuel pressure monitoring as concurrent preemptible thre
+### fsd-0003
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4091
+- relation_f1: 0.1961
+- llm_element_status: success
+- llm_node_f1: 0.8519
+- llm_relation_f1: 0.4727
+- missing_nodes:
+  - thermal management controller executes as state machine on rtos
+  - govern pwm fans
+  - govern liquid-cooling loop
+  - initialization
+  - spawn concurrent prioritized tasks
+  - enter uplink phase
+  - high-priority task packages telemetry with crc
+  - dispatch over can bus
+- extra_nodes:
+  - check temperature sensor integrity
+  - package telemetry with crc and dispatch over can bus
+  - monitor communication link status in real-time
+  - implement bounded retries with exponential backoff for fault handling
+  - execute sensor fusion
+  - execute calibration
+  - execute out-of-range checks
+  - critical fault?
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller executes as state machine on rtos -> govern liquid-cooling loop [fork]
+  - thermal management controller executes as state machine on rtos -> input signal validation [fork]
+  - govern pwm fans -> system verifies main processor s successful self-test [merge]
+  - govern liquid-cooling loop -> system verifies main processor s successful self-test [merge]
+  - initialization -> system verifies main processor s successful self-test [merge]
+  - input signal validation -> initialization
+  - check temperature and pressure sensor integrity -> spawn concurrent prioritized tasks
+- input_excerpt:
+  Operating as a state machine on a real-time operating system (RTOS), the thermal management controller governs PWM fans and liquid-cooling loops, with initialization commencing upon validation of the input signal. The system subsequently verifies the main processor's successful self-test before sequentially checking temperature and pressure sensor integrity. Upon passing these diagnostics, it spawns concurrent, prioritized tasks for periodic sensor data acquisition—handled via a protected ring buffer—and continuous system health monitoring. Following data collection, the system enters an uplink phase, where a high-priority task packages telemetry with a CRC and dispatches it over the CAN bus
+- generated_excerpt:
+  @startuml start :Validate input signal; :Verify main processor successful self-test; :Check temperature sensor integrity; :Check pressure sensor integrity; fork   :Periodic sensor data acquisition via protected ring buffer; fork again   :Continuous system health monitoring; end fork fork   :Package telemetry with CRC and dispatch over CAN bus; fork again   :Monitor communication link status in real-time; end fork :Implement bounded retries with exponential backoff for fault handling; :Execute sensor fusion; :Execute calibration; :Execute out-of-range checks; if (Critical fault?) then (yes)   :Engage redundancy;   :Initiate controlled cool-down sequence via FADEC or BMS; endif :Update operati
+### fsd-0008
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4407
+- relation_f1: 0.3478
+- llm_element_status: success
+- llm_node_f1: 0.7937
+- llm_relation_f1: 0.5676
+- missing_nodes:
+  - vehicle ignition
+  - id
+  - dlc
+  - crc
+  - startup sequence managed by safety-critical task
+  - < threshold?
+  - spawns high-priority concurrent tasks
+  - perpetually monitor battery state of charge
+- extra_nodes:
+  - validate incoming can frames for dlc
+  - validate incoming can frames for crc
+  - below threshold?
+  - monitor battery state of charge
+  - initialize engine management system (fadec)
+  - cycle strategy algorithm for automatic start-stop optimization
+  - cycle distribution algorithm for energy recovery
+  - telemetry monitor operates in fixed-period loop with bounded retries and exponential backoff on faults
+- missing_relations:
+  - vehicle ignition -> validate incoming can frames for
+  - validate incoming can frames for -> id [fork]
+  - validate incoming can frames for -> crc [fork]
+  - id -> queue via lock-free ring buffers [merge]
+  - dlc -> queue via lock-free ring buffers [merge]
+  - crc -> queue via lock-free ring buffers [merge]
+  - queue via lock-free ring buffers -> startup sequence managed by safety-critical task
+  - startup sequence managed by safety-critical task -> check primary battery rail against preset threshold using pmic
+- input_excerpt:
+  Upon vehicle ignition, the embedded communications layer validates incoming CAN frames for ID, DLC, and CRC before queuing them via lock-free ring buffers. The startup sequence is managed by a safety-critical task which first checks the primary battery rail voltage against a preset threshold using the PMIC; if below threshold, it deterministically executes a low-rail voltage protection mechanism. Should the rail voltage fail to recover, the system initializes a backup power switching procedure via the BMS, during which rail voltage fluctuations are monitored in real-time, triggering an immediate alarm if deviations exceed the safe range. Once backup power is stable and confirmed, the RTOS sc
+- generated_excerpt:
+  @startuml start :Validate incoming CAN frames for ID; :Validate incoming CAN frames for DLC; :Validate incoming CAN frames for CRC; :Queue CAN frames via lock-free ring buffers; :Check primary battery rail voltage against preset threshold using PMIC; if (Below threshold?) then (Yes)   :Execute low-rail voltage protection mechanism;   if (Rail voltage fails to recover?) then (Yes)     :Initialize backup power switching procedure via BMS;     :Monitor rail voltage fluctuations in real-time;     if (Deviations exceed safe range?) then (Yes)       :Trigger immediate alarm;     endif     :Confirm backup power is stable;   endif endif fork   :Monitor battery state of charge;   :Cyclically execute 
+### fsd-0005
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4483
+- relation_f1: 0.2466
+- llm_element_status: success
+- llm_node_f1: 0.7937
+- llm_relation_f1: 0.5128
+- missing_nodes:
+  - check id
+  - check dlc
+  - check crc fields
+  - enqueue into lock-free multi-producer ring buffers
+  - subsequent processing
+  - execute preliminary diagnostic isr
+  - multi-layer fault analysis task
+  - pmic bms or fadec
+- extra_nodes:
+  - validate incoming can frames by checking the dlc
+  - validate incoming can frames by checking the crc
+  - enqueue can frames into lock-free multi-producer ring buffers for subsequent processing
+  - execute a preliminary diagnostic isr to isolate the source
+  - sequentially interrogate the pmic
+  - sequentially interrogate the bms or fadec
+  - sequentially interrogate the communication interfaces
+  - sequentially interrogate the sensor data pipelines
+- missing_relations:
+  - validate incoming can frames -> check id [fork]
+  - check id -> enqueue into lock-free multi-producer ring buffers [merge]
+  - check dlc -> enqueue into lock-free multi-producer ring buffers [merge]
+  - check crc fields -> enqueue into lock-free multi-producer ring buffers [merge]
+  - enqueue into lock-free multi-producer ring buffers -> subsequent processing
+  - subsequent processing -> detect sensor signal anomaly?
+  - inconclusive? -> multi-layer fault analysis task [yes]
+  - multi-layer fault analysis task -> interrogate via protected health-monitoring mutex
+- input_excerpt:
+  The embedded communications subsystem validates incoming CAN frames by checking the ID, DLC, and CRC fields before enqueuing them into lock-free, multi-producer ring buffers for subsequent processing. Upon detecting a sensor signal anomaly, the system executes a preliminary diagnostic ISR to isolate the source; if inconclusive, a multi-layer fault analysis task is initiated, sequentially interrogating the PMIC, BMS or FADEC, communication interfaces, and sensor data pipelines via a protected health-monitoring mutex. Within this diagnostic state machine, any identified potential fault triggers a parallel monitoring process that tracks key parameters using an exponential backoff strategy until
+- generated_excerpt:
+  @startuml start :Validate incoming CAN frames by checking the ID; :Validate incoming CAN frames by checking the DLC; :Validate incoming CAN frames by checking the CRC; :Enqueue CAN frames into lock-free, multi-producer ring buffers for subsequent processing; if (Sensor signal anomaly detected?) then (yes)   :Execute a preliminary diagnostic ISR to isolate the source;   if (Inconclusive?) then (yes)     :Acquire protected health-monitoring mutex;     :Sequentially interrogate the PMIC;     :Sequentially interrogate the BMS or FADEC;     :Sequentially interrogate the communication interfaces;     :Sequentially interrogate the sensor data pipelines;     :Release protected health-monitoring mute
+### fsd-0014
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4727
+- relation_f1: 0.2899
+- llm_element_status: success
+- llm_node_f1: 0.8621
+- llm_relation_f1: 0.7027
+- missing_nodes:
+  - avionics stack(fms/fadec) executes on deterministic rtos
+  - high-priority task samples bms via pmic
+  - lower-priority task checks charging status
+  - initiate exponential backoff sequence
+  - enter deep energy-saving state
+  - temperature > safety threshold?
+  - activate cooling system task
+  - mutex-protected handshake to fadec
+- extra_nodes:
+  - sample bms via pmic
+  - value exceeds safety threshold?
+  - activate cooling system task with mutex-protected handshake to fadec
+  - initialize multimedia system
+  - check charging status
+  - initiate exponential backoff sequence to enter deep energy-saving state
+  - validate system integrity by iterating through ring buffer of sensor data protected by mutexes
+  - monitor vehicle speed and acceleration
+- missing_relations:
+  - avionics stack(fms/fadec) executes on deterministic rtos -> vehicle initialization
+  - vehicle initialization -> high-priority task samples bms via pmic
+  - high-priority task samples bms via pmic -> state of charge < 20 ?
+  - state of charge < 20 ? -> lower-priority task checks charging status [yes]
+  - enter low-rail voltage mode -> health monitoring task iterates through ring buffer of sensor data [merge]
+  - lower-priority task checks charging status -> no charger connected?
+  - no charger connected? -> health monitoring task iterates through ring buffer of sensor data [no]
+  - prompt user -> initiate exponential backoff sequence
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), executes on a deterministic RTOS with hardware redundancy. Upon vehicle initialization, a high-priority task samples the BMS via the PMIC; if the state of charge is below 20%, the system enters a low-rail voltage mode. Concurrently, a lower-priority task checks the charging status, and if no charger is connected, it prompts the user and initiates an exponential backoff sequence to enter a deep energy-saving state. If the state of charge is sufficient, the system proceeds to sample the engine temperature via a dedicated ISR. Should this value exceed the safety threshold, a cool
+- generated_excerpt:
+  @startuml start :Initialize vehicle; fork   :Sample BMS via PMIC;   if (State of charge < 20%?) then (Yes)     :Enter low-rail voltage mode;   else (No)     :Sample engine temperature via dedicated ISR;     if (Value exceeds safety threshold?) then (Yes)       fork         :Activate cooling system task with mutex-protected handshake to FADEC;       fork again         :Initialize multimedia system;       end fork     endif   endif fork again   :Check charging status;   if (No charger connected?) then (Yes)     :Prompt user;     :Initiate exponential backoff sequence to enter deep energy-saving state;   endif end fork  :Validate system integrity by iterating through ring buffer of sensor data 
+### fsd-0023
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.3000
+- llm_element_status: success
+- llm_node_f1: 0.6102
+- llm_relation_f1: 0.3500
+- missing_nodes:
+  - thermal management controller executes as state machine on rtos
+  - govern pwm fans
+  - govern liquid-cooling loops
+  - several prioritized conditions
+  - any prioritized conditions?
+  - trigger transition to low-power state
+  - enter low-power state
+  - initialize two high-priority tasks
+- extra_nodes:
+  - transition to low-power state triggered by prioritized conditions
+  - low-power state?
+  - rtos scheduler initializes data acquisition task
+  - rtos scheduler initializes logging task
+  - logging task records system status to non-volatile storage
+  - scheduler launches energy consumption optimization module
+  - scheduler launches performance envelope improvement module
+  - performance envelope improvement module dynamically optimizes system resource allocation
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller executes as state machine on rtos -> govern liquid-cooling loops [fork]
+  - govern pwm fans -> several prioritized conditions [merge]
+  - govern liquid-cooling loops -> several prioritized conditions [merge]
+  - several prioritized conditions -> power level < defined threshold [fork]
+  - several prioritized conditions -> battery temperature > safe limit [fork]
+  - several prioritized conditions -> high system load state [fork]
+  - several prioritized conditions -> can bus link abnormalities [fork]
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fans and liquid-cooling loops. A transition to a low-power state is triggered by any of several prioritized conditions, including power levels falling below a defined threshold, battery temperature (monitored via the BMS) exceeding safe limits, a high system load state, CAN bus link abnormalities, outdated firmware, user-selected energy-saving mode, or a system time within night-time hours. Upon entering this low-power state, the RTOS scheduler concurrently initializes two high-priority tasks: a data acquisition task that cyclically reads sensor data into a ring buffer, and a logging task that records sy
+- generated_excerpt:
+  @startuml start :Transition to low-power state triggered by prioritized conditions; if (Power level below threshold?) then (yes) elseif (Battery temperature exceeds safe limits?) then (yes) elseif (High system load state?) then (yes) elseif (CAN bus link abnormalities?) then (yes) elseif (Outdated firmware?) then (yes) elseif (User-selected energy-saving mode?) then (yes) elseif (System time within night-time hours?) then (yes) else (no) endif if (Low-power state?) then (yes) fork :RTOS scheduler initializes data acquisition task; :Data acquisition task cyclically reads sensor data into ring buffer; fork again :RTOS scheduler initializes logging task; :Logging task records system status to n
+### fsd-0001
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.3396
+- llm_element_status: success
+- llm_node_f1: 0.6977
+- llm_relation_f1: 0.5357
+- missing_nodes:
+  - thermal management controller executes as state machine on rtos
+  - govern pwm fans
+  - govern liquid-cooling loop
+  - external ambient exceeds set threshold?
+  - sensor over-temperature confirmed?
+  - priority-based task manages
+  - timer interrupt drives periodic task
+  - monitor thermal trajectory
+- extra_nodes:
+  - confirmed over-temperature?
+  - monitor thermal trajectory (periodic task driven by timer interrupt)
+  - temperature descends within defined window?
+  - log operational data and fault events (bounded retry and exponential backoff) to ring buffer
+  - generate service report from ring buffer
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller executes as state machine on rtos -> govern liquid-cooling loop [fork]
+  - govern pwm fans -> external ambient exceeds set threshold? [merge]
+  - govern liquid-cooling loop -> external ambient exceeds set threshold? [merge]
+  - external ambient exceeds set threshold? -> temperature sensor isr triggered [yes]
+  - external ambient exceeds set threshold? -> primary sensor reading erroneous? [no]
+  - sensor over-temperature confirmed? -> priority-based task manages [yes]
+  - priority-based task manages -> activate multiple pwm fans
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fans and a liquid-cooling loop. A temperature sensor ISR, triggered when the external ambient exceeds a set threshold, initiates a data validation sequence; if the primary sensor reading is deemed erroneous, the system fails over to a redundant sensor path. Upon confirmed over-temperature from either sensor, the controller activates multiple PWM fans, managed by a priority-based task, while a separate periodic task, driven by a timer interrupt, monitors the thermal trajectory. If the temperature fails to descend within a defined window, a higher-priority task initializes the liquid-cooling loop to augmen
+- generated_excerpt:
+  @startuml start :Temperature sensor ISR triggered; :Initiate data validation sequence; if (Primary sensor reading erroneous?) then (yes)   :Fail over to redundant sensor path; else (no) endif; if (Confirmed over-temperature?) then (yes)   fork     :Activate multiple PWM fans (priority-based task);   fork again     :Monitor thermal trajectory (periodic task driven by timer interrupt);   end fork;   if (Temperature descends within defined window?) then (no)     :Initialize liquid-cooling loop (higher-priority task);   else (yes)   endif;   repeat     :Poll for temperature fluctuations;   repeat while (Values re-enter safe operating range?) is (no)   ->yes; else (no) endif; :Log operational dat
+### fsd-0018
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5098
+- relation_f1: 0.3279
+- llm_element_status: success
+- llm_node_f1: 0.7857
+- llm_relation_f1: 0.5152
+- missing_nodes:
+  - integrated avionics stack (fms/fadec) hosted on deterministic rtos for redundancy
+  - execute control laws via high-priority isrs and lower-frequency worker tasks
+  - dedicated monitoring task scheduled with real-time priority
+  - continuously sample from protected ring buffers
+  - flight attitude
+  - engine parameters
+  - bms/pmic monitor task uses cyclic executive model
+  - track fuel consumption
+- extra_nodes:
+  - fms/fadec executes control laws via high-priority isrs
+  - fms/fadec executes control laws via lower-frequency worker tasks
+  - monitoring task continuously samples flight attitude and engine parameters from protected ring buffers
+  - bms/pmic monitor task tracks fuel consumption and remaining volume using a cyclic executive model
+  - uncorrected by pilot within defined window?
+  - navigation management task calculates optimal flight path and eta based on active flight plan and live meteorological data
+  - navigation management task employs exponential backoff for comms faults
+- missing_relations:
+  - integrated avionics stack (fms/fadec) hosted on deterministic rtos for redundancy -> execute control laws via high-priority isrs and lower-frequency worker tasks
+  - execute control laws via high-priority isrs and lower-frequency worker tasks -> dedicated monitoring task scheduled with real-time priority [fork]
+  - execute control laws via high-priority isrs and lower-frequency worker tasks -> bms/pmic monitor task uses cyclic executive model [fork]
+  - dedicated monitoring task scheduled with real-time priority -> continuously sample from protected ring buffers
+  - continuously sample from protected ring buffers -> flight attitude [fork]
+  - continuously sample from protected ring buffers -> engine parameters [fork]
+  - flight attitude -> altitude breaches safety threshold? [merge]
+  - engine parameters -> altitude breaches safety threshold? [merge]
+- input_excerpt:
+  Hosted on a deterministic RTOS for redundancy, the integrated avionics stack (FMS/FADEC) executes control laws via high-priority ISRs and lower-frequency worker tasks. A dedicated monitoring task, scheduled with real-time priority, continuously samples flight attitude and engine parameters from protected ring buffers, while a separate BMS/PMIC monitor task tracks fuel consumption and remaining volume using a cyclic executive model. Should the altitude breach a safety threshold, the system triggers an auditory alarm; if uncorrected by the pilot within a defined window, the FADEC engages an automatic recovery function, commanding the aircraft to a safe altitude. Throughout this maneuver, a tel
+- generated_excerpt:
+  @startuml start :FMS/FADEC executes control laws via high-priority ISRs; :FMS/FADEC executes control laws via lower-frequency worker tasks; fork   :Monitoring task continuously samples flight attitude and engine parameters from protected ring buffers; fork again   :BMS/PMIC monitor task tracks fuel consumption and remaining volume using a cyclic executive model; end fork if (Altitude breaches safety threshold?) then (yes)   :Trigger auditory alarm;   if (Uncorrected by pilot within defined window?) then (yes)     :FADEC engages automatic recovery function;     :Command aircraft to safe altitude;   endif   fork     :Telemetry task handles concurrent updates to flight data records;     :Teleme
+### fsd-0004
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5283
+- relation_f1: 0.2368
+- llm_element_status: success
+- llm_node_f1: 0.7018
+- llm_relation_f1: 0.2651
+- missing_nodes:
+  - integrated avionics stack (fms/fadec) executes control laws via
+  - high-priority isrs
+  - subordinate worker tasks
+  - operate within deterministic rtos for redundancy
+  - check of critical states
+  - cconcurrent processing phase
+  - priority-based scheduler manages several parallel tasks
+  - update flight plan in real-time
+- extra_nodes:
+  - abort cycle
+  - audit logger that writes structured event traces to a ring buffer
+  - asynchronously flush ring buffer to non-volatile storage by a low-priority task operating within strict i/o budget constraints
+  - telemetry monitor driven by a timer interrupt runs in a periodic loop implementing bounded retries with an exponential backoff strategy upon communication faults
+  - failure in initial conditional checks or during concurrent operation?
+- missing_relations:
+  - integrated avionics stack (fms/fadec) executes control laws via -> high-priority isrs [fork]
+  - integrated avionics stack (fms/fadec) executes control laws via -> subordinate worker tasks [fork]
+  - high-priority isrs -> operate within deterministic rtos for redundancy [merge]
+  - subordinate worker tasks -> operate within deterministic rtos for redundancy [merge]
+  - operate within deterministic rtos for redundancy -> engagement of autonomous flight mode
+  - engagement of autonomous flight mode -> check of critical states
+  - check of critical states -> altitude within safe envelope?
+  - altitude within safe envelope? -> entire process is iterative [no]
+- input_excerpt:
+  Operating within a deterministic RTOS for redundancy, the integrated avionics stack (FMS/FADEC) executes control laws via high-priority ISRs and subordinate worker tasks. Upon engagement of autonomous flight mode, the system performs a sequential, conditional check of critical states: verifying altitude is within a safe envelope, ambient temperature is nominal, engine status is valid via FADEC, fuel reserves are sufficient from the BMS, the navigation system is operational, the communications link is stable, and the power rail is valid as monitored by the PMIC. Only if all preconditions are met does the system advance to a concurrent processing phase. Here, a priority-based scheduler manages
+- generated_excerpt:
+  @startuml start :Engage autonomous flight mode; if (Altitude within safe envelope?) then (no)   :Abort cycle; else (yes)   if (Ambient temperature nominal?) then (no)     :Abort cycle;   else (yes)     if (Engine status valid via FADEC?) then (no)       :Abort cycle;     else (yes)       if (Fuel reserves sufficient from BMS?) then (no)         :Abort cycle;       else (yes)         if (Navigation system operational?) then (no)           :Abort cycle;         else (yes)           if (Communications link stable?) then (no)             :Abort cycle;           else (yes)             if (Power rail valid as monitored by PMIC?) then (no)               :Abort cycle;             else (yes)         
+### fsd-0002
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5532
+- relation_f1: 0.2581
+- llm_element_status: success
+- llm_node_f1: 0.7273
+- llm_relation_f1: 0.1972
+- missing_nodes:
+  - thermal management controller operates as state machine in rtos
+  - regulate pwm fans
+  - regulate liquid-cooling loop
+  - external sensor over-temperature?
+  - initiates multi-tiered safety protocol
+  - isr validates calibration status and data crc
+  - detect anomaly?
+  - spawn concurrent tasks
+- extra_nodes:
+  - validate sensor calibration status
+  - validate data crc
+  - anomaly detected?
+  - secure sample
+  - log in cyclic fashion
+  - execute controlled cool-down sequence managed by bms/pmic
+- missing_relations:
+  - thermal management controller operates as state machine in rtos -> regulate pwm fans [fork]
+  - thermal management controller operates as state machine in rtos -> regulate liquid-cooling loop [fork]
+  - regulate pwm fans -> external sensor over-temperature? [merge]
+  - regulate liquid-cooling loop -> external sensor over-temperature? [merge]
+  - external sensor over-temperature? -> initiates multi-tiered safety protocol [yes]
+  - initiates multi-tiered safety protocol -> isr validates calibration status and data crc [fork]
+  - initiates multi-tiered safety protocol -> manage buffering of telemetry data into non-blocking ring buffer [fork]
+  - initiates multi-tiered safety protocol -> handle uplink transmission [fork]
+- input_excerpt:
+  Operating as a deterministic state machine within the RTOS, the thermal management controller regulates PWM fans and liquid-cooling pumps. Upon an over-temperature event from an external sensor, the system initiates a multi-tiered safety protocol: an ISR first validates the sensor's calibration status and data CRC, immediately dispatching a high-priority alarm via a CAN bus if an anomaly is detected. Concurrently, a lower-priority task manages the buffering of telemetry data into a non-blocking ring buffer, which iterates until all samples are secured, while a separate, real-time task handles uplink transmission. Following this, a sensor fusion algorithm performs multi-parameter environmenta
+- generated_excerpt:
+  @startuml start :Validate sensor calibration status; :Validate data CRC; if (Anomaly detected?) then (yes)   :Dispatch high-priority alarm via CAN bus; else (no) endif fork   :Buffer telemetry data into non-blocking ring buffer;   repeat     :Secure sample;   repeat while (All samples secured?) fork again   :Handle uplink transmission; end fork :Perform multi-parameter environmental analysis via sensor fusion algorithm; if (Results meet predefined fault conditions?) then (yes)   fork     :Log in cyclic fashion;   fork again     :Update status protected by mutex;   end fork else (no) endif :Evaluate security state; :Generate FADEC-style control command; :Confirm operational feedback; if (Pers
+### fsd-0029
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5652
+- relation_f1: 0.3279
+- llm_element_status: success
+- llm_node_f1: 0.8400
+- llm_relation_f1: 0.6774
+- missing_nodes:
+  - check id
+  - check dlc
+  - check crc fields
+  - enqueue into lock-free multi-producer ring buffers
+  - subsequent processing
+  - spawn concurrent priority-based rtos tasks
+  - continuous blood pressure monitoring
+  - real-time data logging
+- extra_nodes:
+  - validate incoming can frames by checking the dlc
+  - validate incoming can frames by checking the crc
+  - queue can frames into lock-free ring buffers for consumer threads
+  - perform continuous monitoring of blood pressure with real-time data logging
+  - execute a primary equipment self-test
+  - consolidate the results into a comprehensive diagnostic evaluation
+- missing_relations:
+  - validate incoming can frames -> check id [fork]
+  - check id -> enqueue into lock-free multi-producer ring buffers [merge]
+  - check dlc -> enqueue into lock-free multi-producer ring buffers [merge]
+  - check crc fields -> enqueue into lock-free multi-producer ring buffers [merge]
+  - enqueue into lock-free multi-producer ring buffers -> subsequent processing
+  - subsequent processing -> abnormal patient heart rate detected?
+  - abnormal patient heart rate detected? -> manage back-pressure from high-frequency data streams using priority queues [no]
+  - emergency state confirmed? -> manage back-pressure from high-frequency data streams using priority queues [no]
+- input_excerpt:
+  The embedded communications layer validates incoming CAN frames by checking the ID, DLC, and CRC before queuing them into lock-free ring buffers for consumer threads. Upon detection of an abnormal patient heart rate, the system first assesses the emergency state; if confirmed, it immediately triggers an alarm and initiates a comprehensive vital sign scan. Following a successful device fault check via the BMS/PMIC, the system spawns concurrent, priority-based RTOS tasks. These tasks perform continuous monitoring of blood pressure and SpO2 with real-time data logging, while a lower-priority task executes a primary equipment self-test. Upon completion, a second wave of tasks is launched: one ta
+- generated_excerpt:
+  @startuml start :Validate incoming CAN frames by checking the ID; :Validate incoming CAN frames by checking the DLC; :Validate incoming CAN frames by checking the CRC; :Queue CAN frames into lock-free ring buffers for consumer threads; if (Abnormal patient heart rate detected?) then (yes)     :Assess the emergency state;     if (Emergency state confirmed?) then (yes)         :Trigger an alarm;         :Initiate a comprehensive vital sign scan;     endif endif :Perform device fault check via the BMS/PMIC; fork     :Perform continuous monitoring of blood pressure with real-time data logging; fork again     :Perform continuous monitoring of SpO2 with real-time data logging; fork again     :Exec
+### fsd-0022
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5714
+- relation_f1: 0.3256
+- llm_element_status: success
+- llm_node_f1: 0.5778
+- llm_relation_f1: 0.3509
+- missing_nodes:
+  - thermal management controller implemented as state machine on rtos
+  - regulate pwm fans
+  - regulate liquid-cooling loop
+  - initiate primary control logic
+  - trigger conditional verification sequence
+  - spawn concurrent rtos tasks for charge and discharge cycles
+  - high priority charging task
+  - discharge task
+- extra_nodes:
+  - regulate pwm fans and liquid-cooling loops
+  - discharge task monitor output power
+  - synchronize tasks
+  - fault handling?
+  - employ an exponential backoff strategy
+- missing_relations:
+  - thermal management controller implemented as state machine on rtos -> regulate pwm fans [fork]
+  - thermal management controller implemented as state machine on rtos -> regulate liquid-cooling loop [fork]
+  - regulate pwm fans -> battery rail voltage < threshold? [merge]
+  - regulate liquid-cooling loop -> battery rail voltage < threshold? [merge]
+  - battery rail voltage < threshold? -> initiate primary control logic [yes]
+  - initiate primary control logic -> trigger conditional verification sequence
+  - trigger conditional verification sequence -> charging current within safe range?
+  - battery health status confirmed good? -> spawn concurrent rtos tasks for charge and discharge cycles [yes]
+- input_excerpt:
+  The thermal management controller, implemented as a state machine on the RTOS, regulates PWM fans and liquid-cooling loops. Its primary control logic is initiated when the battery rail voltage falls below a set threshold, triggering a conditional sequence to verify the charging current is within a safe range, the battery temperature is below its upper limit, and the battery health status is confirmed as good. Upon passing these checks, the system spawns concurrent RTOS tasks for charge and discharge cycles. The charging task, initialized with a higher priority, iteratively monitors the battery rail voltage and temperature, while the discharge task monitors output power. These tasks are synch
+- generated_excerpt:
+  @startuml start :Regulate PWM fans and liquid-cooling loops; if (Battery rail voltage falls below a set threshold?) then (yes)   if (Charging current is within a safe range?) then (yes)     if (Battery temperature is below its upper limit?) then (yes)       if (Battery health status is confirmed as good?) then (yes)         fork           :Charging task: iteratively monitor battery rail voltage and temperature;         fork again           :Discharge task: monitor output power;         end fork         :Synchronize tasks;         if (Rail voltage remains below the threshold?) then (yes)           :Restart tasks with an expanded monitoring scope that includes health status;           note rig
+### fsd-0016
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5833
+- relation_f1: 0.2759
+- llm_element_status: success
+- llm_node_f1: 0.7692
+- llm_relation_f1: 0.4688
+- missing_nodes:
+  - avionics stack (fms/fadec) executes on rtos
+  - fault tolerance
+  - high-priority isr triggered by periodic timer
+  - evaluate conditional state machine
+  - spawn concurrent prioritized tasks
+  - detect anomaly?
+  - concurrently execute tasks
+  - level < safety threshold?
+- extra_nodes:
+  - airspeed is within limits?
+  - engine anomaly detected?
+  - iteratively calibrate navigation system using crc-checked can bus messages
+  - fuel levels drop below a safety threshold?
+  - manage uplink to the ground station with exponential backoff on communication faults
+  - supervise all tasks
+- missing_relations:
+  - avionics stack (fms/fadec) executes on rtos -> fault tolerance
+  - fault tolerance -> high-priority isr triggered by periodic timer
+  - high-priority isr triggered by periodic timer -> sample sensor data for control law computation
+  - aircraft altitude < preset safety value? -> evaluate conditional state machine [yes]
+  - aircraft altitude < preset safety value? -> dedicated timer-driven telemetry monitor task [no]
+  - evaluate conditional state machine -> current airspeed > critical threshold?
+  - current airspeed > critical threshold? -> check engine status via bms/pmic [no]
+  - activate automatic deceleration module -> spawn concurrent prioritized tasks
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), executes on a deterministic RTOS with redundant cores for fault tolerance. A high-priority ISR, triggered by a periodic timer, samples sensor data for control law computation. When the aircraft altitude falls below a preset safety value, the system evaluates a conditional state machine: if the current airspeed exceeds a critical threshold, it immediately activates the automatic deceleration module. This action spawns concurrent, prioritized tasks—including continuous monitoring of air pressure sensor data via a ring buffer and managing actuator commands protected by a mutex. S
+- generated_excerpt:
+  @startuml start :Sample sensor data for control law computation; if (Aircraft altitude falls below a preset safety value?) then (yes)   if (Current airspeed exceeds a critical threshold?) then (yes)     :Activate the automatic deceleration module;     fork       :Continuously monitor air pressure sensor data via a ring buffer;     fork again       :Manage actuator commands protected by a mutex;     end fork   elseif (Airspeed is within limits?) then (yes)     :Check engine status via the BMS/PMIC;     if (Engine anomaly detected?) then (yes)       :Trigger backup engine initialization sequence;       fork         :Iteratively calibrate navigation system using CRC-checked CAN bus messages;   
+### fsd-0030
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5833
+- relation_f1: 0.4364
+- llm_element_status: success
+- llm_node_f1: 0.7451
+- llm_relation_f1: 0.1967
+- missing_nodes:
+  - embedded control platform employs rtos
+  - initiate diagnostic state sequence
+  - confirm electrocardiogram fluctuations
+  - classify events
+  - dedicated task synchronized using mutex-protected ring buffer
+  - commence high-frequency ecg data logging to non-volatile storage
+  - dispatch two parallel processes managed by priority-based scheduler
+  - high-priority task
+- extra_nodes:
+  - crc check confirmed?
+  - classify events such as premature beats
+  - log high-frequency ecg data to non-volatile storage using mutex-protected ring buffer
+  - initiate exponential backoff algorithm for transmitting alarm notifications to medical staff over can bus
+  - first anomaly resolved?
+  - evaluate arbitration state
+- missing_relations:
+  - embedded control platform employs rtos -> supervisory finite-state machine scheduled via periodic timer interrupts
+  - supervisory finite-state machine scheduled via periodic timer interrupts -> orchestrate lower-priority tasks for deferred processing [fork]
+  - orchestrate high-priority isrs for data acquisition -> detect anomalous physiological data? [merge]
+  - initiate diagnostic state sequence -> confirm electrocardiogram fluctuations [fork]
+  - initiate diagnostic state sequence -> classify events [fork]
+  - initiate diagnostic state sequence -> assess risk of ventricular tachycardia [fork]
+  - confirm electrocardiogram fluctuations -> dedicated task synchronized using mutex-protected ring buffer [merge]
+  - classify events -> dedicated task synchronized using mutex-protected ring buffer [merge]
+- input_excerpt:
+  The embedded control platform employs a real-time operating system (RTOS) where a supervisory finite-state machine, scheduled via periodic timer interrupts, orchestrates high-priority Interrupt Service Routines (ISRs) for data acquisition and lower-priority tasks for deferred processing. Upon detection of anomalous physiological data, the system first validates the signal integrity via a CRC check before initiating a diagnostic state sequence: it confirms electrocardiogram fluctuations, classifies events such as ventricular premature beats, and assesses the risk of ventricular tachycardia. Concurrently, a dedicated task, synchronized using a mutex-protected ring buffer, commences high-freque
+- generated_excerpt:
+  @startuml start :Use supervisory finite-state machine via periodic timer interrupts; :Execute high-priority ISRs for data acquisition; :Execute lower-priority tasks for deferred processing; :Detect anomalous physiological data; :Validate signal integrity via CRC check; if (CRC check confirmed?) then (yes)   :Classify events such as premature beats;   :Assess risk of ventricular tachycardia; else (no) endif :Log high-frequency ECG data to non-volatile storage using mutex-protected ring buffer; fork   :Initiate exponential backoff algorithm for transmitting alarm notifications to medical staff over CAN bus; fork again   :Perform real-time signal processing on collected parameters; end fork :Mo
+### fsd-0009
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5882
+- relation_f1: 0.3810
+- llm_element_status: success
+- llm_node_f1: 0.7636
+- llm_relation_f1: 0.4507
+- missing_nodes:
+  - operating on preemptive rtos
+  - tcms manages via deterministic scheduling
+  - traction
+  - braking
+  - doors
+  - diagnostics
+  - detect acceleration threshold exceedance
+  - high-priority task
+- extra_nodes:
+  - detect vehicle acceleration threshold exceedance via inertial sensor
+  - process wheel speed sensor data (cyclic task with mutex-protected ring buffer)
+  - adjust electronic power steering system output torque through can message with crc checksum
+  - ensure graceful degradation via independent watchdogs and pmic-monitored fail-safe paths in compliance with en 50128/en 50129
+- missing_relations:
+  - operating on preemptive rtos -> tcms manages via deterministic scheduling
+  - tcms manages via deterministic scheduling -> traction [fork]
+  - tcms manages via deterministic scheduling -> braking [fork]
+  - tcms manages via deterministic scheduling -> doors [fork]
+  - tcms manages via deterministic scheduling -> diagnostics [fork]
+  - traction -> detect acceleration threshold exceedance [merge]
+  - braking -> detect acceleration threshold exceedance [merge]
+  - doors -> detect acceleration threshold exceedance [merge]
+- input_excerpt:
+  Operating on a preemptive RTOS, the Train Control and Monitoring System (TCMS) manages traction, braking, doors, and diagnostics via deterministic scheduling. Upon an inertial sensor detecting a vehicle acceleration threshold exceedance, the system first verifies brake system status via a protected BMS query. If braking pressure is deemed insufficient, a high-priority task immediately commands emergency braking assistance, while a concurrent, medium-priority task evaluates the need for Electronic Stability Program (ESP) intervention. During ESP activation, a cyclic task with a mutex-protected ring buffer processes wheel speed sensor data, calculates individual wheel slip rates, and executes 
+- generated_excerpt:
+  @startuml start :Detect vehicle acceleration threshold exceedance via inertial sensor; :Verify brake system status via protected BMS query; if (Braking pressure insufficient?) then (yes)   fork     :Command emergency braking assistance (high-priority task);   fork again     :Evaluate need for ESP intervention (medium-priority task);   end fork   if (ESP activation?) then (yes)     :Process wheel speed sensor data (cyclic task with mutex-protected ring buffer);     :Calculate individual wheel slip rates;     :Execute real-time braking force distribution algorithm;   endif   if (Steering angle sensor indicates anomaly?) then (yes)     :Activate steering assist control task;     :Periodically s
+### fsd-0021
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5946
+- relation_f1: 0.1852
+- llm_element_status: success
+- llm_node_f1: 0.6341
+- llm_relation_f1: 0.3051
+- missing_nodes:
+  - avionics stack (fms/fadec) operates on deterministic rtos
+  - pre-flight mission scheduling sequence managed by high-priority supervisory task
+  - execute conditional state machine
+  - fork into concurrent operations
+  - both tasks block
+  - completion
+  - second parallel phase
+  - guarded by mutexes for shared resource access
+- extra_nodes:
+  - anomalies detected by watchdog timer?
+  - reset subsystems with exponential backoff
+- missing_relations:
+  - avionics stack (fms/fadec) operates on deterministic rtos -> pre-flight mission scheduling sequence managed by high-priority supervisory task
+  - pre-flight mission scheduling sequence managed by high-priority supervisory task -> execute conditional state machine
+  - execute conditional state machine -> weather conditions suitable?
+  - weather conditions suitable? -> entire process is monitored by watchdog timer [no]
+  - aircraft status nominal? -> entire process is monitored by watchdog timer [no]
+  - fuel reserves adequate? -> entire process is monitored by watchdog timer [no]
+  - flight plan validated? -> entire process is monitored by watchdog timer [no]
+  - crew health confirmed? -> entire process is monitored by watchdog timer [no]
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), operates on a deterministic Real-Time Operating System (RTOS) featuring hardware and software redundancy for fault tolerance. A pre-flight mission scheduling sequence, managed by a high-priority supervisory task, executes a conditional state machine: it proceeds only if weather conditions are suitable, the aircraft status—as reported by the BMS and other systems—is nominal, fuel reserves are adequate, the flight plan is validated, crew health is confirmed, and an airspace permit is granted. Upon satisfying these preconditions, the system forks into concurrent operations. One t
+- generated_excerpt:
+  @startuml start if (Weather conditions are suitable?) then (no)   stop elseif (Aircraft status is nominal?) then (no)   stop elseif (Fuel reserves are adequate?) then (no)   stop elseif (Flight plan is validated?) then (no)   stop elseif (Crew health is confirmed?) then (no)   stop elseif (Airspace permit is granted?) then (no)   stop else (yes)   fork     :Initiate periodic calibration loop for flight navigation system;   fork again     :Execute frequency tuning for communication system;   end fork   fork     :Periodic inspection of flight data recorder;   fork again     :Status confirmation of sensor system;   end fork   if (Anomalies detected by watchdog timer?) then (yes)     :Reset subs
+### fsd-0007
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5957
+- relation_f1: 0.4815
+- llm_element_status: success
+- llm_node_f1: 0.7843
+- llm_relation_f1: 0.6452
+- missing_nodes:
+  - avionics stack(fms/fadec) operates on rtos
+  - isr triggered by periodic timer
+  - processed by dedicated worker task
+  - check for external interference
+  - required?
+  - absent interference
+  - abnormal command?
+  - manage concurrent processes
+- extra_nodes:
+  - trigger primary control law isr via periodic timer
+  - process altitude data via dedicated worker task
+  - external interference detected?
+  - execute optimization allocation
+  - execute monitoring cycle
+- missing_relations:
+  - avionics stack(fms/fadec) operates on rtos -> isr triggered by periodic timer
+  - isr triggered by periodic timer -> sample altitude data
+  - check for external interference -> required?
+  - required? -> activate anti-jamming algorithm with exponential backoff [yes]
+  - required? -> absent interference [no]
+  - abnormal command? -> initialization of backup flight control system [yes]
+  - abnormal command? -> task scheduling engine [no]
+  - task scheduling engine -> manage concurrent processes
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), operates on a deterministic Real-Time Operating System (RTOS) featuring hardware and task-level redundancy. A primary control law ISR, triggered by a periodic timer, samples altitude data, which is then processed by a dedicated worker task. If the measured altitude falls below a preset safety threshold, a fault-handling routine is initiated: first, the system checks for external interference, activating an anti-jamming algorithm with exponential backoff if required. Absent interference, a sensor diagnostic is performed via a protected BMS/PMIC interface. Upon confirming sensor
+- generated_excerpt:
+  @startuml start :Trigger primary control law ISR via periodic timer; :Sample altitude data; :Process altitude data via dedicated worker task; if (Measured altitude below preset safety threshold?) then (Yes)   :Initiate fault-handling routine;   if (External interference detected?) then (Yes)     :Activate anti-jamming algorithm with exponential backoff;   else (No)     :Perform sensor diagnostic via protected BMS/PMIC interface;     if (Sensor integrity confirmed?) then (Yes)       if (Flight control command valid against CRC checksum?) then (No - Abnormal command)         :Initialize backup flight control system;       else (Yes - Valid command)         :Initiate task scheduling engine;    
+### fsd-0011
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6182
+- relation_f1: 0.2647
+- llm_element_status: success
+- llm_node_f1: 0.8136
+- llm_relation_f1: 0.3380
+- missing_nodes:
+  - thermal management controller implements as state machine on rtos
+  - initialize
+  - boot sequence validates
+  - engine temperature
+  - high-priority task managed by rtos scheduler
+  - trigger immediate isr
+  - set system alarm
+  - medium-priority periodic task via timer interrupts
+- extra_nodes:
+  - validate engine temperature
+  - trigger immediate isr to set system alarm
+  - monitor cabin air quality to adjust climate control
+  - transmit final vehicle status report to cloud
+  - ensure liveness throughout priority-queued task set (watchdog timer)
+- missing_relations:
+  - thermal management controller implements as state machine on rtos -> receive vehicle start signal from pmic
+  - receive vehicle start signal from pmic -> initialize
+  - initialize -> boot sequence validates
+  - boot sequence validates -> battery state-of-charge via bms [fork]
+  - boot sequence validates -> engine temperature [fork]
+  - battery state-of-charge via bms -> both within safe thresholds? [merge]
+  - engine temperature -> both within safe thresholds? [merge]
+  - both within safe thresholds? -> high-priority task managed by rtos scheduler [no]
+- input_excerpt:
+  The thermal management controller, implemented as a state machine on the RTOS, initializes upon receiving a vehicle start signal from the PMIC. This boot sequence first validates battery state-of-charge via the BMS and engine temperature; if both are within safe thresholds, it proceeds to initialize the engine preheating program and verifies fuel system pressure. Upon successful validation, the FADEC initiates engine start. During operation, a high-priority task, managed by the RTOS scheduler, continuously monitors engine speed and oil pressure via a protected ring buffer, with critical anomalies triggering an immediate ISR to set a system alarm. A medium-priority periodic task, scheduled vi
+- generated_excerpt:
+  @startuml start :Receive vehicle start signal from PMIC; :Validate battery state-of-charge via BMS; :Validate engine temperature; if (Both within safe thresholds?) then (yes)   :Initialize engine preheating program;   :Verify fuel system pressure;   if (Successful validation?) then (yes)     :Initiate engine start (FADEC);   else (no)   endif else (no) endif  fork   :Continuously monitor engine speed and oil pressure via protected ring buffer;   if (Critical anomalies?) then (yes)     :Trigger immediate ISR to set system alarm;   else (no)   endif fork again   :Poll emission system sensors over CAN bus (with CRC checks) to ensure compliance with pollutant standards; fork again   :Manage peri
+### fsd-0015
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6364
+- relation_f1: 0.3667
+- llm_element_status: success
+- llm_node_f1: 0.8750
+- llm_relation_f1: 0.3284
+- missing_nodes:
+  - integrated avionics stack executes concurrent tasks governed by priority-based scheduler
+  - detect specific hazardous conditions via sensor inputs?
+  - trigger immediate prioritized responses
+  - aautomatic climb program for low altitude
+  - automatic flight path adjustment for meteorological threats
+  - propulsion faults?
+  - fadec implements fault-tolerant strategy
+  - lower-priority background tasks execute continuously
+- extra_nodes:
+  - hazardous condition?
+  - automatic climb program
+  - automatic flight path adjustment
+  - fadec fault-tolerant strategy (thrust redistribution)
+  - adhere to do-178c/do-254 processes
+- missing_relations:
+  - integrated avionics stack executes concurrent tasks governed by priority-based scheduler -> isr-driven control law sampling [fork]
+  - integrated avionics stack executes concurrent tasks governed by priority-based scheduler -> worker tasks [fork]
+  - integrated avionics stack executes concurrent tasks governed by priority-based scheduler -> watchdog monitor [fork]
+  - flush to non-volatile storage under i/o budget constraints -> detect specific hazardous conditions via sensor inputs?
+  - detect specific hazardous conditions via sensor inputs? -> trigger immediate prioritized responses [yes]
+  - trigger immediate prioritized responses -> terrain avoidance alarm [fork]
+  - trigger immediate prioritized responses -> fuel optimization mode managed by bms/pmic for low fuel reserves [fork]
+  - trigger immediate prioritized responses -> automatic flight path adjustment for meteorological threats [fork]
+- input_excerpt:
+  Operating within a deterministic RTOS, the integrated avionics stack (FMS/FADEC) executes a suite of concurrent tasks—including ISR-driven control law sampling, worker tasks, and a watchdog monitor—governed by a priority-based scheduler. The system employs a mutex-protected ring buffer for structured audit logging, which is flushed to non-volatile storage under strict I/O budget constraints. Upon detecting specific hazardous conditions via sensor inputs, the system triggers immediate, prioritized responses: a terrain avoidance alarm and automatic climb program for low altitude; a fuel optimization mode managed by the BMS/PMIC for low fuel reserves; and an automatic flight path adjustment for
+- generated_excerpt:
+  @startuml start fork   :ISR-driven control law sampling; fork again   :Worker tasks; fork again   :Watchdog monitor; end fork :Mutex-protected ring buffer structured audit logging; :Flush to non-volatile storage under I/O budget constraints; if (Hazardous condition?) then (Low altitude)   :Terrain avoidance alarm;   :Automatic climb program; elseif (Hazardous condition?) then (Low fuel reserves)   :Fuel optimization mode managed by BMS/PMIC; elseif (Hazardous condition?) then (Meteorological threats)   :Automatic flight path adjustment; elseif (Hazardous condition?) then (Propulsion faults)   fork     :FADEC fault-tolerant strategy (thrust redistribution);   fork again     :Notify ground con
+### fsd-0027
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6545
+- relation_f1: 0.3944
+- llm_element_status: success
+- llm_node_f1: 0.8197
+- llm_relation_f1: 0.6857
+- missing_nodes:
+  - thermal management controller operates as state machine within rtos
+  - govern pwm fans
+  - govern liquid-cooling loops
+  - determine if equipment overload occurred
+  - high-priority task
+  - perform real-time calculations
+  - medium-priority task
+  - trigger generation of structured audit logs and maintenance reminders
+- extra_nodes:
+  - threshold reached?
+  - generate structured audit logs
+  - generate maintenance reminders
+  - integrate all monitoring data including calibrated sensor fusion readings
+  - communication faults?
+  - employ bounded retries with exponential backoff
+  - trigger redundancy checks
+  - trigger a controlled system cool-down path
+- missing_relations:
+  - thermal management controller operates as state machine within rtos -> govern pwm fans [fork]
+  - thermal management controller operates as state machine within rtos -> govern liquid-cooling loops [fork]
+  - govern pwm fans -> detect anomalous energy consumption? [merge]
+  - govern liquid-cooling loops -> detect anomalous energy consumption? [merge]
+  - determine if equipment overload occurred -> equipment overload?
+  - over-voltage condition on power rail? -> initialize voltage regulation mechanism immediately [fork]
+  - over-voltage condition on power rail? -> high-priority task [fork]
+  - over-voltage condition on power rail? -> medium-priority task [fork]
+- input_excerpt:
+  Operating as a state machine within the RTOS, the thermal management controller governs PWM fans and liquid-cooling loops. Upon detecting anomalous energy consumption, the system first determines if an equipment overload has occurred; if so, it classifies the overload type, and in the event of an over-voltage condition on the power rail, immediately initializes the voltage regulation mechanism. Concurrently, a high-priority task continuously samples current data via an ADC, performing real-time calculations to update an adaptive energy consumption model, while a medium-priority task monitors operational hours against a preset threshold, triggering the generation of structured audit logs and 
+- generated_excerpt:
+  @startuml start :Detect anomalous energy consumption; if (Has an equipment overload occurred?) then (Yes)   :Classify the overload type;   if (Is there an over-voltage condition on the power rail?) then (Yes)     :Initialize the voltage regulation mechanism;   else (No)   endif else (No) endif fork   :Sample current data via ADC;   :Perform real-time calculations to update an adaptive energy consumption model; fork again   :Monitor operational hours against a preset threshold;   if (Threshold reached?) then (Yes)     :Generate structured audit logs;     :Generate maintenance reminders;   else (No)   endif end fork :Assess battery health through the BMS; :Evaluate capacity; :Perform charging 
+### fsd-0025
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6667
+- relation_f1: 0.2857
+- llm_element_status: success
+- llm_node_f1: 0.8000
+- llm_relation_f1: 0.5532
+- missing_nodes:
+  - power management subsystem governed by priority-based rtos scheduler
+  - high-priority task initiates low-power mode entry sequence
+  - execute power-saving strategy
+  - background task with lower priority
+  - periodic telemetry monitor task driven by timer interrupts
+  - log to ring buffer protected by mutex
+  - use crc-verified commands
+  - ensure bounded retries
+- extra_nodes:
+  - initiate low-power mode entry sequence
+  - acquire mutex
+  - log to ring buffer
+  - release mutex
+- missing_relations:
+  - power management subsystem governed by priority-based rtos scheduler -> continuously monitor voltage rails and battery state via pmic and bms
+  - remaining power < 20 ? -> high-priority task initiates low-power mode entry sequence [yes]
+  - remaining power < 20 ? -> periodic telemetry monitor task driven by timer interrupts [no]
+  - high-priority task initiates low-power mode entry sequence -> check charging status [fork]
+  - high-priority task initiates low-power mode entry sequence -> background task with lower priority [fork]
+  - check charging status -> connected to supply?
+  - connected to supply? -> periodic telemetry monitor task driven by timer interrupts [yes]
+  - disable non-essential peripherals -> execute power-saving strategy
+- input_excerpt:
+  The power management subsystem, governed by a priority-based RTOS scheduler, continuously monitors voltage rails and battery state via the PMIC and BMS. When the remaining power falls below 20%, a high-priority task initiates a low-power mode entry sequence: it first checks the charging status and, if not connected to a supply, executes a power-saving strategy by reducing CPU frequency and disabling non-essential peripherals. Concurrently, a background task with lower priority monitors for any change in the charging state. If charging is not detected within a defined period, the system escalates to a deep power-saving mode. A separate, periodic telemetry monitor task, driven by timer interru
+- generated_excerpt:
+  @startuml start :Monitor voltage rails and battery state via PMIC and BMS; if (Remaining power falls below 20%?) then (yes)   :Initiate low-power mode entry sequence;   :Check charging status;   fork     if (Not connected to a supply?) then (yes)       :Reduce CPU frequency;       :Disable non-essential peripherals;     else (no)     endif   fork again     :Monitor for change in charging state;     if (Charging not detected within a defined period?) then (yes)       :Escalate to deep power-saving mode;     else (no)     endif   end fork else (no) endif :Sample system data; :Employ digital debouncing for events; :Acquire mutex; :Log to ring buffer; :Release mutex; :Implement fault recovery ro
+### fsd-0028
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6667
+- relation_f1: 0.5200
+- llm_element_status: success
+- llm_node_f1: 0.6364
+- llm_relation_f1: 0.3214
+- missing_nodes:
+  - thermal management controller operates as state machine within hard real-time rtos
+  - govern multi-zone pwm fans
+  - govern liquid-cooling solenoids
+  - handle via protected ring buffer
+  - spawn high-priority task
+  - execute energy distribution optimization algorithm
+  - managed by watchdog-timed loop with exponential backoff
+  - synchronize
+- extra_nodes:
+  - spawn high-priority task to execute energy distribution optimization algorithm
+  - synchronize fadec-managed charging/discharging strategy of energy storage unit with backup power rail s switching logic
+  - continue periodic routines?
+- missing_relations:
+  - thermal management controller operates as state machine within hard real-time rtos -> govern multi-zone pwm fans [fork]
+  - thermal management controller operates as state machine within hard real-time rtos -> govern liquid-cooling solenoids [fork]
+  - govern multi-zone pwm fans -> energy demand > preset threshold and power load unbalanced? [merge]
+  - govern liquid-cooling solenoids -> energy demand > preset threshold and power load unbalanced? [merge]
+  - energy demand > preset threshold and power load unbalanced? -> temperature sensors report out-of-range ambient reading? [fork]
+  - multiple concurrent fault signals from parameter monitoring units? -> handle via protected ring buffer [yes]
+  - multiple concurrent fault signals from parameter monitoring units? -> synchronize [no]
+  - handle via protected ring buffer -> spawn high-priority task
+- input_excerpt:
+  Operating as a state machine within a hard real-time RTOS, the thermal management controller governs multi-zone PWM fans and liquid-cooling solenoids. When system telemetry indicates energy demand has exceeded a preset threshold and power load distribution is unbalanced, the controller initiates a prioritized adjustment of high-energy-consuming equipment via the PMIC and BMS. Concurrently, if temperature sensors report an out-of-range ambient reading, the system dynamically optimizes the refrigeration equipment's operating curve. In the event of multiple, concurrent fault signals from parameter monitoring units—handled via a protected ring buffer—a high-priority task is spawned to execute an
+- generated_excerpt:
+  @startuml start if (Energy demand exceeded preset threshold and power load distribution is unbalanced?) then (yes)   :Initiate prioritized adjustment of high-energy-consuming equipment via PMIC and BMS; else (no) endif if (Temperature sensors report out-of-range ambient reading?) then (yes)   :Dynamically optimize refrigeration equipment's operating curve; else (no) endif if (Multiple concurrent fault signals from parameter monitoring units?) then (yes)   :Spawn high-priority task to execute energy distribution optimization algorithm;   repeat     :Perform iterative load balancing calculations;     :Perform dynamic power adjustments;   repeat while (All loads reached optimal state?) is (no) 
+### fsd-0013
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6957
+- relation_f1: 0.6296
+- llm_element_status: success
+- llm_node_f1: 0.8400
+- llm_relation_f1: 0.5614
+- missing_nodes:
+  - execute predefined protection
+  - execute recovery policies
+  - initiate data verification sequence
+  - spawn deterministically parallel processing tasks
+  - protect shared resource
+  - parallel task completion
+  - data integrity restored
+  - state transitions are logged
+- extra_nodes:
+  - execute predefined protection and recovery policies
+  - initiate data verification sequence (e.g. crc check)
+  - process task 2 (managed by rtos scheduler using priority queues and mutexes for shared resource protection)
+  - execute concurrent data repair algorithm 2 within dedicated rtos task (employing exponential backoff retry logic until data integrity is restored)
+  - log all state transitions
+- missing_relations:
+  - execute predefined protection -> execute recovery policies
+  - activate redundant sensor path -> spawn deterministically parallel processing tasks
+  - spawn deterministically parallel processing tasks -> managed by rtos scheduler using priority queues and mutexes
+  - managed by rtos scheduler using priority queues and mutexes -> protect shared resource
+  - protect shared resource -> timer isr drives periodic sampling from redundant path [fork]
+  - protect shared resource -> process data through protected ring buffer [fork]
+  - timer isr drives periodic sampling from redundant path -> parallel task completion [merge]
+  - process data through protected ring buffer -> parallel task completion [merge]
+- input_excerpt:
+  The power management subsystem continuously monitors voltage rails via the PMIC and BMS, executing predefined protection and recovery policies. Upon detecting anomalous sensor data, the system initiates a data verification sequence, such as a CRC check. If verification fails, a fault isolation routine is triggered: the system sequentially checks the sensor hardware connection, data uplink channel integrity via CAN, and power rail stability. Should any check fail, the system activates a redundant sensor path and spawns deterministically parallel processing tasks, which are managed by the RTOS scheduler using priority queues and mutexes for shared resource protection. A timer ISR drives the pe
+- generated_excerpt:
+  @startuml start :Continuously monitor voltage rails via PMIC and BMS; :Execute predefined protection and recovery policies; if (Anomalous sensor data detected?) then (yes)   :Initiate data verification sequence (e.g., CRC check);   if (Verification fails?) then (yes)     :Trigger fault isolation routine;     :Check sensor hardware connection;     :Check data uplink channel integrity via CAN;     :Check power rail stability;     if (Any check fails?) then (yes)       :Activate redundant sensor path;       fork         :Process task 1 (managed by RTOS scheduler using priority queues and mutexes for shared resource protection);       fork again         :Process task 2 (managed by RTOS scheduler
+### fsd-0026
+- dataset: fsd
+- failure_types: missing_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7000
+- relation_f1: 0.3673
+- llm_element_status: success
+- llm_node_f1: 0.7727
+- llm_relation_f1: 0.2308
+- missing_nodes:
+  - thermal management controller operates as deterministic state machine within rtos
+  - govern pwm fans
+  - govern liquid-cooling loops
+  - initiate multi-threaded response
+  - high-priority task
+  - lower-priority thread synchronized via mutex
+  - energy allocation optimization algorithm dispatched from priority queue
+  - run deterministically to stabilize supply
+- extra_nodes:
+  - detect abnormal energy supply
+  - run energy allocation optimization algorithm
+- missing_relations:
+  - thermal management controller operates as deterministic state machine within rtos -> govern pwm fans [fork]
+  - thermal management controller operates as deterministic state machine within rtos -> govern liquid-cooling loops [fork]
+  - govern pwm fans -> abnormal energy supply(rail voltage fluctuations > defined threshold for sustained duration with out-of-range ambient temperature)? [merge]
+  - govern liquid-cooling loops -> abnormal energy supply(rail voltage fluctuations > defined threshold for sustained duration with out-of-range ambient temperature)? [merge]
+  - abnormal energy supply(rail voltage fluctuations > defined threshold for sustained duration with out-of-range ambient temperature)? -> initiate multi-threaded response [yes]
+  - initiate multi-threaded response -> high-priority task [fork]
+  - initiate multi-threaded response -> lower-priority thread synchronized via mutex [fork]
+  - initiate multi-threaded response -> enter fault diagnosis mode [fork]
+- input_excerpt:
+  Operating as a deterministic state machine within a real-time operating system (RTOS), the thermal management controller governs PWM fans and liquid-cooling loops. Upon detecting an abnormal energy supply—specifically, when rail voltage fluctuations exceed a defined threshold for a sustained duration concurrent with an out-of-range ambient temperature—the system initiates a multi-threaded response. A high-priority task immediately begins real-time power load monitoring and commands the PMIC or BMS to execute a backup power switching sequence, while a lower-priority thread, synchronized via mutex, continuously polls the backup power status. An energy allocation optimization algorithm, dispatc
+- generated_excerpt:
+  @startuml start :Detect abnormal energy supply; if (Rail voltage fluctuations exceed threshold for sustained duration concurrent with out-of-range ambient temperature?) then (yes)   fork     :Begin real-time power load monitoring;     :Command PMIC or BMS to execute backup power switching sequence;   fork again     :Continuously poll backup power status;   fork again     :Run energy allocation optimization algorithm;   fork again     :Enter fault diagnosis mode;     :Initialize early warning mechanism;     :Periodically poll equipment status via timer-driven ISR;     :Dispatch real-time service reports over CAN bus with CRCs;   end fork   :Generate comprehensive energy security service repor
+### fsd-0012
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7083
+- relation_f1: 0.4516
+- llm_element_status: success
+- llm_node_f1: 0.8148
+- llm_relation_f1: 0.5070
+- missing_nodes:
+  - vehicle initialization
+  - power management subsystem governed by rtos
+  - high-priority task checks engine state
+  - employ closed-loop control
+  - debounce
+  - place into protected ring buffer
+  - execute as concurrent rtos tasks managed by priority queues
+  - retry attempt
+- extra_nodes:
+  - monitor all power rails via pmic and bms
+  - check the engine state
+  - adjust throttle valve opening using closed-loop control
+  - debounce adc readings
+  - place adc readings into a protected ring buffer
+  - iterate pid controller
+- missing_relations:
+  - vehicle initialization -> power management subsystem governed by rtos
+  - power management subsystem governed by rtos -> monitor power rails via pmic and bms
+  - battery rail voltage < defined threshold? -> high-priority task checks engine state [yes]
+  - battery rail voltage < defined threshold? -> dedicated watchdog task supervises startup state machine [no]
+  - high-priority task checks engine state -> engine uninitialized and vehicle in parking state?
+  - engine uninitialized and vehicle in parking state? -> dedicated watchdog task supervises startup state machine [no]
+  - speed stabilizes within required range -> monitor engine speed via fadec [no]
+  - debounce -> place into protected ring buffer
+- input_excerpt:
+  Upon vehicle initialization, the power management subsystem, governed by a real-time operating system (RTOS), monitors all power rails via the PMIC and BMS. If the battery rail voltage is below the defined threshold, a high-priority task checks the engine state. Should the engine be uninitialized and the vehicle confirmed to be in a parking state, an engine start sequence is initiated; this task monitors the engine speed via the FADEC, employing a closed-loop control to adjust the throttle valve opening until the speed stabilizes within the required range. Concurrently, a separate task periodically samples the generator output rail voltage and battery charging status, with these ADC readings
+- generated_excerpt:
+  @startuml start :Monitor all power rails via PMIC and BMS; if (Battery rail voltage is below the defined threshold?) then (yes)   :Check the engine state;   if (Engine is uninitialized and vehicle is in parking state?) then (yes)     :Initiate engine start sequence;     fork       :Monitor engine speed via FADEC;       :Adjust throttle valve opening using closed-loop control;       repeat         :Adjust throttle valve opening;       repeat while (Engine speed stabilizes within the required range?) is (no)       ->yes;     fork again       :Periodically sample generator output rail voltage and battery charging status;       :Trigger ADC readings via timer interrupts;       :Debounce ADC read
+### fsd-0024
+- dataset: fsd
+- failure_types: missing_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7241
+- relation_f1: 0.4156
+- llm_element_status: success
+- llm_node_f1: 0.7097
+- llm_relation_f1: 0.3000
+- missing_nodes:
+  - thermal management controller operates as state machine within rtos
+  - govern pwm fans
+  - govern liquid-cooling loops
+  - detect fault conditions
+  - abnormal current fluctuations
+  - detect any fault condition?
+  - initiate concurrent prioritized tasks
+  - data acquisition task
+- extra_nodes:
+  - fault condition?
+  - upload fault service report to cloud via can bus
+  - trigger alarm system to notify maintenance personnel
+- missing_relations:
+  - thermal management controller operates as state machine within rtos -> govern pwm fans [fork]
+  - thermal management controller operates as state machine within rtos -> govern liquid-cooling loops [fork]
+  - govern pwm fans -> detect fault conditions [merge]
+  - govern liquid-cooling loops -> detect fault conditions [merge]
+  - detect fault conditions -> abnormal current fluctuations [fork]
+  - detect fault conditions -> exceeded rail voltage thresholds [fork]
+  - detect fault conditions -> frequency anomalies [fork]
+  - detect fault conditions -> overtemperature [fork]
+- input_excerpt:
+  Operating as a state machine within a Real-Time Operating System (RTOS), the thermal management controller governs PWM fans and liquid-cooling loops. Upon detecting any fault condition—such as abnormal current fluctuations, exceeded rail voltage thresholds, frequency anomalies, overtemperature, communication loss, hardware failure, or a standby state—the system activates its emergency protection mechanism. This initiates concurrent, prioritized tasks: a data acquisition task cyclically reads sensor data and updates the system status using a ring buffer, while a self-test task iteratively checks hardware integrity via the PMIC and BMS, logging any anomalies to a structured audit log protected
+- generated_excerpt:
+  @startuml start if (Fault Condition?) then (Abnormal current fluctuations) elseif (Exceeded rail voltage thresholds?) then elseif (Frequency anomalies?) then elseif (Overtemperature?) then elseif (Communication loss?) then elseif (Hardware failure?) then elseif (Standby state?) then endif :Activate emergency protection mechanism; fork   :Data acquisition task cyclically reads sensor data;   :Update system status using ring buffer; fork again   :Self-test task iteratively checks hardware integrity via PMIC and BMS;   :Log anomalies to structured audit log protected by CRC; fork again   :Handle exponential backoff retry logic;   :Generate fault service report;   :Upload fault service report to
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

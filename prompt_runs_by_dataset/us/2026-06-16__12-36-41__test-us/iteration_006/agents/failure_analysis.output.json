@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "over_literal_transcription",
+      "problem": "The generator copies UI text, descriptions, and notes verbatim into activity nodes instead of abstracting them into concise behavioral steps, leading to extra or imprecise activities.",
+      "possible_causes": [
+        "The prompt lacks instructions to abstract and summarize requirements into discrete, action-oriented steps.",
+        "The prompt does not instruct the model to exclude descriptive notes, conditions, or static UI text from activity nodes."
+      ]
+    },
+    {
+      "name": "incorrect_control_flow_construct",
+      "problem": "The generator misidentifies the appropriate control flow structure, such as using a switch/case for mutually exclusive conditions that should be if/else, or misplacing branching logic.",
+      "possible_causes": [
+        "The prompt does not clearly define when to use switch/case (for distinct values of a single variable) versus if/else (for boolean conditions or independent variables).",
+        "The prompt fails to guide the model to map requirement logic (e.g., conditional guards, alternative flows) to the correct PlantUML control flow syntax."
+      ]
+    },
+    {
+      "name": "missing_conditional_guards_and_prerequisites",
+      "problem": "The generator omits explicit conditional checks and prerequisite steps that are present in the ground truth, such as checking user expertise before allowing an action or evaluating state flags.",
+      "possible_causes": [
+        "The prompt does not emphasize extracting and explicitly modeling implicit or stated preconditions as decision nodes.",
+        "The prompt treats background constraints (e.g., 'must be performed by an expert') as annotations rather than executable flow logic."
+      ]
+    },
+    {
+      "name": "mishandled_parallel_and_loop_structures",
+      "problem": "The generator fails to correctly model concurrent processes and iterative loops, often placing parallel tasks sequentially or misrepresenting loop conditions and exits.",
+      "possible_causes": [
+        "The prompt lacks specific guidance on mapping concurrent requirements to PlantUML fork/end fork constructs.",
+        "The prompt does not provide clear instructions on translating iterative or repetitive logic into repeat/while loops with proper exit conditions."
+      ]
+    }
+  ]
+}
+```

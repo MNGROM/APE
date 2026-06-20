@@ -1,0 +1,737 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 20
+- syntax_pass_rate: 1.0000
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.3992
+- node_recall: 0.3869
+- node_f1: 0.3930
+- relation_precision: 0.2612
+- relation_recall: 0.2503
+- relation_f1: 0.2557
+- plantuml_compilation_pass_rate: 1.0000
+- llm_element_evaluated: 20.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.8070
+- llm_node_recall: 0.7480
+- llm_node_f1: 0.7582
+- llm_relation_precision: 0.5207
+- llm_relation_recall: 0.4746
+- llm_relation_f1: 0.4799
+
+## Failure Types
+- missing_or_wrong_relation: 20
+- extra_or_wrong_relation: 20
+- missing_activity: 19
+- extra_activity: 19
+- wrong_parallel: 7
+- wrong_loop: 3
+
+## Representative Failure Cases
+### lmc-0035
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.8571
+- llm_relation_f1: 0.7143
+- missing_nodes:
+  - input any value
+  - maximum value of nn output z <= 1.1?
+  - allowed
+  - not allowed
+- extra_nodes:
+  - receive input values for nn
+  - process input through nn
+  - calculate nn output z
+  - z <= 1.1?
+  - accept output z
+  - clamp/reject output z
+- missing_relations:
+  - input any value -> maximum value of nn output z <= 1.1?
+  - maximum value of nn output z <= 1.1? -> allowed [yes]
+  - maximum value of nn output z <= 1.1? -> not allowed [no]
+- input_excerpt:
+  1.	The maximum value of the NN output, z, shall always be less than or equal to 1.1, regardless of the input values.
+- generated_excerpt:
+  @startuml start :Receive input values for NN; :Process input through NN; :Calculate NN output z; if (z <= 1.1?) then (Yes)   :Accept output z; else (No)   :Clamp/Reject output z; endif stop @enduml
+### lmc-0012
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.5714
+- llm_relation_f1: 0.0000
+- missing_nodes:
+  - pilot is not in control (not standby)?
+  - autopilot change states from standby to transition
+- extra_nodes:
+  - standby
+  - transition
+- missing_relations:
+  - pilot is not in control (not standby)? -> autopilot change states from standby to transition [yes]
+- input_excerpt:
+  8.	The autopilot shall change states from STANDBY to TRANSITION when the pilot is not in control (not standby).
+- generated_excerpt:
+  @startuml skinparam style strictuml  state "STANDBY" as STANDBY state "TRANSITION" as TRANSITION  STANDBY --> TRANSITION : [pilot is not in control] @enduml
+### bp-0006
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1111
+- relation_f1: 0.1026
+- llm_element_status: success
+- llm_node_f1: 0.9615
+- llm_relation_f1: 0.6190
+- missing_nodes:
+  - go to modeling area
+  - choose info provider
+  - info area displays information
+  - transformation
+  - data source
+  - attributes
+  - texts
+  - open data source context menu
+- extra_nodes:
+  - in the modeling area choose info provider
+  - view attributes and texts with transformation and data source below characteristic product
+  - process attributes of the characteristic
+  - from context menu of data source choose create info package...
+  - enter a description for the info package and choose save
+  - go to the schedule tab page and choose start
+  - choose monitor in the toolbar
+  - select the date and choose execute
+- missing_relations:
+  - go to data warehousing workbench -> go to modeling area
+  - go to modeling area -> choose info provider
+  - choose info provider -> info area displays information
+  - info area displays information -> transformation [fork]
+  - info area displays information -> data source [fork]
+  - info area displays information -> attributes [fork]
+  - info area displays information -> texts [fork]
+  - transformation -> open data source context menu [merge]
+- input_excerpt:
+  6.	Loading Master Data forCharacteristic "Product"Go to the Data Warehousing Workbench;in the Modeling area choose Info Provider. The attributes and texts are displayed with transformation and Data source in your Info Area below the characteristic Product.3. Perform the following steps, rst for the attributes of the characteristic and then for the texts of the characteristic.4. From the context menu of the Data source, choose Create Info Package...5. On the next screen, enter a description for the Info Package and choose Save. The Info Package maintenance screen for the scheduler appears.6. Go to the tab page Schedule and choose Start.7. To check the load process, choose Monitor in the toolb
+- generated_excerpt:
+  @startuml start :Go to the Data Warehousing Workbench; :In the Modeling area choose Info Provider; :View attributes and texts with transformation\nand Data source below characteristic "Product"; fork   :Process Attributes of the characteristic;   :From context menu of Data source,\nchoose Create Info Package...;   :Enter a description for the Info Package\nand choose Save;   :Info Package maintenance screen appears;   :Go to the Schedule tab page\nand choose Start;   :Choose Monitor in the toolbar;   :Select the date and choose Execute;   :Monitor for the load process is displayed;   :Select the load process for your\nData source from the tree; fork again   :Process Texts of the characterist
+### bp-0010
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1667
+- relation_f1: 0.2051
+- llm_element_status: success
+- llm_node_f1: 0.8095
+- llm_relation_f1: 0.6047
+- missing_nodes:
+  - sort increasing or decreasing
+  - click alternative mouse button
+  - open context menu
+  - choose sort increasing or sort decreasing
+  - internet channel is the greatest
+  - analyze differences for months?
+  - open dropdown box calendar year/month
+  - select 08.2007
+- extra_nodes:
+  - right-click revenue field
+  - choose sort increasing or sort decreasing from context menu
+  - observe greatest revenue is from internet channel
+  - select 08.2007 in calendar year/month dropdown
+  - observe revenue increase for internet channel
+  - select 07.2007 in calendar year/month dropdown
+  - confirm internet channel revenue increased greatly (marketing campaign successful)
+  - filter data back to september (select 09.2007 in dropdown)
+- missing_relations:
+  - click arrows in revenue eld? -> sort increasing or decreasing [yes]
+  - click arrows in revenue eld? -> click alternative mouse button [no]
+  - sort increasing or decreasing -> internet channel is the greatest
+  - click alternative mouse button -> open context menu
+  - open context menu -> choose sort increasing or sort decreasing
+  - choose sort increasing or sort decreasing -> internet channel is the greatest
+  - internet channel is the greatest -> analyze differences for months?
+  - analyze differences for months? -> open dropdown box calendar year/month [yes]
+- input_excerpt:
+  10.	Analyzing Data in the Web Application1. Since you are interested in the revenue, you want to sort the revenue data.2. Click on the arrows in the Revenue eld to sort the revenue data in increasing or decreasing order.3. You can also sort the revenue by clicking the alternative mouse button on Revenue and choosing Sort Sort Increasing or Sort Decreasing in the context menu. You see that the greatest revenue is obtained with the distribution channel Internet.4. To see the differences in the revenue data for the months July, August and September, select rst 08.2007 and then 07.2007 in the dropdown box Calendar Year/Month. You see that the revenue data for the distribution channel Internet in
+- generated_excerpt:
+  @startuml start :Sort revenue data; fork   :Click arrows in Revenue field; fork again   :Right-click Revenue field;   :Choose Sort Increasing or Sort Decreasing from context menu; end fork :Observe greatest revenue is from Internet channel; :Select 08.2007 in Calendar Year/Month dropdown; :Observe revenue increase for Internet channel; :Select 07.2007 in Calendar Year/Month dropdown; :Confirm Internet channel revenue increased greatly\n(Marketing campaign successful); :Filter data back to September\n(Select 09.2007 in dropdown); :Right-click subtotal of Internet channel (567.308,05); :Select Documents > Create New Comment from context menu; :Enter name and description for the document; :Ente
+### bp-0002
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1875
+- relation_f1: 0.0588
+- llm_element_status: success
+- llm_node_f1: 0.7368
+- llm_relation_f1: 0.4878
+- missing_nodes:
+  - user authorizations are sufficient?
+  - log in
+  - choose modeling data warehousing workbench modeling
+  - data warehousing workbench is started
+  - choose info objects
+  - info object tree is displayed
+  - open root node context menu
+  - choose create info area
+- extra_nodes:
+  - log onto the bi system with a user that has sufficient authorizations
+  - start the data warehousing workbench (sap menu -> modeling -> data warehousing workbench modeling)
+  - under modeling choose infoobjects (the infoobject tree is displayed)
+  - from the context menu at the root node infoobjects choose create info area
+  - enter a technical name and a description for the info area
+  - enter a technical name and description and select key figure as the info object type
+  - create key figure revenue
+  - create key figure quantity
+- missing_relations:
+  - user authorizations are sufficient? -> log in [yes]
+  - log in -> choose modeling data warehousing workbench modeling
+  - choose modeling data warehousing workbench modeling -> data warehousing workbench is started
+  - data warehousing workbench is started -> choose info objects
+  - choose info objects -> info object tree is displayed
+  - info object tree is displayed -> open root node context menu
+  - open root node context menu -> choose create info area
+  - choose create info area -> enter a technical name [fork]
+- input_excerpt:
+  2.	Log onto the BI system1.	Log onto the BI system with a user that has sufficient authorizations for executing the scenario.2.	Start the Data Warehousing Workbench in the SAP menu by choosing Modeling Data Warehousing Workbench: Modeling.3.	Under Modeling, choose Info  Objects. The Info  Object tree is displayed.4.	From the context menu at the root node Info Objects of the Info Object tree, choose Create Info Area.5.	On the next screen, enter a technical name and a description for the Info Area. The Info Area is displayed in the Info Object tree.6.	It is used to group your Info Objects.7.	In the context menu of the Info Area, choose Create Info Object Catalog.8.	On the next screen, enter a 
+- generated_excerpt:
+  @startuml start :Log onto the BI system with a user that has sufficient authorizations; :Start the Data Warehousing Workbench\n(SAP Menu -> Modeling -> Data Warehousing Workbench: Modeling); :Under Modeling, choose InfoObjects\n(The InfoObject tree is displayed); :From the context menu at the root node InfoObjects,\nchoose Create Info Area; :Enter a technical name and a description for the Info Area; note right: The Info Area is displayed in the InfoObject tree.\nIt is used to group your InfoObjects. :In the context menu of the Info Area,\nchoose Create Info Object Catalog; :Enter a technical name and description,\nand select Key Figure as the Info Object Type; :Choose Create; :Activate the 
+### rac-0008
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.1935
+- relation_f1: 0.0500
+- llm_element_status: success
+- llm_node_f1: 0.1311
+- llm_relation_f1: 0.0645
+- missing_nodes:
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - switch to state 127
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - switch to state 128
+  - shutdown
+  - issue 2.2s timeout warning
+  - enter shutdown state
+  - slow charging is inactive and bms self-check counter is 1
+- extra_nodes:
+  - system starts up
+  - high-voltage shutdown request flag == 2?
+  - switch to state 115
+  - flag drops to 0?
+  - cp duty cycle at 85 ?
+  - switch to state 126
+  - bms self-check counter == 1?
+  - switch to state 130
+- missing_relations:
+  - enter power-up mode -> high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0
+  - high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0 -> switch to state 127 [yes]
+  - switch to state 127 -> slow charging is inactive and front mcu collateral shutdown request flag is 1
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1 -> switch to state 128 [yes]
+  - switch to state 128 -> shutdown
+  - slow charging is inactive and front mcu collateral shutdown request flag is 1 -> slow charging is inactive [no]
+  - slow charging is inactive -> issue 2.2s timeout warning [yes]
+  - issue 2.2s timeout warning -> switch to state 128
+- input_excerpt:
+  After the system starts up, if slow charging is active, we enter power-up mode. Then:  1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:    a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.    b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.    c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with 
+- generated_excerpt:
+  @startuml start :System starts up; if (Slow charging active?) then (yes)   :Enter power-up mode;      if (High-voltage shutdown request flag == 2?) then (yes)     :Switch to state 115;          partition "Scenario 1a" {       if (Flag drops to 0?) then (yes)         if (CP duty cycle at 85%?) then (yes)           :Switch to state 126;         endif       endif       if (BMS self-check counter == 1?) then (yes)         :Switch to state 130;       endif       if (Slow charging becomes inactive?) then (yes)         :Shut down;         end       endif     }          partition "Scenario 1b" {       if (Flag drops to 0?) then (yes)         if (CP duty cycle at 85%?) then (yes)           :Switch to
+### lmc-0055
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2000
+- relation_f1: 0.2500
+- llm_element_status: success
+- llm_node_f1: 0.8571
+- llm_relation_f1: 0.8571
+- missing_nodes:
+  - dcm321 * dcm321t
+  - allowed
+  - not allowed
+- extra_nodes:
+  - initialize rotation matrix dcm321
+  - compute transpose of rotation matrix dcm321t
+  - multiply dcm321 by dcm321t
+  - validation passed
+  - validation failed
+- missing_relations:
+  - =identity (3x3) matrix.v? -> allowed [yes]
+  - =identity (3x3) matrix.v? -> not allowed [no]
+- input_excerpt:
+  7.	The Rotation Matrix, DCM321, multiplied by the transpose of the Rotation Matrix, DCM321T shall be the Identity (3x3) Matrix.v
+- generated_excerpt:
+  @startuml start :Initialize Rotation Matrix DCM321; :Compute Transpose of Rotation Matrix DCM321T; :Multiply DCM321 by DCM321T; if (Result == Identity (3x3) Matrix?) then (Yes)   :Validation Passed; else (No)   :Validation Failed; endif stop @enduml
+### pure-0025
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2857
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.7778
+- llm_relation_f1: 0.5263
+- missing_nodes:
+  - drive for national value distance
+  - apply emergency brake
+  - traction unit comes to standstill?
+  - roll away protection is initiated
+  - etcs provides supervision appertaining
+- extra_nodes:
+  - is movement in the permitted direction?
+  - apply emergency brake after distance defined by national value is travelled
+  - wait for train to come to a standstill
+  - etcs provides supervision appertaining when roll away protection was initiated
+  - continue monitoring
+- missing_relations:
+  - monitor direction of permitted movement -> drive for national value distance
+  - drive for national value distance -> apply emergency brake
+  - apply emergency brake -> traction unit comes to standstill?
+  - traction unit comes to standstill? -> driver can release emergency brake [yes]
+  - driver can release emergency brake -> roll away protection is initiated
+  - roll away protection is initiated -> etcs provides supervision appertaining
+  - traction unit comes to standstill? -> etcs provides supervision appertaining [no]
+- input_excerpt:
+  The trainborne equipment shall monitor the direction of movement in relation to the permitted direction. The trainborne equipment shall apply the emergency brake after a distance, defined by a national value, is travelled by the train. When the traction unit has come to a standstill, the driver shall be able to release the emergency brake. After releasing the emergency brake, ETCS will provide the supervision appertaining when roll away protection was initiated.
+- generated_excerpt:
+  @startuml start :Monitor direction of movement in relation to the permitted direction; if (Is movement in the permitted direction?) then (No)   :Apply emergency brake after distance defined by national value is travelled;   :Wait for train to come to a standstill;   :Driver releases emergency brake;   :ETCS provides supervision appertaining when roll away protection was initiated;   stop else (Yes)   :Continue monitoring;   stop endif @enduml
+### pure-0033
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3333
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.3750
+- llm_relation_f1: 0.1250
+- missing_nodes:
+  - process construction requirments
+  - chainable
+  - output of fourier transform
+  - can be piped to any input
+  - repeatable in chain
+  - no frequency domain processes
+- extra_nodes:
+  - apply selected frequency domain process
+  - output processed data
+- missing_relations:
+  - apply user selected frequency domain processes -> process construction requirments
+  - process construction requirments -> chainable [fork]
+  - chainable -> output of fourier transform [fork]
+  - output of fourier transform -> any frequency domain process
+  - any frequency domain process -> can be piped to any input [merge]
+  - can be piped to any input -> repeatable in chain
+  - process construction requirments -> repeatable in chain [fork]
+  - repeatable in chain -> no frequency domain processes [merge]
+- input_excerpt:
+  Frequency Domain Processing – The BE shall be able to apply user selected frequency domain processes. These processes should be constructed to be chainable (output of Fourier Transform and any frequency domain process can be piped to input of any frequency domain process including replica of self) and repeatable in the chain. No frequency domain processes have as yet been proposed.
+- generated_excerpt:
+  @startuml skinparam style strictuml skinparam ActivityBackgroundColor #EEF7FF skinparam ActivityBorderColor #336699 skinparam NoteBackgroundColor #FFFFCC skinparam NoteBorderColor #CC9900  title Frequency Domain Processing  start  :Receive User Selection of Frequency Domain Processes;  repeat   :Apply Selected Frequency Domain Process;      note right     Processes are chainable:     Output of Fourier Transform or     any frequency domain process     can be piped to the input of     any frequency domain process,     including a replica of itself.   end note      :Output Processed Data;  repeat while (Another Frequency Domain Process to Apply?) is (Yes) -> No;  stop  @enduml
+### pure-0074
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3636
+- relation_f1: 0.4615
+- llm_element_status: success
+- llm_node_f1: 0.8649
+- llm_relation_f1: 0.3922
+- missing_nodes:
+  - start diagnostic processing
+  - stop?
+  - open main menu status
+  - include to validate privileges
+  - request confirmation
+  - responds positively?
+  - perform no function
+  - user remains authenticated
+- extra_nodes:
+  - include (authenticate user)
+  - has appropriate privilege?
+  - request confirmation to stop diagnostics
+  - user confirms?
+  - no function performed
+  - exit tool
+  - already validated?
+  - permitted to stop diagnostics?
+- missing_relations:
+  - start diagnostic processing -> stop?
+  - stop? -> open main menu status [yes]
+  - stop? -> select exit from file ? [no]
+  - open main menu status -> select stop diagnostics menu item
+  - authenticated as administrator user? -> request confirmation [yes]
+  - stop diagnostic processing -> responds positively?
+  - responds positively? -> stop diagnostic processing [yes]
+  - responds positively? -> perform no function [no]
+- input_excerpt:
+  1. The user can stop diagnostic processing at any time after the diagnostic processing has started by selecting the “Stop Diagnostics” menu item from the main menu entitled “Status”. 2. If the user is not authenticated as the administrator user, include (Authenticate User) to validate privileges for stopping diagnostic processing. 3. If the user has the appropriate privilege, the tool requests confirmation to stop diagnostic processing. 4. If the user responds positively to the confirmation, the tool stops diagnostic processing and indicates the stopped condition. Otherwise the software performs no function but the user remains authenticated. 5. If the user selects the “Exit” menu item from 
+- generated_excerpt:
+  @startuml start  fork   :Select "Stop Diagnostics" from "Status" menu;    if (Authenticated as administrator?) then (No)     :Include (Authenticate User);     if (Has appropriate privilege?) then (Yes)     else (No)       stop     endif   endif    :Request confirmation to stop diagnostics;    if (User confirms?) then (Yes)     :Stop diagnostic processing;     :Indicate stopped condition;   else (No)     :No function performed;     note right: User remains authenticated   endif  fork again   :Select "Exit" from "File" menu;    if (Diagnostic processing active?) then (No)     :Exit tool;     stop   else (Yes)     if (Already validated?) then (No)       :Include (Authenticate User);       if (P
+### fsd-0098
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4211
+- relation_f1: 0.1867
+- llm_element_status: success
+- llm_node_f1: 0.6780
+- llm_relation_f1: 0.2308
+- missing_nodes:
+  - deterministically orchestrate through priority queues
+  - traction
+  - braking
+  - door control
+  - diagnostics functions
+  - issue track maintenance request via high-priority task
+  - monitoring task using ring buffer for historical operation data
+  - perform threshold-based analysis
+- extra_nodes:
+  - high-priority task route obstruction monitor
+  - issue track maintenance request
+  - continue normal operations
+  - monitoring task threshold analysis
+  - thresholds exceeded?
+  - re-trigger maintenance request (exponential backoff strategy)
+  - await track clearance
+  - abnormalities resolved
+- missing_relations:
+  - tcms executes on preemptive rtos -> deterministically orchestrate through priority queues
+  - deterministically orchestrate through priority queues -> traction [fork]
+  - deterministically orchestrate through priority queues -> braking [fork]
+  - deterministically orchestrate through priority queues -> door control [fork]
+  - deterministically orchestrate through priority queues -> diagnostics functions [fork]
+  - traction -> route deviation/track status obstruction detected? [merge]
+  - braking -> route deviation/track status obstruction detected? [merge]
+  - door control -> route deviation/track status obstruction detected? [merge]
+- input_excerpt:
+  The Train Control and Monitoring System (TCMS), executing on a preemptive RTOS, deterministically orchestrates traction, braking, door control, and diagnostic functions through priority queues. Upon detecting a route deviation between onboard location data and the dispatch center's planned path, or an obstruction from the track status detection system, the TCMS immediately asserts the emergency braking protocol and issues a track maintenance request via a high-priority task. A separate monitoring task, using a ring buffer for historical operation data, performs threshold-based analysis; if exceeded, it triggers a non-blocking data optimization routine before resuming normal scheduling. If tr
+- generated_excerpt:
+  @startuml skinparam style strictuml skinparam ActivityBackgroundColor #EEF7FF skinparam ActivityBorderColor #0044AA skinparam PartitionBackgroundColor #F0F8FF skinparam NoteBorderColor #006600 skinparam NoteBackgroundColor #F0FFF0  title Train Control and Monitoring System (TCMS) - Activity Diagram  start  :Initialize TCMS on Preemptive RTOS; note right   Deterministic orchestration via   priority queues for:   - Traction   - Braking   - Door Control   - Diagnostics end note  partition "Concurrent Task Execution" {   fork     :High-Priority Task: Route & Obstruction Monitor;     if (Route deviation detected\nor Track obstruction?) then (Yes)       :Assert Emergency Braking Protocol;       :I
+### fsd-0100
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4815
+- relation_f1: 0.4179
+- llm_element_status: success
+- llm_node_f1: 0.7458
+- llm_relation_f1: 0.3684
+- missing_nodes:
+  - system initialization
+  - pwm fan speeds
+  - liquid-cooling pump actuators
+  - initiate concurrent data processing tasks
+  - high-priority task executes cyclic data smoothing algorithm
+  - lower-priority task performs outlier rejection
+  - both utilize shared mutex-protected sensor data ring buffer
+  - fault detected?
+- extra_nodes:
+  - govern pwm fan speeds liquid-cooling pump actuators
+  - high-priority task
+  - acquire mutex
+  - read shared sensor data ring buffer
+  - release mutex
+  - execute cyclic data smoothing algorithm
+  - lower-priority task
+  - perform outlier rejection
+- missing_relations:
+  - system initialization -> thermal management controller implemented as deterministic state machine on rtos
+  - thermal management controller implemented as deterministic state machine on rtos -> pwm fan speeds [fork]
+  - thermal management controller implemented as deterministic state machine on rtos -> liquid-cooling pump actuators [fork]
+  - pwm fan speeds -> sensor reading > preset threshold? [merge]
+  - liquid-cooling pump actuators -> sensor reading > preset threshold? [merge]
+  - evaluate ambient temperature and humidity against setpoints -> initiate concurrent data processing tasks
+  - initiate concurrent data processing tasks -> high-priority task executes cyclic data smoothing algorithm [fork]
+  - initiate concurrent data processing tasks -> lower-priority task performs outlier rejection [fork]
+- input_excerpt:
+  The thermal management controller, implemented as a deterministic state machine on the RTOS, governs PWM fan speeds and liquid-cooling pump actuators. Upon a sensor reading exceeding its preset threshold, conditional logic—evaluating ambient temperature and humidity against their respective setpoints—initiates concurrent data processing tasks. A high-priority task executes a cyclic data smoothing algorithm with a convergence check, while a lower-priority task performs outlier rejection; both utilize a shared mutex-protected sensor data ring buffer. If a fault is detected during this processing, an ISR triggers the fault diagnosis and alarm handling modules as separate, scheduled threads. The
+- generated_excerpt:
+  @startuml skinparam style strictuml  start  :Thermal Management Controller (RTOS State Machine); :Govern PWM fan speeds & liquid-cooling pump actuators;  if (Sensor reading > Preset threshold?) then (Yes)   :Evaluate ambient temp & humidity against setpoints;      fork     :High-Priority Task;     :Acquire Mutex;     :Read shared sensor data ring buffer;     :Release Mutex;     :Execute cyclic data smoothing algorithm;     :Perform convergence check;   fork again     :Lower-Priority Task;     :Acquire Mutex;     :Read shared sensor data ring buffer;     :Release Mutex;     :Perform outlier rejection;   end fork    if (Fault detected during processing?) then (Yes)     :ISR triggers fault hand
+### fsd-0083
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.2716
+- llm_element_status: success
+- llm_node_f1: 0.7797
+- llm_relation_f1: 0.3797
+- missing_nodes:
+  - thermal management controller executes as state machine on rtos
+  - govern pwm fans
+  - govern liquid-cooling actuators
+  - primary sequence initiates
+  - primary power rail nominal?
+  - operation proceeds
+  - two high-priority tasks spawned
+  - excursion?
+- extra_nodes:
+  - rail voltage nominal?
+  - temperature excursion detected?
+  - excursion persistent?
+  - final supervisory state confirm all parameters nominal
+  - communication fault?
+  - bounded retries with exponential backoff
+  - telemetry active?
+  - engage redundant sensors
+- missing_relations:
+  - thermal management controller executes as state machine on rtos -> govern pwm fans [fork]
+  - thermal management controller executes as state machine on rtos -> govern liquid-cooling actuators [fork]
+  - govern pwm fans -> primary sequence initiates [merge]
+  - govern liquid-cooling actuators -> primary sequence initiates [merge]
+  - primary sequence initiates -> check system rail voltage status via pmic
+  - primary power rail nominal? -> operation proceeds [yes]
+  - operation proceeds -> two high-priority tasks spawned
+  - two high-priority tasks spawned -> sample current sensor data [fork]
+- input_excerpt:
+  The thermal management controller executes as a state machine on the RTOS, governing PWM fans and liquid-cooling actuators. Its primary sequence initiates with a check of the system's rail voltage status via the PMIC; operation proceeds only if this primary power rail is nominal. Upon validation, two high-priority tasks are spawned concurrently: one task samples the current sensor data, and if an overcurrent is detected, it enters an iterative monitoring mode using a ring buffer, holding the system state until the data normalizes. The concurrent task monitors temperature sensor data against safety thresholds; any excursion triggers immediate heat dissipation measures and, if persistent, init
+- generated_excerpt:
+  @startuml skinparam style strictuml  start  :Check system rail voltage status via PMIC;  if (Rail voltage nominal?) then (No)     stop else (Yes) endif  fork     :Sample current sensor data;     if (Overcurrent detected?) then (Yes)         repeat             :Enter iterative monitoring mode (ring buffer);             :Hold system state;         repeat while (Data normalized?) is (No)     else (No)     endif fork again     :Monitor temperature sensor data against safety thresholds;     if (Temperature excursion detected?) then (Yes)         :Trigger immediate heat dissipation measures;         if (Excursion persistent?) then (Yes)             :Initiate controlled cool-down path (BMS/FADEC); 
+### bp-0028
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.3462
+- llm_element_status: success
+- llm_node_f1: 0.8261
+- llm_relation_f1: 0.7308
+- missing_nodes:
+  - log in
+  - more information?
+  - see creating a new job
+  - open drop-lists
+  - select output to a biar file
+  - click add objects
+  - infoobjects are added
+  - other operations?
+- extra_nodes:
+  - log into the lifecycle manager tool
+  - in the destination system drop-down list select output to a biar file option
+  - click add objects to add infoobjects to the job
+  - select destination?
+- missing_relations:
+  - log in -> create a new job
+  - create a new job -> more information?
+  - more information? -> see creating a new job [yes]
+  - more information? -> open drop-lists [no]
+  - see creating a new job -> open drop-lists [merge]
+  - open drop-lists -> select output to a biar file
+  - click create -> click add objects
+  - click add objects -> infoobjects are added
+- input_excerpt:
+  28.	Exporting a Job to a BIAR File1. Log into the LifeCycle Manager tool, and create a new job. For more information on creating a new job, see Creating a New Job on page 372. In the Destination System drop-down list, select Output to a BIAR file option and click Create.3. Click Add objects to add infoobjects to the job. You can use the Manage Dependencies option to manage the dependencies of the selected job.4. Click Promote.The "Promote - Job Name" screen appears.5. Click Export.The BIAR file is created. You can save a BIAR file to a File System or an FTP location.6. In the "Promote - Job Name"screen, click Biar File Destination. Biar File Destination pane appears.7. Select either File Sys
+- generated_excerpt:
+  @startuml start :Log into the LifeCycle Manager tool; :Create a new job; :In the Destination System drop-down list,\nselect "Output to a BIAR file" option; :Click Create; :Click Add objects to add infoobjects to the job; :Manage Dependencies (optional); :Click Promote; note right: "Promote - Job Name" screen appears :Click Export; note right: BIAR file is created :Click Biar File Destination; note right: Biar File Destination pane appears if (Select Destination?) then (File System)   :Select File System;   :Click Export;   :BIAR file is exported to a file system; else (FTP)   :Select FTP;   :Enter details (host, port, username,\npassword, directory, filename);   :Click Export;   :BIAR file i
+### lmc-0005
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.4444
+- llm_element_status: success
+- llm_node_f1: 0.8333
+- llm_relation_f1: 0.4286
+- missing_nodes:
+  - exceeding sensor limits latch an autopilot pullup
+- extra_nodes:
+  - exceed sensor limits
+  - do not latch autopilot pullup
+  - latch autopilot pullup
+- missing_relations:
+  - pilot is not in control (not standby)? -> system is supported without failures (not apfail)? [no]
+  - system is supported without failures (not apfail)? -> pilot is not in control (not standby)? [no]
+- input_excerpt:
+  1.	Exceeding sensor limits shall latch an autopilot pullup when the pilot is not in control (not standby) and the system is supported without failures (not apfail).
+- generated_excerpt:
+  @startuml start :Exceed sensor limits; if (Pilot in control (standby)?) then (Yes)   :Do not latch autopilot pullup;   stop else (No)   if (System supported without failures (not apfail)?) then (Yes)     :Latch autopilot pullup;     stop   else (No)     :Do not latch autopilot pullup;     stop   endif endif @enduml
+### fsd-0041
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5091
+- relation_f1: 0.2727
+- llm_element_status: success
+- llm_node_f1: 0.8254
+- llm_relation_f1: 0.6933
+- missing_nodes:
+  - perform sequential power-on self-test
+  - validate within expected operational envelope
+  - network link
+  - sensor data
+  - spawn concurrent tasks within rtos environment
+  - health management task executes periodic device diagnostics
+  - structured audit incorporates with crc for integrity
+  - write to non-blocking ring buffer
+- extra_nodes:
+  - interrogate bms for power rail abnormalities
+  - validate network link
+  - verify sensor data within operational envelope
+  - handle post failure
+  - release mutex
+  - health management task
+  - execute periodic device diagnostics
+  - periodic timer
+- missing_relations:
+  - power management subsystem initialization -> perform sequential power-on self-test
+  - validate within expected operational envelope -> network link [fork]
+  - validate within expected operational envelope -> sensor data [fork]
+  - network link -> all checks pass? [merge]
+  - sensor data -> all checks pass? [merge]
+  - all checks pass? -> spawn concurrent tasks within rtos environment [yes]
+  - spawn concurrent tasks within rtos environment -> high-priority main thread scheduled via priority queue [fork]
+  - high-priority main thread scheduled via priority queue -> enter continuous loop
+- input_excerpt:
+  Upon initialization, the power management subsystem performs a sequential power-on self-test, first interrogating the PMIC and BMS for power rail abnormalities before proceeding to validate the network link and verify sensor data is within the expected operational envelope. If all checks pass, the system spawns multiple concurrent tasks within its RTOS environment: a high-priority main thread, scheduled via a priority queue, enters a continuous loop to monitor the device's operational state, while a lower-priority background thread asynchronously updates monitoring data, protected by mutexes for shared resource access. A separate health management task executes periodic device diagnostics, w
+- generated_excerpt:
+  @startuml skinparam ActivityBackgroundColor #EEF2FF skinparam ActivityBorderColor #4B0082  start  :Initialize Power Management Subsystem;  partition "Sequential Power-On Self-Test" {   :Interrogate PMIC for power rail abnormalities;   :Interrogate BMS for power rail abnormalities;   :Validate network link;   :Verify sensor data within operational envelope; }  if (All POST checks pass?) then (Yes) else (No)   :Handle POST Failure;   stop endif  partition "RTOS Concurrent Task Execution" {   fork     :High-Priority Main Thread\n(Scheduled via Priority Queue);     repeat       :Monitor device operational state;     repeat while (Continuous Loop) is (Continue)        fork again     :Low-Priority
+### rac-0012
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6061
+- relation_f1: 0.4091
+- llm_element_status: success
+- llm_node_f1: 0.9268
+- llm_relation_f1: 0.5625
+- missing_nodes:
+  - condition judgement
+  - shutdown
+  - high-voltage shutdown request charging/discharging =2
+  - wait 0.8s
+- extra_nodes:
+  - system starts up
+  - move to state 175
+  - shut down
+  - high-voltage shutdown request detected (value=2)?
+  - wait 0.8 seconds
+  - enter state 175
+  - high-voltage shutdown request (value=2) exists?
+  - pause for 0.8 seconds
+- missing_relations:
+  - switch to state 153 -> bms-fast charger handshake flag=0 and front mcu high-voltage flag=0
+  - enter state 155 -> condition judgement
+  - condition judgement -> pre-charge failure occurs [case pre-charge failure occurs]
+  - condition judgement -> high-voltage shutdown request charging/discharging =2 [case high-voltage shutdown request charging/discharging =2]
+  - high-voltage shutdown request charging/discharging =2 -> wait 0.8s
+  - wait 0.8s -> switch to state 175
+  - condition judgement -> ignition switch=2 [case ignition switch=2]
+  - stay in state 155 -> high-voltage shutdown request charging/discharging =2
+- input_excerpt:
+  After the system starts up: - If charging is active (charging=1) and the front MCU high-voltage detection flag is 0, transition to state 153. - If the BMS-fast charger handshake flag is 0 and the front MCU high-voltage flag is 0, enter state 155.  While in state 155: 1. If pre-charge failure occurs, move to state 175. If fast charging remains inactive after this, shut down and end the process. 2. If a high-voltage shutdown request (for charging/discharging) is detected (value=2), wait 0.8 seconds before entering state 175. If fast charging is inactive afterward, shut down and end. 3. If the ignition switch status is 2, remain in state 155. If a high-voltage shutdown request (value=2) exists 
+- generated_excerpt:
+  @startuml start :System starts up;  if (charging=1 && front MCU high-voltage detection flag=0) then (yes)   :Transition to state 153;   stop elseif (BMS-fast charger handshake flag=0 && front MCU high-voltage flag=0) then (yes)   :Enter state 155; else (no)   stop endif  repeat   if (pre-charge failure occurs?) then (yes)     :Move to state 175;     if (fast charging inactive?) then (yes)       :Shut down;       stop     endif   elseif (high-voltage shutdown request detected (value=2)?) then (yes)     :Wait 0.8 seconds;     :Enter state 175;     if (fast charging inactive?) then (yes)       :Shut down;       stop     endif   elseif (ignition switch status=2?) then (yes)     :Remain in state 
+### pure-0076
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6087
+- relation_f1: 0.3478
+- llm_element_status: success
+- llm_node_f1: 0.8148
+- llm_relation_f1: 0.3448
+- missing_nodes:
+  - not allowed
+  - print window image?
+  - click ok
+  - print window
+- extra_nodes:
+  - display current window
+  - click back button
+  - navigate to diagnostic information window
+  - click ok button
+  - print image of the diagnostic information window
+- missing_relations:
+  - dismiss current window? -> initial window? [yes]
+  - initial window? -> not allowed [yes]
+  - initial window? -> re-establish previous window as current window [no]
+  - not allowed -> print window image? [merge]
+  - make new selection -> print window image? [merge]
+  - dismiss current window? -> print window image? [no]
+  - print window image? -> click print [yes]
+  - click ok -> print window
+- input_excerpt:
+  1. At any window except the initial window, the user may click the “Back” button to dismiss the current window and re-establish the previous window as the current window. The user may then make a new selection. 2. The user may click a button labeled “Print” on the diagnostic information window to print an image of the window. 3. The tool displays a window listing possible items to print including the diagnostic information window. 4. The user selects the diagnostic information window and clicks the “OK” button to print the window.
+- generated_excerpt:
+  @startuml start :Display current window; if (Is initial window?) then (No)   :Click "Back" button;   :Dismiss current window;   :Re-establish previous window as current;   :Make new selection; else (Yes)   :Navigate to diagnostic information window;   :Click "Print" button;   :Display window listing possible items to print;   :Select diagnostic information window;   :Click "OK" button;   :Print image of the diagnostic information window; endif stop @enduml
+### rac-0002
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7368
+- relation_f1: 0.4000
+- llm_element_status: success
+- llm_node_f1: 0.8333
+- llm_relation_f1: 0.7143
+- missing_nodes:
+  - gear is s
+  - gear check
+  - gear is n or r
+- extra_nodes:
+  - check gear position
+  - calculate d_s gear mileage parameter = (s gear nominal mileage) / (d gear nominal mileage)
+- missing_relations:
+  - gear is d or n -> gear is s [no]
+  - gear is s -> set d_s gear mileage parameter = s gear nominal mileage / d gear nominal mileage [yes]
+  - gear is s -> vehicle status is 30 [no]
+  - switch to driving mode -> gear check
+  - gear check -> gear is d or e [case gear is d or e]
+  - gear check -> gear is n or r [case gear is n or r]
+- input_excerpt:
+  After the system starts up, the process begins by checking the gear position. If the gear is in D or N, the D_S gear mileage parameter is set to 1, and the sequence ends. If the gear is in S, the D_S gear mileage parameter is calculated as S gear nominal mileage divided by D gear nominal mileage, then the process concludes. Additionally, if the vehicle status is 30, switch to driving mode. Next, if the gear is in D or E, set the D_S gear mileage parameter to S gear nominal mileage divided by D gear nominal mileage, and end. Finally, if the gear is in N or R, observe using the D_S gear mileage parameter and terminate the process.
+- generated_excerpt:
+  @startuml start :Check gear position; if (Gear in D or N?) then (Yes)   :Set D_S gear mileage parameter = 1; else (No - Gear in S)   :Calculate D_S gear mileage parameter = (S gear nominal mileage) / (D gear nominal mileage); endif if (Vehicle status == 30?) then (Yes)   :Switch to driving mode; else (No) endif if (Gear in D or E?) then (Yes)   :Set D_S gear mileage parameter = (S gear nominal mileage) / (D gear nominal mileage); else (No - Gear in N or R)   :Observe using D_S gear mileage parameter; endif end @enduml
+### rac-0003
+- dataset: rac
+- failure_types: missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.9302
+- relation_f1: 0.7547
+- llm_element_status: success
+- llm_node_f1: 0.9583
+- llm_relation_f1: 0.7532
+- missing_nodes:
+  - shutdown
+- extra_nodes:
+  - system startup
+  - system shuts down
+- missing_relations:
+  - switch to state 46 -> remote flag becomes 0
+  - switch to state 46 -> ignition switch becomes 0
+  - ignition switch is 2 and front mcu initialization state is 0 -> ignition switch is 2 and front mcu initialization state is 1 [no]
+  - switch to state 40 -> ignition switch becomes 0
+  - ignition switch is 2 and front mcu initialization state is 1 -> ignition switch is 2 and bms self-check counter is 1 [no]
+  - switch to state 35 -> ignition switch becomes 0
+- input_excerpt:
+  After the system starts up, the following decision paths apply:  1) When the remote flag is 1, the system enters state 28.    If the power battery discharge protection flag is 1 and SOC is 0, it switches to state 46.    Should the remote flag become 0, the system shuts down and ends.  2) If the ignition switch is at position 2 and the front MCU initialization state is 0, the system switches to state 12.    When the discharge protection flag is 1 and front MCU initialization state is 1, it switches to state 46.    If the ignition switch changes to 0, the system shuts down and ends.  3) When the ignition switch is at 2 and front MCU initialization state is 1, the system switches to state 20.  
+- generated_excerpt:
+  @startuml start :System Startup;  if (Remote flag = 1?) then (Yes)   :Enter State 28;   if (Power battery discharge protection flag = 1\nand SOC = 0?) then (Yes)     :Switch to State 46;   else (No)   endif   if (Remote flag = 0?) then (Yes)     :System shuts down;     end   else (No)   endif  elseif (Ignition switch = 2\nand front MCU initialization state = 0?) then (Yes)   :Switch to State 12;   if (Discharge protection flag = 1\nand front MCU initialization state = 1?) then (Yes)     :Switch to State 46;   else (No)   endif   if (Ignition switch = 0?) then (Yes)     :System shuts down;     end   else (No)   endif  elseif (Ignition switch = 2\nand front MCU initialization state = 1?) then 
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

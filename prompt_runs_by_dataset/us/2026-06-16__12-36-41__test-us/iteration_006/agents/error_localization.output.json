@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow focuses on extracting actions, decisions, and constraints verbatim (Step 1) and enforcing a 1-to-1 mapping of explicitly stated text to nodes (Step 4), but it lacks a step to abstract or summarize verbose UI text, descriptions, and notes into concise behavioral steps, directly causing over-literal transcription."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section does not clearly differentiate when to use `switch`/`case` (evaluating a single variable against distinct values) versus `if`/`else` (evaluating boolean conditions or independent variables), leading to incorrect control flow constructs. It also lacks guidance to treat background constraints and prerequisites (e.g., 'must be performed by an expert') as executable decision logic rather than static annotations, causing missing conditional guards."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rules strictly prohibit adding unstated elements (Rule 5) and over-decomposing single actions (Rule 9), but they do not prohibit copying verbatim UI text or descriptive clauses into activity nodes, thereby failing to prevent over-literal transcription. Additionally, while Rule 8 forbids misplacing loop boundaries, the rules lack explicit prohibitions against representing parallel tasks sequentially or misrepresenting loop exit conditions."
+    }
+  ]
+}
+```

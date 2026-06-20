@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Prevent over-literal transcription by adding an abstraction step between extraction and mapping.",
+      "change_instruction": "Add a workflow step after action extraction (between Step 1 and Step 2) requiring the model to abstract and summarize verbose UI text, descriptions, and notes into concise, action-oriented behavioral steps, explicitly excluding static text, descriptive clauses, and non-behavioral notes from being mapped to activity nodes."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Clarify the distinction between switch/case and if/else, and ensure prerequisites/background constraints are modeled as decision logic.",
+      "change_instruction": "Update Knowledge 2 to explicitly define `switch`/`case` for evaluating a single variable against multiple distinct values, and `if`/`else` for evaluating boolean conditions or independent variables. Add a new knowledge rule stating that background constraints, prerequisites, and role requirements (e.g., 'must be performed by an expert') must be modeled as executable decision nodes (conditional guards) in the flow, not treated as static annotations or ignored."
+    },
+    {
+      "section": "rule",
+      "intent": "Explicitly prohibit verbatim UI text in nodes, sequential representation of parallel tasks, and misrepresentation of loop exits.",
+      "change_instruction": "Add a rule explicitly prohibiting the use of verbatim UI text, descriptive clauses, or static notes as activity node labels; require them to be abstracted into behavioral actions. Add a rule explicitly forbidding the representation of explicitly concurrent tasks as sequential steps. Add a rule explicitly forbidding the misrepresentation of loop exit conditions (e.g., incorrect exit criteria or missing exit conditions)."
+    }
+  ]
+}
+```

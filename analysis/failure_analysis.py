@@ -27,10 +27,12 @@ FAILURE_TYPE_GUIDE: dict[str, str] = {
 }
 
 
-def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], max_cases: int) -> str:
+def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], max_cases: int | None = None) -> str:
     failure_counter = Counter(ft for r in records for ft in r.failure_types)
     failed_records = [r for r in records if r.failure_types and "infrastructure_error" not in r.failure_types]
     infra_records = [r for r in records if "infrastructure_error" in r.failure_types]
+    representative_limit = max_cases if max_cases is not None and max_cases > 0 else len(failed_records)
+    infra_limit = max_cases if max_cases is not None and max_cases > 0 else len(infra_records)
     worst = sorted(
         failed_records,
         key=lambda r: (
@@ -38,7 +40,7 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
             r.node_metrics.f1,
             r.relation_metrics.f1,
         ),
-    )[:max_cases]
+    )[:representative_limit]
 
     lines: list[str] = []
     lines.append("# Prompt Evaluation Analysis")
@@ -61,7 +63,7 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
         lines.append("## Infrastructure Errors")
         lines.append(f"- count: {len(infra_records)}")
         lines.append("- These cases failed before a model output was available. Do not modify the prompt based only on infrastructure errors.")
-        for record in infra_records[:max_cases]:
+        for record in infra_records[:infra_limit]:
             err = " | ".join(record.syntax.errors[:3]) if record.syntax.errors else "unknown"
             lines.append(f"- {record.case_id}: {err}")
     lines.append("")
@@ -116,8 +118,9 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
     return "\n".join(lines) + "\n"
 
 
-def failure_analysis_payload(records: list[EvaluationRecord], summary: dict[str, float], max_cases: int) -> dict[str, Any]:
+def failure_analysis_payload(records: list[EvaluationRecord], summary: dict[str, float], max_cases: int | None = None) -> dict[str, Any]:
     failed_records = [r for r in records if r.failure_types and "infrastructure_error" not in r.failure_types]
+    limit = max_cases if max_cases is not None and max_cases > 0 else len(failed_records)
     representative = sorted(
         failed_records,
         key=lambda r: (
@@ -125,7 +128,7 @@ def failure_analysis_payload(records: list[EvaluationRecord], summary: dict[str,
             r.node_metrics.f1,
             r.relation_metrics.f1,
         ),
-    )[:max_cases]
+    )[:limit]
     return {
         "requirements": [r.input_requirement for r in representative],
         "predictions": [r.generated_plantuml for r in representative],
@@ -149,7 +152,7 @@ def analyze_failures(
     state_dir: Path | None,
     iteration: int,
 ) -> dict[str, Any] | None:
-    payload = failure_analysis_payload(records, summary, args.analysis_cases)
+    payload = failure_analysis_payload(records, summary)
     write_text(output_input_path, json.dumps(payload, ensure_ascii=False, indent=2))
     messages = [
         {

@@ -1,0 +1,54 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract explicit activities strictly from the requirement text, explicitly including data sources, system outputs, and displayed information as distinct activity nodes. Identify and preserve structural elements such as swimlanes or partitions mentioned in the requirement.\nStep 2: Construct control-flow relations exclusively among the extracted activities, mapping textual lists and conditions to the appropriate PlantUML constructs. Analyze nested 'if-then' or state-dependent logic and map it using nested PlantUML control structures rather than flattening them into sequential or independent branches.",
+    "knowledge": "(1) Treat data sources, displayed information, and system outputs as distinct activity nodes when explicitly mentioned. (2) Map iterative keywords (e.g., 'repeat', 'for each', 'perform first X then Y') to PlantUML `repeat`/`while` loops. (3) Map mutually exclusive options, alternative choices, and attribute groupings to `switch`/`case` or `if`/`elseif`/`else` constructs. (4) Use `fork`/`join` for lists of attributes, options, or grouped items that represent independent properties or simultaneous display states, and for actions explicitly stated to occur concurrently or simultaneously; however, do NOT use `fork`/`join` for mutually exclusive alternative choices, sequential UI steps, or sequential actions.",
+    "rule": "(1) Do not use `fork`/`join` for mutually exclusive alternative choices or sequential UI steps. (2) Do not invent implicit error-handling branches, validation loops, or recovery paths unless they are explicitly described in the requirement. (3) Do not compress multiple explicitly stated actions into a single abstract node. (4) Do not decompose high-level goals into assumed sub-steps (e.g., inferring 'select file', 'play audio' from 'identify whales') unless those sub-steps are explicitly stated in the text."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The prediction frequently introduces fork/join blocks for non-concurrent items (false_positive_parallel), such as sequential form fields, attribute lists, or alternative purposes, while also failing to use fork/join when the requirement explicitly describes concurrent, simultaneous, or independently executed actions (false_negative_parallel).",
+        "possible_causes": [
+          "The prompt lacks clear criteria for distinguishing true concurrency (simultaneous execution, independent monitoring) from mere itemization (sequential form fields, attribute lists, alternative purposes), leading the generator to over-apply fork/join to any bulleted or comma-separated list.",
+          "The prompt does not instruct the model to look for explicit concurrency keywords (e.g., 'simultaneously', 'independently', 'while', 'concurrent') or structural cues (e.g., multiple independent monitors running in parallel) that should trigger fork/join."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction frequently misrepresents control-flow by using incorrect branching constructs (e.g., switch/case for mutually exclusive conditional branches, or flat if/else for nested conditions) and fails to capture nested or sequential dependencies accurately.",
+        "possible_causes": [
+          "The prompt does not adequately guide the model to differentiate between alternative options (switch/case) and conditional logic (if/else if), causing conditional state transitions to be modeled as options.",
+          "The prompt lacks instructions to preserve nested conditional structures, leading the model to flatten or linearize complex multi-condition logic."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction introduces unsupported control-flow branches, such as adding 'else' paths with 'perform no function' activities, or prematurely terminating branches with 'stop' that should rejoin the main flow.",
+        "possible_causes": [
+          "The prompt implicitly encourages exhaustive branching by not instructing the model to omit empty or trivial 'else' branches.",
+          "The prompt does not clarify that 'stop' should only be used for true process termination (e.g., system shutdown), not as a substitute for proper flow merging (end fork / endif)."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction adds activities not stated in the requirements, often by decomposing single actions into granular sub-steps, inferring unstated system responses, or hallucinating actor roles as activity nodes.",
+        "possible_causes": [
+          "The prompt does not constrain the model to only generate activities explicitly mentioned in the requirement, allowing it to infer or decompose actions creatively.",
+          "The model misinterprets actor names or swimlane headers as action nodes (e.g., 'Researcher', 'Camp Administrator') and includes them as activities."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction omits explicitly stated actions, often by collapsing multiple sequential steps into a single broad node or skipping intermediate system responses and state transitions.",
+        "possible_causes": [
+          "The prompt prioritizes establishing the overall control-flow shape over preserving all explicitly required behaviors, leading the model to compress sequential steps.",
+          "The model overlooks intermediate actions (e.g., system prompts, dialog appearances, intermediate state transitions) when focusing on the primary user actions."
+        ]
+      }
+    ]
+  }
+}

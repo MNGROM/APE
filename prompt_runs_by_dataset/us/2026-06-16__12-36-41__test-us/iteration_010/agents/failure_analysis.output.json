@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "flattened_parallelism",
+      "problem": "The model frequently fails to represent concurrent behaviors using PlantUML's fork/end fork construct, instead representing them as sequential steps or omitting them entirely.",
+      "possible_causes": [
+        "The prompt may not explicitly instruct the model to identify concurrent keywords (e.g., 'concurrent', 'parallel', 'while') and map them to fork/end fork blocks.",
+        "The model defaults to a strictly sequential interpretation of actions unless strongly guided otherwise."
+      ]
+    },
+    {
+      "name": "granularity_mismatch",
+      "problem": "The model either consolidates multiple explicit requirement steps into single, high-level activities (missing nodes) or hallucinates decision nodes for implicit conditions (extra nodes).",
+      "possible_causes": [
+        "The prompt lacks clear guidance on the expected level of granularity, leading the model to summarize procedural steps rather than enumerating them.",
+        "The model over-zealously converts descriptive text into conditional logic (if/switch) even when the ground truth treats them as sequential actions."
+      ]
+    },
+    {
+      "name": "misaligned_control_flow",
+      "problem": "The model misinterprets the structural relationship between actions, such as placing parallel tasks inside loops instead of outside, or incorrectly nesting conditional blocks.",
+      "possible_causes": [
+        "The prompt does not adequately enforce structural decomposition, causing the model to tangle independent concurrent paths with iterative or conditional paths.",
+        "The model struggles to correctly scope the boundaries of loops and parallel blocks when translating complex, nested natural language requirements."
+      ]
+    },
+    {
+      "name": "syntax_errors_in_complex_structures",
+      "problem": "Generated PlantUML contains syntax errors, particularly when combining nested forks, loops, and conditional statements.",
+      "possible_causes": [
+        "The prompt does not provide sufficient examples or constraints on how to properly nest and terminate complex PlantUML control structures (e.g., matching repeat/repeat while with fork/end fork).",
+        "The model loses track of open blocks in long, complex diagrams, resulting in invalid PlantUML syntax."
+      ]
+    }
+  ]
+}
+```

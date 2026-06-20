@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for the model to first extract activities strictly from the text before constructing control flow. This absence allows the model to conflate extraction with diagramming, leading to hallucinated control flows and over-specified activities as it invents unstated sub-steps and error paths."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking specific guidance on PlantUML constructs for parallel behaviors (fork/end fork) and conditional logic (if/else, switch/case). Without this, the model defaults to sequential flows, missing parallel forks and conditional/optional paths, and fails to recognize linguistic cues for concurrency and conditionals."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, missing critical constraints to prevent the model from fabricating unspecified logic. It needs strict rules to prohibit adding unstated error-handling paths, over-decomposing high-level requirements, and over-interpreting clauses, ensuring the output strictly adheres to the provided text."
+    }
+  ]
+}
+```

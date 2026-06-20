@@ -1,0 +1,238 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "",
+    "knowledge": "",
+    "rule": ""
+  },
+  "failure_analysis": {
+    "summary": "The batch primarily fails due to severe activity granularity and grounding issues, resulting in both missing and extra activities across all cases. The model over-decomposes simple requirements into inferred implementation steps while under-decomposing complex requirements, and consistently misrepresents control flow (using if/else or fork instead of switch/case for mutually exclusive alternatives).",
+    "error_patterns": [
+      {
+        "name": "missing_activity",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0010",
+          "lmc-0055",
+          "us-0098",
+          "lmc-0048",
+          "us-0092",
+          "bp-0028",
+          "pure-0078",
+          "pure-0046"
+        ],
+        "problem": "The model fails to extract explicit activities from the requirement text, often compressing multiple stated steps into a single inferred step or omitting them entirely in favor of hallucinated implementation details.",
+        "suggested_prompt_direction": "Instruct the model to faithfully extract and map every explicit action from the requirement to an activity node, preserving the original granularity without summarizing or skipping steps.",
+        "target_sections": [
+          "workflow",
+          "rule"
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "severity": "high",
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055",
+          "bp-0028"
+        ],
+        "problem": "The model hallucinates implementation details not present in the requirement (e.g., adding validation, database saves, UI display steps) and over-decomposes high-level actions into sub-steps.",
+        "suggested_prompt_direction": "Enforce strict grounding by adding a rule that prohibits inventing steps not explicitly stated in the requirement and forbids decomposing a single stated action into multiple inferred sub-actions.",
+        "target_sections": [
+          "rule"
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0010",
+          "pure-0078",
+          "pure-0046"
+        ],
+        "problem": "Control flow for mutually exclusive alternatives is consistently modeled as if/else or fork instead of switch/case, and parallel display of information is modeled sequentially rather than with fork.",
+        "suggested_prompt_direction": "Provide clear control-flow mapping rules so the model distinguishes conditional branching (if) from mutually exclusive choices (switch) and concurrent flows (fork).",
+        "target_sections": [
+          "knowledge",
+          "workflow"
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0010",
+          "pure-0078",
+          "pure-0046"
+        ],
+        "problem": "Mutually exclusive alternative paths are incorrectly connected using fork/fork again or if/else, leading to wrong relation types and extra relations that do not match the gold standard's switch/endswitch structure.",
+        "suggested_prompt_direction": "Add modeling knowledge that explicitly maps requirement patterns (e.g., 'either A or B', 'case X') to the PlantUML switch construct, and clarify when fork is appropriate versus switch.",
+        "target_sections": [
+          "knowledge"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "switch_vs_if_fork",
+        "related_failure_patterns": [
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ],
+        "evidence_case_ids": [
+          "bp-0010",
+          "pure-0078",
+          "pure-0046"
+        ],
+        "gap": "The prompt lacks guidance on choosing between if/else, fork, and switch/endswitch for different control-flow semantics, causing the model to use if/else or fork for mutually exclusive alternatives.",
+        "suggested_knowledge": "Use switch/endswitch when the requirement describes mutually exclusive alternatives or choices based on a single variable (e.g., 'either A or B', 'select File System or FTP'). Use if/else for conditional logic with true/false guards. Use fork/endfork for concurrent parallel actions that happen simultaneously."
+      },
+      {
+        "id": "activity_granularity_and_grounding",
+        "related_failure_patterns": [
+          "missing_activity",
+          "extra_activity"
+        ],
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055",
+          "lmc-0048"
+        ],
+        "gap": "The prompt does not specify how to determine the appropriate granularity for activities or how strictly to adhere to the source text, leading to over-decomposition and hallucination.",
+        "suggested_knowledge": "Each explicit action described in the requirement should correspond to exactly one activity node. Do not decompose a single stated action into multiple inferred sub-steps (e.g., 'Edit profile' should not become 'Display profile', 'Modify fields', 'Submit'). Do not add steps (e.g., validation, saving) unless they are explicitly stated in the requirement."
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML diagrams into the prompt.",
+      "Do not add dataset-specific examples or memorized answers.",
+      "Do not attempt to fix infrastructure or provider-level errors."
+    ]
+  },
+  "error_localization": {
+    "summary": "The most useful repair targets are the knowledge and rule sections. The knowledge section needs reusable UML/PlantUML modeling concepts for control-flow constructs (switch vs. if/fork) and activity granularity, while the rule section needs strict grounding constraints to prevent hallucinated or over-decomposed activities.",
+    "section_diagnoses": [
+      {
+        "section": "knowledge",
+        "priority": "high",
+        "failure_patterns": [
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation",
+          "missing_activity",
+          "extra_activity"
+        ],
+        "section_problem": "The prompt lacks reusable UML/PlantUML modeling knowledge for distinguishing mutually exclusive alternatives (switch) from conditional (if) or parallel (fork) flows, and lacks guidance on appropriate activity granularity and grounding.",
+        "edit_intent": "Add concise modeling principles mapping requirement patterns to PlantUML control-flow constructs (switch/endswitch vs. if/else vs. fork/endfork) and defining activity granularity (1 explicit action = 1 activity node).",
+        "knowledge_gap_ids": [
+          "switch_vs_if_fork",
+          "activity_granularity_and_grounding"
+        ],
+        "evidence_case_ids": [
+          "bp-0010",
+          "pure-0078",
+          "pure-0046",
+          "us-0098",
+          "us-0092",
+          "lmc-0055",
+          "lmc-0048"
+        ]
+      },
+      {
+        "section": "rule",
+        "priority": "high",
+        "failure_patterns": [
+          "extra_activity",
+          "missing_activity"
+        ],
+        "section_problem": "The prompt lacks strict constraints prohibiting the invention of unstated implementation steps and the over-decomposition of explicit actions.",
+        "edit_intent": "Add hard constraints to forbid hallucinating steps not explicitly stated in the requirement and to forbid decomposing a single stated action into multiple inferred sub-actions.",
+        "knowledge_gap_ids": [
+          "activity_granularity_and_grounding"
+        ],
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055",
+          "bp-0028"
+        ]
+      }
+    ],
+    "recommended_edit_sections": [
+      "knowledge",
+      "rule"
+    ],
+    "do_not_edit_sections": [
+      {
+        "section": "agent task",
+        "reason": "The agent's overall role and scope are correctly defined and do not contribute to the granularity or control-flow mapping errors."
+      },
+      {
+        "section": "input",
+        "reason": "The input specification is sufficient; the failure stems from how the input is processed and modeled, not how it is read."
+      },
+      {
+        "section": "output",
+        "reason": "The output format requirement (PlantUML code only) is appropriate and unrelated to the semantic errors in activity extraction and relation mapping."
+      },
+      {
+        "section": "workflow",
+        "reason": "While workflow could help, the constraints limit edits to 2 sections. The failures are fundamentally rooted in missing UML/PlantUML modeling concepts (knowledge) and a lack of strict grounding prohibitions (rule), which are more directly addressed by those sections."
+      }
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge",
+      "rule"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "knowledge_edit_policy": {
+    "use_knowledge_when": [
+      "failure_analysis.knowledge_gaps contains reusable UML or PlantUML concepts",
+      "error_localization recommends the knowledge section",
+      "the fix is a compact principle about branch, loop, fork/join, merge, guard labels, start/stop, or valid PlantUML structure"
+    ],
+    "write_knowledge_as": [
+      "one or two concise reusable modeling principles",
+      "general guidance that can transfer across datasets",
+      "knowledge, not a step-by-step workflow and not a copied example"
+    ],
+    "avoid_knowledge_when": [
+      "the issue is only a case-specific omitted activity",
+      "the issue is only output formatting",
+      "the content duplicates existing knowledge section text"
+    ]
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "datasets_dir": "prompt_datasets\\lato",
+  "test_dataset": "fsd",
+  "max_test_cases": 2,
+  "test_sample_strategy": "prefix",
+  "sample_seed": 13,
+  "lato_repo": "..\\LATO",
+  "lato_config": "..\\LATO\\src\\utils\\args.yaml",
+  "lato_model": "deepseek",
+  "lato_examples_dir": "..\\HiGenModel\\HiGenModel\\baselines\\prompts\\lato",
+  "resume": true,
+  "case_timeout_seconds": 1,
+  "continue_on_error": true,
+  "workers": 2,
+  "datasets": {
+    "fsd": 2
+  },
+  "queued_after_resume": {
+    "fsd": 2
+  }
+}

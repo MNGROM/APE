@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Prevent hallucinated control flow and over-specification by enforcing a strict extract-then-construct process.",
+      "change_instruction": "Add a multi-step workflow requiring the model to: (1) Extract activities strictly and literally from the provided text without inferring sub-steps; (2) Identify linguistic cues for concurrency (e.g., 'simultaneously', 'while', comma-separated simultaneous actions) and conditionals (e.g., 'if', 'optional', 'unless'); (3) Construct the control flow using only the extracted activities and identified logic, explicitly prohibiting the addition of unstated steps or paths."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide explicit PlantUML construct mapping for parallel and conditional behaviors to prevent missing forks and conditional paths.",
+      "change_instruction": "Add concise knowledge rules mapping concurrency cues to PlantUML 'fork/end fork' constructs and conditional cues to 'if/else' or 'switch/case' constructs. Emphasize that lists of simultaneous actions must be modeled as parallel branches rather than sequential steps, and that conditional keywords must be explicitly mapped to decision branches with guard labels preserving the requirement's meaning."
+    },
+    {
+      "section": "rule",
+      "intent": "Prohibit fabrication of unspecified logic and over-decomposition of activities.",
+      "change_instruction": "Add strict constraints: (1) Do not add error-handling, validation, or exception paths unless explicitly stated in the text; (2) Do not decompose high-level activities into granular sub-steps if those sub-steps are not described in the text; (3) Do not interpret goal clauses (e.g., 'so that') as conditional checks or decision nodes; (4) The diagram must strictly adhere to the provided text with zero inferred behaviors."
+    }
+  ]
+}
+```

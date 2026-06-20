@@ -1,0 +1,77 @@
+```json
+{
+  "summary": "The most useful repair targets are the knowledge and workflow sections. The knowledge section lacks reusable UML/PlantUML modeling principles for verbatim activity extraction, compound condition nesting, and parallel decomposition of lists, which directly causes the observed failure patterns. The workflow section needs corresponding procedural reinforcement to ensure these extraction and decomposition steps are executed during generation.",
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "activity_granularity_mismatch",
+        "compound_condition_flattening",
+        "missing_parallel_decomposition",
+        "missing_conditional_alternatives"
+      ],
+      "section_problem": "The current knowledge section gives basic definitions for switch/case and fork, but lacks reusable modeling principles for preserving exact activity phrasing, decomposing compound conditions into nested decision nodes, and splitting grouped items into parallel forks.",
+      "edit_intent": "Add concise UML/PlantUML modeling principles that mandate verbatim activity labeling, nested if/else structures for compound conditions, and fork constructs for listed/concurrent items.",
+      "knowledge_gap_ids": [
+        "verbatim_activity_extraction",
+        "compound_condition_nesting",
+        "list_parallel_decomposition"
+      ],
+      "evidence_case_ids": [
+        "bp-0015",
+        "pure-0082",
+        "pure-0026",
+        "lmc-0016",
+        "lmc-0050",
+        "us-0129",
+        "bp-0022"
+      ]
+    },
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "activity_granularity_mismatch",
+        "compound_condition_flattening",
+        "missing_parallel_decomposition",
+        "missing_conditional_alternatives"
+      ],
+      "section_problem": "The workflow instructs the model to extract activities and identify control-flow, but it does not explicitly guide the model to separate grouped items into individual activities, decompose compound conditions into nested branches, or map listed actions to parallel forks.",
+      "edit_intent": "Enhance the procedural steps to explicitly include decomposing grouped items into separate activities, splitting compound conditions into nested decision nodes, and mapping concurrent/listed items to fork constructs.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "bp-0015",
+        "pure-0082",
+        "pure-0026",
+        "lmc-0016",
+        "lmc-0050",
+        "us-0129",
+        "bp-0022"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "knowledge",
+    "workflow"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The agent's overall role and scope are correctly defined and do not contribute to the granularity or control-flow mapping errors."
+    },
+    {
+      "section": "input",
+      "reason": "The input specification accurately describes the input format; the failure stems from processing logic, not input reading."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement (PlantUML code only) is correct and unrelated to the structural and labeling errors observed."
+    },
+    {
+      "section": "rule",
+      "reason": "While a hard rule could enforce verbatim extraction, the underlying failures are primarily due to missing UML modeling knowledge and procedural steps, making knowledge and workflow more appropriate and general targets for repair."
+    }
+  ]
+}
+```

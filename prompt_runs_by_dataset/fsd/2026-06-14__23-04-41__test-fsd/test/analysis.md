@@ -1,0 +1,349 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 116
+- syntax_pass_rate: 0.8276
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.4788
+- node_recall: 0.3507
+- node_f1: 0.4048
+- relation_precision: 0.2865
+- relation_recall: 0.2084
+- relation_f1: 0.2413
+- plantuml_compilation_pass_rate: 0.8276
+- llm_element_evaluated: 116.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.7771
+- llm_node_recall: 0.6817
+- llm_node_f1: 0.7188
+- llm_relation_precision: 0.4934
+- llm_relation_recall: 0.4105
+- llm_relation_f1: 0.4429
+
+## Failure Types
+- missing_activity: 116
+- missing_or_wrong_relation: 116
+- extra_or_wrong_relation: 116
+- wrong_parallel: 114
+- extra_activity: 110
+- wrong_loop: 88
+- syntax_error: 20
+
+## Representative Failure Cases
+### fsd-0084
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.0000
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.9231
+- llm_relation_f1: 0.8525
+- missing_nodes:
+  - power management subsystem architected as hard real-time task
+  - continuously monitor all voltage rails via pmic and bms within dedicated rtos thread
+  - associated isr triggered by hardware timer
+  - manage high-frequency sampling
+  - incoming telemetry debounced
+  - log to ring buffer protected by mutex
+  - detect energy demand fluctuation?
+  - assess supply sufficiency
+- extra_nodes:
+  - monitor voltage rails via pmic and bms
+- missing_relations:
+  - power management subsystem architected as hard real-time task -> continuously monitor all voltage rails via pmic and bms within dedicated rtos thread
+  - continuously monitor all voltage rails via pmic and bms within dedicated rtos thread -> associated isr triggered by hardware timer
+  - associated isr triggered by hardware timer -> manage high-frequency sampling
+  - manage high-frequency sampling -> incoming telemetry debounced
+  - incoming telemetry debounced -> log to ring buffer protected by mutex
+  - log to ring buffer protected by mutex -> detect energy demand fluctuation?
+  - detect energy demand fluctuation? -> assess supply sufficiency [yes]
+  - assess supply sufficiency -> deficit identified?
+- input_excerpt:
+  The power management subsystem, architected as a hard real-time task, continuously monitors all voltage rails via the PMIC and BMS within a dedicated RTOS thread. An associated ISR, triggered by a hardware timer, manages high-frequency sampling, with incoming telemetry being debounced and logged to a ring buffer protected by a mutex. Upon detecting an energy demand fluctuation, the system first assesses supply sufficiency. If a deficit is identified, it initiates concurrent processes: one thread employs a polling loop with exponential backoff to check the energy storage state-of-charge, initiating a controlled charging cycle if levels fall below a defined threshold, while a second thread ver
+- generated_excerpt:
+  @startuml skinparam style strictuml skinparam ActivityBackgroundColor #EEF7FF skinparam PartitionBackgroundColor #F8F8F8  title Power Management Subsystem - Hard Real-Time Activity  start  partition "RTOS Thread & ISR" {     :Monitor voltage rails via PMIC and BMS;     note right: Hard real-time task     :ISR triggered by HW timer\nmanages high-frequency sampling;     :Debounce telemetry & log to\nring buffer (Mutex protected); }  :Detect energy demand fluctuation;  :Assess supply sufficiency;  if (Deficit identified?) then (yes)          fork         :Thread 1: Poll energy storage\nstate-of-charge (Exponential backoff);         if (SoC < defined threshold?) then (yes)             :Initiate 
+### fsd-0034
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.0645
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.7407
+- llm_relation_f1: 0.6176
+- missing_nodes:
+  - system initialization
+  - supervisory finite-state machine orchestrates fault-handling procedures
+  - isr triggers high-priority diagnostic task
+  - verify sensor physical connection via pmic/bms
+  - connection intact?
+  - fsm analyzes sensor data stream for drift or noise
+  - validate data integrity using crc
+  - data anomalies confirmed?
+- extra_nodes:
+  - supervisory fsm initialization
+- missing_relations:
+  - system initialization -> supervisory finite-state machine orchestrates fault-handling procedures
+  - supervisory finite-state machine orchestrates fault-handling procedures -> abnormal external sensor signal detected?
+  - abnormal external sensor signal detected? -> isr triggers high-priority diagnostic task [yes]
+  - isr triggers high-priority diagnostic task -> verify sensor physical connection via pmic/bms
+  - verify sensor physical connection via pmic/bms -> connection intact?
+  - connection intact? -> fsm analyzes sensor data stream for drift or noise [yes]
+  - fsm analyzes sensor data stream for drift or noise -> validate data integrity using crc
+  - validate data integrity using crc -> data anomalies confirmed?
+- input_excerpt:
+  Upon system initialization, the embedded control platform's supervisory finite-state machine orchestrates fault-handling procedures, beginning when an abnormal external sensor signal is detected. An ISR first triggers a high-priority diagnostic task which verifies the sensor's physical connection via the PMIC or BMS. If the connection is intact, the FSM transitions to analyze the sensor data stream for drift or noise, validating the data integrity using a CRC. Confirmed data anomalies trigger a deterministic sensor calibration sequence and a comprehensive system self-test, scheduled as concurrent, prioritized RTOS tasks. The self-test process iteratively polls each hardware module's status v
+- generated_excerpt:
+  @startuml skinparam ActivityBackgroundColor #EEF7FF skinparam ActivityDiamondBackgroundColor #F9F9F9  title Embedded Control Platform: Fault-Handling Procedure  start  :Supervisory FSM Initialization;  :Detect abnormal external sensor signal; note right: ISR triggers high-priority diagnostic task  :Verify sensor physical connection (PMIC/BMS);  if (Connection intact?) then (No)   :Escalate to critical failure mode;   stop else (Yes)   :FSM transitions to analyze sensor data stream;   :Check for drift or noise;   :Validate data integrity using CRC; endif  if (Data anomaly confirmed?) then (No)   :Resume primary monitoring loop;   stop else (Yes)   fork     :Deterministic sensor calibration se
+### fsd-0012
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.0769
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.8846
+- llm_relation_f1: 0.4375
+- missing_nodes:
+  - power management subsystem governed by rtos
+  - monitor power rails via pmic and bms
+  - battery rail voltage < defined threshold?
+  - high-priority task checks engine state
+  - engine uninitialized and vehicle in parking state?
+  - initiate engine start sequence
+  - monitor engine speed via fadec
+  - employ closed-loop control
+- missing_relations:
+  - vehicle initialization -> power management subsystem governed by rtos
+  - power management subsystem governed by rtos -> monitor power rails via pmic and bms
+  - monitor power rails via pmic and bms -> battery rail voltage < defined threshold?
+  - battery rail voltage < defined threshold? -> high-priority task checks engine state [yes]
+  - high-priority task checks engine state -> engine uninitialized and vehicle in parking state?
+  - engine uninitialized and vehicle in parking state? -> initiate engine start sequence [yes]
+  - initiate engine start sequence -> monitor engine speed via fadec [fork]
+  - monitor engine speed via fadec -> employ closed-loop control
+- input_excerpt:
+  Upon vehicle initialization, the power management subsystem, governed by a real-time operating system (RTOS), monitors all power rails via the PMIC and BMS. If the battery rail voltage is below the defined threshold, a high-priority task checks the engine state. Should the engine be uninitialized and the vehicle confirmed to be in a parking state, an engine start sequence is initiated; this task monitors the engine speed via the FADEC, employing a closed-loop control to adjust the throttle valve opening until the speed stabilizes within the required range. Concurrently, a separate task periodically samples the generator output rail voltage and battery charging status, with these ADC readings
+- generated_excerpt:
+  @startuml skinparam ActivityBackgroundColor #EEF7FF skinparam ActivityDiamondBackgroundColor #F9F9F9  start  :Vehicle Initialization; note right: Governed by RTOS  fork   :Watchdog Task: Supervise startup state machine; fork again   :Fault Recovery Handlers: Implement exponential backoff\nwith staged verification cycles before retry; fork again    repeat     fork       :Monitor Power Rails (PMIC & BMS);       :Read Battery Rail Voltage;     fork again       :Timer Interrupt Task;       :Sample Generator Output Rail Voltage & Battery Charging Status (ADC);       :Debounce ADC Readings;       :Place Readings into Protected Ring Buffer;     fork again       :Perform CRC Checks on Critical CAN B
+### fsd-0052
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.1509
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.6786
+- llm_relation_f1: 0.0556
+- missing_nodes:
+  - embedded control system architected around deterministic finite-state machine
+  - high-priority isrs
+  - lower-priority deferred tasks managed by rtos
+  - receive signal
+  - perform multi-stage validation check against configurable thresholds for
+  - signal strength
+  - frequency
+  - uplink integrity
+- extra_nodes:
+  - receive signal (isr trigger)
+  - check signal strength >= threshold
+  - strength valid?
+  - log critical event to nvm (validation failure)
+  - check frequency compliance
+  - frequency valid?
+  - log critical event to nvm (validation failure)
+  - authorized?
+- missing_relations:
+  - embedded control system architected around deterministic finite-state machine -> high-priority isrs [fork]
+  - embedded control system architected around deterministic finite-state machine -> lower-priority deferred tasks managed by rtos [fork]
+  - high-priority isrs -> receive signal
+  - lower-priority deferred tasks managed by rtos -> receive signal
+  - receive signal -> perform multi-stage validation check against configurable thresholds for
+  - perform multi-stage validation check against configurable thresholds for -> signal strength [fork]
+  - perform multi-stage validation check against configurable thresholds for -> frequency [fork]
+  - perform multi-stage validation check against configurable thresholds for -> source authorization via secure handshake [fork]
+- input_excerpt:
+  The embedded control system is architected around a deterministic finite-state machine, which orchestrates high-priority Interrupt Service Routines (ISRs) and lower-priority deferred tasks managed by a real-time operating system (RTOS). Upon receiving a signal, the system performs a multi-stage validation check against configurable thresholds for signal strength, frequency, source authorization via a secure handshake, uplink integrity (e.g., CRC on a CAN bus), protocol compliance, and processing latency. If all validation criteria are met, a parallel processing mode is initiated. In this mode, one RTOS task continuously samples external environmental parameters via a ring buffer, while a con
+- generated_excerpt:
+  @startuml skinparam style strictuml skinparam ActivityBackgroundColor #EEF7FF skinparam PartitionBackgroundColor #F9F9F9  title Embedded Control System: Deterministic FSM & RTOS Orchestration  start  :Receive Signal (ISR Trigger);  partition "Multi-Stage Validation" {   :Check Signal Strength >= Threshold;   if (Strength Valid?) then (No)     :Log Critical Event to NVM\n(Validation Failure);     #LightGray:Terminate State Branch;     stop   else (Yes)   endif    :Check Frequency Compliance;   if (Frequency Valid?) then (No)     :Log Critical Event to NVM\n(Validation Failure);     #LightGray:Terminate State Branch;     stop   else (Yes)   endif    :Perform Secure Handshake\n(Source Authoriza
+### fsd-0065
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.1622
+- relation_f1: 0.0392
+- llm_element_status: success
+- llm_node_f1: 0.7451
+- llm_relation_f1: 0.3810
+- missing_nodes:
+  - tcms operates on preemptive rtos
+  - manage through deterministically scheduled tasks
+  - traction
+  - braking
+  - door control
+  - diagnostic functions
+  - vehicle speed > defined threshold and detect anomalous signal?
+  - trigger high-priority condition
+- extra_nodes:
+  - monitor vehicle speed sensor signals
+  - speed > threshold and anomalous signal detected?
+  - monitoring task
+  - abs fault diagnosis routine
+  - ebd fault diagnosis routine
+- missing_relations:
+  - tcms operates on preemptive rtos -> manage through deterministically scheduled tasks
+  - manage through deterministically scheduled tasks -> traction [fork]
+  - manage through deterministically scheduled tasks -> braking [fork]
+  - manage through deterministically scheduled tasks -> door control [fork]
+  - manage through deterministically scheduled tasks -> diagnostic functions [fork]
+  - traction -> vehicle speed > defined threshold and detect anomalous signal?
+  - braking -> vehicle speed > defined threshold and detect anomalous signal?
+  - door control -> vehicle speed > defined threshold and detect anomalous signal?
+- input_excerpt:
+  Operating on a preemptive RTOS, the Train Control and Monitoring System (TCMS) manages traction, braking, door control, and diagnostic functions through deterministically scheduled tasks. A high-priority condition is triggered when the vehicle speed exceeds a defined threshold concurrently with a sensor detecting an anomalous signal. This event immediately launches two concurrent processes: a dedicated control task enters a loop to continuously sample and analyze engine speed data via a protected ring buffer until stability is restored, while a separate monitoring task verifies that both fuel injection and intake volume parameters remain within their specified operational envelopes. Upon com
+- generated_excerpt:
+  @startuml skinparam ActivityBackgroundColor #F9F9F9 skinparam ActivityDiamondBackgroundColor #E8E8E8  title Train Control and Monitoring System (TCMS) - Preemptive RTOS Operation  start  :Manage traction, braking, door control, & diagnostics via deterministically scheduled tasks;  :Monitor vehicle speed & sensor signals;  if (Speed > Threshold\nAND\nAnomalous Signal Detected?) then (yes)      fork     :Dedicated Control Task;     repeat       :Sample & analyze engine speed data       via protected ring buffer;     repeat until (Stability Restored?) is (no)   fork again     :Monitoring Task;     :Verify fuel injection parameters     within operational envelope;     :Verify intake volume param
+### fsd-0051
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.1667
+- relation_f1: 0.0333
+- llm_element_status: success
+- llm_node_f1: 0.6250
+- llm_relation_f1: 0.4096
+- missing_nodes:
+  - thermal management controller operates as state machine on hard real-time rtos
+  - aggregate calibrated data from
+  - temperature sensors
+  - humidity sensors
+  - light sensors
+  - air quality sensors
+  - occupancy sensors
+  - contact sensors
+- extra_nodes:
+  - enter main state machine
+  - check for out-of-range readings
+  - recalibrate validate data
+- missing_relations:
+  - thermal management controller operates as state machine on hard real-time rtos -> continuously sample sensor fusion ring buffer protected by mutex
+  - continuously sample sensor fusion ring buffer protected by mutex -> aggregate calibrated data from
+  - aggregate calibrated data from -> temperature sensors [fork]
+  - aggregate calibrated data from -> humidity sensors [fork]
+  - aggregate calibrated data from -> light sensors [fork]
+  - aggregate calibrated data from -> air quality sensors [fork]
+  - aggregate calibrated data from -> occupancy sensors [fork]
+  - aggregate calibrated data from -> contact sensors [fork]
+- input_excerpt:
+  Operating as a state machine within a hard real-time RTOS, the thermal management controller orchestrates a multi-subsystem response to environmental sensor inputs. The system continuously samples a sensor fusion ring buffer, protected by a mutex, which aggregates calibrated data from temperature, humidity, light, air quality, occupancy, contact, and smoke sensors. Upon detecting a primary fault condition—such as temperature or humidity exceeding their respective thresholds while the room is occupied and windows are closed—the controller triggers a concurrent mitigation sequence. This involves commanding the FADEC to activate the air conditioner's cooling and the dehumidifier via PWM-control
+- generated_excerpt:
+  @startuml skinparam style strictuml skinparam ActivityBackgroundColor #EEF6FF skinparam ActivityDiamondBackgroundColor #F9F9F9  title Thermal Management Controller - Hard Real-Time RTOS State Machine  state "Active State Machine" as MainSM #LightBlue  |Main RTOS Task| start :Enter Main State Machine;  partition "Sensor Fusion & Calibration (Periodic Task)" {   :Acquire Mutex on Sensor Fusion Ring Buffer;      :Sample Aggregated Calibrated Data   (Temp, Humidity, Light, Air Quality,   Occupancy, Contact, Smoke);      :Check for Out-of-Range Readings;      if (Out-of-Range Readings?) then (Yes)     :Engage Redundant Sensors;     :Recalibrate & Validate Data;     note right: Fallback routine   
+### fsd-0114
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.2353
+- relation_f1: 0.1765
+- llm_element_status: success
+- llm_node_f1: 0.7826
+- llm_relation_f1: 0.8519
+- missing_nodes:
+  - verify user
+  - valid?
+  - on lights
+  - activate sensor
+  - set ac
+  - check temperature
+  - close blinds and set ac to high
+  - set ac to medium
+- extra_nodes:
+  - card valid?
+  - deny access
+  - turn on lights
+  - start ac
+  - temperature condition?
+  - close blinds
+  - set ac to high fan speed
+  - set ac to medium fan speed
+- missing_relations:
+  - swipe card for entrance -> verify user
+  - verify user -> valid?
+  - valid? -> on lights [yes]
+  - on lights -> activate sensor
+  - activate sensor -> set ac
+  - valid? -> close blinds and set ac to high [case hot]
+  - valid? -> set ac to medium [case normal]
+  - valid? -> off ac and open blinds [case cloudy]
+- input_excerpt:
+  When a user attempts to enter the system, they must first swipe a card to complete identity verification. If the card is invalid, the system will deny access and terminate the flow; if the card is valid, the system will first turn on the lights, start the air conditioning (AC), and then execute subsequent steps in parallel. Based on current temperature conditions, the system will make the following adjustments: if it is hot, the system will close the blinds and set the AC to high fan speed; if normal, it will set the AC to medium fan speed; if cloudy, it will turn off the AC and open the blinds. Simultaneously with temperature detection, the system will activate environmental sensors for rea
+- generated_excerpt:
+  @startuml start :Swipe Card; if (Card Valid?) then (No)   :Deny Access;   stop else (Yes)   :Turn on lights;   :Start AC;   fork     if (Temperature Condition?) then (Hot)       :Close blinds;       :Set AC to high fan speed;     else (Normal)       :Set AC to medium fan speed;     else (Cloudy)       :Turn off AC;       :Open blinds;     endif   fork again     :Activate environmental sensors;     if (Smoke Detected?) then (Yes)       fork         :Open door;       fork again         :Generate alarm;       end fork     else (No)       :Enter sleep mode;     endif   end fork endif stop @enduml
+### fsd-0104
+- dataset: fsd
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.2500
+- relation_f1: 0.2632
+- llm_element_status: success
+- llm_node_f1: 0.7059
+- llm_relation_f1: 0.1935
+- missing_nodes:
+  - thermal management controller operates as state machine within rtos
+  - govern pwm fans
+  - govern liquid-cooling loops using multi-threaded architecture
+  - high-priority isr triggered by pmic/dedicated temperature sensors
+  - abnormal temperature rise?
+  - employ primary control loop
+  - early warning threshold reached?
+  - cease
+- extra_nodes:
+  - receive isr from pmic or temp sensors
+  - evaluate temperature reading
+  - temp >= early warning threshold?
+  - check for thermal stability
+  - cease monitoring
+  - escalate thermal alert
+- missing_relations:
+  - thermal management controller operates as state machine within rtos -> govern pwm fans [fork]
+  - thermal management controller operates as state machine within rtos -> govern liquid-cooling loops using multi-threaded architecture [fork]
+  - govern pwm fans -> high-priority isr triggered by pmic/dedicated temperature sensors
+  - govern liquid-cooling loops using multi-threaded architecture -> high-priority isr triggered by pmic/dedicated temperature sensors
+  - high-priority isr triggered by pmic/dedicated temperature sensors -> abnormal temperature rise?
+  - abnormal temperature rise? -> initiate safety protocols [yes]
+  - initiate safety protocols -> employ primary control loop
+  - employ primary control loop -> early warning threshold reached?
+- input_excerpt:
+  Operating as a state machine within the RTOS, the thermal management controller governs PWM fans and liquid-cooling loops using a multi-threaded architecture. A high-priority ISR, triggered by the PMIC or dedicated temperature sensors, initiates safety protocols upon detecting an abnormal temperature rise. The system employs a primary control loop which, upon reaching an early warning threshold, spawns concurrent tasks from a priority queue to actively monitor the temperature in fixed cycles; monitoring ceases only when thermal stability is confirmed, otherwise it escalates. If the temperature remains below this threshold but exhibits significant fluctuation, a lower-priority task logs the a
+- generated_excerpt:
+  @startuml skinparam ActivityDiamondFontSize 12 skinparam ActivityFontSize 12  start  partition "Interrupt Service Routine" {     :Receive ISR from PMIC or Temp Sensors;     :Initiate Safety Protocols; }  partition "Primary Control Loop" {     :Evaluate Temperature Reading;          if (Temp >= Early Warning Threshold?) then (Yes)         :Spawn Concurrent Tasks from Priority Queue;         fork             :Monitor Temperature in Fixed Cycles;         fork again             :Check for Thermal Stability;         end fork                  if (Thermal Stability Confirmed?) then (Yes)             :Cease Monitoring;         else (No)             :Escalate Thermal Alert;             note right: Fa
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

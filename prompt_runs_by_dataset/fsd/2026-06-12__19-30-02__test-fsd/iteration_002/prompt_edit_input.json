@@ -1,0 +1,125 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Read the requirement and identify every explicitly stated activity, trigger, condition, optional step, and terminal outcome.\n2. Extract activities strictly as stated in the text. Do not invent implementation details, UI interactions, or system validations that are not explicitly mentioned. Do not merge separate atomic actions into compound sentences.\n3. Preserve the exact phrasing from the input requirement for all activity and condition labels.\n4. Map the extracted activities to the control flow described in the requirement:\n   - Use switch/endswitch for mutually exclusive alternative paths.\n   - Use fork/end fork for explicitly concurrent or parallel actions.\n   - Use if/else/endif for conditional checks or optional steps.\n   - Use repeat/repeat while for loops or retries.\n5. Maintain the sequential order of activities as presented in the requirement unless a branch, loop, or concurrent path is explicitly indicated.\n6. Output the PlantUML code representing the extracted activities and control flow.",
+    "knowledge": "PlantUML activity diagram syntax rules:\n- Start with @startuml and end with @enduml.\n- Use switch/endswitch for mutually exclusive alternatives. Each branch starts with case and ends with endcase.\n- Use fork/end fork for concurrent parallel actions. Separate concurrent threads with fork again.\n- Use if/then/else/endif for conditional branches and optional paths.\n- Use repeat/repeat while for loops that execute at least once.\n- Ensure every opened control structure (switch, fork, if, repeat) is properly closed (endswitch, end fork, endif, repeat while).\n- Model each explicitly stated atomic action as a separate activity node. Do not decompose high-level requirements into speculative fine-grained steps."
+  },
+  "failure_analysis": {
+    "summary": "The batch mainly fails because the prompt does not enforce atomic activity granularity, leading to merged actions and missing control-flow structures. The generator frequently copies compound sentences verbatim instead of decomposing them into separate nodes, flattens nested conditional logic into single branches, and misses parallel/fork constructs. It also fails to use PlantUML partitions for swimlanes and struggles with structural syntax for complex nested flows.",
+    "error_patterns": [
+      {
+        "name": "merged_atomic_activities",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0007",
+          "bp-0023",
+          "rac-0004"
+        ],
+        "problem": "The generator copies compound sentences from the requirement verbatim as single activity nodes instead of decomposing them into separate atomic actions (e.g., 'Go to tab page X and choose Y' is kept as one node instead of two). This causes low node recall and breaks the sequential relation chain.",
+        "suggested_prompt_direction": "Strengthen the workflow instruction to explicitly decompose compound sentences, UI steps, and conjunctive actions into separate, sequential activity nodes. Clarify that 'Do not merge separate atomic actions' applies to actions connected by 'and', 'then', or listed within a single sentence.",
+        "target_sections": [
+          "workflow",
+          "input"
+        ]
+      },
+      {
+        "name": "flattened_conditional_logic",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0011",
+          "lmc-0038",
+          "rac-0020"
+        ],
+        "problem": "Conjunctive conditions (e.g., 'A and B') are modeled as a single flat if-statement instead of nested if-statements. This merges multiple distinct condition nodes into one, reducing node recall and destroying the nested control-flow relations present in the ground truth.",
+        "suggested_prompt_direction": "Add workflow guidance instructing the agent to decompose compound conditions (joined by 'and') into separate, nested conditional nodes, preserving the step-by-step evaluation logic rather than collapsing them into a single branch.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_parallel_fork_constructs",
+        "severity": "high",
+        "evidence_case_ids": [
+          "pure-0030",
+          "bp-0007",
+          "bp-0023"
+        ],
+        "problem": "The generator fails to identify and model explicitly concurrent or parallel items (e.g., lists of items displayed simultaneously, or alternative inputs processed in parallel) as fork/end fork structures, instead representing them as sequential activities or omitting them entirely.",
+        "suggested_prompt_direction": "Enhance the workflow to instruct the agent to actively look for keywords indicating concurrency or simultaneous display (e.g., 'displays', 'includes', lists of independent items) and model them using fork/end fork constructs.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_swimlane_partitions",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "pure-0010"
+        ],
+        "problem": "When the input requirement explicitly names different actors, systems, or components responsible for actions (e.g., 'central trading system', 'security account management'), the generator fails to use PlantUML partition syntax to represent these swimlanes.",
+        "suggested_prompt_direction": "Add a rule in the knowledge or workflow section to use PlantUML 'partition' blocks when the input text explicitly assigns activities to different systems, actors, or organizational units.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "complex_nesting_syntax_errors",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "rac-0004",
+          "rac-0020"
+        ],
+        "problem": "For requirements with deeply nested control flows (e.g., switch inside a repeat inside an if), the generator produces invalid PlantUML syntax, likely due to improper closing of nested blocks or incorrect structural combinations.",
+        "suggested_prompt_direction": "Reinforce knowledge about proper closing of nested PlantUML structures and provide clearer structural mapping rules for complex combinations of switch, if, and repeat blocks to ensure every opened construct is correctly ordered and closed.",
+        "target_sections": [
+          "knowledge"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML snippets into the prompt.",
+      "Do not add dataset-specific examples or case-specific vocabulary.",
+      "Do not add speculative implementation steps merely to increase node recall.",
+      "Do not hardcode rules based solely on the specific phrasing of the RAC state-transition cases."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

@@ -1,0 +1,762 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description.\n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n1. Extract activities: Identify each distinct action or state change explicitly stated in the requirement. When the requirement enumerates multiple items (e.g., a list of fields, parameters, or displayed elements), model each item as a separate activity. When a user action is followed by a system response or UI state change (e.g., a dialog appearing, a list being displayed), model the user action and the system response as two separate sequential activities. Preserve key noun-verb phrases from the requirement as activity labels, including actor names and domain terms; do not paraphrase, summarize, or reword. Do not decompose a single stated action into sub-steps, and do not add steps not explicitly stated in the requirement.\n2. Determine control flow: Identify decision points, mutually exclusive alternative paths, optional paths, and concurrent paths. When the requirement expresses a condition, constraint, or validation (e.g., 'if', 'when', 'shall equal', 'only if'), model it as a decision node (if/else) with the condition as the guard, not as a sequential activity. For each decision point, classify it as a yes/no condition, a mutually exclusive choice among several alternatives, or true concurrency.\n3. Generate PlantUML: Write the diagram code based on the extracted activities and determined control-flow structure.\n\n## knowledge\n\nUse switch/case when the requirement describes mutually exclusive alternatives based on a single discriminant (e.g., operation type, mode, destination). Provide a meaningful discriminant label summarizing what is being decided, and label each case branch to match the alternative described in the requirement. Use if/else when the requirement describes a yes/no condition or optional behavior. Use fork/end fork only when the requirement explicitly states concurrent or parallel actions; never use fork for mutually exclusive alternatives.\n\nWhen a requirement enumerates multiple distinct items displayed or processed independently at the same time, model each as a separate activity within fork/end fork. Model a user action and its subsequent system response (e.g., dialog appearing, list displayed) as two separate sequential activities, not one. Model a condition or constraint (e.g., 'shall equal', 'only if') as a decision node with the condition as the guard, not as a sequential activity. When a requirement describes categories or modes that cannot occur simultaneously, use switch/case regardless of structural separation; do not use fork for mutually exclusive alternatives.\n\n## rule\n",
+  "evaluation": {
+    "summary": {
+      "count": 10.0,
+      "syntax_pass_rate": 0.9,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.36099246595189804,
+      "node_recall": 0.3745646084520765,
+      "node_f1": 0.36173453996983407,
+      "relation_precision": 0.2443452380952381,
+      "relation_recall": 0.2771590909090909,
+      "relation_f1": 0.25893331668331665,
+      "plantuml_compilation_pass_rate": 0.9,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {
+      "missing_activity": 9,
+      "extra_activity": 9,
+      "missing_or_wrong_relation": 8,
+      "extra_or_wrong_relation": 9,
+      "syntax_error": 1
+    },
+    "representative_cases": [
+      {
+        "dataset": "rac",
+        "case_id": "rac-0019",
+        "input_requirement": "After the system starts up, if the ignition switch is set to 2, transition to state 30. Then, under that condition:\n- If the ignition switch becomes 0, move to state 49 and exit.\n- If the fast charge Vcc2 is 6, observe the charging gun indicator. Should the charging system command be 4, switch to state 29.\n- If the ignition switch is 0 and Vcc2 is 12, proceed to state 49 and exit.\n- If slow charging is active and the charging system command is 1, transition to state 110. If the command is 4 instead, go to state 29. Also, if the ignition switch is 0 and slow charging is not active, shift to state 49 and exit.\n\nIf remote mode is enabled, switch to state 28. If it's disabled, transition to state 49 and exit.\n\nFor slow charging: if it's active, move to state 110. If it's disabled, switch to state 129 and end.\n\nRegarding fast charging: if active, transition to state 170. If disabled, go to state 189 and end.\n\nFinally, if GW_trigger is 2, switch to state 10. If the battery SOC is 20 and the DCDC state is 1, transition to state 28. If the SOC is 80 and the DCDC state is 3, move to state 49. If the DCDC state is 0 and GW_trigger is 0, exit.",
+        "gold_plantuml": "start\nif (ignition switch=2) then(yes)\n  :switch to state 30;\n  if (ignition switch=0) then(yes)\n    :switch to state 49;\n    stop\n  else if (fast charge Vcc2=6) then\n    :observe charging gun indicator;\n    if (charging system command=4)then(yes)\n      :switch to state 29;\n      if(ignition switch=0 and Vcc2=12)then(yes)\n        :switch to state 49;\n        stop;\n      endif\n    endif\n  else if(slow charging is active and charging system command=1)then\n    :switch to state 110;\n    if(charging system command=4)then(yes)\n      :switch to state 29;\n      if(ignition switch=0 and slow charging is inactive)then(yes)\n        :switch to state 49;\n        stop;\n      endif\n    endif\n  endif\nelse if (remote mode enabled) then\n  :switch to state 28;\n  if(remote mode is disabled)(yes)\n    :switch to state 49;\n    stop\n  endif\nelse if (slow charging is active) then\n  :switch to state 110;\n  if(slow charging is inactive)(yes)\n    :switch to state 129;\n    stop\n  endif\nelse if (fast charging is active) then\n  :switch to state 170;\n  if(fast charging is inactive)(yes)\n    :switch to state 189;\n    stop\n  endif\nelse if(GW_trigger=2)then\n  :switch to state 10;\n  if(battery SOC=20 and DCDC state=1)then(yes)\n    :switch to state 28;\n    if(SOC=80 and DCDC state=3)then(yes)\n      :switch to state 49;\n      if(DCDC state=0 and GW_trigger=0)then(yes)\n        stop\n      endif\n    endif\n  endif\nendif\nend",
+        "generated_plantuml": "",
+        "syntax": {
+          "passed": false,
+          "errors": [
+            "Missing required @startuml/@enduml wrapper",
+            "ERROR"
+          ]
+        },
+        "plantuml_compilation": {
+          "passed": false,
+          "errors": [
+            "No PlantUML content to compile."
+          ]
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "ignition switch=2",
+            "switch to state 30",
+            "ignition switch=0",
+            "switch to state 49",
+            "switch to state 49",
+            "switch to state 49",
+            "switch to state 49",
+            "switch to state 49",
+            "fast charge vcc2=6",
+            "observe charging gun indicator",
+            "charging system command=4",
+            "charging system command=4",
+            "switch to state 29",
+            "switch to state 29",
+            "ignition switch=0 and vcc2=12",
+            "slow charging is active and charging system command=1",
+            "switch to state 110",
+            "switch to state 110",
+            "ignition switch=0 and slow charging is inactive",
+            "remote mode enabled"
+          ],
+          "extra": []
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "ignition switch=2 -> switch to state 30",
+            "switch to state 30 -> ignition switch=0",
+            "ignition switch=0 -> switch to state 49",
+            "switch to state 49 -> fast charge vcc2=6",
+            "fast charge vcc2=6 -> observe charging gun indicator",
+            "observe charging gun indicator -> charging system command=4",
+            "charging system command=4 -> switch to state 29",
+            "charging system command=4 -> switch to state 29",
+            "switch to state 29 -> ignition switch=0 and vcc2=12",
+            "ignition switch=0 and vcc2=12 -> switch to state 49",
+            "switch to state 49 -> slow charging is active and charging system command=1",
+            "slow charging is active and charging system command=1 -> switch to state 110",
+            "switch to state 110 -> charging system command=4",
+            "switch to state 29 -> ignition switch=0 and slow charging is inactive",
+            "ignition switch=0 and slow charging is inactive -> switch to state 49",
+            "switch to state 49 -> remote mode enabled",
+            "remote mode enabled -> switch to state 28",
+            "switch to state 28 -> remote mode is disabled",
+            "remote mode is disabled -> switch to state 49",
+            "switch to state 49 -> slow charging is active"
+          ],
+          "extra": []
+        },
+        "failure_types": [
+          "syntax_error",
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0055",
+        "input_requirement": "7.\tThe Rotation Matrix, DCM321, multiplied by the transpose of the Rotation Matrix, DCM321T shall be the Identity (3x3) Matrix.v",
+        "gold_plantuml": "start\n\n:DCM321 * DCM321T;\nif( =Identity (3x3) Matrix.v?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Multiply DCM321 by DCM321T;\nif (Result equals Identity (3x3) Matrix?) then (yes)\nelse (no)\nendif\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "dcm321 * dcm321t",
+            "=identity (3x3",
+            "allowed",
+            "not allowed"
+          ],
+          "extra": [
+            "multiply dcm321 by dcm321t",
+            "result equals identity (3x3"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "dcm321 * dcm321t -> =identity (3x3",
+            "=identity (3x3 -> allowed",
+            "allowed -> not allowed"
+          ],
+          "extra": [
+            "multiply dcm321 by dcm321t -> result equals identity (3x3"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0165",
+        "input_requirement": "As an Application Administrator , I want to be able to configure the help center URL and topic mappings.",
+        "gold_plantuml": "start\n:configure the help center URL and topic mappings;\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Configure help center URL;\n:Configure topic mappings;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "configure the help center url and topic mappings"
+          ],
+          "extra": [
+            "configure help center url",
+            "configure topic mappings"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [],
+          "extra": [
+            "configure help center url -> configure topic mappings"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0021",
+        "input_requirement": "21.\tcreate a new job by copying an existing job.To create a new job by copying an existing job, complete the following steps:1. Log into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, click New Job.3. Click the Copy an Existing Job option. The list of jobs in the PromotionJob folder is displayed4. Select a job from the job list, and click Create. The name, keywords, and description of the job are displayed. You can modify these fields, if required. However, you cannot change the source system.5. In the Save Job in field, browse and select the folder in which you want to save the job, and click Create.A new job is created.",
+        "gold_plantuml": "start\n\n:Log in LifeCycle Manager tool;\n:Go to \"Promotion Jobs\" home page;\n:Click \"New Job\";\n\n:Click \"the Copy an Existing Job\" option;\n:The list of jobs is displayed;\n\n:Select a job from list;\n:Cick \"Create\";\n\n:Information is displayed;\nfork\n:Name;\nfork again\n:Keywords;\nfork again\n:Description;\nend fork\n\nif(Modification?) then(yes)\n:Modify these fields;\nnote right\nCannot change source system\nend note\nelse(no)\nendif\n\n:Go to \"Save Job\" field;\n:Browse and select folder;\n:Click \"Create\";\n:A new job is created;\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:In the \"Promotion Jobs\" home page, click New Job;\n:Click the Copy an Existing Job option;\n:The list of jobs in the PromotionJob folder is displayed;\n:Select a job from the job list, and click Create;\nfork\n  :The name of the job is displayed;\nfork again\n  :The keywords of the job are displayed;\nfork again\n  :The description of the job is displayed;\nend fork\nif (Modify these fields required?) then (yes)\n  :Modify name;\n  :Modify keywords;\n  :Modify description;\nelse (no)\nendif\nif (Change source system?) then (yes)\n  :Reject change;\n  stop\nelse (no)\nendif\n:In the Save Job in field, browse and select the folder in which you want to save the job;\n:Click Create;\n:A new job is created;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.23529411764705882,
+          "recall": 0.23529411764705882,
+          "f1": 0.23529411764705882,
+          "missing": [
+            "go to promotion jobs home page",
+            "click new job",
+            "the list of jobs is displayed",
+            "select a job from list",
+            "cick create",
+            "information is displayed",
+            "name",
+            "keywords",
+            "description",
+            "modification?",
+            "modify these fields",
+            "go to save job field",
+            "browse and select folder"
+          ],
+          "extra": [
+            "in the promotion jobs home page click new job",
+            "the list of jobs in the promotionjob folder is displayed",
+            "select a job from the job list and click create",
+            "the name of the job is displayed",
+            "the keywords of the job are displayed",
+            "the description of the job is displayed",
+            "modify these fields required?",
+            "modify name",
+            "modify keywords",
+            "modify description",
+            "change source system?",
+            "reject change",
+            "in the save job in field browse and select the folder in which you want to save the job"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0625,
+          "recall": 0.0625,
+          "f1": 0.0625,
+          "missing": [
+            "log in lifecycle manager tool -> go to promotion jobs home page",
+            "go to promotion jobs home page -> click new job",
+            "click new job -> click the copy an existing job option",
+            "click the copy an existing job option -> the list of jobs is displayed",
+            "the list of jobs is displayed -> select a job from list",
+            "select a job from list -> cick create",
+            "cick create -> information is displayed",
+            "information is displayed -> name",
+            "name -> keywords",
+            "keywords -> description",
+            "description -> modification?",
+            "modification? -> modify these fields",
+            "modify these fields -> go to save job field",
+            "go to save job field -> browse and select folder",
+            "browse and select folder -> click create"
+          ],
+          "extra": [
+            "log into the lifecycle manager tool -> in the promotion jobs home page click new job",
+            "in the promotion jobs home page click new job -> click the copy an existing job option",
+            "click the copy an existing job option -> the list of jobs in the promotionjob folder is displayed",
+            "the list of jobs in the promotionjob folder is displayed -> select a job from the job list and click create",
+            "select a job from the job list and click create -> the name of the job is displayed",
+            "the name of the job is displayed -> the keywords of the job are displayed",
+            "the keywords of the job are displayed -> the description of the job is displayed",
+            "the description of the job is displayed -> modify these fields required?",
+            "modify these fields required? -> modify name",
+            "modify name -> modify keywords",
+            "modify keywords -> modify description",
+            "modify description -> change source system?",
+            "change source system? -> reject change",
+            "reject change -> in the save job in field browse and select the folder in which you want to save the job",
+            "in the save job in field browse and select the folder in which you want to save the job -> click create"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0005",
+        "input_requirement": "5.\tCreating Master Data Directly in the System1. In the Modeling area of the Data Warehousing Workbench, choose Info Objects. 2. In the Info Object catalog for characteristics, choose Maintain master data from the context menu of your Info Object Product Group (ZD_PGROUP).3. Choose Execute.4. Choose Create.5. Enter DS10 as Product Group and Computer as the Short description and choose Continue.6. Repeat steps 4 and 5 with the following values:7. Save your entries and return to the Info Object tree.8. Repeat steps 2-7 for the characteristic Channel (ZD_CHAN) with the following values:",
+        "gold_plantuml": "start\n\n:Choose \"Info Objects\";\nrepeat\n:Open characteristics Info Object catalog;\n:Open \"ZD_PGROUP\" context menu;\n:Select \"Maintain master data\";\n:Choose \"Execute\";\n\nrepeat\n    :Choose \"Create\";\n    fork\n    :Enter Product Group;\n    note right:eg.DS10\n    fork again\n    :Enter Short description;\n    note right:eg.Computer\n    end fork\n    :Choose \"Continue\";\nrepeat while (More values?) is (yes) not(no)\n\n:Save entries;\n:Return to Info Object tree;\n\nrepeat while (More values for ZD_CHAN?) is (yes)\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Choose Info Objects in Modeling area of Data Warehousing Workbench;\n:Choose Maintain master data from context menu of Info Object Product Group (ZD_PGROUP) in Info Object catalog for characteristics;\n:Choose Execute;\n:Choose Create;\n:Enter DS10 as Product Group and Computer as Short description and choose Continue;\n:Repeat steps 4 and 5 with the following values;\n:Save your entries and return to Info Object tree;\n:Repeat steps 2-7 for characteristic Channel (ZD_CHAN) with the following values;\nend\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.25,
+          "recall": 0.2857142857142857,
+          "f1": 0.26666666666666666,
+          "missing": [
+            "choose info objects",
+            "open characteristics info object catalog",
+            "open zd_pgroup context menu",
+            "select maintain master data",
+            "enter product group"
+          ],
+          "extra": [
+            "choose info objects in modeling area of data warehousing workbench",
+            "choose maintain master data from context menu of info object product group (zd_pgroup) in info object catalog for characteristics",
+            "enter ds10 as product group and computer as short description and choose continue",
+            "repeat steps 4 and 5 with the following values",
+            "save your entries and return to info object tree",
+            "repeat steps 2-7 for characteristic channel (zd_chan) with the following values"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.14285714285714285,
+          "recall": 0.16666666666666666,
+          "f1": 0.15384615384615383,
+          "missing": [
+            "choose info objects -> open characteristics info object catalog",
+            "open characteristics info object catalog -> open zd_pgroup context menu",
+            "open zd_pgroup context menu -> select maintain master data",
+            "select maintain master data -> choose execute",
+            "choose create -> enter product group"
+          ],
+          "extra": [
+            "choose info objects in modeling area of data warehousing workbench -> choose maintain master data from context menu of info object product group (zd_pgroup) in info object catalog for characteristics",
+            "choose maintain master data from context menu of info object product group (zd_pgroup) in info object catalog for characteristics -> choose execute",
+            "choose create -> enter ds10 as product group and computer as short description and choose continue",
+            "enter ds10 as product group and computer as short description and choose continue -> repeat steps 4 and 5 with the following values",
+            "repeat steps 4 and 5 with the following values -> save your entries and return to info object tree",
+            "save your entries and return to info object tree -> repeat steps 2-7 for characteristic channel (zd_chan) with the following values"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0002",
+        "input_requirement": "[RM-002] In the no-fail state, the mid-value shall be the selected value.  Note: a first failure in progress will not affect the method for determining the selected value.",
+        "gold_plantuml": "start\n\n:In no-fail state;\n:Mid-value be selected value;\n\nif(A first failure in progress?) then(yes)\n:Not affect method for determining selected value;\nelse(no)\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\nif (No-fail state or first failure in progress?) then (yes)\n  :Mid-value shall be the selected value;\nelse (no)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.5,
+          "recall": 0.25,
+          "f1": 0.3333333333333333,
+          "missing": [
+            "in no-fail state",
+            "a first failure in progress?",
+            "not affect method for determining selected value"
+          ],
+          "extra": [
+            "no-fail state or first failure in progress?"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "in no-fail state -> mid-value be selected value",
+            "mid-value be selected value -> a first failure in progress?",
+            "a first failure in progress? -> not affect method for determining selected value"
+          ],
+          "extra": [
+            "no-fail state or first failure in progress? -> mid-value shall be the selected value"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0005",
+        "input_requirement": "After the system starts up:\n- If slow charging is active and the front MCU high-voltage detection flag is 0, transition to state 93.\n- If charging/discharging power-up is active while the front MCU high-voltage detection flag reads 1, move to state 95.\n- When power-up readiness is confirmed and the vehicle's charging/discharging mode is set to 2, proceed to state 105.\n\nThen handle these cases:\n1. In remote mode: Go to state 105. If slow charging becomes inactive, shift to state 28. Should remote mode deactivate, initiate shutdown and terminate.\n2. Upon receiving a pet mode request: Enter state 105. If slow charging is inactive, transition to state 28. After processing the pet mode request, perform shutdown and end operations.\n3. When battery SOC hits 20%: Transition to state 105. If slow charging is inactive, switch to state 28. If SOC reaches 80% while DCDC state is 3, execute shutdown and conclude.",
+        "gold_plantuml": "start\nif (slow charging is 1 and front MCU high-voltage detection flag is 0) then(yes)\n  :switch to state 93;\n if (charging/discharging power-up is active and front MCU high-voltage detection flag is 1) then(yes)\n  :switch to state 95;\n  if (power-up is ready and vehicle charging/discharging mode is 2) then(yes)\n  :switch to state 105;\n\nswitch(condition judgement)\n  case(in remote mode)\n    :switch to state 105;\n    if (slow charging is inactive) then\n      :switch to state 28;\n      if (remote mode is closed) then\n          :shutdown;\n      stop\n      endif\n    endif\n\n  case (pet mode request is received)\n    :switch to state 105;\n     if (slow charging is inactive) then\n      :switch to state 28;\n      if (pet mode open request is closed) then\n          :shutdown;\n      stop\n      endif\n    endif\n\n  case (battery SOC is 20) \n    :switch to state 105;\n    if (SOC reaches 80 and DCDC state is 3) then\n    :shutdown;\n    stop\n    endif\nendswitch\n\n  endif\nendif\nendif\nend",
+        "generated_plantuml": "@startuml\nstart\n:System starts up;\n\nif (slow charging is active and the front MCU high-voltage detection flag is 0?) then (yes)\n  :Transition to state 93;\nelseif (charging/discharging power-up is active while the front MCU high-voltage detection flag reads 1?) then (yes)\n  :Move to state 95;\nelseif (power-up readiness is confirmed and the vehicle's charging/discharging mode is set to 2?) then (yes)\n  :Proceed to state 105;\nendif\n\nswitch (Operating condition)\ncase (Remote mode)\n  :Go to state 105;\n  if (slow charging becomes inactive?) then (yes)\n    :Shift to state 28;\n  endif\n  if (remote mode deactivates?) then (yes)\n    :Initiate shutdown;\n    :Terminate;\n    stop\n  endif\ncase (Receiving a pet mode request)\n  :Enter state 105;\n  if (slow charging is inactive?) then (yes)\n    :Transition to state 28;\n  endif\n  :Process the pet mode request;\n  :Perform shutdown;\n  :End operations;\n  stop\ncase (Battery SOC hits 20%)\n  :Transition to state 105;\n  if (slow charging is inactive?) then (yes)\n    :Switch to state 28;\n  endif\n  if (SOC reaches 80% while DCDC state is 3?) then (yes)\n    :Execute shutdown;\n    :Conclude;\n    stop\n  endif\nendswitch\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.3103448275862069,
+          "recall": 0.391304347826087,
+          "f1": 0.34615384615384615,
+          "missing": [
+            "switch to state 93",
+            "switch to state 95",
+            "power-up is ready and vehicle charging/discharging mode is 2",
+            "switch to state 105",
+            "switch to state 105",
+            "switch to state 105",
+            "switch to state 105",
+            "condition judgement",
+            "remote mode is closed",
+            "shutdown",
+            "shutdown",
+            "shutdown",
+            "pet mode request is received",
+            "pet mode open request is closed"
+          ],
+          "extra": [
+            "system starts up",
+            "transition to state 93",
+            "move to state 95",
+            "power-up readiness is confirmed and the vehicle s charging/discharging mode is set to 2?",
+            "proceed to state 105",
+            "operating condition",
+            "go to state 105",
+            "slow charging becomes inactive?",
+            "remote mode deactivates?",
+            "initiate shutdown",
+            "terminate",
+            "receiving a pet mode request",
+            "enter state 105",
+            "transition to state 28",
+            "process the pet mode request",
+            "perform shutdown",
+            "end operations",
+            "transition to state 105",
+            "execute shutdown",
+            "conclude"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.32142857142857145,
+          "recall": 0.4090909090909091,
+          "f1": 0.36000000000000004,
+          "missing": [
+            "switch to state 95 -> power-up is ready and vehicle charging/discharging mode is 2",
+            "power-up is ready and vehicle charging/discharging mode is 2 -> switch to state 105",
+            "switch to state 105 -> condition judgement",
+            "condition judgement -> in remote mode",
+            "in remote mode -> switch to state 105",
+            "switch to state 28 -> remote mode is closed",
+            "remote mode is closed -> shutdown",
+            "shutdown -> pet mode request is received",
+            "pet mode request is received -> switch to state 105",
+            "switch to state 28 -> pet mode open request is closed",
+            "pet mode open request is closed -> shutdown",
+            "shutdown -> battery soc is 20",
+            "soc reaches 80 and dcdc state is 3 -> shutdown"
+          ],
+          "extra": [
+            "system starts up -> slow charging is active and the front mcu high-voltage detection flag is 0?",
+            "move to state 95 -> power-up readiness is confirmed and the vehicle s charging/discharging mode is set to 2?",
+            "power-up readiness is confirmed and the vehicle s charging/discharging mode is set to 2? -> proceed to state 105",
+            "proceed to state 105 -> operating condition",
+            "operating condition -> remote mode",
+            "remote mode -> go to state 105",
+            "go to state 105 -> slow charging becomes inactive?",
+            "slow charging becomes inactive? -> shift to state 28",
+            "shift to state 28 -> remote mode deactivates?",
+            "remote mode deactivates? -> initiate shutdown",
+            "initiate shutdown -> terminate",
+            "terminate -> receiving a pet mode request",
+            "receiving a pet mode request -> enter state 105",
+            "transition to state 28 -> process the pet mode request",
+            "process the pet mode request -> perform shutdown",
+            "perform shutdown -> end operations",
+            "end operations -> battery soc hits 20",
+            "soc reaches 80 while dcdc state is 3? -> execute shutdown",
+            "execute shutdown -> conclude"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0029",
+        "input_requirement": "Input Data Management - The BE shall store input data records in a memory buffer and track buffer locations of all input data until data processing is complete. Report any buffer overflow conditions.",
+        "gold_plantuml": "start\n\nrepeat\n:Store input data records in memory buffer;\n:Track buffer locations;\nrepeat while(Data processing is incomplete)\n\n:Report any buffer overflow conditions;\n\nstop",
+        "generated_plantuml": "@startuml\nstart\nrepeat\n  :Store input data records in a memory buffer;\n  :Track buffer locations of all input data;\n  if (Buffer overflow condition?) then (yes)\n    :Report buffer overflow conditions;\n  else (no)\n  endif\nrepeat while (Data processing is complete?) is (no)\n->yes;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.6,
+          "recall": 0.75,
+          "f1": 0.6666666666666665,
+          "missing": [
+            "track buffer locations"
+          ],
+          "extra": [
+            "track buffer locations of all input data",
+            "buffer overflow condition?"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.25,
+          "recall": 0.3333333333333333,
+          "f1": 0.28571428571428575,
+          "missing": [
+            "track buffer locations -> data processing is incomplete",
+            "data processing is incomplete -> report any buffer overflow conditions"
+          ],
+          "extra": [
+            "track buffer locations of all input data -> buffer overflow condition?",
+            "buffer overflow condition? -> report buffer overflow conditions",
+            "report buffer overflow conditions -> data processing is complete?"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      }
+    ]
+  },
+  "knowledge_gap_policy": {
+    "identify_when": [
+      "the failure reflects reusable UML or PlantUML modeling knowledge missing from the current prompt",
+      "the same modeling mistake appears across multiple cases or failure patterns",
+      "the repair can be expressed as a general modeling principle rather than a case-specific instruction"
+    ],
+    "avoid_when": [
+      "the issue is only caused by provider, timeout, parsing, or other infrastructure errors",
+      "the repair would copy a training case, a gold diagram, or dataset-specific wording",
+      "the issue is only output formatting and is better handled in the output or rule section"
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge|rule"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "short snake_case label",
+        "related_failure_patterns": [
+          "error pattern names from error_patterns"
+        ],
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "gap": "what reusable UML/PlantUML modeling knowledge is missing or unclear",
+        "suggested_knowledge": "concise general knowledge that could be added to the knowledge section"
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

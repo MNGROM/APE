@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "incorrect_parallel_decomposition",
+      "problem": "The model frequently misinterprets sequential enumerations or independent attributes as concurrent/parallel flows, and conversely fails to recognize true concurrent operations described in the requirements.",
+      "possible_causes": [
+        "The prompt lacks clear guidelines on when to use `fork`/`end fork` versus sequential actions, causing the model to over-apply parallel constructs to lists of items (e.g., entering name and description, creating multiple objects).",
+        "The model defaults to linearizing genuinely concurrent mitigation tasks (as seen in the RTOS cases) instead of representing them as parallel branches."
+      ]
+    },
+    {
+      "name": "misplaced_or_spurious_control_flow",
+      "problem": "The model introduces incorrect conditional checks, wraps unconditional actions in `if` blocks, or misplaces branching logic, leading to both extra/wrong relations and extra activities.",
+      "possible_causes": [
+        "The prompt does not instruct the model to strictly map only explicitly stated conditions to decision nodes, causing it to hallucinate conditional guards for standard actions.",
+        "The model attempts to fit all logic into a single linear `if-else` chain rather than correctly structuring independent or sequential conditional checks."
+      ]
+    },
+    {
+      "name": "missing_implicit_activities",
+      "problem": "The prediction omits intermediate states, system responses, or implicit actions that are stated in the requirements but are not the primary user/system actions.",
+      "possible_causes": [
+        "The prompt over-emphasizes capturing the main 'happy path' or primary actions, causing the model to drop secondary effects, state changes, or system feedback steps.",
+        "The model compresses multiple sequential steps into a single aggregated activity node, losing granular behaviors required by the ground truth."
+      ]
+    },
+    {
+      "name": "incorrect_loop_representation",
+      "problem": "The model misrepresents periodic, retry, or cyclic behaviors, either by omitting the loop construct entirely, using the wrong loop type, or placing the loop at the wrong scope.",
+      "possible_causes": [
+        "The prompt lacks specific instructions on how to map continuous monitoring, periodic tasks, or retry logic (e.g., `repeat while` vs `while` vs `fork`), leading to inconsistent or absent loop generation.",
+        "The model misinterprets adjectives like 'continuous' or 'periodic' as single actions rather than loop guards."
+      ]
+    }
+  ]
+}
+```

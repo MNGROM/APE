@@ -1,0 +1,85 @@
+```json
+{
+  "summary": "The batch primarily fails due to severe wording and granularity mismatches between generated nodes and ground truth, leading to near-zero deterministic node and relation metrics despite reasonable semantic intent. The prompt encourages paraphrasing and synthesizing input text rather than preserving exact phrasing and atomic actions. Additionally, the prompt's explicit prohibition of switch/case syntax forces the model into incorrect if/elseif structures for multi-branch logic, causing syntax errors and broken control flow. Finally, the model frequently invents speculative control flows and implementation steps not stated in the input.",
+  "error_patterns": [
+    {
+      "name": "node_wording_mismatch",
+      "severity": "high",
+      "evidence_case_ids": [
+        "fsd-0114",
+        "lmc-0037",
+        "lmc-0042",
+        "us-0008",
+        "rac-0005",
+        "pure-0010"
+      ],
+      "problem": "The generated diagrams use paraphrased, expanded, or slightly altered wording for activity and condition nodes instead of preserving the exact phrasing from the input requirement. This causes deterministic node precision and recall to drop to 0 even when the semantic intent is correct (e.g., 'Compute 2-norm' vs '2-norm', 'Save the trade information' vs 'Save trade instruction').",
+      "suggested_prompt_direction": "Instruct the agent to extract and use the exact wording, phrases, and variable names from the input requirement for activity and condition nodes, avoiding any paraphrasing, summarization, or addition of verbs like 'Compute' or 'Ensure' unless explicitly present in the text.",
+      "target_sections": [
+        "workflow",
+        "input"
+      ]
+    },
+    {
+      "name": "prohibited_switch_syntax",
+      "severity": "high",
+      "evidence_case_ids": [
+        "fsd-0114",
+        "rac-0004",
+        "rac-0005"
+      ],
+      "problem": "The prompt explicitly forbids switch/case constructs, forcing the model to use if/elseif for multi-branch logic. This leads to PlantUML syntax errors (e.g., multiple 'else' branches) and incorrect control flow, as if/elseif cannot properly represent the independent, flat branching semantics of switch/case used in the ground truth.",
+      "suggested_prompt_direction": "Remove the prohibition on switch/case and instead provide guidance on when to use switch/case versus if/elseif, specifically recommending switch/case for multi-branch condition evaluations where cases are discrete and independent.",
+      "target_sections": [
+        "knowledge"
+      ]
+    },
+    {
+      "name": "speculative_control_flow",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "us-0008",
+        "lmc-0037",
+        "fsd-0050"
+      ],
+      "problem": "The model invents speculative control flows, such as adding conditional checks for outcomes not specified in the input (e.g., 'Testers buy-in?', 'Enforce top bound'), or adding implementation steps (e.g., 'Attempt telemetry operation'). This violates the prompt's instruction against inventing unstated flows, leading to extra activities and wrong relations.",
+      "suggested_prompt_direction": "Strengthen the workflow instruction to strictly prohibit adding conditional branches, loops, or implementation steps that are not explicitly described in the input. Emphasize that if a condition or loop is not stated, the flow must proceed sequentially without speculative checks.",
+      "target_sections": [
+        "workflow"
+      ]
+    },
+    {
+      "name": "merged_atomic_activities",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "fsd-0050",
+        "lmc-0037"
+      ],
+      "problem": "The model merges explicitly listed atomic actions or components into single broad nodes. For example, 'Govern PWM fans' and 'Govern liquid-cooling loops' are omitted/merged, and parallel data components in the finite difference equation are collapsed into sequential computation steps, reducing node recall.",
+      "suggested_prompt_direction": "Reinforce the instruction to keep explicitly listed actions, components, or checks as separate activity nodes. Add specific guidance to model listed items (e.g., separated by 'and', commas, or listed across lines) as distinct nodes, potentially within parallel forks if implied by the text.",
+      "target_sections": [
+        "workflow"
+      ]
+    },
+    {
+      "name": "missing_implicit_parallelism",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "lmc-0037",
+        "fsd-0050"
+      ],
+      "problem": "The model fails to identify and model parallel execution for logically concurrent elements described in the input, such as simultaneous data inputs (n, n-1, truth data) or concurrent tasks ('Govern PWM fans' / 'Govern liquid-cooling loops'). It defaults to sequential flows, missing required fork/end fork constructs.",
+      "suggested_prompt_direction": "Add a workflow step instructing the agent to actively look for keywords indicating concurrency (e.g., 'simultaneously', 'concurrently', 'while', lists of independent components) and explicitly model them using PlantUML fork/fork again/end fork constructs.",
+      "target_sections": [
+        "workflow"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML snippets into the prompt.",
+    "Do not add dataset-specific examples or case-specific vocabulary.",
+    "Do not add speculative implementation steps merely to increase node recall.",
+    "Do not alter the evaluation metric matching algorithm; fix the prompt to align with exact wording."
+  ]
+}
+```

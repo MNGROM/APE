@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no structured process to separate activity extraction from control-flow construction. This absence forces the model to perform both tasks simultaneously, leading to omitted activities (compressing details into abstract nodes) and hallucinated activities (inventing error-handling branches to fill perceived gaps)."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks reusable modeling guidance for mapping specific requirement constructs to PlantUML syntax. It misses critical cues for treating data sources and display outputs as distinct activity nodes, for identifying iterative keywords as loops, and for distinguishing alternative options (switch/else) from true concurrency (fork/join)."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section lacks explicit constraints to prevent false-positive parallelism and hallucinated content. Without strict boundaries, the model defaults to using fork/join for any list of items or steps, invents implicit error-handling branches, and misinterprets sequential instructions as conditional or iterative logic."
+    }
+  ]
+}
+```

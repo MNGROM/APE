@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a structured, step-by-step process to extract activities and control flows from the requirement before generating PlantUML code.",
+      "change_instruction": "Add a workflow that instructs the model to: 1) Identify and list only the explicitly stated activities/actions from the requirement. 2) Determine the sequential or conditional control flow between these extracted activities. 3) Map the control flow to PlantUML structures (e.g., if/else for conditionals, fork/end fork for parallelism). 4) Assemble the components into the final PlantUML code. Emphasize that activities must be strictly grounded in the input text to avoid hallucinating extra nodes."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Equip the model with essential PlantUML syntax references and UML activity diagram modeling concepts.",
+      "change_instruction": "Add a knowledge section covering: 1) PlantUML activity diagram syntax basics (start/end nodes using 'start' and 'stop', action states, transitions using '->', conditional branches using 'if/elseif/else/endif', and parallel activities using 'fork/end fork'). 2) UML modeling guidance explaining that decision nodes represent mutually exclusive or guarded paths, and merge/join nodes synchronize flows."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce strict structural and formatting constraints to ensure valid and conservative PlantUML output.",
+      "change_instruction": "Add a rules section containing: 1) Every diagram must include exactly one 'start' and at least one 'stop' node. 2) Output PlantUML code only, with no markdown formatting, explanations, or comments. 3) Do not invent activities or transitions that are not explicitly stated or logically necessary in the requirement. 4) Ensure all conditional blocks are properly closed with 'endif' and all parallel blocks with 'end fork'."
+    }
+  ]
+}
+```

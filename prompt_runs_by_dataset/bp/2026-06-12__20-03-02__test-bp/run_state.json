@@ -1,0 +1,21 @@
+{
+  "updated_at": "2026-06-12T20:06:58",
+  "phase": "iteration_001:baseline_gate_eval",
+  "attempt": 1,
+  "max_retries": 20,
+  "retryable": true,
+  "rate_limited": false,
+  "wait_seconds": 30,
+  "retry_at": "2026-06-12T20:07:28",
+  "context": {
+    "dataset": "fsd",
+    "case_id": "fsd-0057"
+  },
+  "error": {
+    "type": "ProviderHTTPError",
+    "prefix": "LLM",
+    "status_code": 500,
+    "provider_error_code": "1234",
+    "body_excerpt": "{\"error\":{\"code\":\"1234\",\"message\":\"网络错误，错误id 20260612200658b6028d7391a14110 ，请稍后重试。\"}}"
+  }
+}

@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "append",
+      "content": "Generate concise, abstracted activity and condition labels by extracting the core action and object from the requirement text. Drop auxiliary verbs, subjects, and unnecessary prose; do not copy long verbatim sentences as labels. Before mapping the flow, actively identify all optional steps, validation checks, and alternative outcomes, and model them as if/endif or switch/endswitch blocks rather than linearizing them. Explicitly differentiate between mutually exclusive alternative paths (which must use switch/endswitch) and concurrent parallel actions (which must use fork/end fork): if the requirement presents distinct choices, cases, or conditions that cannot happen simultaneously, use switch/endswitch. Strictly extract only explicitly stated activities; do not infer or add prerequisite UI clicks, calculation steps, or save operations unless they are explicitly described in the input text."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "When nesting different control structures (e.g., switch inside if, or if inside repeat), strictly pair every opening keyword with its corresponding closing keyword in the reverse order of opening. To minimize syntax pairing errors, keep nesting as flat as possible. Mutually exclusive choices or cases that cannot occur simultaneously must use switch/endswitch; reserve fork/end fork solely for actions that explicitly occur at the same time or in parallel."
+    }
+  ],
+  "rationale": "The primary failure is a severe label phrasing mismatch caused by the current prompt's instruction to preserve exact phrasing, leading to verbose labels that fail deterministic matching. Appending a rule to generate concise, abstracted labels directly addresses this. The append to workflow also targets high-severity control flow misinterpretations (switch vs. fork), missing conditional/switch structures, and speculative extra activities. The knowledge append reinforces switch/fork differentiation and safe nesting to address syntax errors and structural mismatches.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}
+```

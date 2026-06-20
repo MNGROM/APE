@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a step-by-step process to extract activities strictly from the text, identify actors/partitions, and map conditional logic to distinct branching structures.",
+      "change_instruction": "Add a workflow section with the following steps: 1) Extract only the activities and actions explicitly stated in the requirement text, strictly prohibiting inference of implicit steps. 2) Identify distinct actors, roles, or system components and assign them to PlantUML partitions (swimlanes). 3) Identify parallel actions or simultaneous options and map them using fork/fork again constructs. 4) Map conditional logic, alternatives, and multiple outcomes to distinct branching structures (if/elseif/else or switch/case) rather than a linear sequence."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide reusable modeling guidance on PlantUML constructs for actor boundaries, parallel flows, and conditional branching.",
+      "change_instruction": "Add a knowledge section detailing: 1) Use 'partition' to represent actor boundaries and distinct system roles. 2) Use 'fork' and 'end fork' (or 'fork again') to represent parallel information and simultaneous options. 3) Use 'if', 'elseif', 'else', or 'switch', 'case' to faithfully decompose complex conditional text into distinct branching paths, ensuring all specified alternative outcomes are represented."
+    },
+    {
+      "section": "rule",
+      "intent": "Establish strict constraints against hallucinating implicit steps, defaulting to elaborate error paths, and oversimplifying complex logic.",
+      "change_instruction": "Add a rule section containing: 1) Do not fabricate or infer activities, steps, or workflows that are not explicitly stated in the requirement text. 2) Do not automatically add default 'success' or 'error/failure' handling branches unless they are explicitly described in the requirement. 3) Do not collapse distinct conditional paths, checks, or alternative outcomes into a single sequential flow or broad node; faithfully decompose complex logic into separate branches."
+    }
+  ]
+}
+```

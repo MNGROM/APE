@@ -1,0 +1,86 @@
+```json
+{
+  "summary": "The batch primarily fails due to two intertwined issues: the model over-compresses compound phrases into single activity nodes (causing missing activities and wrong granularity), and it fails to recognize implicit parallelism or simultaneous actions (causing missing fork structures and wrong relations). The prompt's strong emphasis on not inferring unstated steps likely causes the model to avoid decomposing listed items, while its lack of guidance on recognizing parallelism leads to purely sequential flows.",
+  "error_patterns": [
+    {
+      "name": "activity_granularity_mismatch",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0030",
+        "bp-0015",
+        "pure-0082"
+      ],
+      "problem": "The model merges multiple distinct actions or listed items (e.g., 'Enter name, description, and keywords') into a single summary activity node, resulting in missing activities and extra/wrong relations compared to the ground truth which separates them.",
+      "suggested_prompt_direction": "Clarify the rule against merging distinct actions so it explicitly covers grammatical lists and compound phrases, instructing the model to create a separate activity node for each listed item or distinct action verb.",
+      "target_sections": [
+        "rule",
+        "workflow"
+      ]
+    },
+    {
+      "name": "missing_parallel_decomposition",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0030",
+        "bp-0015",
+        "pure-0095",
+        "us-0129"
+      ],
+      "problem": "The model fails to identify independent or simultaneous actions and models them sequentially instead of using fork/end fork structures, leading to missing activities (the decomposed parallel steps) and incorrect sequential relations.",
+      "suggested_prompt_direction": "Add explicit instructions to identify simultaneous, independent, or concurrently described actions and model them using PlantUML fork/end fork blocks rather than sequential flows.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "missing_conditional_decomposition",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "lmc-0050",
+        "lmc-0052",
+        "pure-0095"
+      ],
+      "problem": "When a requirement states a constraint or property (e.g., 'shall be invertible with the exception of...'), the model often creates a single action node (e.g., 'Invert the matrix') instead of modeling the condition as a decision node with distinct outcomes.",
+      "suggested_prompt_direction": "Strengthen guidance on translating constraints, validations, and 'with the exception of' phrases into if/else decision nodes where the condition is the guard and the outcomes are separate activities.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "parallel_list_decomposition",
+      "related_failure_patterns": [
+        "missing_parallel_decomposition",
+        "activity_granularity_mismatch"
+      ],
+      "evidence_case_ids": [
+        "bp-0030",
+        "bp-0015",
+        "us-0129"
+      ],
+      "gap": "The prompt lacks knowledge on how to handle grammatical lists of items or actions that occur independently or simultaneously.",
+      "suggested_knowledge": "When a requirement lists multiple items or actions that occur independently, simultaneously, or without a stated sequential dependency (e.g., 'Enter name, description, and keywords'), decompose them into separate activity nodes within a fork/end fork block."
+    },
+    {
+      "id": "constraint_to_decision",
+      "related_failure_patterns": [
+        "missing_conditional_decomposition"
+      ],
+      "evidence_case_ids": [
+        "lmc-0050",
+        "lmc-0052"
+      ],
+      "gap": "The prompt does not clearly explain how to model property constraints or mathematical conditions as decision outcomes rather than procedural actions.",
+      "suggested_knowledge": "When a requirement states a property, constraint, or validation (e.g., 'shall equal', 'shall be invertible'), model it as an if/else decision node where the condition is the branch guard, and the subsequent actions or states (e.g., 'Allowed'/'Not allowed', 'Invertible'/'Not invertible') are the outcomes, rather than creating a single procedural action node."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not change output formatting rules to fix semantic or structural modeling errors."
+  ]
+}
+```

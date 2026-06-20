@@ -1,0 +1,78 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "extra_activity",
+        "problem": "The prediction consistently over-specifies the diagram by hallucinating granular sub-steps, error-handling branches, and validation loops that are not present in the requirements or ground truth.",
+        "possible_causes": [
+          "The prompt may lack constraints against inventing implicit steps or adding error-handling logic not explicitly stated in the requirement.",
+          "The generator defaults to a standard 'happy path + error path' template for user stories, inflating simple flows into complex ones."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction frequently omits key activities, particularly those representing data sources, display outputs, or conditions evaluated as standalone actions in the ground truth.",
+        "possible_causes": [
+          "The prompt may not instruct the model to treat displayed information, data sources, or system outputs as distinct activity nodes.",
+          "The generator tends to compress multiple explicit actions into broad, abstract nodes, losing required behavioral detail."
+        ]
+      },
+      {
+        "name": "wrong_parallel",
+        "problem": "The prediction systematically misapplies fork/join constructs, predominantly as false_positive_parallel. It models sequential steps, alternative options, or attribute groupings as concurrent flows instead of using switch/conditional blocks or sequential nodes.",
+        "possible_causes": [
+          "The prompt fails to clearly distinguish between concurrent actions (fork/join) and alternative options (switch) or sequential attribute listings.",
+          "The generator defaults to using fork/join to visually separate any list of items or steps, regardless of their logical concurrency."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction frequently omits or misrepresents control-flow relations, particularly failing to map requirement lists into switch/case or nested if/elseif structures, instead flattening them into sequential or disconnected flows.",
+        "possible_causes": [
+          "The prompt lacks explicit guidance on how to translate requirement lists (e.g., numbered cases, distinct conditions) into PlantUML switch or elseif constructs.",
+          "The generator struggles to maintain nested conditional logic, often collapsing outer conditions and losing the hierarchical relation between them."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction introduces unsupported control-flow relations, often by adding spurious error-handling branches, loops, or by incorrectly connecting independent sequential steps with conditional logic.",
+        "possible_causes": [
+          "Driven by the hallucination of extra activities, the generator creates additional edges to connect these invented nodes.",
+          "The generator misinterprets simple sequential instructions as conditional or iterative logic, adding relations that do not exist in the requirement."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The prediction fails to represent repeated procedures as loops, instead duplicating the sequential steps or omitting the iteration entirely.",
+        "possible_causes": [
+          "The prompt does not provide sufficient guidance on identifying iterative keywords (e.g., 'repeat', 'perform the following steps first for X then for Y') and mapping them to PlantUML repeat/while constructs.",
+          "The generator prefers linear expansion of repeated steps over using proper loop syntax, leading to structural inaccuracies."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is empty, providing no structured process to separate activity extraction from control-flow construction. This absence forces the model to perform both tasks simultaneously, leading to omitted activities (compressing details into abstract nodes) and hallucinated activities (inventing error-handling branches to fill perceived gaps)."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section lacks reusable modeling guidance for mapping specific requirement constructs to PlantUML syntax. It misses critical cues for treating data sources and display outputs as distinct activity nodes, for identifying iterative keywords as loops, and for distinguishing alternative options (switch/else) from true concurrency (fork/join)."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section lacks explicit constraints to prevent false-positive parallelism and hallucinated content. Without strict boundaries, the model defaults to using fork/join for any list of items or steps, invents implicit error-handling branches, and misinterprets sequential instructions as conditional or iterative logic."
+      }
+    ]
+  }
+}

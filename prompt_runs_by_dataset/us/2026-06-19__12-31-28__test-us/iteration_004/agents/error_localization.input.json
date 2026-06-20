@@ -1,0 +1,63 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract activities strictly from explicit actions in the requirement, grouping lists of attributes, parameters, or properties into a single descriptive activity node rather than splitting them.\nStep 2: Construct control-flow by connecting the extracted activities, mapping mutually exclusive conditions to switch/if/elseif structures and explicit concurrency keywords to fork/join blocks.",
+    "knowledge": "- Concurrency modeling: Only use fork/join blocks when the requirement contains explicit concurrency cues (e.g., 'concurrently', 'simultaneously', 'in parallel'). Explicitly exclude comma-separated lists, attributes, options, and sequential UI steps from fork/join usage; these must remain single activity nodes or sequential flows.\n- Loop modeling: Map iterative cues (e.g., 'repeat', 'retry', 'periodically', 'cyclically') to repeat/while loops, ensuring the loop boundary strictly wraps only the iterative portion and does not enclose non-iterative parallel blocks.",
+    "rule": "- Granularity rule: Do not infer implicit system interactions or UI responses unless explicitly stated in the text; do not collapse multiple distinct specified actions into one broad node.\n- Convergence rule: All fork/join branches and switch/case paths must merge before reaching a stop node; do not place stop nodes inside parallel branches or conditional paths unless the requirement explicitly states an immediate process termination for that specific branch."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The prediction predominantly suffers from false_negative_parallel, failing to use fork/join when the requirement clearly lists concurrent attributes, simultaneous actions, or parallel tasks. In a few cases, it also exhibits false_positive_parallel by wrapping sequential or mutually exclusive conditional branches in fork/join.",
+        "possible_causes": [
+          "The prompt lacks explicit guidance to decompose lists of attributes, parameters, or simultaneous system behaviors into fork/join parallel structures (e.g., 'Close window and display statistics', 'Enter name, description, and keywords').",
+          "The model defaults to sequential action nodes for comma-separated or 'and'-joined clauses, missing the concurrent semantic intent.",
+          "For RTOS/multi-threaded requirements, the model sometimes forces concurrent forks for sequentially dependent steps (false positive) while missing true parallel threads (false negative) due to ambiguous prompt instructions on mapping concurrent tasks."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction frequently omits explicit behaviors, sub-steps, or decomposed attributes that are detailed in the requirements and ground truth.",
+        "possible_causes": [
+          "The prompt does not instruct the model to exhaustively preserve all explicitly mentioned actions and decompose compound steps (e.g., splitting 'Enter name, description, and keywords' into three separate activities).",
+          "The model tends to compress multiple explicit actions into broad, summarized activity nodes, losing granular behavioral fidelity."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction introduces activities not stated in the requirements, often by hallucinating intermediate steps or adding unnecessary structural labels.",
+        "possible_causes": [
+          "The prompt lacks constraints preventing the model from inferring or adding implicit actions not explicitly stated in the requirement text.",
+          "The model over-generates structural or descriptive nodes (e.g., adding 'Sensor in NOMINAL state' or 'System startup' as separate steps) to force a narrative flow."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction frequently misrepresents control-flow by flattening nested conditional logic, omitting else-if chains, or failing to nest conditions properly.",
+        "possible_causes": [
+          "The prompt provides insufficient guidance on translating complex, multi-level conditional requirements (e.g., 'if A, then if B...') into properly nested PlantUML if/elseif/endif structures.",
+          "The model struggles to maintain the hierarchical dependency of conditions, often placing subsequent 'if' statements sequentially rather than nesting them within the correct parent branch."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction adds unsupported control-flow transitions, often by prematurely terminating branches with 'stop' or by treating mutually exclusive conditions as independent sequential flows.",
+        "possible_causes": [
+          "The prompt does not adequately specify how to handle alternative paths, leading the model to insert 'stop' statements at the end of conditional branches rather than allowing the flow to merge and continue.",
+          "The model misinterprets distinct alternative scenarios (e.g., different charging modes) as sequential steps, creating false linear progressions instead of mutually exclusive branches."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The prediction mishandles repeated, periodic, or retry behaviors by either omitting loops entirely or misplacing loop boundaries.",
+        "possible_causes": [
+          "The prompt lacks clear instructions on mapping requirement keywords like 'repeat', 'periodic', 'retry', or 'until' to PlantUML repeat/while constructs.",
+          "The model confuses continuous monitoring or periodic tasks with simple conditional checks, failing to represent the iterative nature of the behavior."
+        ]
+      }
+    ]
+  }
+}

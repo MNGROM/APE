@@ -1,0 +1,170 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description. \n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n## knowledge\n",
+  "evaluation": {
+    "summary": {
+      "count": 2.0,
+      "syntax_pass_rate": 1.0,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.41666666666666663,
+      "node_recall": 0.4270833333333333,
+      "node_f1": 0.35858585858585856,
+      "relation_precision": 0.125,
+      "relation_recall": 0.25,
+      "relation_f1": 0.16666666666666666,
+      "plantuml_compilation_pass_rate": 1.0,
+      "llm_element_evaluated": 2.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.7625,
+      "llm_node_recall": 0.82145,
+      "llm_node_f1": 0.7596,
+      "llm_relation_precision": 0.6499999999999999,
+      "llm_relation_recall": 0.73335,
+      "llm_relation_f1": 0.655
+    },
+    "failure_type_counts": {
+      "missing_activity": 2,
+      "extra_activity": 2,
+      "missing_or_wrong_relation": 2,
+      "extra_or_wrong_relation": 2
+    },
+    "representative_cases": [
+      {
+        "dataset": "pure",
+        "case_id": "pure-0043",
+        "input_requirement": "1. View Item Attributes 1.1. User accesses the main inventory screen 1.2. System displays the Edit Attributes button 1.3. User clicks the Edit Attributes button 1.4. System displays the Edit Attributes screen which displays all existing item attributes and their attribute x department assignments 1.5. Optionally, user filters view by attribute status (active, inactive, all) 1.6. User clicks the Done button 1.7. User is taken back to the main inventory screen",
+        "gold_plantuml": "start\n\n:Access main inventory screen;\n:Display Edit Attributes button;\n\n:Click Edit Attributes button;\n:Display Edit Attributes screen;\n\nfork\n:All existing item attributes;\nfork again\n:Attribute x department assignments;\nend fork\n\nif(Filter view?) then(yes)\n\nswitch(Attribute status)\ncase(Active)\n:Active status;\ncase(Inactive)\n:Inactive status;\ncase(All)\n:All status;\nendswitch\n\nelse(no)\nendif\n\n:Click Done button;\n:Back to main inventory screen;\n\nstop",
+        "predicted_plantuml": "@startuml\nstart\n:User accesses the main inventory screen;\n:System displays the Edit Attributes button;\n:User clicks the Edit Attributes button;\n:System displays the Edit Attributes screen\n(all existing item attributes and their\nattribute x department assignments);\nif (User wants to filter view?) then (Yes)\n  :User filters view by attribute status\n  (active, inactive, all);\nelse (No)\nendif\n:User clicks the Done button;\n:User is taken back to the main inventory screen;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.5,
+          "recall": 0.1875,
+          "f1": 0.2727272727272727,
+          "missing": [
+            "display edit attributes screen",
+            "all existing item attributes",
+            "attribute x department assignments",
+            "filter view?",
+            "attribute status",
+            "active",
+            "active status",
+            "inactive",
+            "inactive status",
+            "all",
+            "all status",
+            "click done button",
+            "back to main inventory screen"
+          ],
+          "extra": [
+            "user wants to filter view?",
+            "user clicks the done button",
+            "user is taken back to the main inventory screen"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "access main inventory screen -> display edit attributes button",
+            "display edit attributes button -> click edit attributes button",
+            "click edit attributes button -> display edit attributes screen",
+            "display edit attributes screen -> all existing item attributes",
+            "all existing item attributes -> attribute x department assignments",
+            "attribute x department assignments -> filter view?",
+            "filter view? -> attribute status",
+            "attribute status -> active",
+            "active -> active status",
+            "active status -> inactive",
+            "inactive -> inactive status",
+            "inactive status -> all",
+            "all -> all status",
+            "all status -> click done button",
+            "click done button -> back to main inventory screen"
+          ],
+          "extra": [
+            "user accesses the main inventory screen -> system displays the edit attributes button",
+            "system displays the edit attributes button -> user clicks the edit attributes button",
+            "user clicks the edit attributes button -> user wants to filter view?",
+            "user wants to filter view? -> user clicks the done button",
+            "user clicks the done button -> user is taken back to the main inventory screen"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0011",
+        "input_requirement": "7.\tThe autopilot shall change states from PULLUP to TRANSITION when the system is supported and sensor data is good.",
+        "gold_plantuml": "start\n\nif(System is supported?) then(yes)\n if(Sensor data is good?) then(yes)\n :Autopilot change states from PULLUP to TRANSITION;\n else(no)\n endif\nelse(no)\nendif\n\nstop",
+        "predicted_plantuml": "@startuml\nskinparam style strictuml\ntitle Autopilot State Change: PULLUP to TRANSITION\n\nstart\n:Autopilot in PULLUP state;\nif (System supported?) then (Yes)\n  if (Sensor data is good?) then (Yes)\n    :Change state to TRANSITION;\n  else (No)\n    :Remain in PULLUP state;\n  endif\nelse (No)\n  :Remain in PULLUP state;\nendif\nstop\n\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "node_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.6666666666666666,
+          "f1": 0.4444444444444444,
+          "missing": [
+            "autopilot change states from pullup to transition"
+          ],
+          "extra": [
+            "autopilot in pullup state",
+            "change state to transition",
+            "remain in pullup state",
+            "remain in pullup state"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.25,
+          "recall": 0.5,
+          "f1": 0.3333333333333333,
+          "missing": [
+            "sensor data is good? -> autopilot change states from pullup to transition"
+          ],
+          "extra": [
+            "autopilot in pullup state -> system supported?",
+            "sensor data is good? -> change state to transition",
+            "change state to transition -> remain in pullup state"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      }
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

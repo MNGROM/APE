@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "extra_activity",
+      "problem": "The generator frequently fabricates activities, conditions, or entire branches that have no basis in the requirement text.",
+      "possible_causes": [
+        "The prompt may lack constraints against inventing control-flow logic or speculative steps not explicitly stated in the requirement.",
+        "The generator over-interprets simple statements (e.g., user stories or constraints) and hallucinates operational steps, such as adding 'Retry sign up' or 'Detect moderator's local timezone'."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "Explicitly stated actions, states, and conditions from the requirements are routinely omitted from the generated diagrams.",
+      "possible_causes": [
+        "The generator tends to compress or abstract multiple sequential steps into a single broad activity node, losing granular behaviors.",
+        "It fails to extract and represent conditional prerequisites or implicit states described in the text (e.g., expert user checks, specific system states)."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction frequently introduces incorrect control-flow structures, such as using `switch` for mutually exclusive conditions that should be `if/elseif`, or adding unsupported conditional branches.",
+      "possible_causes": [
+        "The prompt does not clearly differentiate when to use `switch` (for distinct categorical choices) versus `if/elseif` (for conditional logic), leading to structural misinterpretation.",
+        "The generator forces sequential or alternative logic where the requirement implies independent or simple sequential flow, adding spurious decision points."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The generator fails to capture the correct topological flow, particularly missing nested conditional structures and proper loop boundaries.",
+      "possible_causes": [
+        "It struggles to map complex, deeply nested conditional logic (e.g., state machines with multiple levels of prerequisites) into properly nested PlantUML blocks.",
+        "It misses loop boundaries, such as placing loop controls (`repeat while`) at the wrong nesting level or omitting them entirely for iterative processes."
+      ]
+    },
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction predominantly suffers from false_negative_parallel, failing to use `fork`/`join` when the requirement clearly indicates concurrent, simultaneous, or independently executed actions.",
+      "possible_causes": [
+        "The prompt lacks explicit guidance to identify concurrent cues (e.g., 'enter a technical name AND a description', 'user name and password') and map them to `fork`/`join` blocks.",
+        "The generator defaults to strictly sequential activity nodes even when the text describes parallel data entry or simultaneous independent tasks."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction mishandles repeated or retry behaviors, either misplacing the loop construct or failing to represent the iterative logic accurately.",
+      "possible_causes": [
+        "The generator misinterprets the scope of the loop, placing the loop exit condition at an incorrect nesting level or applying the loop to the wrong set of activities.",
+        "It struggles to translate retry limits (e.g., 'three attempts') into proper `while` or `repeat` loop structures with correct exit conditions."
+      ]
+    }
+  ]
+}
+```

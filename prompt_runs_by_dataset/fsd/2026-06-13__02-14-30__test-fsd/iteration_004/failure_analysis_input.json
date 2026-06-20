@@ -1,0 +1,801 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description.\n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n1. Extract activities strictly from the requirement text. Create one activity node for each distinct action or state explicitly mentioned; do not invent UI interactions, system validations, or other unstated implementation details.\n2. Decompose compound actions or sentences describing multiple sequential actions into separate, concise activity nodes.\n3. Identify control-flow keywords in the requirement (e.g., if, unless, alternatively, simultaneously, in parallel) to determine branching and concurrency before writing PlantUML.\n4. Map the identified control-flow semantics to the correct PlantUML constructs and generate the diagram.\n\n## knowledge\n\nUse 'if/else' for binary conditional paths and 'switch/case' for multiple alternative outcomes based on a single choice or variable. Use 'fork/end fork' only for concurrent parallel actions that happen at the same time. Alternative branches in if/else or switch/case must converge at a merge point and must not be sequentially linked.\n\n## rule\n",
+  "evaluation": {
+    "summary": {
+      "count": 10.0,
+      "syntax_pass_rate": 1.0,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.41388888888888886,
+      "node_recall": 0.38331583875062136,
+      "node_f1": 0.38480687414784065,
+      "relation_precision": 0.27133020488283643,
+      "relation_recall": 0.24665089812148638,
+      "relation_f1": 0.25381507381507384,
+      "plantuml_compilation_pass_rate": 1.0,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {
+      "missing_activity": 9,
+      "extra_activity": 9,
+      "missing_or_wrong_relation": 9,
+      "extra_or_wrong_relation": 9
+    },
+    "representative_cases": [
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0040",
+        "input_requirement": "2.\tWhen the determinant of B(inv(Wp’)B’ is > 1e-12 as indicated by ridge_on set to False, the inversion of the B(inv(Wp’)B’ matrix should be accurate to 12 digits precision in that each element in the check output matrix is within a 1e-12 tolerance with respect to the elements of a 3x3 identity matrix.",
+        "gold_plantuml": "start\n\n:Ridge_on set to False;\n:Determinant of B(inv(Wp’)B’> 1e-12;\n:Each element with respect to 3x3 identity matrix elements < 1e-12 tolerance;\n:B(inv(Wp’)B’matrix inversion be accurate to 12 digits precision;\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Check determinant of B(inv(Wp'))B';\nif (determinant > 1e-12?) then (Yes)\n  :Set ridge_on to False;\n  :Invert B(inv(Wp'))B' matrix;\n  :Compute check output matrix;\n  :Verify each element of check output matrix is within 1e-12 tolerance of 3x3 identity matrix;\nelse (No)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "ridge_on set to false",
+            "determinant of b(inv(wp )b > 1e-12",
+            "each element with respect to 3x3 identity matrix elements < 1e-12 tolerance",
+            "b(inv(wp )b matrix inversion be accurate to 12 digits precision"
+          ],
+          "extra": [
+            "check determinant of b(inv(wp ))b",
+            "determinant > 1e-12?",
+            "set ridge_on to false",
+            "invert b(inv(wp ))b matrix",
+            "compute check output matrix",
+            "verify each element of check output matrix is within 1e-12 tolerance of 3x3 identity matrix"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "ridge_on set to false -> determinant of b(inv(wp )b > 1e-12",
+            "determinant of b(inv(wp )b > 1e-12 -> each element with respect to 3x3 identity matrix elements < 1e-12 tolerance",
+            "each element with respect to 3x3 identity matrix elements < 1e-12 tolerance -> b(inv(wp )b matrix inversion be accurate to 12 digits precision"
+          ],
+          "extra": [
+            "check determinant of b(inv(wp ))b -> determinant > 1e-12?",
+            "determinant > 1e-12? -> set ridge_on to false",
+            "set ridge_on to false -> invert b(inv(wp ))b matrix",
+            "invert b(inv(wp ))b matrix -> compute check output matrix",
+            "compute check output matrix -> verify each element of check output matrix is within 1e-12 tolerance of 3x3 identity matrix"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0169",
+        "input_requirement": "As a user, I want backend changes for bulk updating one enum value to another.",
+        "gold_plantuml": "start\n:changes for bulk updating enum value;\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Select enum value to update;\n:Select target enum value;\nif (Is confirmation provided?) then (yes)\n  :Bulk update enum value to target;\nelse (no)\n  :Cancel bulk update;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "changes for bulk updating enum value"
+          ],
+          "extra": [
+            "select enum value to update",
+            "select target enum value",
+            "is confirmation provided?",
+            "bulk update enum value to target",
+            "cancel bulk update"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [],
+          "extra": [
+            "select enum value to update -> select target enum value",
+            "select target enum value -> is confirmation provided?",
+            "is confirmation provided? -> bulk update enum value to target",
+            "bulk update enum value to target -> cancel bulk update"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0019",
+        "input_requirement": "19.\tcreate a new job by using the LifeCycle Manager tool1. Log into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, click New Job. The \"New Job\"window appears .3. Enter the name, description, and keywords for the job in the appropriatefields.4. In the Save Job in field, browse and select the folder in which you wantto save the job.5. Select the source system and the destination system from the drop-downlists.If the name of the system is not displayed in the drop-down list, click theLogin to a new CMS option. A new window is launched. Enter the nameof the system along with the user name and password.6. Click Create.",
+        "gold_plantuml": "start\n\n:Log in LifeCycle Manager tool;\n:Go to \"Promotion Jobs\" home page;\n:Click \"New Job\";\n:\"New Job\"window appears;\n\n:Enter information;\nfork \n:Enter name;\nfork again\n:Enter description;\nfork again\n:Enter keywords;\nend fork\n\n:Go to \"Save Job\" field;\n:Browse and select folder;\n\n:Open drop-downlists;\nif (System name is diaplayed?) then (no)\n:Click \"theLogin\";\n:A new CMS option;\n:A new window is launched;\n\n:Enter information;\nfork \n:Enter system name;\nfork again\n:Enter user name;\nfork again\n:Enter password;\nend fork\n\nelse(yes)\n:Select source system;\n:Select destination system;\nendif\n\n:Click \"Create\";\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:Click New Job in the \"Promotion Jobs\" home page;\n:Enter the name, description, and keywords for the job;\n:Browse and select the folder to save the job in;\n:Select the source system and the destination system;\nif (System name in drop-down list?) then (No)\n  :Click the Login to a new CMS option;\n  :Enter the system name, user name, and password;\nelse (Yes)\nendif\n:Click Create;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.2222222222222222,
+          "recall": 0.09090909090909091,
+          "f1": 0.1290322580645161,
+          "missing": [
+            "go to promotion jobs home page",
+            "click new job",
+            "new job window appears",
+            "enter information",
+            "enter information",
+            "enter name",
+            "enter description",
+            "enter keywords",
+            "go to save job field",
+            "browse and select folder",
+            "open drop-downlists",
+            "system name is diaplayed?",
+            "click thelogin",
+            "a new cms option",
+            "a new window is launched",
+            "enter system name",
+            "enter user name",
+            "enter password",
+            "select source system",
+            "select destination system"
+          ],
+          "extra": [
+            "click new job in the promotion jobs home page",
+            "enter the name description and keywords for the job",
+            "browse and select the folder to save the job in",
+            "select the source system and the destination system",
+            "system name in drop-down list?",
+            "click the login to a new cms option",
+            "enter the system name user name and password"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "log in lifecycle manager tool -> go to promotion jobs home page",
+            "go to promotion jobs home page -> click new job",
+            "click new job -> new job window appears",
+            "new job window appears -> enter information",
+            "enter information -> enter name",
+            "enter name -> enter description",
+            "enter description -> enter keywords",
+            "enter keywords -> go to save job field",
+            "go to save job field -> browse and select folder",
+            "browse and select folder -> open drop-downlists",
+            "open drop-downlists -> system name is diaplayed?",
+            "system name is diaplayed? -> click thelogin",
+            "click thelogin -> a new cms option",
+            "a new cms option -> a new window is launched",
+            "a new window is launched -> enter information",
+            "enter information -> enter system name",
+            "enter system name -> enter user name",
+            "enter user name -> enter password",
+            "enter password -> select source system",
+            "select source system -> select destination system"
+          ],
+          "extra": [
+            "log into the lifecycle manager tool -> click new job in the promotion jobs home page",
+            "click new job in the promotion jobs home page -> enter the name description and keywords for the job",
+            "enter the name description and keywords for the job -> browse and select the folder to save the job in",
+            "browse and select the folder to save the job in -> select the source system and the destination system",
+            "select the source system and the destination system -> system name in drop-down list?",
+            "system name in drop-down list? -> click the login to a new cms option",
+            "click the login to a new cms option -> enter the system name user name and password",
+            "enter the system name user name and password -> click create"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0052",
+        "input_requirement": "4.\tThe Rotation Matrix, DCM321, shall be invertible with the exception of the case where theta = +/- pi/2 radians.",
+        "gold_plantuml": "start\n\n:Rotation Matrix DCM321;\nif(theta = +/- pi/2 radians?) then(yes)\n:Not invertible;\nelse(no)\n:Invertible;\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Check theta value;\nif (theta = +/- pi/2 radians?) then (Yes)\n:DCM321 is not invertible;\nelse (No)\n:DCM321 is invertible;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.25,
+          "recall": 0.25,
+          "f1": 0.25,
+          "missing": [
+            "rotation matrix dcm321",
+            "not invertible",
+            "invertible"
+          ],
+          "extra": [
+            "check theta value",
+            "dcm321 is not invertible",
+            "dcm321 is invertible"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.3333333333333333,
+          "f1": 0.3333333333333333,
+          "missing": [
+            "rotation matrix dcm321 -> theta = +/- pi/2 radians?",
+            "not invertible -> invertible"
+          ],
+          "extra": [
+            "check theta value -> theta = +/- pi/2 radians?",
+            "dcm321 is not invertible -> dcm321 is invertible"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0026",
+        "input_requirement": "26.\tmodify the properties of a Crystal report1. In the \"Promote\" window, click Mappings.2. Click Crystal Report Mappings.The list of Crystal reports in the source system is displayed.3. Select the required Crystal report, and click Edit Crystal Report Properties. The \"Edit Crystal Report Properties\" tab appears, as shown in the following figure: This tab displays the list of properties and their values.4. Modify the appropriate fields, and click Apply. The Crystal Report Mappings tab appears.Note:• If you edit a Crystal report in the source system, the following message is displayed beside the Crystal report: edited• A Crystal Report created using Universes cannot be mapped in the Crystal Report Mappings. However, it can be mapped in the Connections Mappings.• Crystal Reports are grouped based on the same servers. You can either map a single Crystal Report or the group,. However, you cannot map multiple Crystal reports at the same time.5. Click Save or Promote per your requirements。",
+        "gold_plantuml": "start\n\n:Open the \"Promote\" window;\n:Click \"Mappings\";\n:Click \"Crystal Report Mappings\";\n\n:List of Crystal reports is displayed;\n:Select required Crystal Report;\n:Click \"Edit Crystal Report Properties\";\n\n:\"Edit Crystal Report Properties\" tab appears;\nnote right\nDisplays list of properties \nand their values\nend note\n\n:Modify appropriate fields;\n:Click \"Apply\";\n\nif (Edited in source system?) then (yes)\n  :\"edited\" is displayed;\nendif\n\nif (Created using Universes?) then (yes)\n  :Cannot be mapped;\n  :Use \"Connections Mappings\";\n  stop\nelse\n  :Proceed with mapping;\nendif\n\nswitch (Mapping scope)\ncase (Single)\n  :Map single report;\ncase (Group)\n  :Map the group;\ncase (Multiple)\n  :Not allowed;\n  stop\nendswitch\n\n:Click \"Save\" or \"Promote\";\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Click Mappings in the \"Promote\" window;\n:Click Crystal Report Mappings;\n:The list of Crystal reports in the source system is displayed;\n:Select the required Crystal report;\n:Click Edit Crystal Report Properties;\n:The \"Edit Crystal Report Properties\" tab appears;\n:Modify the appropriate fields;\n:Click Apply;\n:The Crystal Report Mappings tab appears;\nif (Requirement?) then (Save)\n  :Click Save;\nelse (Promote)\n  :Click Promote;\nendif\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.5,
+          "recall": 0.2608695652173913,
+          "f1": 0.3428571428571428,
+          "missing": [
+            "open the promote window",
+            "click mappings",
+            "list of crystal reports is displayed",
+            "edited in source system?",
+            "edited is displayed",
+            "created using universes?",
+            "cannot be mapped",
+            "use connections mappings",
+            "proceed with mapping",
+            "mapping scope",
+            "single",
+            "map single report",
+            "group",
+            "map the group",
+            "multiple",
+            "not allowed",
+            "click save or promote"
+          ],
+          "extra": [
+            "click mappings in the promote window",
+            "the list of crystal reports in the source system is displayed",
+            "the crystal report mappings tab appears",
+            "requirement?",
+            "click save",
+            "click promote"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.36363636363636365,
+          "recall": 0.18181818181818182,
+          "f1": 0.24242424242424246,
+          "missing": [
+            "open the promote window -> click mappings",
+            "click mappings -> click crystal report mappings",
+            "click crystal report mappings -> list of crystal reports is displayed",
+            "list of crystal reports is displayed -> select required crystal report",
+            "click apply -> edited in source system?",
+            "edited in source system? -> edited is displayed",
+            "edited is displayed -> created using universes?",
+            "created using universes? -> cannot be mapped",
+            "cannot be mapped -> use connections mappings",
+            "use connections mappings -> proceed with mapping",
+            "proceed with mapping -> mapping scope",
+            "mapping scope -> single",
+            "single -> map single report",
+            "map single report -> group",
+            "group -> map the group",
+            "map the group -> multiple",
+            "multiple -> not allowed",
+            "not allowed -> click save or promote"
+          ],
+          "extra": [
+            "click mappings in the promote window -> click crystal report mappings",
+            "click crystal report mappings -> the list of crystal reports in the source system is displayed",
+            "the list of crystal reports in the source system is displayed -> select the required crystal report",
+            "click apply -> the crystal report mappings tab appears",
+            "the crystal report mappings tab appears -> requirement?",
+            "requirement? -> click save",
+            "click save -> click promote"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0008",
+        "input_requirement": "After the system starts up, if slow charging is active, we enter power-up mode. Then:\n\n1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:\n   a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.\n   b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.\n   c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with CP amplitude at 3000, switch to state 130. If slow charging becomes inactive, shut down and end.\n\n2) When the central control charging/discharging command is 2 and the vehicle isn't in charging/discharging mode, switch to state 110. Then:\n   - If the high-voltage shutdown request flag becomes 2, switch to state 115.\n   - If the flag drops to 0 with CP duty cycle at 88%, switch to state 126.\n   - If the central control command is 1 while charging state is 2, switch to state 130.\n   - If slow charging becomes inactive, shut down and end.",
+        "gold_plantuml": "start\nif (slow charging is active) then\n  :enter power-up mode;\n  if (high-voltage shutdown request charging/discharging is 2 and BMS self-check counter is 0) then\n    :switch to state 127;\n    if (slow charging is inactive and front MCU collateral shutdown request flag is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    else if (slow charging is inactive) then\n      :issue 2.2s timeout warning;\n      :switch to state 128;\n      :enter shutdown state;\n      stop\n    else if (slow charging is inactive and BMS self-check counter is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend",
+        "generated_plantuml": "@startuml\nstart\n:System starts up;\nif (Slow charging is active?) then (yes)\n  :Enter power-up mode;\n  if (High-voltage shutdown request flag is 2?) then (yes)\n    :Switch to state 115;\n    switch (Condition met?)\n    case (Flag drops to 0 with CP duty cycle at 85%)\n      :Switch to state 126;\n    case (BMS self-check counter is 1)\n      :Switch to state 130;\n    case (Battery pre-heating is required)\n      :Switch to state 130;\n    case (CP duty cycle hits 85% with CP amplitude at 3000)\n      :Switch to state 130;\n    case (Slow charging becomes inactive)\n      :Shut down;\n      end\n    endswitch\n  elseif (Central control charging/discharging command is 2\\nand vehicle isn't in charging/discharging mode?) then (yes)\n    :Switch to state 110;\n    switch (Condition met?)\n    case (High-voltage shutdown request flag becomes 2)\n      :Switch to state 115;\n    case (Flag drops to 0 with CP duty cycle at 88%)\n      :Switch to state 126;\n    case (Central control command is 1\\nwhile charging state is 2)\n      :Switch to state 130;\n    case (Slow charging becomes inactive)\n      :Shut down;\n      end\n    endswitch\n  else (no)\n  endif\nelse (no)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.6428571428571429,
+          "f1": 0.43902439024390244,
+          "missing": [
+            "high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0",
+            "slow charging is inactive and front mcu collateral shutdown request flag is 1",
+            "issue 2.2s timeout warning",
+            "enter shutdown state",
+            "slow charging is inactive and bms self-check counter is 1"
+          ],
+          "extra": [
+            "system starts up",
+            "high-voltage shutdown request flag is 2?",
+            "switch to state 115",
+            "switch to state 115",
+            "condition met?",
+            "condition met?",
+            "flag drops to 0 with cp duty cycle at 85",
+            "bms self-check counter is 1",
+            "switch to state 130",
+            "switch to state 130",
+            "switch to state 130",
+            "battery pre-heating is required",
+            "cp duty cycle hits 85 with cp amplitude at 3000",
+            "slow charging becomes inactive",
+            "central control charging/discharging command is 2 and vehicle isn t in charging/discharging mode?",
+            "high-voltage shutdown request flag becomes 2",
+            "flag drops to 0 with cp duty cycle at 88",
+            "central control command is 1 while charging state is 2"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.038461538461538464,
+          "recall": 0.07692307692307693,
+          "f1": 0.05128205128205129,
+          "missing": [
+            "enter power-up mode -> high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0",
+            "high-voltage shutdown request charging/discharging is 2 and bms self-check counter is 0 -> switch to state 127",
+            "switch to state 127 -> slow charging is inactive and front mcu collateral shutdown request flag is 1",
+            "slow charging is inactive and front mcu collateral shutdown request flag is 1 -> switch to state 128",
+            "switch to state 128 -> shutdown",
+            "switch to state 128 -> shutdown",
+            "shutdown -> slow charging is inactive",
+            "slow charging is inactive -> issue 2.2s timeout warning",
+            "issue 2.2s timeout warning -> switch to state 128",
+            "switch to state 128 -> enter shutdown state",
+            "enter shutdown state -> slow charging is inactive and bms self-check counter is 1",
+            "slow charging is inactive and bms self-check counter is 1 -> switch to state 128"
+          ],
+          "extra": [
+            "system starts up -> slow charging is active?",
+            "enter power-up mode -> high-voltage shutdown request flag is 2?",
+            "high-voltage shutdown request flag is 2? -> switch to state 115",
+            "switch to state 115 -> condition met?",
+            "condition met? -> flag drops to 0 with cp duty cycle at 85",
+            "flag drops to 0 with cp duty cycle at 85 -> switch to state 126",
+            "switch to state 126 -> bms self-check counter is 1",
+            "bms self-check counter is 1 -> switch to state 130",
+            "switch to state 130 -> battery pre-heating is required",
+            "battery pre-heating is required -> switch to state 130",
+            "switch to state 130 -> cp duty cycle hits 85 with cp amplitude at 3000",
+            "cp duty cycle hits 85 with cp amplitude at 3000 -> switch to state 130",
+            "switch to state 130 -> slow charging becomes inactive",
+            "switch to state 130 -> slow charging becomes inactive",
+            "slow charging becomes inactive -> shut down",
+            "slow charging becomes inactive -> shut down",
+            "shut down -> central control charging/discharging command is 2 and vehicle isn t in charging/discharging mode?",
+            "central control charging/discharging command is 2 and vehicle isn t in charging/discharging mode? -> switch to state 110",
+            "switch to state 110 -> condition met?",
+            "condition met? -> high-voltage shutdown request flag becomes 2"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0017",
+        "input_requirement": "After the system starts up, if slow charging is active and the front MCU initialization is 0, it enters state 82. From there:\n- When the BMS counter reaches 1 with a battery pre-heating demand of 3, the system transitions to state 126. If slow charging becomes inactive afterward, it shuts down and exits.\n- If a pre-charge failure occurs, the system moves to state 126. Should slow charging be inactive at that point, it shuts down and exits.\n- If slow charging deactivates, the system switches to state 126 before shutting down and exiting.\n- For AC charging/discharging system faults, the system waits through a 10-second timeout before shifting to state 126. If slow charging is inactive following this transition, it shuts down and exits.",
+        "gold_plantuml": "start\nif (slow charging is active and front MCU initialization=0) then\n  :enter state 82;\n  if (BMS counter=1 and battery pre-heating demand=3) then\n    :switch to state 126;\n    if (slow charging is inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (pre-charge failure occurs) then\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (slow charging is inactive) then\n    :switch to state 126;\n    :shutdown;\n    stop\n  else if (AC charging/discharging system fault) then\n    while(after 10s)\n    endwhile\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend",
+        "generated_plantuml": "@startuml\nstart\n:System starts up;\nif (Slow charging is active\\nand front MCU initialization is 0?) then (yes)\n  :Enter state 82;\n  switch (What happens next?)\n    case (BMS counter reaches 1\\nwith battery pre-heating demand of 3)\n      :Transition to state 126;\n      if (Slow charging becomes inactive?) then (yes)\n        :Shut down and exit;\n        stop\n      else (no)\n      endif\n    case (Pre-charge failure occurs)\n      :Move to state 126;\n      if (Slow charging is inactive?) then (yes)\n        :Shut down and exit;\n        stop\n      else (no)\n      endif\n    case (Slow charging deactivates)\n      :Switch to state 126;\n      :Shut down and exit;\n      stop\n    case (AC charging/discharging system fault)\n      :Wait through 10-second timeout;\n      :Shift to state 126;\n      if (Slow charging is inactive?) then (yes)\n        :Shut down and exit;\n        stop\n      else (no)\n      endif\n  endswitch\nelse (no)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.5,
+          "recall": 0.5555555555555556,
+          "f1": 0.5263157894736842,
+          "missing": [
+            "bms counter=1 and battery pre-heating demand=3",
+            "switch to state 126",
+            "switch to state 126",
+            "shutdown",
+            "shutdown",
+            "shutdown",
+            "shutdown",
+            "after 10s"
+          ],
+          "extra": [
+            "system starts up",
+            "what happens next?",
+            "bms counter reaches 1 with battery pre-heating demand of 3",
+            "transition to state 126",
+            "shut down and exit",
+            "shut down and exit",
+            "shut down and exit",
+            "shut down and exit",
+            "move to state 126",
+            "wait through 10-second timeout"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.42105263157894735,
+          "recall": 0.47058823529411764,
+          "f1": 0.4444444444444444,
+          "missing": [
+            "enter state 82 -> bms counter=1 and battery pre-heating demand=3",
+            "bms counter=1 and battery pre-heating demand=3 -> switch to state 126",
+            "switch to state 126 -> slow charging inactive",
+            "switch to state 126 -> slow charging inactive",
+            "slow charging inactive -> shutdown",
+            "slow charging inactive -> shutdown",
+            "shutdown -> slow charging is inactive",
+            "ac charging/discharging system fault -> after 10s",
+            "after 10s -> switch to state 126"
+          ],
+          "extra": [
+            "system starts up -> slow charging is active and front mcu initialization is 0?",
+            "enter state 82 -> what happens next?",
+            "what happens next? -> bms counter reaches 1 with battery pre-heating demand of 3",
+            "bms counter reaches 1 with battery pre-heating demand of 3 -> transition to state 126",
+            "transition to state 126 -> slow charging becomes inactive?",
+            "slow charging becomes inactive? -> shut down and exit",
+            "move to state 126 -> slow charging is inactive?",
+            "slow charging is inactive? -> shut down and exit",
+            "shut down and exit -> slow charging deactivates",
+            "ac charging/discharging system fault -> wait through 10-second timeout",
+            "wait through 10-second timeout -> shift to state 126"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0023",
+        "input_requirement": "Transferring to Full Supervision shall occur automatically when a movement authority and all other necessary information is received through track-to-train transmission. The trainborne equipment shall remain in Full Supervision until the trainborne equipment is not active any longer, when Shunting is selected, or when Partial Supervision information is received.",
+        "gold_plantuml": "start\n:Receive through track-to-train transmission;\n\nfork\n:Movement authority;\nfork again\n:All other necessary information;\nend fork\n\n:Transfer to Full Supervision automatically;\n\nif(Trainborne equipment active?) then(yes)\n:Remain in Full Supervision;\nelse(no)\n:Exit Full Supervision;\nstop\nendif\n\nif(Shunting is selected?) then(no)\n:Remain in Full Supervision;\nelse(yes)\n:Exit Full Supervision;\nstop\nendif\n\nif(Partial Supervision information?) then(no)\n:Remain in Full Supervision;\nelse(yes)\n:Exit Full Supervision;\nstop\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Receive movement authority and all other necessary information through track-to-train transmission;\n:Transfer to Full Supervision automatically;\nswitch (Condition to exit Full Supervision)\ncase (Trainborne equipment is not active any longer)\n:Exit Full Supervision;\ncase (Shunting is selected)\n:Exit Full Supervision;\ncase (Partial Supervision information is received)\n:Exit Full Supervision;\nendswitch\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.6666666666666666,
+          "recall": 0.46153846153846156,
+          "f1": 0.5454545454545455,
+          "missing": [
+            "receive through track-to-train transmission",
+            "movement authority",
+            "all other necessary information",
+            "trainborne equipment active?",
+            "remain in full supervision",
+            "remain in full supervision",
+            "remain in full supervision"
+          ],
+          "extra": [
+            "receive movement authority and all other necessary information through track-to-train transmission",
+            "condition to exit full supervision",
+            "trainborne equipment is not active any longer"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.375,
+          "recall": 0.25,
+          "f1": 0.3,
+          "missing": [
+            "receive through track-to-train transmission -> movement authority",
+            "movement authority -> all other necessary information",
+            "all other necessary information -> transfer to full supervision automatically",
+            "transfer to full supervision automatically -> trainborne equipment active?",
+            "trainborne equipment active? -> remain in full supervision",
+            "remain in full supervision -> exit full supervision",
+            "remain in full supervision -> exit full supervision",
+            "remain in full supervision -> exit full supervision",
+            "partial supervision information? -> remain in full supervision"
+          ],
+          "extra": [
+            "receive movement authority and all other necessary information through track-to-train transmission -> transfer to full supervision automatically",
+            "transfer to full supervision automatically -> condition to exit full supervision",
+            "condition to exit full supervision -> trainborne equipment is not active any longer",
+            "trainborne equipment is not active any longer -> exit full supervision",
+            "partial supervision information is received -> exit full supervision"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      }
+    ]
+  },
+  "knowledge_gap_policy": {
+    "identify_when": [
+      "the failure reflects reusable UML or PlantUML modeling knowledge missing from the current prompt",
+      "the same modeling mistake appears across multiple cases or failure patterns",
+      "the repair can be expressed as a general modeling principle rather than a case-specific instruction"
+    ],
+    "avoid_when": [
+      "the issue is only caused by provider, timeout, parsing, or other infrastructure errors",
+      "the repair would copy a training case, a gold diagram, or dataset-specific wording",
+      "the issue is only output formatting and is better handled in the output or rule section"
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge|rule"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "short snake_case label",
+        "related_failure_patterns": [
+          "error pattern names from error_patterns"
+        ],
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "gap": "what reusable UML/PlantUML modeling knowledge is missing or unclear",
+        "suggested_knowledge": "concise general knowledge that could be added to the knowledge section"
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

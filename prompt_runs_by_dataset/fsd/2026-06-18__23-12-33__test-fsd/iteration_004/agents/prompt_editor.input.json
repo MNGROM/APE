@@ -1,0 +1,78 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract explicit activities strictly from the requirement text, explicitly including data sources, system outputs, and displayed information as distinct activity nodes. Identify and preserve structural elements such as swimlanes or partitions mentioned in the requirement.\nStep 2: Construct control-flow relations exclusively among the extracted activities, mapping textual lists and conditions to the appropriate PlantUML constructs. Analyze nested 'if-then' or state-dependent logic and map it using nested PlantUML control structures rather than flattening them into sequential or independent branches.",
+    "knowledge": "(1) Treat data sources, displayed information, and system outputs as distinct activity nodes when explicitly mentioned. (2) Map iterative keywords (e.g., 'repeat', 'for each', 'perform first X then Y') to PlantUML `repeat`/`while` loops. (3) Map mutually exclusive options, alternative choices, and attribute groupings to `switch`/`case` or `if`/`elseif`/`else` constructs. (4) Use `fork`/`join` for lists of attributes, options, or grouped items that represent independent properties or simultaneous display states, and for actions explicitly stated to occur concurrently or simultaneously; however, do NOT use `fork`/`join` for mutually exclusive alternative choices, sequential UI steps, or sequential actions.",
+    "rule": "(1) Do not use `fork`/`join` for mutually exclusive alternative choices or sequential UI steps. (2) Do not invent implicit error-handling branches, validation loops, or recovery paths unless they are explicitly described in the requirement. (3) Do not compress multiple explicitly stated actions into a single abstract node. (4) Do not decompose high-level goals into assumed sub-steps (e.g., inferring 'select file', 'play audio' from 'identify whales') unless those sub-steps are explicitly stated in the text."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "wrong_parallel",
+        "problem": "The prediction predominantly introduces false_positive_parallel by using fork/join for non-concurrent lists, attributes, options, or sequential steps. For example, it models entering name/keywords/description as parallel actions, displays two table columns as parallel, and treats alternative UI selection methods as concurrent paths.",
+        "possible_causes": [
+          "The prompt lacks clear guidance on distinguishing true concurrent execution (e.g., simultaneous system actions) from sequential enumeration, attribute listing, or alternative choices.",
+          "The generator over-interprets comma-separated lists or 'and' conjunctions in requirements as signals for fork/join parallelism."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction frequently omits explicit activities, states, or conditions from the requirements, such as missing the 'Receive through track-to-train transmission' action, the 'Simulator available?' condition, or the 'Cannot change source system' constraint.",
+        "possible_causes": [
+          "The prompt does not sufficiently emphasize that all explicitly stated behaviors, conditions, and constraints must be preserved as distinct activity nodes.",
+          "The generator tends to collapse multiple explicit actions or conditions into broad, abstract nodes, losing required detail."
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "problem": "The prediction adds unsupported activities or states, such as creating a 'Researcher' activity node from the persona, adding 'Promote a jobLog' as a combined step, or inventing 'Erratic changes in aim point command' as an action.",
+        "possible_causes": [
+          "The prompt fails to instruct the generator to exclude user roles or personas from the activity flow.",
+          "The generator hallucinates intermediate actions or misinterprets descriptive text as procedural steps."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "The prediction frequently omits or misrepresents control-flow relations, particularly failing to model nested if-else structures as mutually exclusive branches and missing required loop/retry flows for error handling.",
+        "possible_causes": [
+          "The prompt lacks guidance on translating 'if X, do A; else if Y, do B' requirement structures into nested or chained if/elseif PlantUML conditionals, causing the generator to flatten them into independent sequential ifs.",
+          "The generator struggles to map retry or re-entry steps (e.g., re-typing a password after an error) into backward loop relations, often representing them as linear flows instead."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The prediction introduces incorrect control-flow relations, such as placing mutually exclusive alternative flows (e.g., selecting OK vs. Help vs. Cancel) inside a sequential if-else chain rather than a switch block, or creating sequential dependencies between independent system checks.",
+        "possible_causes": [
+          "The prompt does not clearly differentiate between conditional branching (if/else) and mutually exclusive alternative paths (switch/case), leading to improper relation structures.",
+          "The generator assumes a strict sequential execution order even when the requirement describes independent or parallel checks."
+        ]
+      },
+      {
+        "name": "wrong_loop",
+        "problem": "The prediction mishandles repeated or retry behaviors, such as representing password retry or folder re-selection as linear sequences instead of loops, or using repeat loops where simple conditional branching is required.",
+        "possible_causes": [
+          "The prompt provides insufficient guidance on identifying cyclic or retry logic in requirements and mapping it to PlantUML's repeat/while constructs.",
+          "The generator defaults to linear forward flows and fails to recognize backward edges necessary for retry loops."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section's rule (4) for fork/join is too permissive, causing false-positive parallelism by triggering on 'lists of attributes, options, or grouped items' and 'simultaneous display states' which are often non-concurrent enumerations or sequential UI steps. This over-inclusive wording leads the generator to misinterpret comma-separated lists and alternative options as concurrent paths."
+      },
+      {
+        "section": "workflow",
+        "section_problem": "Step 1 does not sufficiently enforce the preservation of all explicitly stated conditions, constraints, and specific actions as distinct activity nodes, leading to missing activities. Step 2 lacks explicit instructions for mapping retry or re-entry logic into backward loop edges, causing the generator to default to linear flows."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section lacks constraints against hallucinating intermediate actions from descriptive text and against converting user roles or personas into activity nodes, resulting in extra activities. It also lacks guidance on distinguishing mutually exclusive alternative paths (switch/case) from conditional branching (if/else), leading to extra or wrong relations."
+      }
+    ]
+  }
+}

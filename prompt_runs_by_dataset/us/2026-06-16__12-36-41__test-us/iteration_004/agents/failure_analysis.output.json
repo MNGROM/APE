@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The model fails to decompose composite actions into parallel (fork) structures as required by the ground truth, and incorrectly places concurrent background processes within conditional branches instead of at the main flow level.",
+      "possible_causes": [
+        "The prompt does not explicitly instruct the model to identify lists of items or multiple simultaneous attributes (e.g., 'name, description, and keywords') as candidates for fork/fork-again decomposition.",
+        "The prompt lacks guidance on distinguishing truly concurrent background tasks (e.g., telemetry monitors, sensor fusion) from conditional sub-tasks, leading the model to incorrectly nest them inside if-else blocks."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The model misrepresents conditional checks as loop conditions, and fails to correctly map periodic or retry-based behaviors into repeat loops.",
+      "possible_causes": [
+        "The prompt does not provide clear heuristics for translating 'until' or 'while' conditions into repeat-while structures, causing the model to use if-else instead.",
+        "The model is not guided to recognize keywords like 'periodically', 'continuously', or 'with bounded retries' as explicit triggers for repeat loops."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The model generates redundant or overly literal activities by converting UI feedback, notes, or implicit conditions into explicit action nodes.",
+      "possible_causes": [
+        "The prompt lacks instructions to filter out system responses or UI updates (e.g., 'window appears', 'list is displayed') and treat them as side-effects rather than distinct activity nodes.",
+        "The model is not instructed to consolidate implicit or trivial checks into guard conditions on control flow arrows instead of creating separate activity nodes."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The model flattens nested conditional logic into sequential independent if-blocks and fails to represent mutually exclusive or deeply nested state transitions correctly.",
+      "possible_causes": [
+        "The prompt does not instruct the model to preserve the hierarchical nesting of conditions (e.g., elseif chains or nested if-endif), leading it to serialize independent if-blocks.",
+        "The model lacks guidance on mapping complex state-machine logic into PlantUML's structured control flow, resulting in lost dependencies and incorrect branching paths."
+      ]
+    }
+  ]
+}
+```

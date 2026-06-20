@@ -1,0 +1,20 @@
+{
+  "updated_at": "2026-06-15T14:59:53",
+  "phase": "lato-zero-shot:llm_judge:extract",
+  "attempt": 1,
+  "max_retries": 20,
+  "retryable": true,
+  "rate_limited": false,
+  "wait_seconds": 31,
+  "retry_at": "2026-06-15T15:00:24",
+  "context": {
+    "dataset": "fsd",
+    "case_id": "fsd-0006",
+    "judge_step": "gt_extract",
+    "json_retry_attempt": 1
+  },
+  "error": {
+    "type": "RemoteDisconnected",
+    "message": "Remote end closed connection without response"
+  }
+}

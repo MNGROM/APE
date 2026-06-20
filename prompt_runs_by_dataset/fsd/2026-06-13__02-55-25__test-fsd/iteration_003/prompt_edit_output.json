@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract distinct actions: Identify every distinct action verb or step explicitly stated in the requirement and map each to its own activity node; do not collapse sequential steps into a single summary node. When the requirement contains a grammatical list of items or actions (e.g., 'Enter name, description, and keywords'), create a separate activity node for each listed item. 2. Identify conditional logic and constraints: Locate conditional phrases (e.g., 'if', 'when', 'unless', 'shall be') and property constraints (e.g., 'shall equal', 'with the exception of'). Model them as if/else decision nodes where the condition or constraint is the branch guard, and the subsequent actions or states are the distinct outcomes, rather than embedding them within activity labels or creating a single procedural action. 3. Identify parallel actions: Locate independent, simultaneous, or concurrent actions that lack an explicit sequential dependency. Model these using PlantUML fork/end fork blocks, placing each independent action on a separate branch. 4. Track structural nesting: Mentally track opening and closing tags for every control structure (if/endif, switch/endswitch, fork/end fork) to ensure all blocks are properly balanced and closed before ending the diagram."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "When a requirement lists multiple items or actions that occur independently, simultaneously, or without a stated sequential dependency, decompose them into separate activity nodes within a fork/end fork block rather than merging them or modeling them sequentially. When a requirement states a property, constraint, or validation (e.g., 'shall equal', 'shall be invertible', 'with the exception of'), model it as an if/else decision node where the condition is the branch guard and the outcomes (e.g., 'Allowed'/'Not allowed', 'Invertible'/'Not invertible') are separate activities, rather than creating a single procedural action node."
+    }
+  ],
+  "rationale": "The workflow edit adds explicit procedural steps to decompose grammatical lists into separate nodes and to identify parallel actions for fork blocks, directly addressing the activity_granularity_mismatch and missing_parallel_decomposition patterns. The knowledge edit adds two reusable modeling principles: one for parallel list decomposition using fork/end fork, and one for translating property constraints into if/else decision nodes, addressing the missing_parallel_decomposition and missing_conditional_decomposition knowledge gaps.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

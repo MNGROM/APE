@@ -1,0 +1,85 @@
+```json
+{
+  "summary": "The batch predominantly fails due to severe activity node and control-flow relation misalignment. The generation model frequently invents speculative implementation steps not stated in the input (causing low node precision and extra relations) while simultaneously failing to preserve the exact phrasing and atomic granularity of explicitly stated activities and conditions (causing low node and relation recall). The prompt lacks strict constraints against elaborating implied sub-processes and does not enforce verbatim preservation of requirement phrases for node labels.",
+  "error_patterns": [
+    {
+      "name": "speculative_implementation_elaboration",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0196",
+        "us-0182",
+        "pure-0017"
+      ],
+      "problem": "The model invents unstated implementation details and sub-steps, treating high-level requirements as implementation specifications. For example, a simple user story about allowing Active Directory login spawns a detailed flow of receiving requests, validating credentials, and granting/denying access. This causes massive extra activity and relation counts, destroying precision.",
+      "suggested_prompt_direction": "Strengthen the anti-hallucination constraint in the workflow to explicitly forbid decomposing high-level actions into sub-steps or inventing intermediate processing states unless those exact steps are written in the input.",
+      "target_sections": [
+        "workflow",
+        "agent task"
+      ]
+    },
+    {
+      "name": "node_label_paraphrasing",
+      "severity": "high",
+      "evidence_case_ids": [
+        "pure-0015",
+        "pure-0017",
+        "fsd-0031"
+      ],
+      "problem": "The model paraphrases or merges the text of explicitly stated activities and conditions rather than using the exact phrasing from the requirement. For example, 'Automatic pre-set loudspeaker volume selection' becomes 'Automatic selection of the pre-set loudspeaker volume', and 'Warn driver' becomes 'Warn driver by audible and visual indications'. This causes strict matching metrics to register both a missing node and an extra node, severely penalizing recall and precision.",
+      "suggested_prompt_direction": "Instruct the agent to use the exact wording from the input requirement for activity and condition node labels, avoiding any summarization, rephrasing, or merging of explicit phrases.",
+      "target_sections": [
+        "workflow",
+        "output"
+      ]
+    },
+    {
+      "name": "merged_atomic_conditions",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0007",
+        "pure-0017"
+      ],
+      "problem": "The model merges multiple explicitly stated conditions into a single combined decision node (e.g., 'System is supported?' and 'Sensor data is good?' are merged into 'System is supported and sensor data is good?'). This collapses the required conditional nesting and destroys the sequential relation links between the individual checks.",
+      "suggested_prompt_direction": "Add explicit workflow guidance requiring that each distinct condition mentioned in the input must be modeled as its own separate decision node, preserving the exact conditional nesting described.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "missing_implicit_control_flow",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "lmc-0041",
+        "pure-0015"
+      ],
+      "problem": "The model fails to infer basic control flow when the requirement implies it but does not explicitly dictate the step-by-step logic. For instance, a constraint like 'should be a 5x1 vector' implies a validation check, but the model outputs a flat action instead of the expected conditional branch. Similarly, sequential relations between parallel fork exits and subsequent steps are frequently omitted.",
+      "suggested_prompt_direction": "Guide the agent to recognize common requirement patterns (like constraints, validations, and post-fork continuations) and model them with standard control-flow constructs (e.g., if/else for constraints), even if not explicitly written as 'if then'.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "incorrect_parallel_decomposition",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "fsd-0031",
+        "pure-0015"
+      ],
+      "problem": "The model incorrectly groups sequential or unrelated activities into parallel fork constructs, or splits a single logical flow into multiple disconnected forks. For example, it places the first set of concurrent tasks and the second set of concurrent tasks in back-to-back forks without the required sequential intermediate steps (like 'Network module initialization') between them.",
+      "suggested_prompt_direction": "Emphasize in the knowledge section that fork/end fork blocks must only encapsulate tasks explicitly described as concurrent, and that sequential steps occurring between different sets of concurrent tasks must be placed outside the fork blocks to maintain correct control flow.",
+      "target_sections": [
+        "knowledge",
+        "workflow"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML snippets into the prompt.",
+    "Do not add dataset-specific examples or case-specific vocabulary.",
+    "Do not add speculative implementation steps merely to increase node recall.",
+    "Do not instruct the model to blindly guess conditional branches where none are implied."
+  ]
+}
+```

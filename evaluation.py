@@ -7,15 +7,16 @@ from pathlib import Path
 from typing import Any
 
 from ape_datasets.lato import Case
+from element_extraction import extract_graph_for_metrics
 from llm_element_metrics import check_plantuml_compilation, evaluate_llm_elements
 from llm import LLMClient
 from metrics import (
+    ActivityGraph,
     EvaluationRecord,
     SyntaxResult,
     classify_failures,
     compute_metric,
-    extract_relations,
-    iter_semantic_elements,
+    extract_activity_graph,
     summarize_records,
     validate_plantuml,
 )
@@ -59,6 +60,7 @@ def evaluate_cases(
     records: list[EvaluationRecord] = []
     for idx, case in enumerate(cases, start=1):
         print(f"[eval] {idx}/{len(cases)} {case.case_id}", flush=True)
+        metric_failure_types: list[str] = []
         try:
             generated = generated_from_args(
                 prompt=prompt,
@@ -71,16 +73,30 @@ def evaluate_cases(
         except Exception as exc:
             generated = ""
             syntax = SyntaxResult(False, [f"LLM generation failed: {exc}"])
-            gold_nodes = iter_semantic_elements(case.gold_plantuml)
+            try:
+                gold_graph = extract_graph_for_metrics(
+                    case.gold_plantuml,
+                    args=args,
+                    llm_client=llm_client,
+                    state_dir=state_dir,
+                    phase=phase,
+                    role="gold",
+                    retry_context={"dataset": case.dataset, "case_id": case.case_id},
+                )
+            except Exception as extract_exc:
+                gold_graph = extract_activity_graph(case.gold_plantuml)
+                metric_failure_types.append("element_extraction_error")
+                if is_infrastructure_error(str(extract_exc)):
+                    metric_failure_types.append("infrastructure_error")
             node_metrics = compute_metric(
-                gold_nodes,
+                gold_graph.nodes,
                 [],
                 threshold=args.node_match_threshold,
                 matcher=args.metric_matcher,
                 embedding_model=args.semantic_embedding_model,
             )
             relation_metrics = compute_metric(
-                extract_relations(case.gold_plantuml),
+                gold_graph.relations,
                 [],
                 threshold=args.relation_match_threshold,
                 matcher=args.metric_matcher,
@@ -94,16 +110,42 @@ def evaluate_cases(
                 failure_types.extend(["syntax_error", "missing_activity", "missing_or_wrong_relation"])
         else:
             syntax = validate_plantuml(generated, args.plantuml_jar)
+            generated_plantuml = extract_plantuml(generated, wrap_if_needed=False)
+            try:
+                gold_graph = extract_graph_for_metrics(
+                    case.gold_plantuml,
+                    args=args,
+                    llm_client=llm_client,
+                    state_dir=state_dir,
+                    phase=phase,
+                    role="gold",
+                    retry_context={"dataset": case.dataset, "case_id": case.case_id},
+                )
+                pred_graph = extract_graph_for_metrics(
+                    generated_plantuml,
+                    args=args,
+                    llm_client=llm_client,
+                    state_dir=state_dir,
+                    phase=phase,
+                    role="prediction",
+                    retry_context={"dataset": case.dataset, "case_id": case.case_id},
+                )
+            except Exception as extract_exc:
+                gold_graph = extract_activity_graph(case.gold_plantuml)
+                pred_graph = ActivityGraph(nodes=[], relations=[])
+                metric_failure_types.append("element_extraction_error")
+                if is_infrastructure_error(str(extract_exc)):
+                    metric_failure_types.append("infrastructure_error")
             node_metrics = compute_metric(
-                iter_semantic_elements(case.gold_plantuml),
-                iter_semantic_elements(generated),
+                gold_graph.nodes,
+                pred_graph.nodes,
                 threshold=args.node_match_threshold,
                 matcher=args.metric_matcher,
                 embedding_model=args.semantic_embedding_model,
             )
             relation_metrics = compute_metric(
-                extract_relations(case.gold_plantuml),
-                extract_relations(generated),
+                gold_graph.relations,
+                pred_graph.relations,
                 threshold=args.relation_match_threshold,
                 matcher=args.metric_matcher,
                 embedding_model=args.semantic_embedding_model,
@@ -138,6 +180,7 @@ def evaluate_cases(
         )
         if llm_element_metrics.status == "error":
             failure_types.append("llm_element_judge_error")
+        failure_types.extend(item for item in metric_failure_types if item not in failure_types)
 
         record = EvaluationRecord(
             dataset=case.dataset,

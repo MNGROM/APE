@@ -1,0 +1,68 @@
+{
+  "requirements": [
+    "As a publisher, I want to embed an interactive preview of my data on my site, so that users can be encouraged that this is the correct data for them.",
+    "4.\tNLGuidance shall always select an inertial position vector of aim point #1 or #2 which shall result in a counter clockwise loiter for the UAV.  For example, the picture above with vehicle position, UAV, would return Tangent Aim Point #2.",
+    "20.\tlog into a new CMS1. Log into the LifeCycle Manager tool.2. Create a new job.For more information on creating a new job, see Creating a New Job onpage 37.3. From the Source System drop-down list, select Login to a New CMS.The \"Login to System\" dialog box appears.4. Enter the user credentials, select the appropriate authentication type, andclick Login.5. From the Destination System drop-down list, select Login to a NewCMS.6. Enter the user credentials, select the appropriate authentication type, andclick Login.",
+    "1. User opens KeePass and select Open->Database 2. User navigates through his folders 3. User selects a database 4. User types Master Password 5. The main database window opens 3.2.2.2.1 Alternative Data Flow 1 3a. User selects a type of folder non suitable for database 3b. A message “file not found” appears 3c. User selects another folder 3.2.2.2.2 Alternative Data Flow 2 4a. Master Password is wrong 4b. A message “invalid/wrong key” appears 4c. User types another master key 3.2.2.2.3 Alternative Data Flow 3 3. User chooses cancel 4. Exit from KeePass",
+    "After the system starts up, the following decision paths apply:\n\n1) When the remote flag is 1, the system enters state 28.\n   If the power battery discharge protection flag is 1 and SOC is 0, it switches to state 46.\n   Should the remote flag become 0, the system shuts down and ends.\n\n2) If the ignition switch is at position 2 and the front MCU initialization state is 0, the system switches to state 12.\n   When the discharge protection flag is 1 and front MCU initialization state is 1, it switches to state 46.\n   If the ignition switch changes to 0, the system shuts down and ends.\n\n3) When the ignition switch is at 2 and front MCU initialization state is 1, the system switches to state 20.\n   If the discharge protection flag is 1 and BMS self-check counter reaches 3, it switches to state 40.\n   Should the ignition switch become 0, the system shuts down, resets the BMS counter, and ends.\n\n4) If the ignition switch is at 2 and BMS self-check counter is 1, the system switches to state 23.\n   When the discharge protection flag is 1 and front MCU initialization state is 1, it switches to state 40.\n   If the ignition switch becomes 0, the system shuts down, resets the BMS counter, and ends.\n\nAdditionally:\n   If the ignition switch is at 2, the system switches to state 30.\n   When the power battery discharge protection flag is 1 and DCDC state is 1, it switches to state 35.\n   Should the ignition switch become 0, the system shuts down, resets the BMS counter, and ends."
+  ],
+  "predictions": [
+    "@startuml\nskinparam style strictuml\n\ntitle Publisher: Embed Interactive Data Preview on Site\n\nstart\n\n:Publisher selects data to embed;\n\n:Generate embed code for interactive preview;\n\n:Publisher copies embed code;\n\n:Publisher pastes embed code into their site;\n\n:Site renders interactive data preview;\n\n:User visits the publisher's site;\n\n:User interacts with the data preview;\n\nif (Does the preview show the correct data?) then (Yes)\n  :User is encouraged data is correct;\n  :User proceeds to access/use the data;\n  stop\nelse (No)\n  :User leaves or seeks alternative data;\n  stop\nendif\n\n@enduml",
+    "@startuml\nstart\n:Select inertial position vector of aim point #1 or #2;\nif (Which aim point results in a counter clockwise loiter?) then (Aim Point #1)\n  :Select Aim Point #1;\nelse (Aim Point #2)\n  :Select Aim Point #2;\nendif\n:Return selected aim point;\nstop\n@enduml",
+    "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:Create a new job;\n:From the Source System drop-down list,\\nselect \"Login to a New CMS\";\n:The \"Login to System\" dialog box appears;\n:Enter user credentials,\\nselect authentication type,\\nclick Login;\n:From the Destination System drop-down list,\\nselect \"Login to a New CMS\";\n:Enter user credentials,\\nselect authentication type,\\nclick Login;\nstop\n@enduml",
+    "@startuml\nstart\n:User opens KeePass and select Open->Database;\n:User navigates through his folders;\n\nif (User chooses cancel?) then (yes)\n  :Exit from KeePass;\n  stop\nelse (no)\n  :User selects a database;\n  if (Folder type suitable for database?) then (no)\n    :A message \"file not found\" appears;\n    :User selects another folder;\n  else (yes)\n  endif\nendif\n\n:User types Master Password;\n\nif (Master Password is correct?) then (no)\n  :A message \"invalid/wrong key\" appears;\n  :User types another master key;\nelse (yes)\nendif\n\n:The main database window opens;\nstop\n@enduml",
+    "@startuml\nstart\n:System Startup;\n\nfork\n  :Check Remote Flag;\n  if (Remote flag = 1?) then (Yes)\n    :Enter State 28;\n    if (Power battery discharge protection flag = 1\\nand SOC = 0?) then (Yes)\n      :Switch to State 46;\n      stop\n    else (No)\n    endif\n    if (Remote flag = 0?) then (Yes)\n      :System shuts down;\n      end\n    else (No)\n    endif\n  else (No)\n  endif\nfork again\n  :Check Ignition Switch & Front MCU Init;\n  if (Ignition switch = 2\\nand Front MCU init state = 0?) then (Yes)\n    :Switch to State 12;\n    if (Discharge protection flag = 1\\nand Front MCU init state = 1?) then (Yes)\n      :Switch to State 46;\n      stop\n    else (No)\n    endif\n    if (Ignition switch = 0?) then (Yes)\n      :System shuts down;\n      end\n    else (No)\n    endif\n  else (No)\n  endif\nfork again\n  :Check Ignition Switch & Front MCU Init (1);\n  if (Ignition switch = 2\\nand Front MCU init state = 1?) then (Yes)\n    :Switch to State 20;\n    if (Discharge protection flag = 1\\nand BMS self-check counter = 3?) then (Yes)\n      :Switch to State 40;\n      stop\n    else (No)\n    endif\n    if (Ignition switch = 0?) then (Yes)\n      :System shuts down;\n      :Reset BMS counter;\n      end\n    else (No)\n    endif\n  else (No)\n  endif\nfork again\n  :Check Ignition Switch & BMS Counter;\n  if (Ignition switch = 2\\nand BMS self-check counter = 1?) then (Yes)\n    :Switch to State 23;\n    if (Discharge protection flag = 1\\nand Front MCU init state = 1?) then (Yes)\n      :Switch to State 40;\n      stop\n    else (No)\n    endif\n    if (Ignition switch = 0?) then (Yes)\n      :System shuts down;\n      :Reset BMS counter;\n      end\n    else (No)\n    endif\n  else (No)\n  endif\nfork again\n  :Check Ignition Switch (Additional);\n  if (Ignition switch = 2?) then (Yes)\n    :Switch to State 30;\n    if (Power battery discharge protection flag = 1\\nand DCDC state = 1?) then (Yes)\n      :Switch to State 35;\n      stop\n    else (No)\n    endif\n    if (Ignition switch = 0?) then (Yes)\n      :System shuts down;\n      :Reset BMS counter;\n      end\n    else (No)\n    endif\n  else (No)\n  endif\nend fork\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n:Embed interactive data preview;\n:Provide data correctness;\nstop",
+    "start\n\n:In NLGuidance;\n:Select inertial position vector of aim point #1 or #2;\n:Counter clockwise loiter for UAV;\nif(As the picture above?) then(yes)\n:Return Tangent Aim Point #2;\nelse(no)\nendif\n\nstop",
+    "start\n\n:Log in LifeCycle Manager tool;\n:Create a new job;\nif (More information?) then(yes)\n:See Creating a New Job on page 37;\nelse(no)\nendif\n\n:Open Source System drop-down list;\n:Select \"Login\";\n:To a New CMS;\n\n:\"Login to System\" dialog box appears;\n:Enter user credentials;\n:Select appropriate authentication type;\n:Click \"Login\";\n\n:Open Destination System drop-down list;\n:Select \"Login\";\n:To a New CMS;\n\n:Enter user credentials;\n:Select appropriate authentication type;\n:Click \"Login\";\n\n:Click \"Create\";\n\nstop",
+    "start\n\n:Open KeePass;\n:Select Open->Database;\n\n:Navigate through folders;\n\n:Select database;\nif(Folder is suitable?) then(no)\n:“File not found” appears;\n:Select another folder;\nelse(yes)\nendif\n\n:Choose cancel;\n:Exit from KeePass;\n\n:Type Master Password;\n\nif(Password is right?) then(no)\n:“Invalid/wrong key” appears;\n:Type another master key;\nelse(yes)\nendif\n\n:Main database window opens;\n\nstop",
+    "start\nif (remote flag is 1) then\n  :enter state 28;\n  if (power battery discharge protection flag is 1 and SOC is 0) then\n    :switch to state 46;\n    if (remote flag becomes 0) then\n    :shutdown;\n    stop\n    end if\n  endif\n\nelse if (ignition switch is 2 and front MCU initialization state is 0) then\n    :switch to state 12;\n  if (discharge protection flag is 1 and front MCU initialization state is 1) then\n    :switch to state 46;\n    if (ignition switch becomes 0) then\n    :shutdown;\n    stop\n    end if\n  endif\nelse if (ignition switch is 2 and front MCU initialization state is 1) then\n    :switch to state 20;\n  if (discharge protection flag is 1 and BMS self-check counter is 3) then\n    :switch to state 40;\n    if (ignition switch becomes 0) then\n    :shutdown;\n    :reset BMS counter;\n    stop\n    end if\n  endif\n\nelse if (ignition switch is 2 and BMS self-check counter is 1) then\n    :switch to state 23;\n  if (discharge protection flag is 1 and front MCU initialization state is 1) then\n    :switch to state 40;\n   if (ignition switch becomes 0) then\n    :shutdown;\n    :reset BMS counter;\n    stop\n    end if\n  endif\nelse if (ignition switch is 2) then\n  :switch to state 30;\n  if (power battery discharge protection flag is 1 and DCDC state is 1) then\n  :switch to state 35;\n  if (ignition switch becomes 0) then\n  :shutdown;\n  :reset BMS counter;\n  stop\n  end if\nendif\nendif\nend"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_loop"
+      ],
+      [
+        "extra_activity",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

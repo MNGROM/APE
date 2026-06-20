@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "knowledge",
+      "intent": "Allow fork/join for independent items in lists while preventing false-positive parallelism for sequential or mutually exclusive lists.",
+      "change_instruction": "Revise knowledge rule (4) to remove the categorical ban on fork/join for comma-separated lists and attribute enumerations. Add a qualification: fork/join may be used for lists or enumerations ONLY if the requirement text explicitly indicates that the items are independent and can be processed simultaneously (e.g., 'display all of the following', 'check the following fields concurrently'). Retain the ban on fork/join for sequential UI entry steps and mutually exclusive alternative choices."
+    },
+    {
+      "section": "rule",
+      "intent": "Align the rule section with the revised knowledge rule and add constraints against linearizing nested logic and adding unnecessary terminal edges.",
+      "change_instruction": "Revise rule (1) to match the qualified fork/join rule: remove the categorical ban on comma-separated lists and attribute enumerations, but retain the ban for sequential UI steps and mutually exclusive choices. Add a new rule: Do not flatten nested conditional logic (e.g., a condition within a branch of another condition) into a single-level if/elseif/else or switch/case structure; use nested if constructs instead. Add another new rule: Do not insert 'stop' nodes for conditional outcomes unless the requirement explicitly states the process terminates; instead, merge the branch back into the main flow."
+    },
+    {
+      "section": "workflow",
+      "intent": "Ensure the workflow explicitly directs the model to evaluate list independence and preserve nested conditional structures.",
+      "change_instruction": "In Step 2, add an instruction to evaluate listed items or attributes for independence before mapping them: if the text implies they are processed or displayed simultaneously, map them using fork/join; otherwise, map them sequentially. Also, add an explicit instruction to preserve hierarchical nesting of conditions by mapping them as nested PlantUML control structures rather than flattening them into sequential or mutually exclusive branches."
+    }
+  ]
+}

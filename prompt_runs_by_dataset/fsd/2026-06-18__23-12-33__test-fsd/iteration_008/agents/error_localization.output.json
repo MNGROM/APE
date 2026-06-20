@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 2 evaluates list items for independence and maps them to fork/join if they are 'processed or displayed simultaneously', but fails to provide strict negative constraints to prevent enumerations of attributes, parameters, or sequential UI steps from being falsely mapped as parallel. This directly causes false-positive parallelism. Additionally, the workflow's extraction pass may not sufficiently enforce the preservation of granular actions against summarization, contributing to missing activities."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "Rule (4) maps independent actions joined by 'AND'/'and' to fork/join, but lacks explicit exclusions for sequential UI entry steps or attribute enumerations connected by 'and' (e.g., 'enter X and Y'), driving false-positive parallelism. It also lacks sufficient positive cues for recognizing true concurrent operational actions when explicit keywords like 'simultaneously' are absent, leading to false-negative parallelism."
+    },
+    {
+      "section": "rule",
+      "section_problem": "Rule (1) forbids fork/join for sequential UI steps and mutually exclusive choices, but does not explicitly forbid it for mere enumerations of attributes, parameters, or descriptive lists, which is a primary source of false-positive parallelism. Furthermore, the rules do not explicitly forbid wrapping unconditional statements in conditional logic (if/else), leading to extra or wrong relations."
+    }
+  ]
+}
+```

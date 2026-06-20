@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "PlantUML control flow: use if/else/endif for decision/merge, fork/fork again/end fork for parallel execution, and while/end while for loops. An activity is a distinct, actionable step explicitly stated in the requirement; do not create activities for implicit sub-steps or compress multiple explicit actions into one."
+    },
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract distinct, explicitly stated activities from the requirement.\n2. Identify control flow: sequence, branches, loops, and parallelism.\n3. Generate PlantUML code mapping the activities and control flow, ensuring every branch and parallel section is properly closed."
+    }
+  ],
+  "rationale": "The prompt is currently fragile due to empty knowledge and workflow sections. Adding concise PlantUML syntax principles for control flow and activity granularity to 'knowledge' addresses the identified knowledge gaps, while adding a procedural extraction-to-generation pipeline to 'workflow' prevents missing or extra activities and relations.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "increase"
+  }
+}
+```

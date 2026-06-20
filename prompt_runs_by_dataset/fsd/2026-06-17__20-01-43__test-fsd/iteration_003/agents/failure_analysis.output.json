@@ -1,0 +1,48 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The model misapplies parallel constructs, using `fork` for mutually exclusive conditions instead of `switch`, or failing to use `fork`/`split` to decompose concurrent data fields or lists.",
+      "possible_causes": [
+        "The prompt does not clearly distinguish between concurrent/parallel execution and mutually exclusive branching.",
+        "The model defaults to `fork` when encountering multiple monitoring conditions, even if they represent alternative cases within a state.",
+        "Lack of guidance on decomposing grouped items (e.g., lists of fields) into parallel branches."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The model oversimplifies control flow by flattening nested conditions, misrepresenting sequential user choices as mutually exclusive `switch` cases, or missing conditional branches for optional steps.",
+      "possible_causes": [
+        "The prompt lacks guidance on preserving the exact logical nesting of conditions (e.g., nested `if` vs. single `if` with AND).",
+        "The model misinterprets user options available at the same time as a `switch` statement, rather than a sequence with conditional branches.",
+        "The model flattens optional steps or alternative selections into a linear sequence instead of using `if` or `switch`."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The model fails to represent time-based delays or waits as loops, instead modeling them as sequential activities.",
+      "possible_causes": [
+        "The prompt does not instruct the model to use `while` or `repeat` constructs for time-based delays (e.g., 'after 30 seconds').",
+        "The model translates temporal conditions into simple sequential activity nodes rather than loop constructs."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The model introduces activities not present in the requirements, such as decomposing a mathematical equation or static constraint into sequential calculation steps.",
+      "possible_causes": [
+        "The model attempts to operationalize static constraints into procedural steps, inferring intermediate computational activities.",
+        "Lack of instruction to map requirements directly to activities without adding inferred processing steps."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The model omits required structural activities, such as breaking down a list of displayed items or input fields into individual parallel branches.",
+      "possible_causes": [
+        "The model treats composite descriptions (e.g., a list of items) as single activities rather than structured sub-activities.",
+        "The prompt does not emphasize the need to represent all explicitly listed items as distinct activities when they occur in groups."
+      ]
+    }
+  ]
+}
+```

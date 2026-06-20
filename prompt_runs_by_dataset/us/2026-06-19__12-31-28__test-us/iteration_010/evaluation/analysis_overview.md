@@ -1,0 +1,683 @@
+# Prompt Evaluation Analysis
+
+## Summary
+- count: 20
+- syntax_pass_rate: 0.9500
+- infrastructure_error_rate: 0.0000
+- node_precision: 0.5817
+- node_recall: 0.4864
+- node_f1: 0.5298
+- relation_precision: 0.4519
+- relation_recall: 0.4107
+- relation_f1: 0.4303
+- plantuml_compilation_pass_rate: 0.9500
+- llm_element_evaluated: 20.0000
+- llm_element_failed: 0.0000
+- llm_node_precision: 0.8690
+- llm_node_recall: 0.7253
+- llm_node_f1: 0.7734
+- llm_relation_precision: 0.5567
+- llm_relation_recall: 0.4579
+- llm_relation_f1: 0.4905
+
+## Failure Types
+- missing_activity: 19
+- extra_or_wrong_relation: 18
+- missing_or_wrong_relation: 17
+- extra_activity: 16
+- wrong_parallel: 9
+- wrong_loop: 2
+- syntax_error: 1
+
+## Representative Failure Cases
+### rac-0014
+- dataset: rac
+- failure_types: syntax_error, missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: False
+- syntax_errors: ERROR
+- plantuml_compiles: False
+- plantuml_compile_errors: ERROR | Some diagram description contains errors
+- node_f1: 0.5128
+- relation_f1: 0.5098
+- llm_element_status: success
+- llm_node_f1: 0.7143
+- llm_relation_f1: 0.5085
+- missing_nodes:
+  - high-voltage shutdown request=2 and dcdc state=1
+  - dcdc state=0 and power battery relay control is issued
+  - fast charging is inactive
+  - shutdown
+  - switch to 185
+  - condition judgement
+  - ignition switch=2 and high-voltage shutdown request=0
+  - slow charging is active and high-voltage shutdown request=0
+- extra_nodes:
+  - system starts up
+  - dcdc state is 1?
+  - power battery relay control issued?
+  - enter state 155
+  - system shuts down
+  - condition check?
+  - ignition switch is 2 and request is 0
+  - shut down and end
+- missing_relations:
+  - enter state 175 -> dcdc state=0 and power battery relay control is issued
+  - dcdc state=0 and power battery relay control is issued -> switch to state 185 [yes]
+  - switch to state 155 -> fast charging is inactive
+  - switch to 185 -> condition judgement
+  - condition judgement -> ignition switch=2 and high-voltage shutdown request=0 [case 1]
+  - switch to state 155 -> ignition switch=0 and fast charging is inactive
+  - condition judgement -> slow charging is active and high-voltage shutdown request=0 [case 2]
+  - switch to state 155 -> slow charging is inactive and fast charging is inactive
+- input_excerpt:
+  After the system starts up, if fast charging is active, it enters the "power-up" state. Then, in this state: if the high-voltage shutdown request is 2 and the DCDC state is 1, the system enters state 175. If the DCDC state is 0 and power battery relay control is issued, it switches to state 185. If the request is not 2, it enters state 155. If fast charging is not active, the system shuts down and ends.  Additionally, if the high-voltage shutdown request is 2 and power battery relay control is issued, the system switches to state 185. Then: a) when the ignition switch is 2 and the request is 0, it switches to state 155; if the ignition switch is 0 and fast charging is inactive, it shuts down
+- generated_excerpt:
+  @startuml start :System starts up; if (Fast charging active?) then (Yes)   :Enter "power-up" state;   if (High-voltage shutdown request is 2?) then (Yes)     if (DCDC state is 1?) then (Yes)       :Enter state 175;     else (No - DCDC state is 0)       if (Power battery relay control issued?) then (Yes)         :Switch to state 185;       else (No)         endif       endif     endif   else (No - Request is not 2)     :Enter state 155;   endif else (No)   :System shuts down;   stop endif  if (High-voltage shutdown request is 2 and power battery relay control issued?) then (Yes)   :Switch to state 185;   switch (Condition check?)   case (Ignition switch is 2 and request is 0)     :Switch to s
+### lmc-0055
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.0000
+- relation_f1: 0.3333
+- llm_element_status: success
+- llm_node_f1: 0.6667
+- llm_relation_f1: 0.3636
+- missing_nodes:
+  - dcm321 * dcm321t
+  - =identity (3x3) matrix.v?
+  - allowed
+  - not allowed
+- extra_nodes:
+  - calculate rotation matrix dcm321
+  - calculate transpose of rotation matrix dcm321t
+  - multiply dcm321 by dcm321t
+  - verify result is identity (3x3) matrix
+- missing_relations:
+  - =identity (3x3) matrix.v? -> allowed [yes]
+  - =identity (3x3) matrix.v? -> not allowed [no]
+- input_excerpt:
+  7.	The Rotation Matrix, DCM321, multiplied by the transpose of the Rotation Matrix, DCM321T shall be the Identity (3x3) Matrix.v
+- generated_excerpt:
+  @startuml start :Calculate Rotation Matrix DCM321; :Calculate Transpose of Rotation Matrix DCM321T; :Multiply DCM321 by DCM321T; :Verify result is Identity (3x3) Matrix; stop @enduml
+### bp-0014
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.2000
+- relation_f1: 0.0588
+- llm_element_status: success
+- llm_node_f1: 0.6857
+- llm_relation_f1: 0.6000
+- missing_nodes:
+  - select start
+  - select programs
+  - select businessobjects xi 3.1
+  - select businessobjects enterprise
+  - select businessobjects lifecycle manager
+  - lifecycle manager login screen appears
+  - go to system field
+  - enter cms name
+- extra_nodes:
+  - select start > programs > businessobjects xi 3.1 > businessobjects enterprise > businessobjects lifecycle manager
+  - enter the name of the central management server (cms)
+  - enter the user name
+  - enter the password
+  - authentication type
+  - authenticate with ldap authentication
+  - authenticate with windows ad authentication
+- missing_relations:
+  - select start -> select programs
+  - select programs -> select businessobjects xi 3.1
+  - select businessobjects xi 3.1 -> select businessobjects enterprise
+  - select businessobjects enterprise -> select businessobjects lifecycle manager
+  - select businessobjects lifecycle manager -> lifecycle manager login screen appears
+  - lifecycle manager login screen appears -> go to system field
+  - go to system field -> enter cms name
+  - enter cms name -> enter username and password
+- input_excerpt:
+  14.	log into the LifeCycle Manager tool.To log into the LifeCycle Manager tool, complete the following steps:1. Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager. The LifeCycle Manager login screen appears.2. In the System field, enter the name of the Central Management Server (CMS) on which the LifeCycle Manager tool is installed.3. Enter the user name and password.4. Select the appropriate authentication method from the Authentication drop-down list.The LifeCycle Manager tool supports the following authentication types:• Enterprise authentication - This authentication type requires a user name and a password that are recognize
+- generated_excerpt:
+  @startuml start :Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager; :Enter the name of the Central Management Server (CMS); :Enter the user name; :Enter the password; :Select authentication method from the Authentication drop-down list; switch (Authentication type) case (Enterprise)   :Authenticate with Enterprise authentication; case (LDAP)   :Authenticate with LDAP authentication; case (Windows AD)   :Authenticate with Windows AD authentication; endswitch :Click Log on; stop @enduml
+### pure-0095
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3077
+- relation_f1: 0.1538
+- llm_element_status: success
+- llm_node_f1: 0.7059
+- llm_relation_f1: 0.4706
+- missing_nodes:
+  - refer to provided configuration
+  - specify how fields are translated into warc records
+  - generate errors requiring operator intervention
+  - handle missing fields
+- extra_nodes:
+  - read configuration file
+  - verify configuration specifies field translation to warc records
+  - are there missing fields?
+  - generate error
+  - operator intervention
+- missing_relations:
+  - refer to provided configuration -> specify how fields are translated into warc records [fork]
+  - refer to provided configuration -> generate errors requiring operator intervention [fork]
+  - specify how fields are translated into warc records -> migrate content from arc files to warc files [merge]
+  - generate errors requiring operator intervention -> handle missing fields
+  - handle missing fields -> migrate content from arc files to warc files [merge]
+- input_excerpt:
+  Migration Tool Execution: Use the command arc_warc_migrate <ARC_FILES> <CONFIG> [options] to migrate content from ARC files to WARC files based on the provided configuration. Ensure the configuration file specifies how fields are translated into WARC records, and handle missing fields by generating errors requiring operator intervention.
+- generated_excerpt:
+  @startuml start :Execute command `arc_warc_migrate <ARC_FILES> <CONFIG> [options]`; :Read configuration file; :Verify configuration specifies field translation to WARC records; if (Are there missing fields?) then (yes)   :Generate error;   :Operator intervention; else (no) endif :Migrate content from ARC files to WARC files; stop @enduml
+### pure-0014
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3556
+- relation_f1: 0.2414
+- llm_element_status: success
+- llm_node_f1: 0.8163
+- llm_relation_f1: 0.3548
+- missing_nodes:
+  - employ multiple active traction vehicles
+  - connect to on-train wire?
+  - establish call from lead traction vehicle active cab
+  - whilst on-going
+  - display multi-drivers indication permanently
+  - not affect other communications
+  - terminate entire call
+  - disconnected from multi-driver call?
+- extra_nodes:
+  - automate or guide setup steps
+  - connect call to loudspeaker in each cab whilst handset is onhook
+  - display multi-drivers indication permanently at all cab radios
+  - conduct multi-driver call
+  - continue communications between remaining members
+  - driver disconnected from call?
+  - give clear indication of disconnection
+  - disconnected driver calls lead cab
+- missing_relations:
+  - employ multiple active traction vehicles -> connect to on-train wire?
+  - connect to on-train wire? -> establish permanent radio connection between active cabs [no]
+  - connect to on-train wire? -> establish call from lead traction vehicle active cab [yes]
+  - establish permanent radio connection between active cabs -> establish call from lead traction vehicle active cab [merge]
+  - establish call from lead traction vehicle active cab -> whilst on-going
+  - whilst on-going -> display multi-drivers indication permanently
+  - display multi-drivers indication permanently -> group member places call on hold?
+  - group member places call on hold? -> not affect other communications [yes]
+- input_excerpt:
+  5.2.2.26 Many trains employ multiple active traction vehicles. Where these vehicles are not connected by on-train wire connections, it shall be possible for the lead driver to establish a permanent radio connection between each of the active cabs. (M) 5.2.2.27 The call will be established from the active cab of the lead traction vehicle. (I) 5.2.2.28 Whilst on-going, a ‘multi-drivers’ indication shall be displayed permanently at all Cab radios. (M) 5.2.2.29 The lead driver shall be notified if a member of the group has placed the call on hold, although this shall not affect communications between the remaining members of the group. (M) 5.2.2.30 At any time during the call, the lead driver sh
+- generated_excerpt:
+  @startuml start :Establish permanent radio connection between active cabs from lead cab; :Automate or guide setup steps; :Connect call to loudspeaker in each cab whilst handset is onhook; fork   :Display 'multi-drivers' indication permanently at all Cab radios; fork again   repeat     :Conduct multi-driver call;     if (Call on hold by a group member?) then (Yes)       :Notify lead driver;       :Continue communications between remaining members;     else (No)     endif     if (Lead driver removes a member?) then (Yes)       :Remove member from group;     else (No)     endif     if (Driver disconnected from call?) then (Yes)       :Give clear indication of disconnection;       if (Call faile
+### pure-0077
+- dataset: pure
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.3889
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.8500
+- llm_relation_f1: 0.3673
+- missing_nodes:
+  - display history window by color map
+  - show historical results of interested selected condition
+  - data are available prior to default period?
+  - provide scroll bar for historical results
+  - default period extends backward 1 week prior to current date
+  - displayed period do not change
+  - default time resolution is 1h
+  - view previous results up to current time
+- extra_nodes:
+  - display diagnostic history window
+  - depict historical results as color map
+  - provide scroll bar for scrolling
+  - set default viewing period to one week prior
+  - set default time resolution to one hour
+  - continue scrolling?
+  - dismiss diagnostic history window
+  - dismiss diagnostic information window
+- missing_relations:
+  - click history button -> display history window by color map
+  - display history window by color map -> show historical results of interested selected condition
+  - show historical results of interested selected condition -> data are available prior to default period?
+  - data are available prior to default period? -> provide scroll bar for historical results [yes]
+  - provide scroll bar for historical results -> default period extends backward 1 week prior to current date
+  - default period extends backward 1 week prior to current date -> displayed period do not change
+  - displayed period do not change -> default time resolution is 1h
+  - default time resolution is 1h -> slide scroll bar backward or forward
+- input_excerpt:
+  1. The user clicks the “History” button. 2. The tool displays the diagnostic history window depicting the historical results of the selected condition of interest over the default viewing period in the form of a color map. The window provides a scroll bar for scrolling through historical results if data are available prior to the default viewing period. The default viewing period extends backward one week prior to the current date. Sliding the scroll bar does not change the viewing period displayed. The default time resolution for the window is one hour. 3. The user slides the scroll bar backward or forward to view previous results up to the current time. 4. The tool displays the results wit
+- generated_excerpt:
+  @startuml start :Click "History" button; :Display diagnostic history window; fork   :Depict historical results as color map; fork again   :Provide scroll bar for scrolling; fork again   :Set default viewing period to one week prior; fork again   :Set default time resolution to one hour; end fork repeat   :Slide scroll bar backward or forward;   :Display results within one week viewing period;   :Add results to beginning or ending of period;   ->Drop results of opposite end; repeat while (Continue scrolling?) is (Yes) ->No (Close); :Click "Close" button; :Dismiss diagnostic history window; :Dismiss diagnostic information window; :Make condition window the current window; stop @enduml
+### fsd-0040
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4000
+- relation_f1: 0.3704
+- llm_element_status: success
+- llm_node_f1: 0.5600
+- llm_relation_f1: 0.1667
+- missing_nodes:
+  - tcms executes on preemptive rtos
+  - manage via deterministic priority-scheduled tasks
+  - traction
+  - braking
+  - door control
+  - system diagnostics
+  - continuously poll status of trackside signal lights via high-priority monitoring task
+  - initiate concurrent operations
+- extra_nodes:
+  - manage traction braking door control and system diagnostics
+  - poll status of trackside signal lights
+  - assess headway to forward obstacle against safe envelope with mutex-protected access to shared sensor ring buffer
+  - all checks pass?
+  - trigger emergency response
+  - monitor train traction force within certified operational bounds
+  - monitor braking performance within certified operational bounds
+  - continuously monitor within safety assessment cycle?
+- missing_relations:
+  - tcms executes on preemptive rtos -> manage via deterministic priority-scheduled tasks
+  - manage via deterministic priority-scheduled tasks -> traction [fork]
+  - manage via deterministic priority-scheduled tasks -> braking [fork]
+  - manage via deterministic priority-scheduled tasks -> door control [fork]
+  - manage via deterministic priority-scheduled tasks -> system diagnostics [fork]
+  - traction -> detect train overspeed condition? [merge]
+  - braking -> detect train overspeed condition? [merge]
+  - door control -> detect train overspeed condition? [merge]
+- input_excerpt:
+  The Train Control and Monitoring System (TCMS), executing on a preemptive RTOS, manages traction, braking, door control, and system diagnostics via deterministic, priority-scheduled tasks. Upon detecting a train overspeed condition, the system first verifies the emergency braking arming criteria. It then continuously polls the status of trackside signal lights via a high-priority monitoring task; any signal anomaly triggers an immediate emergency response. This event initiates concurrent operations: a dedicated ISR-driven process acquires track sensor data for real-time upload to the central control unit over a CAN bus with CRC protection, while a parallel safety task, with mutex-protected a
+- generated_excerpt:
+  @startuml start :Manage traction, braking, door control, and system diagnostics;  :Detect train overspeed condition; :Verify emergency braking arming criteria;  repeat   :Poll status of trackside signal lights;    if (Signal anomaly detected?) then (yes)     :Trigger immediate emergency response;     stop   else (no)   endif    fork     :Acquire track sensor data via ISR-driven process;     :Upload data to central control unit over CAN bus with CRC protection;   fork again     :Assess headway to forward obstacle against safe envelope with mutex-protected access to shared sensor ring buffer;   end fork    if (All checks pass?) then (no)     :Trigger emergency response;     stop   else (yes)  
+### lmc-0009
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4000
+- relation_f1: 0.6667
+- llm_element_status: success
+- llm_node_f1: 0.8889
+- llm_relation_f1: 0.6667
+- missing_nodes:
+  - autopilot change states from nominal to standby
+- extra_nodes:
+  - autopilot in nominal state
+  - change state to standby
+- input_excerpt:
+  5.	The autopilot shall change states from NOMINAL to STANDBY when the pilot is in control (standby).
+- generated_excerpt:
+  @startuml start :Autopilot in NOMINAL state; if (Pilot is in control (standby)?) then (yes)   :Change state to STANDBY; else (no) endif stop @enduml
+### fsd-0051
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4348
+- relation_f1: 0.2813
+- llm_element_status: success
+- llm_node_f1: 0.6531
+- llm_relation_f1: 0.2899
+- missing_nodes:
+  - thermal management controller operates as state machine on hard real-time rtos
+  - orchestrate multi-subsystem response to environmental sensor inputs
+  - aggregate calibrated data from
+  - temperature sensors
+  - humidity sensors
+  - light sensors
+  - air quality sensors
+  - occupancy sensors
+- extra_nodes:
+  - execute periodic sensor fusion and calibration routines
+  - periodic cycle
+  - primary fault condition? temperature or humidity exceeds threshold while room is occupied and windows are closed
+  - command fadec to activate air conditioner cooling
+  - command fadec to activate dehumidifier via pwm-controlled liquid-cooling loops
+- missing_relations:
+  - thermal management controller operates as state machine on hard real-time rtos -> orchestrate multi-subsystem response to environmental sensor inputs
+  - orchestrate multi-subsystem response to environmental sensor inputs -> continuously sample sensor fusion ring buffer protected by mutex
+  - aggregate calibrated data from -> temperature sensors [fork]
+  - aggregate calibrated data from -> humidity sensors [fork]
+  - aggregate calibrated data from -> light sensors [fork]
+  - aggregate calibrated data from -> air quality sensors [fork]
+  - aggregate calibrated data from -> occupancy sensors [fork]
+  - aggregate calibrated data from -> contact sensors [fork]
+- input_excerpt:
+  Operating as a state machine within a hard real-time RTOS, the thermal management controller orchestrates a multi-subsystem response to environmental sensor inputs. The system continuously samples a sensor fusion ring buffer, protected by a mutex, which aggregates calibrated data from temperature, humidity, light, air quality, occupancy, contact, and smoke sensors. Upon detecting a primary fault condition—such as temperature or humidity exceeding their respective thresholds while the room is occupied and windows are closed—the controller triggers a concurrent mitigation sequence. This involves commanding the FADEC to activate the air conditioner's cooling and the dehumidifier via PWM-control
+- generated_excerpt:
+  @startuml start  repeat :Sample sensor fusion ring buffer (protected by mutex); repeat :Execute periodic sensor fusion and calibration routines;   if (Readings out of range?) then (yes)     :Engage redundant sensors;     :Initiate controlled cool-down path;   else (no)   endif repeat while (Periodic cycle)  if (Primary fault condition?\nTemperature or humidity exceeds threshold\nwhile room is occupied and windows are closed) then (yes)   fork     :Command FADEC to activate air conditioner cooling;     :Command FADEC to activate dehumidifier\nvia PWM-controlled liquid-cooling loops;   fork again     :Monitor watchdog timer to ensure liveness;   end fork else (no) endif  if (CO2 levels critica
+### bp-0001
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4444
+- relation_f1: 0.0000
+- llm_element_status: success
+- llm_node_f1: 0.8182
+- llm_relation_f1: 0.3333
+- missing_nodes:
+  - load master data
+  - dene a query
+  - analyze data
+- extra_nodes:
+  - load the data
+  - create master data directly in the system
+  - load master data for characteristic product
+  - define a query for web application and ad-hoc analysis
+  - create query
+  - create a web application with navigation options and functions
+  - analyze the data in the web application
+- missing_relations:
+  - load master data -> load transaction data
+  - load transaction data -> dene a query
+  - dene a query -> create web applications
+  - create web applications -> analyze data
+  - analyze data -> add comments to data
+  - add comments to data -> broadcast the data by e-mail to other employees
+- input_excerpt:
+  1.	Creating Master Data Directly in the System0.	Load the data. Creating Master Data Directly in the System1.	Loading Master Data for Characteristic "Product"2.	Loading Transaction Data3.	Dene a query that is used as the basis for a Web application and allows for an ad-hoc analysis of the data in the Web.4.	You create the query in the following step:5.	Dening Queries6.	Create a Web application with navigation options and functions, such as printing based on the query.7.	You create the Web application in the following step:8.	Creating Web Applications9.	Analyze the data in the Web application, add comments to it, and broadcast it by E-mail to other employees.10.	You analyze and broadcast the 
+- generated_excerpt:
+  @startuml start :Load the data; :Create Master Data Directly in the System; :Load Master Data for Characteristic "Product"; :Load Transaction Data; :Define a query for Web application and ad-hoc analysis; :Create Query; :Create a Web application with navigation options and functions; :Create Web Application; fork   :Analyze the data in the Web application; fork again   :Add comments to the data; fork again   :Broadcast the data by E-mail; end fork stop @enduml
+### bp-0017
+- dataset: bp
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.4444
+- relation_f1: 0.1818
+- llm_element_status: success
+- llm_node_f1: 0.7826
+- llm_relation_f1: 0.7500
+- missing_nodes:
+  - go to administration options window
+  - open version management systems drop-down list
+  - select clearcase
+  - enter details
+  - enter mvfs s folder name
+  - enter vob name
+  - enter vob s folder name
+  - enter creating path
+- extra_nodes:
+  - open administration options window
+  - select clearcase from version management systems drop-down list
+- missing_relations:
+  - click vms settings -> open version management systems drop-down list
+  - open version management systems drop-down list -> select clearcase
+  - select clearcase -> enter details
+  - enter details -> vob tag name [fork]
+  - enter details -> view storage directory [fork]
+  - clearcase map drive -> enter mvfs s folder name
+  - vob tag name -> enter vob name
+  - enter vob name -> enter vob s folder name
+- input_excerpt:
+  17.	set the ClearCase version management system in Unix1. In the Administration Options window, click VMS Settings.2. From the Version Management Systems drop-down list, select ClearCase.3. Enter the following details:• ClearCase Map Drive - Enter the name of the folder where the MVFSis located. By default, it is /view• VOB Tag Name - Enter the VOB name and the folder where the VOBis located. For example: VobFolder/VobName• View Storage Directory: Enter the path of the directory where the viewsare created.
+- generated_excerpt:
+  @startuml start :Open Administration Options window; :Click VMS Settings; :Select ClearCase from Version Management Systems drop-down list; fork   :Enter ClearCase Map Drive; fork again   :Enter VOB Tag Name; fork again   :Enter View Storage Directory; end fork stop @enduml
+### lmc-0029
+- dataset: lmc
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5000
+- relation_f1: 0.3333
+- llm_element_status: success
+- llm_node_f1: 0.8333
+- llm_relation_f1: 0.1667
+- missing_nodes:
+  - in nlguidance
+  - it is inertial position vector for aim point 1
+  - compute the vector
+- extra_nodes:
+  - compute inertial position vector for aim point 1
+- missing_relations:
+  - in nlguidance -> vector define location at standoff 1 with offset from target position?
+  - it oriented on vector perpendicular to tangent relative position vector from vehicle to aim point? -> it is inertial position vector for aim point 1 [yes]
+  - it is inertial position vector for aim point 1 -> compute the vector
+- input_excerpt:
+  2.	NLGuidance shall compute the inertial position vector for aim point 1, defining the location at Standoff 1 with an offset from the target position, and oriented on a vector perpendicular to the tangent relative position vector from the vehicle to the corresponding aim point.
+- generated_excerpt:
+  @startuml start :Compute inertial position vector for aim point 1; :Define location at Standoff 1 with offset from target position; :Orient on vector perpendicular to tangent relative position vector from vehicle to aim point; stop @enduml
+### rac-0002
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.5263
+- relation_f1: 0.4762
+- llm_element_status: success
+- llm_node_f1: 0.5833
+- llm_relation_f1: 0.1379
+- missing_nodes:
+  - gear is d or n
+  - gear is s
+  - gear check
+  - gear is d or e
+  - gear is n or r
+- extra_nodes:
+  - system starts up
+  - check gear position
+  - gear position
+  - calculate d_s gear mileage parameter as s gear nominal mileage divided by d gear nominal mileage
+- missing_relations:
+  - gear is d or n -> gear is s [no]
+  - gear is s -> set d_s gear mileage parameter = s gear nominal mileage / d gear nominal mileage [yes]
+  - switch to driving mode -> gear check
+  - gear check -> gear is d or e [case gear is d or e]
+  - gear check -> gear is n or r [case gear is n or r]
+- input_excerpt:
+  After the system starts up, the process begins by checking the gear position. If the gear is in D or N, the D_S gear mileage parameter is set to 1, and the sequence ends. If the gear is in S, the D_S gear mileage parameter is calculated as S gear nominal mileage divided by D gear nominal mileage, then the process concludes. Additionally, if the vehicle status is 30, switch to driving mode. Next, if the gear is in D or E, set the D_S gear mileage parameter to S gear nominal mileage divided by D gear nominal mileage, and end. Finally, if the gear is in N or R, observe using the D_S gear mileage parameter and terminate the process.
+- generated_excerpt:
+  @startuml start :System starts up; :Check gear position; switch (Gear position) case (D or N)   :Set D_S gear mileage parameter to 1; case (S)   :Calculate D_S gear mileage parameter as S gear nominal mileage divided by D gear nominal mileage; endswitch if (Vehicle status is 30?) then (Yes)   :Switch to driving mode; endif switch (Gear position) case (D or E)   :Set D_S gear mileage parameter to S gear nominal mileage divided by D gear nominal mileage; case (N or R)   :Observe using the D_S gear mileage parameter; endswitch stop @enduml
+### fsd-0039
+- dataset: fsd
+- failure_types: missing_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6522
+- relation_f1: 0.5000
+- llm_element_status: success
+- llm_node_f1: 0.5500
+- llm_relation_f1: 0.4068
+- missing_nodes:
+  - tcms executes on preemptive rtos
+  - manage via priority-scheduled tasks
+  - traction
+  - braking
+  - doors
+  - diagnostics
+  - detect critical fault condition?
+  - trigger deterministic emergency sequence
+- extra_nodes:
+  - launch fault logging routine with crc-protected telemetry archiving to non-volatile memory
+  - poll subsystem status via protected mutex access to sensor rings and can bus data
+- missing_relations:
+  - tcms executes on preemptive rtos -> manage via priority-scheduled tasks
+  - manage via priority-scheduled tasks -> traction [fork]
+  - manage via priority-scheduled tasks -> braking [fork]
+  - manage via priority-scheduled tasks -> doors [fork]
+  - manage via priority-scheduled tasks -> diagnostics [fork]
+  - traction -> critical fault condition [merge]
+  - braking -> critical fault condition [merge]
+  - doors -> critical fault condition [merge]
+- input_excerpt:
+  The Train Control and Monitoring System (TCMS), executing on a preemptive RTOS, manages traction, braking, doors, and diagnostics via priority-scheduled tasks. Upon detecting a critical fault condition—such as an emergency signal combined with overspeed and brake failure, an unavoidable track obstacle, a persistent communication loss in the control network, main power rail interruption with backup PMIC/BMS activation, door control failure precluding manual override, or a fire alarm with failed suppression—the system triggers a deterministic emergency sequence. This initiates an emergency stop, broadcasts passenger evacuation instructions, and concurrently launches a high-priority self-test a
+- generated_excerpt:
+  @startuml start switch (Critical fault condition) case (Emergency signal combined with overspeed and brake failure) case (Unavoidable track obstacle) case (Persistent communication loss in control network) case (Main power rail interruption with backup PMIC/BMS activation) case (Door control failure precluding manual override) case (Fire alarm with failed suppression) endswitch  :Initiate emergency stop; :Broadcast passenger evacuation instructions;  fork     :Launch high-priority self-test; fork again     :Launch fault logging routine with CRC-protected telemetry archiving to non-volatile memory; end fork  repeat     :Poll subsystem status via protected mutex access to sensor rings and CAN 
+### fsd-0007
+- dataset: fsd
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel, wrong_loop
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.6531
+- relation_f1: 0.5333
+- llm_element_status: success
+- llm_node_f1: 0.6275
+- llm_relation_f1: 0.4923
+- missing_nodes:
+  - avionics stack(fms/fadec) operates on rtos
+  - isr triggered by periodic timer
+  - sample altitude data
+  - processed by dedicated worker task
+  - initiate fault-handling routine
+  - required?
+  - absent interference
+  - manage concurrent processes
+- extra_nodes:
+  - sample altitude data (primary control law isr)
+  - process altitude data (dedicated worker task)
+  - external interference detected?
+  - execute optimization allocation
+  - execute monitoring cycle
+- missing_relations:
+  - avionics stack(fms/fadec) operates on rtos -> isr triggered by periodic timer
+  - isr triggered by periodic timer -> sample altitude data
+  - initiate fault-handling routine -> check for external interference
+  - required? -> activate anti-jamming algorithm with exponential backoff [yes]
+  - required? -> absent interference [no]
+  - task scheduling engine -> manage concurrent processes
+  - manage concurrent processes -> continuous sensor data acquisition [fork]
+  - manage concurrent processes -> process via ring buffer [fork]
+- input_excerpt:
+  The avionics stack, comprising the Flight Management System (FMS) and Full Authority Digital Engine Control (FADEC), operates on a deterministic Real-Time Operating System (RTOS) featuring hardware and task-level redundancy. A primary control law ISR, triggered by a periodic timer, samples altitude data, which is then processed by a dedicated worker task. If the measured altitude falls below a preset safety threshold, a fault-handling routine is initiated: first, the system checks for external interference, activating an anti-jamming algorithm with exponential backoff if required. Absent interference, a sensor diagnostic is performed via a protected BMS/PMIC interface. Upon confirming sensor
+- generated_excerpt:
+  @startuml start :Sample altitude data (Primary control law ISR); :Process altitude data (Dedicated worker task); if (Measured altitude below preset safety threshold?) then (Yes)   :Check for external interference;   if (External interference detected?) then (Yes)     :Activate anti-jamming algorithm with exponential backoff;   else (No)     :Perform sensor diagnostic via protected BMS/PMIC interface;     if (Sensor integrity confirmed?) then (Yes)       :Validate current flight control command against CRC checksum;       if (Abnormal command?) then (Yes)         :Initialize backup flight control system;       else (No)         :Initiate task scheduling engine;         fork           :Continu
+### rac-0020
+- dataset: rac
+- failure_types: missing_activity, extra_activity, missing_or_wrong_relation, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7119
+- relation_f1: 0.5333
+- llm_element_status: success
+- llm_node_f1: 0.8235
+- llm_relation_f1: 0.4545
+- missing_nodes:
+  - remote mode is disabled
+  - shutdown
+  - slow charging is inactive
+  - fast charging is inactive
+  - battery soc=20
+  - condition judgement
+  - remote mode is enabled
+  - slow charging is active
+- extra_nodes:
+  - remote mode handling
+  - shut down and exit
+  - slow charging handling
+  - fast charging handling
+  - fourth step
+  - soc = 20?
+  - additional checks
+  - shut down and end
+- missing_relations:
+  - switch to remote power-up state -> remote mode is disabled
+  - switch to state 28 -> gw_trigger=0 and dcdc state=3
+  - remote mode enabled -> slow charging active [no]
+  - switch to slow charging power-up state -> slow charging is inactive
+  - switch to fast charging power-up state -> fast charging is inactive
+  - fast charging active -> gw_trigger=2 [no]
+  - switch to state 10 -> battery soc=20
+  - battery soc=20 -> switch to state 28 [yes]
+- input_excerpt:
+  After the system starts up, the following steps occur:  First, for remote mode handling: if remote mode is enabled, switch to the remote power-up state; if disabled, switch to state 49. Then, if GW_trigger equals 2 and battery SOC is 20, switch to state 28; if GW_trigger equals 0 and DCDC state is 3, shut down and exit.  Next, for slow charging handling: if slow charging is active, switch to the slow charging power-up state; if inactive, switch to state 129. Then, if GW_trigger equals 2 and SOC is 20, switch to state 28; if GW_trigger equals 0 and DCDC state is 3, shut down and exit.  Then, for fast charging handling: if fast charging is active, switch to the fast charging power-up state; if
+- generated_excerpt:
+  @startuml start :Remote mode handling; if (Remote mode enabled?) then (Yes)   :Switch to remote power-up state; else (No)   :Switch to state 49; endif if (GW_trigger = 2 and battery SOC = 20?) then (Yes)   :Switch to state 28; else (No)   if (GW_trigger = 0 and DCDC state = 3?) then (Yes)     :Shut down and exit;     stop   else (No)   endif endif  :Slow charging handling; if (Slow charging active?) then (Yes)   :Switch to slow charging power-up state; else (No)   :Switch to state 129; endif if (GW_trigger = 2 and SOC = 20?) then (Yes)   :Switch to state 28; else (No)   if (GW_trigger = 0 and DCDC state = 3?) then (Yes)     :Shut down and exit;     stop   else (No)   endif endif  :Fast charg
+### lmc-0046
+- dataset: lmc
+- failure_types: missing_activity, missing_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.7778
+- relation_f1: 0.6000
+- llm_element_status: success
+- llm_node_f1: 0.9091
+- llm_relation_f1: 0.4444
+- missing_nodes:
+  - in same direction as actual roll angle
+  - roll reference be set to command
+  - up to 30 degree limit
+- extra_nodes:
+  - set roll reference to cockpit turn knob command up to a 30 degree limit
+- missing_relations:
+  - actual roll angle < 6 degrees? -> roll hold reference = actual roll attitude [no]
+  - roll hold reference = zero -> actual roll angle > 30 degrees?
+  - roll hold reference = actual roll attitude -> actual roll angle > 30 degrees?
+  - actual roll angle > 30 degrees? -> roll hold reference = 30 degrees [fork]
+  - roll hold reference = 30 degrees -> turn knob commands 3 degrees or more in either direction? [merge]
+  - in same direction as actual roll angle -> turn knob commands 3 degrees or more in either direction? [merge]
+  - roll reference be set to command -> up to 30 degree limit
+- input_excerpt:
+  When roll hold mode becomes the active mode the roll hold reference shall be set to the actual roll attitude of the aircraft, except under the following conditions: The roll hold reference shall be set to zero if the actual roll angle is less than 6 degrees, in either direction, at the time of roll hold engagement. The roll hold reference shall be set to 30 degrees in the same direction as the actual roll angle if the actual roll angle is greater than 30 degrees at the time of roll hold engagement. The roll reference shall be set to the cockpit turn knob command, up to a 30 degree limit, if the turn knob is commanding 3 degrees or more in either direction.
+- generated_excerpt:
+  @startuml start :Roll hold mode becomes the active mode; if (Actual roll angle < 6 degrees in either direction?) then (Yes)   :Set roll hold reference to zero; elseif (Actual roll angle > 30 degrees?) then (Yes)   :Set roll hold reference to 30 degrees in the same direction as actual roll angle; elseif (Turn knob commanding >= 3 degrees in either direction?) then (Yes)   :Set roll reference to cockpit turn knob command up to a 30 degree limit; else (No)   :Set roll hold reference to actual roll attitude; endif stop @enduml
+### bp-0025
+- dataset: bp
+- failure_types: missing_activity, missing_or_wrong_relation, extra_or_wrong_relation, wrong_parallel
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.8182
+- relation_f1: 0.7037
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 0.9492
+- missing_nodes:
+  - go to promote window
+  - click mappings
+  - destination field displays edited source url
+  - select a destination url
+  - click the icon
+- extra_nodes:
+  - click mappings in the promote window
+  - display edited source url message in destination field
+  - click the reset icon
+- missing_relations:
+  - click mappings -> click edit mappings
+  - tabs are displayed -> connection mappings [fork]
+  - tabs are displayed -> qaaws mappings [fork]
+  - tabs are displayed -> crystal report mappings [fork]
+  - tabs are displayed -> federation mappings [fork]
+  - destination field displays edited source url -> open destination url drop-down list
+  - open destination url drop-down list -> select a destination url
+  - reset modifications made to destination url -> click the icon [yes]
+- input_excerpt:
+  25.	map a QaaWS1. In the "Promote" window, click Mappings.2. Click Edit Mappings.The following tabs are displayed:• Connection Mappings• QaaWS Mappings• Crystal Report Mappings• Federation Mappings3. Click QaaWS Mappings.The source URL and the Query as a Web Service types are displayed. If you want to edit the properties of the source URL, select the source URL, and click Edit QaaWs Properties. The Edit QaaWS Propertiestab appears. This tab displays the list of properties and their values. Modify the values per your requirements, and click Apply. The QaaWS Mappings tab appears.Note:If you edit the source URL, the destination field displays the following message: Edited Source URL4. From the 
+- generated_excerpt:
+  @startuml start :Click Mappings in the "Promote" window; :Click Edit Mappings; switch (Tabs displayed) case (Connection Mappings) case (QaaWS Mappings) case (Crystal Report Mappings) case (Federation Mappings) endswitch :Click QaaWS Mappings; :Display source URL and Query as a Web Service types; if (Want to edit source URL properties?) then (Yes)   :Select source URL;   :Click Edit QaaWS Properties;   :Display Edit QaaWS Properties tab;   :Display list of properties and their values;   :Modify the values per requirements;   :Click Apply;   :Display QaaWS Mappings tab;   :Display "Edited Source URL" message in destination field; else (No) endif :Select a destination URL from the Destination U
+### rac-0015
+- dataset: rac
+- failure_types: missing_activity, extra_activity, extra_or_wrong_relation
+- syntax_passed: True
+- plantuml_compiles: True
+- node_f1: 0.8333
+- relation_f1: 0.8276
+- llm_element_status: success
+- llm_node_f1: 1.0000
+- llm_relation_f1: 0.8861
+- missing_nodes:
+  - condition judgement
+  - shutdown
+  - after 30s?
+- extra_nodes:
+  - condition check
+  - shut down
+  - wait 30 seconds
+- missing_relations:
+  - fast charging is active -> enter power-up state [yes]
+  - switch to state 185 -> after 30s?
+  - after 30s? -> switch to state 180
+- input_excerpt:
+  After the system starts up, if fast charging is active, it enters the "power-up" state. If a high-voltage shutdown request equals 2 and the DCDC state is 1, the system then enters state 175. Following this:  1.  If the DCDC state becomes 0, switch to state 185. Then:     a.  If fast charging becomes inactive, switch to state 180. Shut down and end.     b.  If the power battery relay control equals 0, switch to state 180. Shut down and end.     c.  If a pre-charge failure occurs, switch to state 180. If fast charging is also inactive at this point, shut down and end.  2.  If the DCDC state is 0 and the insulation resistance is low, switch to state 185. After 30 seconds, switch to state 180. I
+- generated_excerpt:
+  @startuml start :Enter "power-up" state; if (High-voltage shutdown request equals 2\nand DCDC state is 1?) then (yes)   :Enter state 175; else (no)   stop endif switch (Condition check) case (DCDC state becomes 0)   :Switch to state 185;   if (Fast charging becomes inactive?) then (yes)     :Switch to state 180;     :Shut down;     stop   elseif (Power battery relay control equals 0?) then (yes)     :Switch to state 180;     :Shut down;     stop   elseif (Pre-charge failure occurs?) then (yes)     :Switch to state 180;     if (Fast charging is inactive?) then (yes)       :Shut down;       stop     else (no)     endif   else (no)   endif case (DCDC state is 0\nand insulation resistance is low
+
+## Prompt Improvement Guidance
+- Modify only the run-local `work.md` prompt.
+- Preserve the required markdown sections.
+- Prefer concrete workflow constraints, hard rules, or reusable knowledge over broad stylistic advice.
+- Target the most frequent failure types first and avoid overfitting to a single case.

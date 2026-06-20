@@ -1,0 +1,71 @@
+```json
+{
+  "summary": "The batch primarily fails due to a severe activity granularity mismatch and a lack of control-flow modeling. The prompt provides no guidance on how to decompose requirements into appropriately sized activities or how to map textual conditions, alternatives, and concurrent actions into PlantUML control-flow structures (if/switch/fork). Consequently, the model either over-compresses or over-decomposes actions and flattens conditional logic into linear sequences.",
+  "error_patterns": [
+    {
+      "name": "extra_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0092",
+        "lmc-0055"
+      ],
+      "problem": "The model hallucinates implementation details and over-decomposes high-level requirements into granular UI/system steps that are not present in the input text.",
+      "suggested_prompt_direction": "Instruct the model to strictly ground activities in the explicit statements of the requirement and avoid inferring unstated UI interactions or system internals.",
+      "target_sections": [
+        "rule",
+        "workflow"
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0010",
+        "pure-0046",
+        "pure-0078"
+      ],
+      "problem": "The model fails to break down compound actions into the discrete steps expected by the gold standard, often merging multiple distinct actions or omitting structural elements like decision/switch labels.",
+      "suggested_prompt_direction": "Guide the model to decompose compound sentences into concise, discrete activities and to explicitly represent structural nodes (like switch/case labels) as distinct activities.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0010",
+        "bp-0028",
+        "pure-0046",
+        "pure-0078"
+      ],
+      "problem": "The model fails to identify conditional branches, mutually exclusive choices, and parallel executions, instead representing them as linear sequences or using incorrect control-flow constructs (e.g., if/else instead of switch/fork).",
+      "suggested_prompt_direction": "Provide explicit mapping rules from textual cues to PlantUML control-flow structures (e.g., 'if/then' to if/else, 'either/or' or distinct cases to switch, 'simultaneously' to fork) and require the model to reason about control flow before generating code.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "us-0098",
+        "pure-0046"
+      ],
+      "problem": "The model introduces spurious relations, such as adding loops or linearly sequencing actions that should be parallel or structurally nested under decision branches.",
+      "suggested_prompt_direction": "Emphasize strict adherence to the requirement's explicit sequencing and avoid adding assumed transitions or loops not supported by the text.",
+      "target_sections": [
+        "rule"
+      ]
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not attempt to fix syntax errors, as the compilation pass rate is already 100%."
+  ]
+}
+```

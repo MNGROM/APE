@@ -1,0 +1,23 @@
+{
+  "updated_at": "2026-06-18T14:37:19",
+  "phase": "iteration_004:analysis_batch:llm_judge:extract",
+  "attempt": 1,
+  "max_retries": 20,
+  "retryable": true,
+  "rate_limited": false,
+  "wait_seconds": 31,
+  "retry_at": "2026-06-18T14:37:50",
+  "context": {
+    "dataset": "rac",
+    "case_id": "rac-0017",
+    "judge_step": "pred_extract",
+    "json_retry_attempt": 1
+  },
+  "error": {
+    "type": "ProviderHTTPError",
+    "prefix": "APE element-level judge",
+    "status_code": 500,
+    "provider_error_code": "1234",
+    "body_excerpt": "{\"error\":{\"code\":\"1234\",\"message\":\"网络错误，错误id：20260618143632be7dcf0abfd14645，请稍后重试\"}}"
+  }
+}

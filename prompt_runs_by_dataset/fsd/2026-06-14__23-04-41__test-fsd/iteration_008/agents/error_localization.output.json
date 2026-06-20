@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for the model to first extract explicit activities, then identify control-flow keywords (conditionals, parallelism), and finally map them to PlantUML constructs. This lack of procedural guidance causes the model to hallucinate control flows, over-decompose activities, and miss conditional or parallel logic."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking reusable modeling guidance and mappings from linguistic cues (e.g., 'if', 'when', 'while', 'simultaneously') to PlantUML control-flow constructs (e.g., if/else, fork/join). This causes the model to miss conditional logic and parallel constructs, and to default to common design patterns rather than strictly adhering to the requirement text."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, missing strict constraints against inventing implicit sub-actions, decomposing single stated behaviors into multiple steps, and fabricating error handling or validation loops. This directly leads to over-decomposition of activities and hallucinated control flows."
+    }
+  ]
+}
+```

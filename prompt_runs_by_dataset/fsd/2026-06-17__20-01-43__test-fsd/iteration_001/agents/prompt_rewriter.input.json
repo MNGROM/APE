@@ -1,0 +1,22 @@
+{
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description. \n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n(None)\n\n## knowledge\n\n(None)\n\n## rule\n\n(None)",
+  "revision_plan": {
+    "revision_plan": [
+      {
+        "section": "workflow",
+        "intent": "Enforce a strict extract-then-construct process to prevent activity merging and control-flow mismatches.",
+        "change_instruction": "Add a two-step workflow: Step 1 requires the model to extract and list all explicit activities and conditional/alternative statements strictly from the requirement text, preserving each distinct behavioral step as a separate item. Step 2 requires the model to construct the PlantUML diagram by mapping only those extracted items to activities and control-flow constructs, prohibiting any additions."
+      },
+      {
+        "section": "knowledge",
+        "intent": "Clarify the semantics of PlantUML control-flow constructs to resolve confusion between parallel and mutually exclusive alternatives.",
+        "change_instruction": "Add concise definitions distinguishing fork/join (for concurrent, simultaneous actions or parallel information display) from if/elseif/else and switch/endswitch (for mutually exclusive, alternative paths or user choices). Emphasize that enumerated sub-steps or listed options represent alternatives (switch/if), not parallelism, unless explicitly stated as simultaneous."
+      },
+      {
+        "section": "rule",
+        "intent": "Prevent fabricated activities and speculative control flows by enforcing strict grounding in the requirement.",
+        "change_instruction": "Add explicit rules: (1) Do not invent, infer, or add any activities, steps, or UI interactions (e.g., login, navigation, validation, success/error messages, retry loops) that are not explicitly stated in the requirement. (2) Do not merge multiple distinct behavioral steps from the requirement into a single activity node; maintain the original granularity. (3) Do not insert speculative control-flow branches (e.g., validation checks, error handling) unless explicitly described in the requirement text."
+      }
+    ]
+  }
+}

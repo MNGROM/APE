@@ -1,0 +1,74 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description. \n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n## knowledge\n\n## rule\n",
+  "evaluation": {
+    "summary": {
+      "count": 1.0,
+      "syntax_pass_rate": 1.0,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 1.0,
+      "node_recall": 1.0,
+      "node_f1": 1.0,
+      "relation_precision": 1.0,
+      "relation_recall": 1.0,
+      "relation_f1": 1.0,
+      "plantuml_compilation_pass_rate": 1.0,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {},
+    "representative_cases": []
+  },
+  "knowledge_gap_policy": {
+    "identify_when": [
+      "the failure reflects reusable UML or PlantUML modeling knowledge missing from the current prompt",
+      "the same modeling mistake appears across multiple cases or failure patterns",
+      "the repair can be expressed as a general modeling principle rather than a case-specific instruction"
+    ],
+    "avoid_when": [
+      "the issue is only caused by provider, timeout, parsing, or other infrastructure errors",
+      "the repair would copy a training case, a gold diagram, or dataset-specific wording",
+      "the issue is only output formatting and is better handled in the output or rule section"
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge|rule"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "short snake_case label",
+        "related_failure_patterns": [
+          "error pattern names from error_patterns"
+        ],
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "gap": "what reusable UML/PlantUML modeling knowledge is missing or unclear",
+        "suggested_knowledge": "concise general knowledge that could be added to the knowledge section"
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

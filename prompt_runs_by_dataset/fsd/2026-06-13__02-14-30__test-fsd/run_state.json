@@ -1,0 +1,21 @@
+{
+  "updated_at": "2026-06-13T02:35:30",
+  "phase": "iteration_005:analysis_batch",
+  "attempt": 1,
+  "max_retries": 20,
+  "retryable": true,
+  "rate_limited": false,
+  "wait_seconds": 31,
+  "retry_at": "2026-06-13T02:36:01",
+  "context": {
+    "dataset": "rac",
+    "case_id": "rac-0019"
+  },
+  "error": {
+    "type": "ProviderHTTPError",
+    "prefix": "LLM",
+    "status_code": 500,
+    "provider_error_code": "1234",
+    "body_excerpt": "{\"error\":{\"code\":\"1234\",\"message\":\"网络错误，错误id：20260613023449feff1011bb40495e，请稍后重试\"}}"
+  }
+}

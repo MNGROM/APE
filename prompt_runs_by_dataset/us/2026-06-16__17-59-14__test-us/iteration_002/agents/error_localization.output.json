@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for the model to systematically extract activities, identify concurrent/grouped items for parallel forks, recognize loop semantics, or isolate conditional logic before generating PlantUML code."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking essential modeling guidance on how to map requirement patterns (e.g., lists of concurrent items, continuous monitoring, conditional checks) to their correct PlantUML constructs (e.g., fork/fork again, while/repeat, if/else)."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, failing to enforce strict completeness and preventing the model from abstracting or dropping explicit activities, and lacking syntax rules to ensure the correct PlantUML keywords are used for loops and branches."
+    }
+  ]
+}
+```

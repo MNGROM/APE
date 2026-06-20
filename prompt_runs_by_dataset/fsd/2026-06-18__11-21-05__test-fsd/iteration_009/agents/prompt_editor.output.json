@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Combined intent: Eliminate false-positive parallelism by removing the ambiguous 'independent actions' exception for lists and adding explicit positive cues for true concurrency.; Prevent missing or wrong relations by enforcing proper nesting and conditional guards.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: In Step 3, remove the clause allowing fork/join for lists of 'independent actions that can occur without depending on each other's completion'. Replace it with a strict rule: fork/join is ONLY permitted when the text contains explicit concurrency cues (e.g., 'simultaneously', 'at the same time', 'concurrently', 'in parallel'). Emphasize that grammatical lists of items, attributes, options, or alternative choices must NEVER be modeled with fork/join, even if they seem independent, and must instead be represented as sequential activities or if/else branches.; In Step 3, add a sub-step for constructing conditional control flow: 'Identify nested preconditions, state-dependent guards, and mutually exclusive conditions. Map these strictly to nested if/elseif/else or switch/endswitch structures, preserving the exact hierarchical logic. Add conditional guard labels to transitions exactly as stated in the text, and do not flatten nested conditions into a single level.'"
+    },
+    {
+      "section": "knowledge",
+      "intent": "Combined intent: Align fork/join knowledge with the strict workflow rule to prevent over-application.; Provide clear mapping rules for complex conditional logic and guards to prevent missing or wrong relations.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise the second knowledge bullet to remove the allowance for enumerations or lists containing 'independent actions'. State that fork/join must strictly be used ONLY when the text contains explicit concurrency cues (e.g., 'simultaneously', 'concurrently', 'in parallel'). Explicitly state that alternative choices, grouped attributes, and sequential UI steps are mutually exclusive or sequential and must not be modeled with fork/join.; Expand the third knowledge bullet to explicitly include mapping instructions for nested preconditions and state-dependent guards: 'Map nested preconditions and state-dependent guards to nested if/elseif/else or switch/endswitch constructs. Ensure that guard labels on transitions reflect the exact condition text. Mutually exclusive alternatives must be modeled as separate branches within these conditional constructs, not as parallel flows.'"
+    },
+    {
+      "section": "rule",
+      "intent": "Combined intent: Explicitly prohibit modeling alternative choices and mutually exclusive options as parallel flows.; Prevent collapsing system responses and intermediate states into vague abstractions.; Prohibit forcing sequential dependencies between independent actions or misrouting mutually exclusive branches.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Add a new rule: 'Do not model alternative choices, mutually exclusive options, or grouped attributes as parallel flows using fork/join. Mutually exclusive alternatives must always be modeled using if/else or switch/endswitch branches.'; Add a new rule: 'Do not collapse explicitly stated system responses, intermediate states, or distinct behavioral steps into a single abstract activity node. Each explicitly stated action or reaction must be preserved as a distinct activity node.'; Add a new rule: 'Do not force sequential dependencies between actions that the text does not explicitly link in a sequence. Do not misroute mutually exclusive branches so that they converge prematurely or connect to incorrect subsequent steps; maintain the exact branching and merging structure implied by the requirement.'"
+    }
+  ]
+}

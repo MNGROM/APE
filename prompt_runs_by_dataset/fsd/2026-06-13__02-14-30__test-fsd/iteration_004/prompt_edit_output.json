@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities strictly from the requirement text. Create one activity node for each distinct action or state explicitly mentioned; do not invent UI interactions, system validations, or other unstated implementation details. If a requirement states a simple action without an 'if', model it as a straightforward activity, not a branch.\n2. Decompose compound actions, sentences describing multiple sequential actions, or lists of items into separate, concise activity nodes rather than aggregating them into one.\n3. Identify control-flow keywords in the requirement (e.g., if, unless, alternatively, simultaneously, in parallel) to determine branching and concurrency before writing PlantUML. Actively look for lists of items or actions occurring together and map them to fork/end fork constructs.\n4. Map the identified control-flow semantics to the correct PlantUML constructs and generate the diagram."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "When a requirement lists multiple items or actions occurring simultaneously, represent them using a fork/end fork block with one activity per item. When a requirement specifies that a system remains in a state until one of several independent conditions occurs, model each condition as a separate if/else block where the 'else' path represents remaining in the current state and the 'if' path leads to the exit or state change. Do not invent conditional checks, user confirmations, or system validations unless they are explicitly described in the requirement."
+    }
+  ],
+  "rationale": "The workflow edit strengthens strict grounding against hallucinated implementations and adds explicit procedural guidance to decompose compound phrases and lists into parallel forks. The knowledge edit adds reusable modeling principles for parallel fork decomposition and conditional exit modeling, while clearly delineating the boundary between mapping control flow and inferring unstated steps.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

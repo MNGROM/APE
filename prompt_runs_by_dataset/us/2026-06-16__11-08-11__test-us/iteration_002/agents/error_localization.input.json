@@ -1,0 +1,46 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "hallucinated_control_flow",
+        "problem": "The generator fabricates control-flow logic (e.g., corrective actions, conditional checks, loops) that is not stated or implied in the requirements, treating abstract constraints as operational procedures.",
+        "possible_causes": [
+          "The prompt may lack explicit instructions to faithfully map only the stated behaviors, causing the model to 'fill in the gaps' with assumed operational steps.",
+          "The model defaults to a procedural problem-solving narrative (e.g., 'if constraint fails, fix it') rather than strictly modeling the requirement as given."
+        ]
+      },
+      {
+        "name": "flattened_parallelism",
+        "problem": "Concurrent behaviors explicitly described in the requirements (and modeled as forks in the ground truth) are serialized or omitted in the prediction.",
+        "possible_causes": [
+          "The prompt does not sufficiently emphasize identifying and representing concurrent/parallel behaviors using PlantUML's `fork`/`end fork` constructs.",
+          "The model prioritizes a linear, step-by-step reading of the text, failing to recognize structural cues for parallelism (e.g., 'concurrently', 'separate task')."
+        ]
+      },
+      {
+        "name": "lost_conditional_alternatives",
+        "problem": "Alternative flows, optional steps, and switch-case logic explicitly detailed in the requirements are collapsed into linear sequences or overly simplified if-else blocks.",
+        "possible_causes": [
+          "The prompt may not guide the model to actively look for alternative data flows, exceptions, or distinct cases that warrant `switch`/`endswitch` or nested `if` structures.",
+          "The model struggles to maintain multiple branching paths from a single point, opting to simplify the diagram by merging or omitting alternative paths."
+        ]
+      },
+      {
+        "name": "granularity_mismatch",
+        "problem": "The generator either compresses multiple explicit steps into single, broad activity nodes or decomposes single steps into unnecessary sub-actions, leading to missing/extra activities.",
+        "possible_causes": [
+          "The prompt lacks clear guidance on the expected level of granularity, causing inconsistent 1-to-1 mapping between requirement sentences and diagram nodes.",
+          "The model attempts to summarize or interpret the requirement rather than transcribing the specified actions directly into activity nodes."
+        ]
+      }
+    ]
+  }
+}

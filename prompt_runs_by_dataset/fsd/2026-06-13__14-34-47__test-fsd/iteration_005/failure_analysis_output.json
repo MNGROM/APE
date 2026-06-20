@@ -1,0 +1,76 @@
+```json
+{
+  "summary": "The batch primarily fails due to a fundamental activity granularity mismatch: the prompt's 'do not decompose' instruction conflicts with the gold standard's practice of splitting compound sentences into atomic activities. This cascades into relation errors. Secondary issues include persistent label rewording despite preservation instructions, inadequate loop modeling guidance, and over-inference of decision nodes for constraints.",
+  "error_patterns": [
+    {
+      "name": "activity_granularity_conflict",
+      "severity": "high",
+      "evidence_case_ids": ["bp-0021", "bp-0005", "us-0165"],
+      "problem": "The prompt instructs 'Do not decompose a single stated action into sub-steps,' but the gold standard routinely splits compound requirement sentences (e.g., 'In page X, click Y') into separate atomic activities. This causes both missing activities (gold splits that the model doesn't) and extra activities (model splits at wrong boundaries or combines what should be separate).",
+      "suggested_prompt_direction": "Revise the granularity guidance to clarify that when a single requirement sentence contains multiple distinct actions (e.g., navigation then action, user action then system response), each distinct action should be modeled as a separate activity. Remove or soften the blanket 'do not decompose' rule.",
+      "target_sections": ["workflow", "knowledge"]
+    },
+    {
+      "name": "label_rewording",
+      "severity": "high",
+      "evidence_case_ids": ["lmc-0055", "rac-0005", "bp-0021"],
+      "problem": "Despite the prompt's instruction to preserve key noun-verb phrases and not paraphrase, the model consistently rewords activity labels (e.g., 'switch to state 93' becomes 'Transition to state 93', 'DCM321 * DCM321T' becomes 'Multiply DCM321 by DCM321T', 'shutdown' becomes 'Initiate shutdown').",
+      "suggested_prompt_direction": "Strengthen the label preservation rule with explicit examples of what 'preserve' means: use the exact phrasing from the requirement for activity labels, including technical terms, state names, and operator symbols. Avoid adding filler verbs or reformatting expressions.",
+      "target_sections": ["rule", "knowledge"]
+    },
+    {
+      "name": "extra_inferred_activities",
+      "severity": "medium",
+      "evidence_case_ids": ["bp-0021", "rac-0005", "pure-0029"],
+      "problem": "The model adds activities not explicitly stated in the requirement, such as 'System starts up' when only 'After the system starts up' appears as context, or creates decision nodes for constraints that should be notes (e.g., 'Change source system?' for 'cannot change source system'). It also adds synonyms like 'Terminate', 'Conclude', 'End operations' for what the gold treats as a single 'shutdown'.",
+      "suggested_prompt_direction": "Add a rule that constraints described as limitations (e.g., 'cannot', 'shall not') should be modeled as notes, not as decision nodes. Reinforce that preamble/context clauses (e.g., 'After X') should not become standalone activities unless they represent an explicit action.",
+      "target_sections": ["rule", "knowledge"]
+    },
+    {
+      "name": "loop_modeling_weakness",
+      "severity": "medium",
+      "evidence_case_ids": ["bp-0005", "pure-0029"],
+      "problem": "When the requirement describes repetition (e.g., 'Repeat steps 4 and 5', 'until data processing is complete'), the model either treats the repetition phrase as a literal activity label or misplaces activities inside vs. outside the loop body.",
+      "suggested_prompt_direction": "Add explicit workflow guidance for detecting iterative patterns: when the requirement uses 'repeat', 'loop', 'until', or 'while', model it with repeat/repeat while. Activities that happen once after the loop completes should be placed outside the loop.",
+      "target_sections": ["workflow", "knowledge"]
+    },
+    {
+      "name": "relation_errors_from_granularity",
+      "severity": "high",
+      "evidence_case_ids": ["bp-0021", "bp-0005", "rac-0005", "lmc-0002"],
+      "problem": "Most missing and extra relation errors are downstream of the activity granularity problem: when compound actions are not split correctly, the sequential relations between their sub-parts are lost, and spurious relations appear between incorrectly combined activities.",
+      "suggested_prompt_direction": "Fixing the activity granularity issue (pattern 1) should resolve most relation errors. Additionally, after extracting activities, the workflow should explicitly require determining the sequential order between each pair of adjacent activities before generating PlantUML.",
+      "target_sections": ["workflow"]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "compound_action_splitting",
+      "related_failure_patterns": ["activity_granularity_conflict", "relation_errors_from_granularity"],
+      "evidence_case_ids": ["bp-0021", "bp-0005", "us-0165"],
+      "gap": "The prompt lacks clear guidance on when a compound requirement sentence should be split into multiple activities versus kept as one. The current 'do not decompose' rule is too restrictive and conflicts with standard UML activity diagram practice.",
+      "suggested_knowledge": "When a requirement sentence contains multiple distinct sequential actions (e.g., navigation followed by an action, user action followed by system response, selection followed by display), model each distinct action as a separate activity. A single verb phrase with a compound object (e.g., 'configure URL and topic mappings') should remain as one activity unless the requirement describes them as separate steps."
+    },
+    {
+      "id": "constraint_as_note_vs_decision",
+      "related_failure_patterns": ["extra_inferred_activities"],
+      "evidence_case_ids": ["bp-0021"],
+      "gap": "The prompt does not distinguish between constraints that should be modeled as decision nodes versus those that should be modeled as notes attached to activities.",
+      "suggested_knowledge": "When the requirement states a limitation or invariant (e.g., 'cannot change', 'must not', 'only if not'), model it as a note attached to the relevant activity rather than as a separate decision node. Decision nodes should be used only when the requirement describes alternative paths based on a condition."
+    },
+    {
+      "id": "repeat_loop_pattern",
+      "related_failure_patterns": ["loop_modeling_weakness"],
+      "evidence_case_ids": ["bp-0005", "pure-0029"],
+      "gap": "The prompt does not provide guidance on how to identify and model iterative/repetitive behavior in requirements using PlantUML repeat constructs.",
+      "suggested_knowledge": "When the requirement uses 'repeat', 'loop', 'for each', or describes an action that continues 'until' a condition is met, use the repeat/repeat while construct. Place the loop condition in the 'repeat while' clause. Activities that occur after all iterations complete should be placed outside the loop, not inside it."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy gold PlantUML diagrams or dataset-specific examples into the prompt.",
+    "Do not add memorized answers for specific requirement texts.",
+    "Do not address the single empty-output case (rac-0019) as it is likely an infrastructure/model limitation, not a prompt issue.",
+    "Do not over-specify granularity rules to the point of being dataset-specific; keep guidance general."
+  ]
+}
+```

@@ -1,0 +1,230 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Extract distinct actions: Identify every distinct action verb or step explicitly stated in the requirement and map each to its own activity node; do not collapse sequential steps into a single summary node. 2. Identify conditional logic: Locate conditional phrases (e.g., 'if', 'when', 'unless', 'shall be') and model them as if/else decision nodes with the condition as the branch guard, rather than embedding them within activity labels. 3. Track structural nesting: Mentally track opening and closing tags for every control structure (if/endif, switch/endswitch, fork/end fork) to ensure all blocks are properly balanced and closed before ending the diagram.",
+    "knowledge": "Use PlantUML 'fork'/'end fork' to model independent or simultaneous actions, rather than combining them into a single activity or forcing a sequential flow. Use PlantUML 'switch'/'case'/'endswitch' when the requirement describes a choice among mutually exclusive alternatives; reserve 'if'/'else' for conditional logic based on a boolean state.\n\nUse 'if/else' for binary or boolean conditional logic (yes/no, true/false outcomes). Use 'switch/case' only when the requirement explicitly lists three or more mutually exclusive alternative paths or enumerated categories. When a requirement specifies a condition, constraint, or validation (e.g., 'if X', 'when Y', 'shall be Z'), model it as an if/else decision node where the condition is the branch guard, and the subsequent actions are the outcomes.",
+    "rule": "1. Strictly ground every activity in the explicit statements of the requirement; do not infer, invent, or over-decompose into unstated implementation or UI steps. 2. Each distinct action explicitly described in the input must map to exactly one activity node; do not merge multiple distinct actions into a single node. 3. Only generate control-flow relations that are directly stated or logically necessary for the explicit sequence and conditions; prohibit assumed validation loops, error branches, or inferred sequential steps."
+  },
+  "failure_analysis": {
+    "summary": "The batch primarily fails due to two intertwined issues: the model over-compresses compound phrases into single activity nodes (causing missing activities and wrong granularity), and it fails to recognize implicit parallelism or simultaneous actions (causing missing fork structures and wrong relations). The prompt's strong emphasis on not inferring unstated steps likely causes the model to avoid decomposing listed items, while its lack of guidance on recognizing parallelism leads to purely sequential flows.",
+    "error_patterns": [
+      {
+        "name": "activity_granularity_mismatch",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0030",
+          "bp-0015",
+          "pure-0082"
+        ],
+        "problem": "The model merges multiple distinct actions or listed items (e.g., 'Enter name, description, and keywords') into a single summary activity node, resulting in missing activities and extra/wrong relations compared to the ground truth which separates them.",
+        "suggested_prompt_direction": "Clarify the rule against merging distinct actions so it explicitly covers grammatical lists and compound phrases, instructing the model to create a separate activity node for each listed item or distinct action verb.",
+        "target_sections": [
+          "rule",
+          "workflow"
+        ]
+      },
+      {
+        "name": "missing_parallel_decomposition",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0030",
+          "bp-0015",
+          "pure-0095",
+          "us-0129"
+        ],
+        "problem": "The model fails to identify independent or simultaneous actions and models them sequentially instead of using fork/end fork structures, leading to missing activities (the decomposed parallel steps) and incorrect sequential relations.",
+        "suggested_prompt_direction": "Add explicit instructions to identify simultaneous, independent, or concurrently described actions and model them using PlantUML fork/end fork blocks rather than sequential flows.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_conditional_decomposition",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "lmc-0052",
+          "pure-0095"
+        ],
+        "problem": "When a requirement states a constraint or property (e.g., 'shall be invertible with the exception of...'), the model often creates a single action node (e.g., 'Invert the matrix') instead of modeling the condition as a decision node with distinct outcomes.",
+        "suggested_prompt_direction": "Strengthen guidance on translating constraints, validations, and 'with the exception of' phrases into if/else decision nodes where the condition is the guard and the outcomes are separate activities.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "parallel_list_decomposition",
+        "related_failure_patterns": [
+          "missing_parallel_decomposition",
+          "activity_granularity_mismatch"
+        ],
+        "evidence_case_ids": [
+          "bp-0030",
+          "bp-0015",
+          "us-0129"
+        ],
+        "gap": "The prompt lacks knowledge on how to handle grammatical lists of items or actions that occur independently or simultaneously.",
+        "suggested_knowledge": "When a requirement lists multiple items or actions that occur independently, simultaneously, or without a stated sequential dependency (e.g., 'Enter name, description, and keywords'), decompose them into separate activity nodes within a fork/end fork block."
+      },
+      {
+        "id": "constraint_to_decision",
+        "related_failure_patterns": [
+          "missing_conditional_decomposition"
+        ],
+        "evidence_case_ids": [
+          "lmc-0050",
+          "lmc-0052"
+        ],
+        "gap": "The prompt does not clearly explain how to model property constraints or mathematical conditions as decision outcomes rather than procedural actions.",
+        "suggested_knowledge": "When a requirement states a property, constraint, or validation (e.g., 'shall equal', 'shall be invertible'), model it as an if/else decision node where the condition is the branch guard, and the subsequent actions or states (e.g., 'Allowed'/'Not allowed', 'Invertible'/'Not invertible') are the outcomes, rather than creating a single procedural action node."
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML into the prompt.",
+      "Do not add dataset-specific examples or memorized answers.",
+      "Do not change output formatting rules to fix semantic or structural modeling errors."
+    ]
+  },
+  "error_localization": {
+    "summary": "The most useful repairs target the workflow and knowledge sections. The workflow section needs a new procedural step to identify and decompose grammatical lists and parallel actions, while the knowledge section needs reusable modeling principles for parallel list decomposition and constraint-to-decision mapping.",
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "priority": "high",
+        "failure_patterns": [
+          "activity_granularity_mismatch",
+          "missing_parallel_decomposition",
+          "missing_conditional_decomposition"
+        ],
+        "section_problem": "The workflow currently lacks a procedural step for decomposing grammatical lists of items/actions into separate nodes and fails to guide the agent to recognize simultaneous actions for fork blocks. It also does not explicitly instruct the agent to treat property constraints as decision nodes during the extraction phase.",
+        "edit_intent": "Add a workflow step to identify grammatical lists and simultaneous actions, decomposing them into separate activity nodes (using fork/end fork where appropriate), and reinforce extracting constraints as decision nodes rather than procedural actions.",
+        "knowledge_gap_ids": [
+          "parallel_list_decomposition",
+          "constraint_to_decision"
+        ],
+        "evidence_case_ids": [
+          "bp-0030",
+          "bp-0015",
+          "pure-0082",
+          "pure-0095",
+          "us-0129",
+          "lmc-0050",
+          "lmc-0052"
+        ]
+      },
+      {
+        "section": "knowledge",
+        "priority": "high",
+        "failure_patterns": [
+          "missing_parallel_decomposition",
+          "missing_conditional_decomposition"
+        ],
+        "section_problem": "The knowledge section lacks reusable modeling concepts for handling grammatical lists of independent items as parallel forks and for translating property constraints into decision outcomes.",
+        "edit_intent": "Add reusable modeling principles: (1) how to model grammatical lists of independent/simultaneous items using fork/end fork blocks, and (2) how to model property constraints or validations as if/else decision nodes with distinct outcomes rather than single action nodes.",
+        "knowledge_gap_ids": [
+          "parallel_list_decomposition",
+          "constraint_to_decision"
+        ],
+        "evidence_case_ids": [
+          "bp-0030",
+          "bp-0015",
+          "pure-0095",
+          "us-0129",
+          "lmc-0050",
+          "lmc-0052"
+        ]
+      },
+      {
+        "section": "rule",
+        "priority": "medium",
+        "failure_patterns": [
+          "activity_granularity_mismatch"
+        ],
+        "section_problem": "Rule 2 prohibits merging distinct actions but is currently interpreted too narrowly, failing to prevent the merging of items in grammatical lists or compound phrases due to the strict anti-inference stance of Rule 1.",
+        "edit_intent": "Clarify Rule 2 to explicitly cover grammatical lists and compound phrases, ensuring each listed item maps to its own activity node, overriding the anti-inference rule for explicit textual lists.",
+        "knowledge_gap_ids": [],
+        "evidence_case_ids": [
+          "bp-0030",
+          "bp-0015",
+          "pure-0082"
+        ]
+      }
+    ],
+    "recommended_edit_sections": [
+      "workflow",
+      "knowledge"
+    ],
+    "do_not_edit_sections": [
+      {
+        "section": "agent task",
+        "reason": "The agent's overall role and scope are correctly defined and do not contribute to the granularity or parallelism failures."
+      },
+      {
+        "section": "input",
+        "reason": "The input section accurately describes the input format; the failure stems from processing logic, not input reading."
+      },
+      {
+        "section": "output",
+        "reason": "The output format requirement (PlantUML only) is appropriate; editing it would not fix semantic or structural modeling errors."
+      }
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge",
+      "rule"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "knowledge_edit_policy": {
+    "use_knowledge_when": [
+      "failure_analysis.knowledge_gaps contains reusable UML or PlantUML concepts",
+      "error_localization recommends the knowledge section",
+      "the fix is a compact principle about branch, loop, fork/join, merge, guard labels, start/stop, or valid PlantUML structure"
+    ],
+    "write_knowledge_as": [
+      "one or two concise reusable modeling principles",
+      "general guidance that can transfer across datasets",
+      "knowledge, not a step-by-step workflow and not a copied example"
+    ],
+    "avoid_knowledge_when": [
+      "the issue is only a case-specific omitted activity",
+      "the issue is only output formatting",
+      "the content duplicates existing knowledge section text"
+    ]
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

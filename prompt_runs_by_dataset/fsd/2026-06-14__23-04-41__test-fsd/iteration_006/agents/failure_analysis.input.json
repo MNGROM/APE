@@ -1,0 +1,96 @@
+{
+  "requirements": [
+    "1.\tThe maximum value of the NN output, z, shall always be less than or equal to 1.1, regardless of the input values.",
+    "Data Receive – The BE shall receive incoming data packets from the Correlator to Backend network interface. This network is a part of the BE System.",
+    "2.\tLog onto the BI system1.\tLog onto the BI system with a user that has sufficient authorizations for executing the scenario.2.\tStart the Data Warehousing Workbench in the SAP menu by choosing Modeling Data Warehousing Workbench: Modeling.3.\tUnder Modeling, choose Info  Objects. The Info  Object tree is displayed.4.\tFrom the context menu at the root node Info Objects of the Info Object tree, choose Create Info Area.5.\tOn the next screen, enter a technical name and a description for the Info Area. The Info Area is displayed in the Info Object tree.6.\tIt is used to group your Info Objects.7.\tIn the context menu of the Info Area, choose Create Info Object Catalog.8.\tOn the next screen, enter a technical name and description, and select Key Figure as the Info Object Type.9.\tChoose Create9. Activate the Info Object catalog.10.\tThe Info Object catalog is displayed in your Info Area.11.\tIt is used to group your key gures.12.\tPerform the following procedures to create each of the key gures Revenue ,Quantity and Price",
+    "9.\tThe autopilot shall change states from STANDBY to MANEUVER when a failure occurs (apfail).",
+    "10.\tAnalyzing Data in the Web Application1. Since you are interested in the revenue, you want to sort the revenue data.2. Click on the arrows in the Revenue eld to sort the revenue data in increasing or decreasing order.3. You can also sort the revenue by clicking the alternative mouse button on Revenue and choosing Sort Sort Increasing or Sort Decreasing in the context menu. You see that the greatest revenue is obtained with the distribution channel Internet.4. To see the differences in the revenue data for the months July, August and September, select rst 08.2007 and then 07.2007 in the dropdown box Calendar Year/Month. You see that the revenue data for the distribution channel Internet increased greatly. The marketing campaign for the Internet shop was apparently successful.5. Filter the data back to September by selecting 09.2007 in the dropdown box.6. To add a comment to the Web application about the successful increase in revenue using the Internet, create an appropriate document. At the subtotal of the distribution channel Internet (567.308,05) choose Documents Create New Comment in the context menu.7. Enter a name and description for the document.8. Enter a text and choose Save",
+    "As a collection curator, I want to create groups of users to manage permissions in the repository in an easy way.",
+    "1. Donor or Primary Contact arrives at receiving dock with a valid donation number 2. Receiving Associate locates donation request in the system (see View Acquisitions) 3. System displays donation request information 4. Receiving Associate enters information about each donated item into the donation request (see Add Item to Inventory) 4.1. A new item can be added to the list by cloning an existing item 4.2. A new item can be added by clicking the Add Item button 4.3. An item can be removed by setting the received quantity to zero 5. Receiving Associate prints a donation receipt 6. Receiving Associate optionally writes information to the receipt by hand such as condition 7. Donation receipt is given to the Donor or Primary Contact 8. Receiving Associate prints item tags for unique and stock items (see Add Item to Inventory) 9. Receiving Associate attaches printed tags to corresponding items 10. Receiving Associate closes donation request",
+    "14.\tlog into the LifeCycle Manager tool.To log into the LifeCycle Manager tool, complete the following steps:1. Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager. The LifeCycle Manager login screen appears.2. In the System field, enter the name of the Central Management Server (CMS) on which the LifeCycle Manager tool is installed.3. Enter the user name and password.4. Select the appropriate authentication method from the Authentication drop-down list.The LifeCycle Manager tool supports the following authentication types:• Enterprise authentication - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system. This is the default authentication method.• LDAP authentication - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system.• Windows AD - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system.The LDAP, Windows AD, and other third-party authentication types require a special setup. For information on setting up these authentication types, see the BusinessObjects Enterprise Administrator's Guide.5. Click Log on."
+  ],
+  "predictions": [
+    "@startuml\nstart\n:Receive input values for NN;\n:Compute NN output z;\nif (z <= 1.1?) then (Yes)\n  :Accept z;\nelse (No)\n  :Clamp/Reject z\\n(Enforce z <= 1.1);\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Receive incoming data packets from Correlator to Backend network interface;\nnote right: Network is part of the BE System\n:Process received data packets;\nstop\n@enduml",
+    "@startuml\nstart\n:Log onto the BI system with a user that has sufficient authorizations;\n:Start the Data Warehousing Workbench\\n(SAP Menu -> Modeling -> Data Warehousing Workbench: Modeling);\n:Under Modeling, choose Info Objects\\n(The Info Object tree is displayed);\n:From the context menu at the root node Info Objects,\\nchoose Create Info Area;\n:Enter a technical name and a description for the Info Area;\nnote right: The Info Area is displayed in the Info Object tree.\\nIt is used to group your Info Objects.\n:In the context menu of the Info Area,\\nchoose Create Info Object Catalog;\n:Enter a technical name and description,\\nand select Key Figure as the Info Object Type;\n:Choose Create;\n:Activate the Info Object catalog;\nnote right: The Info Object catalog is displayed in your Info Area.\\nIt is used to group your key figures.\n:Create Key Figure: Revenue;\n:Create Key Figure: Quantity;\n:Create Key Figure: Price;\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\nstart\n:STANDBY;\nif (apfail?) then (yes)\n  :MANEUVER;\nelse (no)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Click arrows in the Revenue field to sort data (Increasing/Decreasing);\n:Right-click Revenue and choose Sort (Increasing/Decreasing) from context menu;\n:Observe greatest revenue is from Internet channel;\n:Select 08.2007 in Calendar Year/Month dropdown;\n:Select 07.2007 in Calendar Year/Month dropdown;\n:Observe Internet revenue increased greatly (successful campaign);\n:Filter data back to September by selecting 09.2007 in dropdown;\n:Right-click subtotal of Internet channel (567.308,05);\n:Select Documents > Create New Comment from context menu;\n:Enter name and description for the document;\n:Enter text and choose Save;\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Activity Diagram: Create User Groups for Permission Management\n\nstart\n\n:Access repository management panel;\n\n:Select \"User Groups\" section;\n\n:Click \"Create New Group\";\n\n:Enter group name and description;\n\n:Configure group permissions;\n\nrepeat :Assign users to the group;\nrepeat while (More users to assign?) is (Yes)\n-> No;\n\n:Review group details and permissions;\n\nif (Confirm and save group?) then (Yes)\n  :Save user group;\n  :Group successfully created;\n  :Manage repository permissions via group;\nelse (No)\n  :Edit or discard group;\n  stop\nendif\n\nstop\n@enduml",
+    "@startuml\nstart\n:Donor or Primary Contact arrives at receiving dock\\nwith a valid donation number;\n:Receiving Associate locates donation request\\nin the system (see View Acquisitions);\n:System displays donation request information;\n:Receiving Associate enters information about\\neach donated item into the donation request\\n(see Add Item to Inventory);\nfork\n  :A new item can be added to the list\\nby cloning an existing item;\nfork again\n  :A new item can be added by clicking\\nthe Add Item button;\nfork again\n  :An item can be removed by setting\\nthe received quantity to zero;\nend fork\n:Receiving Associate prints a donation receipt;\n:Receiving Associate optionally writes\\ninformation to the receipt by hand\\nsuch as condition;\n:Donation receipt is given to the\\nDonor or Primary Contact;\n:Receiving Associate prints item tags\\nfor unique and stock items\\n(see Add Item to Inventory);\n:Receiving Associate attaches printed tags\\nto corresponding items;\n:Receiving Associate closes donation request;\nstop\n@enduml",
+    "@startuml\nstart\n:Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager;\n:The LifeCycle Manager login screen appears;\n:Enter the name of the Central Management Server (CMS) in the System field;\n:Enter the user name and password;\n:Select the appropriate authentication method from the Authentication drop-down list;\nswitch (Authentication type)\ncase (Enterprise)\n  :Use Enterprise authentication\\n(requires user name and password\\nrecognized by BusinessObjects Enterprise system)\\n(Default method);\ncase (LDAP)\n  :Use LDAP authentication\\n(requires user name and password\\nrecognized by BusinessObjects Enterprise system)\\n(Requires special setup);\ncase (Windows AD)\n  :Use Windows AD authentication\\n(requires user name and password\\nrecognized by BusinessObjects Enterprise system)\\n(Requires special setup);\ncase (Other third-party)\n  :Use other third-party authentication\\n(Requires special setup);\nendswitch\n:Click Log on;\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n\n:Input any value;\nif(Maximum value of NN output z <= 1.1?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+    "start\n\n:Get Correlator-Backend network interface;\n:Receive incoming data packets;\n\nstop",
+    "start\nif (User authorizations are sufficient?) then (no)\n  stop\nelse (yes)\n:Log in;\n:Choose Modeling Data Warehousing Workbench: Modeling;\n:Data Warehousing Workbench is started;\n:Choose \"Info Objects\";\n:Info Object tree is displayed;\n:Open root node context menu;\n:Choose \"Create Info Area\";\n\nfork\n  :Enter a technical name;\nfork again\n  :Enter a description;\nend fork\n\n:Info Area is displayed;\n\nnote right\nGroup Info Objects\nend note\n\n:Open Info Area context menu;\n:Choose \"Create Info Object Catalog\";\n\nfork\n  :Enter a technical name;\nfork again\n  :Enter a description;\nend fork\n\n:Select \"Key Figure\";\n:Choose \"Create\";\n:Activate Info Object Catalog;\n:Info Object catalog is displayed;\n\nnote right\nGroup key figures\nend note\n\nfork\n  :Create Revenue;\nfork again\n  :Create Quantity;\nfork again\n  :Create Price;\nend fork\n\nstop",
+    "start\n\nif(A failure occurs (apfail)?) then(yes)\n:Autopilot change states from STANDBY to MANEUVER;\nelse(no)\nendif\n\nstop",
+    "start\n\n:Sort revenue data;\nif (Click arrows in Revenue eld?) then (yes)\n  :Sort increasing or decreasing;\nelse (no)\n  :Click alternative mouse button;\n  :Open context menu;\n  :Choose \"Sort Increasing\" or \"Sort Decreasing\";\nendif\n\n:Internet channel is the greatest;\n\nif(Analyze differences for months?) then(yes)\n:Open dropdown box Calendar Year/Month;\n:Select 08.2007;\n:Select 07.2007;\n:See increased data;\n:Internet shop marketing campaign was successful;\n\n:Open dropdown box Calendar Year/Month;\n:Select 09.2007;\n:Filter the data back to September;\n\nelse(no)\nendif\n\nif(Add a comment?) then(yes)\n:Go to subtotal of the distribution channel Internet;\n:Open context menu;\n:Choose \"Documents Create New Comment\";\n\n:Enter name and description;\n:Enter a text;\n:Choose \"Save\";\nelse(no)\nendif\n\nstop",
+    "start\n:Create groups of users \n:Manage permissions in the repository;\nstop",
+    "start\n\n:Donor/Primary Contact has valid donation number;\n:Arrive at receiving dock;\n\n:See View Acquisitions;\n:Locate donation request;\n\n:Display donation request information;\n:See Add Item to Inventory;\n:Enter information;\n\nif(Add new item?) then(yes)\nswitch(Way to add item)\ncase(Clone)\n:Clone an existing item;\ncase(Click)\n:Click Add Item button;\nendswitch\nelse(no)\nendif\n\nif(Remove item?) then(yes)\n:Set received quantity to 0;\nelse(no)\nendif\n\n:Print donation receipt;\n\nif(Write information?) then(yes)\n:Write information to receipt by hand;\nelse(no)\nendif\n\n:Give donation receipt to Donor/Primary Contact;\n:See Add Item to Inventory;\n:Print item tags for unique and stock items;\n:Aattach printed tags to corresponding items;\n:Close donation request;\n\nstop",
+    "start\n\n:Select \"Start\";\n:Select \"Programs\";\n:Select \"BusinessObjects XI 3.1\";\n:Select \"BusinessObjects Enterprise\";\n:Select \"BusinessObjects LifeCycle Manager\";\n:LifeCycle Manager login screen appears;\n\n:Go to System field;\n:Enter CMS name;\n:Enter username and password;\n\n:Open Authentication drop-down list;\n:Select authentication method;\n\nif(Default method?) then(yes)\n  :Enterprise authentication;\n  :Recognize user name and password;\nelse(no)\nswitch (Other Methods)\ncase(LDAP)\n  :Recognize user name and password;\n  :Special setup;\ncase(Windows AD)\n  :Recognize user name and password;\n  :Special setup;\ncase(other third-party types)\n  :Special setup;\nendswitch\nendif\n\n:Click \"Log on\";\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

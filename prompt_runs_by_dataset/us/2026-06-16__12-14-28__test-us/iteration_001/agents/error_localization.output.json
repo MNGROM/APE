@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, providing no step-by-step process to guide the generator from text analysis to control-flow construction. This absence allows the generator to default to a procedural programming mindset, inventing implementation steps rather than directly mapping requirement statements to diagram nodes, and failing to systematically identify decision points, concurrency, and loops."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, leaving the generator without reusable modeling guidance or heuristics. This causes the generator to struggle with distinguishing sequential instructions from alternative conditional paths, misidentify concurrent versus sequential tasks, and confuse loop entry and exit conditions because it lacks mapping rules from requirement phrases to PlantUML branching, fork/join, and repeat/while syntax."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, resulting in no explicit constraints against hallucinating procedural decomposition. Without strict rules prohibiting the invention of implementation steps not present in the source text, the generator freely adds granular activities and distorts the control flow."
+    }
+  ]
+}
+```

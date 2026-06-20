@@ -1,0 +1,124 @@
+```json
+{
+  "summary": "The batch predominantly fails due to severe activity granularity and grounding issues, leading to both missing and extra activities. The model frequently over-decomposes single stated actions into inferred sub-steps, merges distinct sequential actions, and hallucinates activities not explicitly in the requirement. These activity-level errors cascade into widespread missing and wrong control-flow relations, compounded by a failure to correctly identify parallel (fork) and conditional (if/switch) structures.",
+  "error_patterns": [
+    {
+      "name": "over_decomposition_and_hallucination",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0038",
+        "us-0216",
+        "pure-0010"
+      ],
+      "problem": "The model invents activities not stated in the requirement (e.g., 'Select audio file', 'Compute output z') and over-decomposes single stated actions into assumed sub-steps, violating the instruction to extract activities strictly from explicit text.",
+      "suggested_prompt_direction": "Strengthen the grounding constraint to prohibit inferring, assuming, or decomposing actions beyond what is explicitly written in the requirement text.",
+      "target_sections": [
+        "input",
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "activity_merging_and_omission",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0023",
+        "bp-0007",
+        "pure-0030"
+      ],
+      "problem": "Distinct sequential actions are merged into single activities (e.g., combining navigation and selection steps), and explicit actions are omitted, leading to low recall and incorrect control flow.",
+      "suggested_prompt_direction": "Emphasize preserving each distinct action as a separate activity without merging sequential steps, ensuring complete coverage of all explicitly stated behaviors.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "missing_parallel_constructs",
+      "severity": "high",
+      "evidence_case_ids": [
+        "pure-0030",
+        "bp-0007",
+        "pure-0010"
+      ],
+      "problem": "When the requirement lists concurrent items, independent components, or multiple attributes, the model represents them sequentially instead of using PlantUML fork/fork again/end fork.",
+      "suggested_prompt_direction": "Provide clearer triggers for identifying parallelism, such as lists of independent components, concurrent actions, or multiple attributes displayed simultaneously.",
+      "target_sections": [
+        "knowledge",
+        "workflow"
+      ]
+    },
+    {
+      "name": "flattened_conditional_logic",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "lmc-0011",
+        "bp-0023"
+      ],
+      "problem": "Compound conditions are flattened into a single guard (e.g., 'A and B' becomes one condition instead of nested ifs), and optional steps lack proper if/else branching.",
+      "suggested_prompt_direction": "Instruct the model to decompose compound conditions into nested control flow where appropriate and to explicitly model optional steps as conditional branches.",
+      "target_sections": [
+        "knowledge",
+        "workflow"
+      ]
+    },
+    {
+      "name": "cascading_relation_errors",
+      "severity": "high",
+      "evidence_case_ids": [
+        "bp-0023",
+        "lmc-0038",
+        "rac-0004"
+      ],
+      "problem": "Missing, extra, and merged activities directly cause incorrect control-flow edges. The model struggles to maintain correct sequential and branching relations when the underlying activities are misidentified.",
+      "suggested_prompt_direction": "Ensure activities are correctly identified and grounded first, then enforce strict assembly of relations based only on the sequence and logic described in the requirement.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "parallel_list_to_fork",
+      "related_failure_patterns": [
+        "missing_parallel_constructs"
+      ],
+      "evidence_case_ids": [
+        "pure-0030",
+        "bp-0007",
+        "pure-0010"
+      ],
+      "gap": "The prompt does not clearly specify when to use fork constructs for lists of items in the requirement that represent concurrent or independent components.",
+      "suggested_knowledge": "Use PlantUML `fork`/`fork again`/`end fork` when the requirement lists multiple independent items that occur concurrently, represent independent system components, or are displayed simultaneously as separate attributes."
+    },
+    {
+      "id": "compound_condition_nesting",
+      "related_failure_patterns": [
+        "flattened_conditional_logic"
+      ],
+      "evidence_case_ids": [
+        "lmc-0011"
+      ],
+      "gap": "The prompt lacks guidance on how to model compound conditions (e.g., 'when A and B') in UML activity diagrams.",
+      "suggested_knowledge": "When a requirement specifies a compound condition (e.g., 'when A and B'), model it as nested `if`/`else` blocks to reflect the distinct decision points, rather than flattening it into a single combined guard."
+    },
+    {
+      "id": "partition_for_swimlanes",
+      "related_failure_patterns": [
+        "over_decomposition_and_hallucination"
+      ],
+      "evidence_case_ids": [
+        "pure-0010"
+      ],
+      "gap": "The prompt does not mention how to represent requirements that specify different actors, systems, or components responsible for actions.",
+      "suggested_knowledge": "Use PlantUML `partition` blocks to group activities performed by the same system or actor when the requirement explicitly names distinct responsible entities (e.g., 'Central trading system', 'Security account management')."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML diagrams or dataset-specific examples into the prompt.",
+    "Do not add rules that are overly specific to a single case (e.g., specific state numbers for the RAC dataset).",
+    "Do not attempt to fix infrastructure, timeout, or parsing errors via prompt changes."
+  ]
+}
+```

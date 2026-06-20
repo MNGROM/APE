@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction consistently fails to model concurrent behaviors, predominantly in the false_negative_parallel direction. It replaces fork/join constructs with sequential steps, switches, or if/else branches when the requirement describes simultaneous actions, parallel attributes, or independently executed options.",
+      "possible_causes": [
+        "The prompt lacks explicit instructions to identify concurrent, simultaneous, or independent actions and map them to fork/join pairs.",
+        "The generator defaults to sequential or mutually exclusive (switch/if) control flows for lists of items (e.g., attributes, report types, tabs) that should be modeled as parallel branches."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces activities that are not actual actions, such as literal text from UI labels, descriptive notes, or meta-statements (e.g., 'You create the query in the following step:', 'Tabs are displayed').",
+      "possible_causes": [
+        "The prompt does not instruct the generator to distinguish between procedural actions and descriptive/explanatory text.",
+        "Lack of guidance on abstracting UI elements or structural headings into appropriate PlantUML constructs (like notes) rather than activity nodes."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction omits required activities by collapsing multiple explicit steps into a single coarse-grained node or by dropping them entirely.",
+      "possible_causes": [
+        "The prompt does not emphasize preserving granular, step-by-step actions as distinct activity nodes.",
+        "The generator over-abstracts sequences of actions (e.g., menu navigation paths or multi-part data entry) into single summary activities."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction misrepresents control-flow logic, frequently by modeling mutually exclusive conditions as sequential steps, or by failing to nest conditions properly when the requirement specifies dependent logic.",
+      "possible_causes": [
+        "The prompt lacks clear guidance on mapping conditional logic (if/else, switch) based on mutually exclusive vs. sequential semantics in the text.",
+        "The generator struggles to parse complex nested conditions (e.g., state transitions within state machines) and flattens them into sequential or disconnected branches."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds unsupported control-flow relations, such as creating mutually exclusive branches for items that should be parallel, or inserting incorrect sequential dependencies between independent actions.",
+      "possible_causes": [
+        "Misinterpretation of lists or attributes as sequential or alternative steps rather than parallel flows, leading to false if/else or switch relations.",
+        "Over-structuring simple user stories or state-based requirements into complex, unsupported control flows (e.g., adding partitions and branches where a flat sequence is correct)."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction mishandles retry or loop logic, either by incorrectly placing loop conditions or by failing to correctly structure the repeated action within the loop boundary.",
+      "possible_causes": [
+        "The prompt does not provide explicit rules for identifying retry/loop patterns (e.g., 'Alternative Data Flow', 'select another') and mapping them to repeat/while constructs.",
+        "The generator confuses the exit condition of the loop with the loop body, leading to inverted or misplaced loop boundaries."
+      ]
+    }
+  ]
+}
+```

@@ -1,0 +1,70 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "Step 1: Extract a complete and granular, exhaustive list of discrete activities explicitly stated in the text, mapping them 1-to-1 to activity nodes without summarizing or adding implicit steps. Preserve distinct UI elements, data entry fields, and intermediate states as separate nodes rather than summarizing them.\nStep 2: Identify iterative or repetitive behaviors triggered by textual cues (e.g., 'repeat', 'every', 'until', 'while') and structural elements such as distinct actors or systems. Map these iterative cues to `repeat`/`while` constructs and distinct actors/systems to `partition` blocks.\nStep 3: Construct the control flow strictly among these extracted nodes, using the text's explicit sequencing and conditional logic, without adding or merging nodes. Identify both explicit linguistic cues (e.g., 'simultaneously', 'at the same time', 'concurrently') and contextual cues (e.g., multiple independent attributes being processed or simultaneous sub-tasks that logically occur at the same time) for simultaneous execution, and construct parallel flows using `fork`/`join` for those cases, while keeping dependent or alternative lists as sequential or `if`/`else` branches.",
+    "knowledge": "- Map iterative keywords (e.g., 'repeat', 'until', 'while') to PlantUML `repeat`/`while` loop constructs rather than linearized sequences. When distinct actors or systems are mentioned, their actions should be enclosed in `partition` blocks named after the actor/system to preserve behavioral boundaries.\n- Distinguish sequential actions from concurrent flows: use `fork`/`join` for explicit concurrency cues AND for contextual cues indicating independent simultaneous operations (e.g., multiple independent attributes processed at once). `fork`/`join` must NOT apply to grammatical lists of dependent steps or mutually exclusive alternatives, which must be modeled as sequential activities or `if`/`else` branches.\n- Map nested conditional logic: map mutually exclusive conditions (e.g., 'if X, else if Y') using nested `if`/`elseif`/`else` constructs rather than flattening them into sequential or unrelated branches. However, for mutually exclusive state-based transitions or case-like logic (e.g., 'depending on state X'), use `switch`/`endswitch` constructs instead of `if`/`elseif`/`else`.",
+    "rule": "- Do not invent implicit steps, validations, error-handling branches, or system responses unless they are explicitly stated in the requirement; specifically, prohibit inventing user actions, validations, or interactions for high-level requirements (like user stories) when the text only states a goal—the model must only model what is explicitly detailed without filling in assumed interactions.\n- Do not add control flow edges that are not directly supported by the requirement's stated sequence or logic; specifically, do not force sequential dependencies between unrelated steps or misroute branches.\n- Do not decompose a single stated action into multiple assumed sub-steps unless those sub-steps are explicitly detailed in the text.\n- Preserve granular UI elements, data entry fields, and intermediate system states as distinct activity nodes; do not compress them into broad abstract activities.\n- Preserve all alternative paths, error checks, and specific conditional outcomes explicitly stated in the text; do not drop these activities in favor of only representing the main success path.\n- When distinct actors or systems are mentioned in the requirement, their corresponding activities must be grouped into `partition` blocks; do not omit these structural boundaries."
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "extra_activity",
+        "problem": "The generator frequently hallucinates activities, UI details, or granular sub-steps that are not present in the requirements or ground truth.",
+        "possible_causes": [
+          "The prompt may encourage over-decomposition of high-level requirements into assumed sub-actions (e.g., breaking a single verification step into 9 parallel element checks).",
+          "The generator might be treating descriptive text, system responses, or UI labels as explicit action nodes rather than context."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "Key activities, states, and conditions explicitly stated in the requirements are often omitted or overly compressed in the prediction.",
+        "possible_causes": [
+          "The generator may be collapsing multiple explicit actions or conditional branches into a single broad node to simplify the diagram.",
+          "The prompt may lack instructions to preserve all specified behaviors and state transitions without abstraction."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The generator frequently introduces incorrect control-flow structures, such as forcing sequential steps into parallel forks or adding unsupported conditional branches.",
+        "possible_causes": [
+          "The prompt may not provide clear guidelines on when to use `fork`/`end fork` versus sequential flows, leading to misinterpretation of lists as concurrent tasks.",
+          "The generator might be defaulting to `if/elseif` chains for mutually exclusive cases where `switch`/`case` is more appropriate, or vice versa, distorting the intended logic."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "Critical control-flow relations, such as nested conditions, early terminations, or proper loop continuations, are often misrepresented or dropped.",
+        "possible_causes": [
+          "The generator struggles to map complex, nested requirement logic (e.g., state machines with multiple levels of conditions) into correct PlantUML nesting.",
+          "The prompt may not emphasize the importance of maintaining the exact topological flow and early exits (e.g., `stop` within branches) as specified in the requirements."
+        ]
+      },
+      {
+        "name": "wrong_parallel",
+        "problem": "The generator misinterprets sequential or alternative behaviors as concurrent parallel flows.",
+        "possible_causes": [
+          "Lists of items (e.g., rights to set, attributes to enter) are being translated into `fork` blocks instead of being recognized as sequential or alternative choices.",
+          "Lack of explicit prompt rules distinguishing between concurrent execution and sequential enumeration of options."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "Step 1 instructs the model to extract a 'granular, exhaustive list' and to preserve 'distinct UI elements, data entry fields, and intermediate states as separate nodes', which directly encourages over-decomposition and hallucination of sub-steps (causing extra_activity). Simultaneously, it lacks explicit instructions to prevent the model from collapsing multiple stated actions or dropping conditional branches (causing missing_activity). Step 3's instruction to identify 'contextual cues' for simultaneous execution is too vague, leading the model to misinterpret grammatical lists or alternative options as concurrent parallel flows (causing wrong_parallel and extra_or_wrong_relation)."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section's rule for contextual cues ('multiple independent attributes processed at once') provides a loophole that causes the model to map sequential enumerations or alternative lists into `fork`/`join` blocks (causing wrong_parallel). It also lacks concrete examples or rules for handling nested conditional logic, early terminations, and exact topological flow, which leads the model to flatten or misrepresent complex nested conditions and drop early exits (causing missing_or_wrong_relation)."
+      },
+      {
+        "section": "rule",
+        "section_problem": "While the rule section prohibits inventing implicit steps, it lacks a specific prohibition against decomposing single explicit actions into multiple granular sub-steps unless detailed, failing to prevent over-decomposition (causing extra_activity). It also lacks a strict rule enforcing the preservation of all explicitly stated conditional branches and state transitions without abstraction (causing missing_activity), and lacks rules enforcing exact topological flow and early exits (causing missing_or_wrong_relation)."
+      }
+    ]
+  }
+}

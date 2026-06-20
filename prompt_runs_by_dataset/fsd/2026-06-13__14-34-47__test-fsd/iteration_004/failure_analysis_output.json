@@ -1,0 +1,76 @@
+```json
+{
+  "summary": "The batch fails primarily on activity granularity and control-flow structure. The model over-combines sequential UI steps, over-splits by inventing actor-based decomposition, misses fork/parallel constructs for simultaneously available items, and over-uses switch/case where if/elseif chains are appropriate. Relation errors are largely downstream of these activity and control-flow mismatches.",
+  "error_patterns": [
+    {
+      "name": "activity_granularity_mismatch",
+      "severity": "high",
+      "evidence_case_ids": ["bp-0026", "bp-0019", "us-0169", "pure-0023"],
+      "problem": "The model combines distinct sequential steps into single activities (e.g., merging a click and its system response, or combining multiple enumerated items into one) and also over-decomposes by inserting actor-based splits (User does X / System does Y) not stated in the requirement.",
+      "suggested_prompt_direction": "Strengthen guidance that each distinct user action and each distinct system response should be a separate activity, and that enumerated items in a requirement should each become a separate activity. Explicitly prohibit inventing actor-role decomposition when the requirement does not distinguish actors.",
+      "target_sections": ["workflow", "rule"]
+    },
+    {
+      "name": "missing_parallel_fork",
+      "severity": "high",
+      "evidence_case_ids": ["bp-0019", "pure-0023"],
+      "problem": "When a requirement enumerates items that are simultaneously available or received together (e.g., 'movement authority and all other necessary information', or multiple fields entered together), the model lists them sequentially instead of using fork/end fork.",
+      "suggested_prompt_direction": "Add explicit guidance that when a requirement states items are received, available, or processed at the same time (e.g., 'X and Y are received', a list of fields entered together), each item should be a separate activity within fork/end fork.",
+      "target_sections": ["knowledge", "workflow"]
+    },
+    {
+      "name": "switch_overuse_vs_if_elseif",
+      "severity": "high",
+      "evidence_case_ids": ["rac-0017", "pure-0023", "pure-0058", "rac-0008"],
+      "problem": "The model uses switch/case for conditions that are not mutually exclusive alternatives on a single discriminant—such as independent exit conditions, alternative data flows, or sequential conditional checks—where if/elseif chains are correct.",
+      "suggested_prompt_direction": "Clarify that switch/case is only for a single variable taking discrete mutually exclusive values. Independent conditional checks, alternative flows, or multiple conditions checked in sequence should use if/elseif chains. Emphasize that conditions like 'if X happens' vs 'if Y happens' are not switch cases on a single discriminant.",
+      "target_sections": ["knowledge", "rule"]
+    },
+    {
+      "name": "extra_contextual_activities",
+      "severity": "medium",
+      "evidence_case_ids": ["rac-0008", "rac-0017", "us-0169", "bp-0026"],
+      "problem": "The model adds activities not explicitly stated in the requirement, such as 'System starts up' as a preamble, or decomposes a single stated action into 'User requests X' + 'System performs X' pairs.",
+      "suggested_prompt_direction": "Reinforce that only actions and state changes explicitly stated in the requirement should become activities. Do not add contextual preambles or invent actor-role decomposition. A single stated action remains a single activity.",
+      "target_sections": ["workflow", "rule"]
+    },
+    {
+      "name": "missing_decision_nodes",
+      "severity": "high",
+      "evidence_case_ids": ["pure-0023", "pure-0058", "lmc-0040"],
+      "problem": "Conditions that should be modeled as separate decision nodes (if/else) are either embedded in activity labels, merged into switch constructs, or omitted entirely. For example, independent exit conditions are collapsed into a single switch instead of sequential if/else checks.",
+      "suggested_prompt_direction": "Emphasize that each distinct condition in the requirement that governs different outcomes should be its own decision node. Multiple independent conditions should be modeled as sequential if/else checks, not merged into a single decision construct.",
+      "target_sections": ["workflow", "knowledge"]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "fork_for_simultaneous_items",
+      "related_failure_patterns": ["missing_parallel_fork", "activity_granularity_mismatch"],
+      "evidence_case_ids": ["bp-0019", "pure-0023"],
+      "gap": "The prompt does not explain when enumerated items that are simultaneously available or co-occurring should be modeled as parallel activities within fork/end fork rather than as a single combined activity or a sequential list.",
+      "suggested_knowledge": "When a requirement states that multiple items are received, available, or provided at the same time (e.g., 'X and Y are received', 'enter name, description, and keywords'), model each item as a separate activity within fork/end fork. Do not combine them into one activity or list them sequentially."
+    },
+    {
+      "id": "if_elseif_vs_switch_distinction",
+      "related_failure_patterns": ["switch_overuse_vs_if_elseif", "missing_decision_nodes"],
+      "evidence_case_ids": ["rac-0017", "pure-0023", "pure-0058"],
+      "gap": "The prompt tells when to use switch/case (mutually exclusive alternatives on a single discriminant) but does not clearly contrast this with when to use if/elseif chains for independent or semi-independent conditions, alternative flows, or sequential conditional checks.",
+      "suggested_knowledge": "Use if/elseif when the requirement describes multiple conditions that are checked independently or in sequence, such as alternative data flows, exit conditions, or error scenarios. Use switch/case only when a single variable or discriminant takes one of several discrete mutually exclusive values. If the conditions involve different variables or are not mutually exclusive choices on one thing, use if/elseif."
+    },
+    {
+      "id": "ui_step_decomposition",
+      "related_failure_patterns": ["activity_granularity_mismatch", "extra_contextual_activities"],
+      "evidence_case_ids": ["bp-0026", "bp-0019", "us-0169"],
+      "gap": "The prompt does not provide clear guidance on how to decompose UI interaction sequences—when to keep user actions and system responses as separate activities vs. combining them, and when not to invent actor-role splits.",
+      "suggested_knowledge": "In UI interaction sequences, model each distinct user action (click, select, enter) and each distinct system response (window appears, list is displayed, message appears) as separate sequential activities. Do not combine a user action with its system response into one activity. Conversely, do not decompose a single stated action into separate 'user requests' and 'system performs' activities unless the requirement explicitly describes both steps."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy gold PlantUML diagrams or dataset-specific examples into the prompt.",
+    "Do not add memorized answers for specific requirement texts.",
+    "Do not optimize for infrastructure or provider errors.",
+    "Do not replace general modeling guidance with case-specific instructions."
+  ]
+}
+```

@@ -1,0 +1,98 @@
+{
+  "requirements": [
+    "As a user, I want to identify persons in videos, and receive related information about them.",
+    "As a Data Consuming User, I want to be able to have stepped zoom on map visualisations, So that I can have better control over the navigation experience inside a map view.",
+    "As a Cornell faculty member, I want to associate a researcherID or ORCID with a submission, so that there is no ambiguity between my work and someone else with the same name.",
+    "9.\tThe autopilot shall change states from STANDBY to MANEUVER when a failure occurs (apfail).",
+    "As a user, I want to view all locations of recycling centers on a map, so that I can check which routes to take to drop off waste.",
+    "Migration Tool Execution: Use the command arc_warc_migrate <ARC_FILES> <CONFIG> [options] to migrate content from ARC files to WARC files based on the provided configuration. Ensure the configuration file specifies how fields are translated into WARC records, and handle missing fields by generating errors requiring operator intervention.",
+    "Heading Hold shall become the active mode when the pilot selects the heading switch in the cockpit and deactivate when the switch is deselected.",
+    "Reporting Tool Execution: Use the command warc_summary <WARC_FILES> [options] to generate reports on WARC file content, such as summaries, MIME-type breakdowns, or hostname reports. Export reports in formats like XML or CSV and apply filters to restrict reports by time ranges or domains."
+  ],
+  "predictions": [
+    "@startuml\nskinparam style strictuml\n\ntitle Identify Persons in Videos and Retrieve Related Information\n\nstart\n\n:User opens the application;\n:User selects or uploads a video;\n\nfork\n  :Video playback starts;\nfork again\n  :System processes video frames for person detection;\nend fork\n\n:System identifies a person in the video;\n:System extracts facial features;\n\nif (Person identified in database?) then (Yes)\n  :System retrieves related information;\n  :System displays related information to the user;\nelse (No)\n  :System marks person as unknown;\n  :System prompts user to add new profile;\n  \n  if (User adds new profile?) then (Yes)\n    :User inputs related information;\n    :System saves new profile and related information;\n  else (No)\n    :System skips profile creation;\n  endif\n  \nendif\n\n:User continues watching video;\n\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Stepped Zoom on Map Visualisations\n\nstart\n\n:Data Consuming User views map visualisation;\n\nrepeat\n  :Locate zoom controls on map UI;\n  \n  fork\n    :Click zoom in (+) button;\n    :Request next higher zoom step;\n  fork again\n    :Click zoom out (-) button;\n    :Request next lower zoom step;\n  end fork\n  \n  :Validate requested zoom step against min/max bounds;\n  \n  if (Is zoom step within bounds?) then (Yes)\n    :Apply new zoom step level;\n    :Render map at new zoom level;\n  else (No)\n    :Maintain current zoom level;\n    :Notify user of zoom limit reached;\n  endif\n\nrepeat while (Continue navigating map?) is (Yes)\n\n->No;\n:End map navigation session;\n\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\ntitle Associate ResearcherID or ORCID with Submission\n\nstart\n\n:Faculty member initiates submission;\n\n:Enter submission details;\n\n:Identify contributor/researcher;\n\nfork\n  :Enter ResearcherID;\nfork again\n  :Enter ORCID;\nend fork\n\n:Validate ResearcherID/ORCID format;\n\nif (Valid format?) then (yes)\n  :Associate ID with submission;\n  :Confirm unique identification of contributor;\n  :Complete submission;\nelse (no)\n  :Display validation error;\n  :Prompt to re-enter ID;\n  stop\nendif\n\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\nstart\n:STANDBY;\nif (apfail?) then (yes)\n  :MANEUVER;\nelse (no)\nendif\n@enduml",
+    "@startuml\nstart\n:User opens recycling center map view;\n:App loads map interface;\n:App retrieves recycling center locations from database;\n:App displays all recycling center locations on the map;\n:User views recycling center locations on the map;\n:User selects a specific recycling center;\n:App displays route options to the selected center;\n:User checks routes to drop off waste;\nstop\n@enduml",
+    "@startuml\nstart\n:Input command: arc_warc_migrate <ARC_FILES> <CONFIG> [options];\n:Read ARC files;\n:Load configuration file;\nif (Configuration specifies field translation?) then (Yes)\n  :Translate ARC fields into WARC records;\n  :Write WARC records to output file;\nelse (No - Missing fields)\n  :Generate error for missing field(s);\n  :Halt migration;\n  :Require operator intervention;\n  stop\nendif\n:Migration complete;\nstop\n@enduml",
+    "@startuml\nstart\n:Wait for pilot input;\nif (Pilot selects heading switch?) then (Yes)\n  :Activate Heading Hold mode;\n  :Heading Hold is active;\n  :Wait for pilot input;\n  if (Pilot deselects heading switch?) then (Yes)\n    :Deactivate Heading Hold mode;\n    stop\n  else (No)\n    :Heading Hold remains active;\n    note right: Loop back to wait\n    stop\n  endif\nelse (No)\n  :Heading Hold remains inactive;\n  stop\nendif\n@enduml",
+    "@startuml\nstart\n:Execute command `warc_summary <WARC_FILES> [options]`;\nfork\n  :Select report type:\n    - Summary\n    - MIME-type breakdown\n    - Hostname report;\nfork again\n  :Select export format:\n    - XML\n    - CSV;\nfork again\n  :Apply filters (optional):\n    - Time ranges\n    - Domains;\nend fork\n:Generate report based on selected configurations;\n:Export report;\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n:identify persons in videos, and receive related information;\nstop",
+    "start\n:Stepped zoom on map visualisations;\n:Get control over navigation experience;\nstop",
+    "start\n:associate a researcherID or ORCID with a submission;\n:avoid ambiguity between my work and others;\nstop",
+    "start\n\nif(A failure occurs (apfail)?) then(yes)\n:Autopilot change states from STANDBY to MANEUVER;\nelse(no)\nendif\n\nstop",
+    "start\n:View all locations of recycling centers on a map;\n:Check which routes to drop off wastes;\nstop",
+    "start\n\n:Use command arc_warc_migrate <ARC_FILES> <CONFIG> [options];\n:Refer to provided configuration;\n\nfork\n:Specify how fields are translated into WARC records;\nfork again\n:Generate errors requiring operator intervention;\n:Handle missing fields;\nend fork\n\n:Migrate content from ARC files to WARC files;\n\nstop",
+    "start\n\n:In the cockpit;\nswitch(Select heading switch)\ncase(Select)\n:Heading Hold becomes active mode;\ncase(Deselect)\n:Active mode deactivates;\nendswitch\n\nstop",
+    "start\n\n:Use command warc_summary <WARC_FILES> [options];\n\n:Refer to WARC file content;\nfork\n:Summaries;\nfork again\n:MIME-type breakdowns;\nfork again\n:Hostname reports;\nend fork\n\n:Generate reports;\nfork\n:Export reports in formats like XML/CSV;\nfork again\n:Apply filters;\n:Restrict reports by time ranges/domains;\nend fork\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ]
+    ]
+  }
+}

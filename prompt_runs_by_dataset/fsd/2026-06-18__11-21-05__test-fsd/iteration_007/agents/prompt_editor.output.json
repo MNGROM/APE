@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Combined intent: Prevent over-decomposition and hallucination of sub-steps while ensuring stated actions are not collapsed.; Prevent misinterpretation of grammatical lists or alternative options as concurrent parallel flows.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise Step 1 to remove the instruction to preserve 'distinct UI elements, data entry fields, and intermediate states as separate nodes'. Replace it with a strict boundary condition: extract only activities explicitly stated as actions in the text. Qualify that a single stated action must remain a single node, and multiple distinct actions must remain distinct nodes, prohibiting both decomposition into assumed sub-steps and compression of multiple actions into one.; Revise Step 3 to remove the vague instruction to identify 'contextual cues (e.g., multiple independent attributes being processed or simultaneous sub-tasks that logically occur at the same time)'. Restrict `fork`/`join` usage to only explicit linguistic cues of concurrency (e.g., 'simultaneously', 'at the same time', 'concurrently'). Add a qualification that grammatical lists of items, attributes, or options must NOT be interpreted as concurrent flows."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Combined intent: Close the loophole causing wrong_parallel by restricting contextual concurrency cues.; Prevent flattening or misrepresenting nested conditions and dropping early exits.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise the second knowledge bullet to remove 'AND for contextual cues indicating independent simultaneous operations (e.g., multiple independent attributes processed at once)'. Add a strict qualification that `fork`/`join` must only be used when the text explicitly states simultaneous execution, and explicitly state that enumerations, lists of attributes, or lists of options are sequential or alternative, not concurrent.; Revise the third knowledge bullet to add a rule for topological flow and early exits: when the requirement specifies an early termination or exit from a branch, model it using a `stop` node within that branch rather than forcing the flow to merge back. Emphasize that the exact nesting and topological structure of the requirement's conditional logic must be preserved without flattening."
+    },
+    {
+      "section": "rule",
+      "intent": "Combined intent: Explicitly prohibit the over-decomposition of single actions into multiple sub-steps.; Prohibit collapsing multiple explicit actions or dropping conditional branches.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Revise the third rule ('Do not decompose a single stated action...') by adding a strict qualification: specifically prohibit decomposing a single stated action into multiple granular sub-steps (e.g., breaking a single verification step into multiple parallel element checks) unless those sub-steps are explicitly detailed as distinct actions in the text.; Add a qualification to the rule against adding implicit steps: explicitly prohibit compressing multiple explicitly stated actions or conditional branches into a single broad abstract node. State that all specified behaviors, conditional outcomes, and state transitions must be preserved as distinct nodes without abstraction."
+    }
+  ]
+}

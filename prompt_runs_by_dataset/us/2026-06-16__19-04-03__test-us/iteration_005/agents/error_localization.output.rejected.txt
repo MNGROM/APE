@@ -1,0 +1,1 @@
+Payload must contain a non-empty section_diagnoses list

@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities: Identify each distinct action or state change explicitly stated in the requirement. When a requirement sentence contains multiple distinct sequential actions (e.g., navigation followed by an action, user action followed by system response, selection followed by display), model each distinct action as a separate activity. When the requirement enumerates multiple items (e.g., a list of fields, parameters, or displayed elements), model each item as a separate activity. A single verb phrase with a compound object should remain as one activity unless the requirement describes them as separate steps. Preserve key noun-verb phrases from the requirement as activity labels; do not paraphrase, summarize, or reword. Do not add steps not explicitly stated in the requirement.\n2. Determine control flow: Identify decision points, mutually exclusive alternative paths, optional paths, concurrent paths, and iterative patterns. When the requirement expresses a condition, constraint, or validation (e.g., 'if', 'when', 'shall equal', 'only if'), model it as a decision node (if/else) with the condition as the guard, not as a sequential activity. For each decision point, classify it as a yes/no condition, a mutually exclusive choice among several alternatives, or true concurrency. When the requirement uses 'repeat', 'loop', 'for each', or describes an action continuing 'until' a condition, identify it as an iterative pattern to be modeled with a repeat construct.\n3. Generate PlantUML: Write the diagram code based on the extracted activities and determined control-flow structure."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "\n\nWhen the requirement states a limitation or invariant (e.g., 'cannot', 'must not'), model it as a note attached to the relevant activity, not as a decision node; use decision nodes only when the requirement describes alternative paths. When the requirement describes repetition ('repeat', 'loop', 'for each', 'until'), use repeat/repeat while; place the loop condition in the 'repeat while' clause and activities after all iterations outside the loop."
+    }
+  ],
+  "rationale": "The workflow edit removes the actively harmful 'do not decompose' clause and replaces it with guidance to split compound sequential actions into separate activities, directly addressing the highest-severity granularity conflict and its cascading relation errors. It also adds iterative pattern identification to step 2. The knowledge edit adds two reusable modeling principles: constraint-as-note (preventing spurious decision nodes for limitations) and repeat loop PlantUML structure (addressing the loop modeling weakness). These are the three most impactful knowledge gaps identified, kept general and concise.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

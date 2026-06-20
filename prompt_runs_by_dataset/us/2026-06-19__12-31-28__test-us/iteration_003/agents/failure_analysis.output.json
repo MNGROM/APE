@@ -1,0 +1,55 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction predominantly suffers from false_positive_parallel, introducing fork/join blocks for items that are merely attributes, list elements, or sequential steps in the requirement. This occurs when decomposing multi-attribute objects (e.g., 'number, size, availability, and location', 'host name, port number, display name, and description') or sequential UI actions into concurrent branches. Conversely, false_negative_parallel occurs when the requirement explicitly describes concurrent, simultaneous, or independent actions (e.g., 'concurrently initiates', 'operating from a timer ISR') but the prediction serializes them or places them in disjointed conditional branches instead of a unified fork/join block.",
+      "possible_causes": [
+        "The prompt lacks guidance on distinguishing between a list of attributes (which should be grouped in a single activity node) and genuinely concurrent operations (which require fork/join).",
+        "The prompt does not instruct the model to map explicit concurrency keywords (e.g., 'concurrently', 'simultaneously', 'parallel') to fork/join structures, nor does it warn against creating parallel branches for comma-separated lists.",
+        "The model defaults to representing structural decomposition as parallelism rather than as a single descriptive activity or a sequential flow."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction frequently misrepresents control-flow by replacing mutually exclusive alternative paths (e.g., switch/case or if/elseif) with parallel fork/join blocks, or by deeply nesting conditionals that should be at the same level. It also misses sequential dependencies, placing actions in the wrong order or omitting intermediate steps.",
+      "possible_causes": [
+        "The prompt does not provide clear rules for translating requirement lists with multiple distinct conditions (e.g., numbered cases or switch scenarios) into switch/case or flat if/elseif structures, leading the model to incorrectly use fork/join.",
+        "Lack of guidance on maintaining the sequential integrity of steps, causing the model to arbitrarily reorder or skip required intermediate actions."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces activities that are not required, often by over-decomposing a single requirement into multiple granular steps or by hallucinating UI interactions and system responses not specified in the text.",
+      "possible_causes": [
+        "The prompt does not constrain the granularity of activity nodes, leading the model to split a single described action into several sub-actions.",
+        "The model infers implicit system interactions (like displaying a window or confirming an action) that are not explicitly stated in the requirement."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction omits explicitly required behaviors, often collapsing multiple distinct actions into a single broad activity node or dropping conditional checks and sub-steps.",
+      "possible_causes": [
+        "The prompt prioritizes a simplified control-flow shape over preserving all specified behaviors, causing the model to aggregate or discard required details.",
+        "The model fails to parse complex, nested requirement structures (e.g., deeply indented lists or multi-condition state transitions) and loses lower-level actions."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The prediction mishandles repeated, periodic, or iterative behaviors. It often represents retry or cyclic adjustment mechanisms as simple conditional branches rather than loops, or incorrectly places loop boundaries (e.g., wrapping a fork/join inside a repeat loop instead of just the iterative portion).",
+      "possible_causes": [
+        "The prompt lacks explicit instructions to map keywords like 'repeatable', 'retry', 'periodic', 'cyclically', or 'continuously' to PlantUML repeat/while loops.",
+        "The model struggles to identify the correct scope of iterative actions, especially when loops interact with parallel blocks or conditional logic."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds unsupported control-flow edges, often by creating dead-end stops within parallel branches or nested conditionals instead of allowing the flow to merge and continue, or by adding unnecessary transitions between unrelated blocks.",
+      "possible_causes": [
+        "The prompt does not enforce proper flow convergence (e.g., requiring all fork/join branches to merge before a stop, or ensuring switch/case paths rejoin).",
+        "The model treats localized conditional exits (like 'shutdown and end') as immediate diagram terminations, fragmenting the control flow with multiple stop nodes."
+      ]
+    }
+  ]
+}
+```

@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is completely absent, failing to separate activity extraction from control-flow construction. This omission causes the model to over-decompose attributes into parallel branches (false-positive parallelism) and to conflate mutually exclusive conditions with concurrent paths, directly leading to wrong_parallel and missing_or_wrong_relation errors."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is absent, leaving the model without reusable modeling guidance for distinguishing genuine concurrency from structural decomposition (e.g., attribute lists) and for mapping explicit concurrency keywords (e.g., 'concurrently') to fork/join blocks. It also lacks guidance on mapping iterative keywords to loop structures, causing wrong_loop errors."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is absent, resulting in no strict constraints on activity granularity (causing extra_activity and missing_activity errors), no rules enforcing proper flow convergence and preventing dead-end stops within branches (causing extra_or_wrong_relation errors), and no explicit boundaries forbidding fork/join blocks for comma-separated lists or mutually exclusive switch/case paths."
+    }
+  ]
+}
+```

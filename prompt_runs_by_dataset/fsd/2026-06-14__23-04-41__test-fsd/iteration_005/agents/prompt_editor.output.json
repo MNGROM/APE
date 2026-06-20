@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Prevent hallucinated control flow and over-decomposition by enforcing a strict extraction and mapping process.",
+      "change_instruction": "Add a step-by-step workflow requiring the model to: (1) Extract only the explicitly stated activities from the requirement at the original level of abstraction, without inventing sub-steps; (2) Identify distinct actors or system boundaries and map them to PlantUML partitions/swimlanes; (3) Construct control flow strictly using the extracted activities, adding decision branches only if explicitly stated in the requirement; (4) Translate state-change requirements into conditional activity flows (e.g., if/then) rather than state machine transitions."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide necessary PlantUML structural knowledge and semantic mapping rules for state requirements.",
+      "change_instruction": "Add knowledge about using PlantUML 'partition' keywords to represent actors and system boundaries. Also, add a semantic mapping rule instructing that requirements describing state transitions (e.g., 'changes from X to Y') must be converted into conditional activity flows (e.g., 'if condition then action') rather than modeled as state diagrams."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce strict constraints against inventing control flow and decomposing activities beyond the stated abstraction level.",
+      "change_instruction": "Add explicit rules: (1) Do not invent, infer, or add control-flow logic such as validation checks, error handling, or retry loops unless explicitly stated in the requirement; (2) Preserve the original requirement's level of abstraction—do not decompose high-level activities into assumed granular sub-steps; (3) Output only PlantUML activity diagram syntax, never state diagram syntax."
+    }
+  ]
+}
+```

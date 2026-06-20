@@ -1,0 +1,121 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Read the requirement and identify every explicitly stated activity, trigger, condition, task, thread, loop, retry, logging step, and terminal outcome.\n2. Preserve atomic actions as separate activity nodes when the requirement lists them separately; do not merge multiple distinct steps into a single coarse-grained node unless the input clearly groups them as one action.\n3. Do not add speculative implementation steps, UI interactions, or error handling that are not explicitly stated in the requirement.\n4. Identify conditional branches using keywords like 'if', 'optionally', 'either/or', or 'otherwise' and model them explicitly as decision nodes.\n5. Identify concurrent or parallel tasks using keywords like 'simultaneously', 'in parallel', or 'at the same time' and model them using fork constructs.\n6. Identify iterative, polling, or retry logic and model it using loop constructs.\n7. Maintain the sequential order of activities as presented in the requirement unless a branch, loop, or fork is explicitly indicated.\n8. Generate the PlantUML code reflecting the extracted structure.",
+    "knowledge": "Use 'if/then/else/endif' for conditional branches. Use 'switch/switch/endswitch' for multi-branch choices. Use 'fork/fork again/end fork' only for explicitly concurrent tasks or parallel activities. Use 'repeat/repeat while' for polling, retry, or until-style loops, and 'while/endwhile' for condition-checked loops. Ensure every opened control structure is correctly paired and closed to prevent compilation failures."
+  },
+  "failure_analysis": {
+    "summary": "The batch suffers from extremely low node and relation recall and precision, driven by two systemic issues: (1) the generator merges multiple explicitly listed atomic actions into single coarse-grained activity nodes, destroying the required granularity and their sequential relations; and (2) the generator speculatively adds implementation steps not stated in the requirement, replacing the actual required activities. Additionally, the generator fails to recognize and model explicit parallel/concurrent flows and partitions, defaulting to sequential flows instead.",
+    "error_patterns": [
+      {
+        "name": "merged_atomic_activities",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0023",
+          "bp-0007"
+        ],
+        "problem": "The generator merges multiple distinct, explicitly listed actions (e.g., 'Go to Data Warehousing Workbench' and 'choose Info Provider') into a single coarse-grained activity node. This destroys the required activity granularity and causes the sequential control-flow relations between these atomic steps to be completely omitted.",
+        "suggested_prompt_direction": "Strengthen the workflow instruction to strictly decompose compound sentences or listed steps into separate, atomic activity nodes. Emphasize that if a sentence contains multiple verbs or UI actions (e.g., 'go to X and choose Y'), each action must be a distinct node with a sequential relation.",
+        "target_sections": [
+          "workflow",
+          "input"
+        ]
+      },
+      {
+        "name": "speculative_extra_activities",
+        "severity": "high",
+        "evidence_case_ids": [
+          "us-0153",
+          "us-0216"
+        ],
+        "problem": "For high-level or user-story requirements, the generator speculates unstated implementation steps (e.g., 'Select audio file', 'Play audio file', 'Log whale count') instead of using the exact activities described in the text. This causes zero node recall for the actual required activities and introduces false relations.",
+        "suggested_prompt_direction": "Reinforce the constraint against adding speculative implementation details. Instruct the agent to extract and use the exact actions or goals stated in the requirement verbatim, even if they seem high-level, rather than inventing a plausible step-by-step implementation.",
+        "target_sections": [
+          "workflow",
+          "agent task"
+        ]
+      },
+      {
+        "name": "missing_parallel_fork_flows",
+        "severity": "high",
+        "evidence_case_ids": [
+          "pure-0030",
+          "bp-0023",
+          "bp-0007"
+        ],
+        "problem": "When the requirement lists multiple concurrent items, alternative options, or displayed information (e.g., 'correlator mode changes, user optional processing sequence, and parameter changes'), the generator models them as sequential activities instead of using fork/switch constructs for parallel or alternative flows.",
+        "suggested_prompt_direction": "Expand the workflow guidance to explicitly instruct the agent to identify lists of items acting as concurrent inputs, displayed details, or alternative options, and to model them using fork or switch constructs rather than flattening them into a sequential flow.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "missing_swimlane_partitions",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "pure-0010"
+        ],
+        "problem": "When the requirement explicitly assigns activities to different actors, systems, or components (e.g., 'central trading system' vs. 'security account management'), the generator omits the partition/swimlane construct and places all activities in a single default flow.",
+        "suggested_prompt_direction": "Add a workflow step to detect explicit system, actor, or component assignments in the requirement and instruct the agent to use PlantUML partition constructs to group activities under their respective responsible entities.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "merged_conditional_checks",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "lmc-0011"
+        ],
+        "problem": "When a requirement specifies multiple conditions for a state change (e.g., 'when the system is supported and sensor data is good'), the generator merges them into a single decision node instead of modeling them as separate, nested conditional checks as required by the ground truth.",
+        "suggested_prompt_direction": "Instruct the agent to decompose compound conditions joined by 'and'/'or' into separate, sequential or nested decision nodes, preserving the explicit evaluation of each individual condition.",
+        "target_sections": [
+          "workflow"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML snippets or dataset-specific vocabulary into the prompt.",
+      "Do not add speculative implementation steps to increase node count; this harms precision.",
+      "Do not hardcode rules that only apply to a single domain (e.g., specific UI navigation steps)."
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

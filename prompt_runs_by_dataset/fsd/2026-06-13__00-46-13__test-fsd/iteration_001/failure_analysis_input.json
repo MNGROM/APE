@@ -1,0 +1,744 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description. \n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n## knowledge\n\n## rule\n",
+  "evaluation": {
+    "summary": {
+      "count": 10.0,
+      "syntax_pass_rate": 1.0,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.16999999999999998,
+      "node_recall": 0.16609730848861284,
+      "node_f1": 0.15707070707070708,
+      "relation_precision": 0.10159090909090909,
+      "relation_recall": 0.10025691699604744,
+      "relation_f1": 0.10001278772378516,
+      "plantuml_compilation_pass_rate": 1.0,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {
+      "missing_activity": 10,
+      "extra_activity": 10,
+      "missing_or_wrong_relation": 10,
+      "extra_or_wrong_relation": 10
+    },
+    "representative_cases": [
+      {
+        "dataset": "bp",
+        "case_id": "bp-0010",
+        "input_requirement": "10.\tAnalyzing Data in the Web Application1. Since you are interested in the revenue, you want to sort the revenue data.2. Click on the arrows in the Revenue eld to sort the revenue data in increasing or decreasing order.3. You can also sort the revenue by clicking the alternative mouse button on Revenue and choosing Sort Sort Increasing or Sort Decreasing in the context menu. You see that the greatest revenue is obtained with the distribution channel Internet.4. To see the differences in the revenue data for the months July, August and September, select rst 08.2007 and then 07.2007 in the dropdown box Calendar Year/Month. You see that the revenue data for the distribution channel Internet increased greatly. The marketing campaign for the Internet shop was apparently successful.5. Filter the data back to September by selecting 09.2007 in the dropdown box.6. To add a comment to the Web application about the successful increase in revenue using the Internet, create an appropriate document. At the subtotal of the distribution channel Internet (567.308,05) choose Documents Create New Comment in the context menu.7. Enter a name and description for the document.8. Enter a text and choose Save",
+        "gold_plantuml": "start\n\n:Sort revenue data;\nif (Click arrows in Revenue eld?) then (yes)\n  :Sort increasing or decreasing;\nelse (no)\n  :Click alternative mouse button;\n  :Open context menu;\n  :Choose \"Sort Increasing\" or \"Sort Decreasing\";\nendif\n\n:Internet channel is the greatest;\n\nif(Analyze differences for months?) then(yes)\n:Open dropdown box Calendar Year/Month;\n:Select 08.2007;\n:Select 07.2007;\n:See increased data;\n:Internet shop marketing campaign was successful;\n\n:Open dropdown box Calendar Year/Month;\n:Select 09.2007;\n:Filter the data back to September;\n\nelse(no)\nendif\n\nif(Add a comment?) then(yes)\n:Go to subtotal of the distribution channel Internet;\n:Open context menu;\n:Choose \"Documents Create New Comment\";\n\n:Enter name and description;\n:Enter a text;\n:Choose \"Save\";\nelse(no)\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Click arrows in Revenue field to sort data;\n:Sort revenue in increasing or decreasing order;\nnote right: Alternative: Right-click Revenue\\nand choose Sort Increasing/Decreasing\n:Observe greatest revenue is from\\nInternet distribution channel;\n:Select 08.2007 in Calendar Year/Month dropdown;\n:Select 07.2007 in Calendar Year/Month dropdown;\n:Observe Internet revenue increased greatly\\n(Marketing campaign successful);\n:Filter data back to September\\n(Select 09.2007 in dropdown);\n:Right-click subtotal of Internet channel (567.308,05);\n:Choose Documents > Create New Comment\\nfrom context menu;\n:Enter name and description for the document;\n:Enter text and choose Save;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "sort revenue data",
+            "click arrows in revenue eld?",
+            "sort increasing or decreasing",
+            "click alternative mouse button",
+            "open context menu",
+            "open context menu",
+            "choose sort increasing or sort decreasing",
+            "internet channel is the greatest",
+            "analyze differences for months?",
+            "open dropdown box calendar year/month",
+            "open dropdown box calendar year/month",
+            "select 08.2007",
+            "select 07.2007",
+            "see increased data",
+            "internet shop marketing campaign was successful",
+            "select 09.2007",
+            "filter the data back to september",
+            "add a comment?",
+            "go to subtotal of the distribution channel internet",
+            "choose documents create new comment"
+          ],
+          "extra": [
+            "click arrows in revenue field to sort data",
+            "sort revenue in increasing or decreasing order"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "sort revenue data -> click arrows in revenue eld?",
+            "click arrows in revenue eld? -> sort increasing or decreasing",
+            "sort increasing or decreasing -> click alternative mouse button",
+            "click alternative mouse button -> open context menu",
+            "open context menu -> choose sort increasing or sort decreasing",
+            "choose sort increasing or sort decreasing -> internet channel is the greatest",
+            "internet channel is the greatest -> analyze differences for months?",
+            "analyze differences for months? -> open dropdown box calendar year/month",
+            "open dropdown box calendar year/month -> select 08.2007",
+            "select 08.2007 -> select 07.2007",
+            "select 07.2007 -> see increased data",
+            "see increased data -> internet shop marketing campaign was successful",
+            "internet shop marketing campaign was successful -> open dropdown box calendar year/month",
+            "open dropdown box calendar year/month -> select 09.2007",
+            "select 09.2007 -> filter the data back to september",
+            "filter the data back to september -> add a comment?",
+            "add a comment? -> go to subtotal of the distribution channel internet",
+            "go to subtotal of the distribution channel internet -> open context menu",
+            "open context menu -> choose documents create new comment",
+            "choose documents create new comment -> enter name and description"
+          ],
+          "extra": [
+            "click arrows in revenue field to sort data -> sort revenue in increasing or decreasing order"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0055",
+        "input_requirement": "7.\tThe Rotation Matrix, DCM321, multiplied by the transpose of the Rotation Matrix, DCM321T shall be the Identity (3x3) Matrix.v",
+        "gold_plantuml": "start\n\n:DCM321 * DCM321T;\nif( =Identity (3x3) Matrix.v?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Initialize Rotation Matrix DCM321;\n:Compute Transpose of Rotation Matrix DCM321T;\n:Multiply DCM321 by DCM321T (DCM321 * DCM321T);\nif (Result == Identity (3x3) Matrix?) then (Yes)\n  :Validation Passed;\nelse (No)\n  :Validation Failed;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "dcm321 * dcm321t",
+            "=identity (3x3",
+            "allowed",
+            "not allowed"
+          ],
+          "extra": [
+            "initialize rotation matrix dcm321",
+            "compute transpose of rotation matrix dcm321t",
+            "multiply dcm321 by dcm321t (dcm321 * dcm321t)",
+            "result == identity (3x3",
+            "validation passed",
+            "validation failed"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "dcm321 * dcm321t -> =identity (3x3",
+            "=identity (3x3 -> allowed",
+            "allowed -> not allowed"
+          ],
+          "extra": [
+            "initialize rotation matrix dcm321 -> compute transpose of rotation matrix dcm321t",
+            "compute transpose of rotation matrix dcm321t -> multiply dcm321 by dcm321t (dcm321 * dcm321t)",
+            "multiply dcm321 by dcm321t (dcm321 * dcm321t) -> result == identity (3x3",
+            "result == identity (3x3 -> validation passed",
+            "validation passed -> validation failed"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0098",
+        "input_requirement": "As an Owner, I want to edit my profile, so that that it is updated with new information.",
+        "gold_plantuml": "start\n:Edit profile;\n:Upload new information;\nstop",
+        "generated_plantuml": "@startuml\nskinparam style strictuml\n\ntitle Edit Profile\n\nstart\n:Owner selects \"Edit Profile\";\n:System displays current profile information;\n:Owner modifies profile fields;\n:Owner clicks \"Save\";\n:System validates input data;\n\nif (Valid input?) then (Yes)\n  :System updates profile information;\n  :System displays success message;\nelse (No)\n  :System displays validation error message;\n  :Owner corrects input data;\n  stop\n  note right: Returns to edit form\nendif\n\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "edit profile",
+            "upload new information"
+          ],
+          "extra": [
+            "owner selects edit profile",
+            "system displays current profile information",
+            "owner modifies profile fields",
+            "owner clicks save",
+            "system validates input data",
+            "valid input?",
+            "system updates profile information",
+            "system displays success message",
+            "system displays validation error message",
+            "owner corrects input data"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "edit profile -> upload new information"
+          ],
+          "extra": [
+            "owner selects edit profile -> system displays current profile information",
+            "system displays current profile information -> owner modifies profile fields",
+            "owner modifies profile fields -> owner clicks save",
+            "owner clicks save -> system validates input data",
+            "system validates input data -> valid input?",
+            "valid input? -> system updates profile information",
+            "system updates profile information -> system displays success message",
+            "system displays success message -> system displays validation error message",
+            "system displays validation error message -> owner corrects input data"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0048",
+        "input_requirement": "Requirement\tWhen heading hold mode becomes the active mode the heading hold reference shall be set by the pilot via a cockpit control.",
+        "gold_plantuml": "start\n\n:Requirement When heading hold mode becomes active;\n:Pilot uses cockpit control;\n:Set heading hold reference;\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Heading hold mode becomes the active mode;\n:Pilot sets heading hold reference via cockpit control;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "requirement when heading hold mode becomes active",
+            "pilot uses cockpit control",
+            "set heading hold reference"
+          ],
+          "extra": [
+            "heading hold mode becomes the active mode",
+            "pilot sets heading hold reference via cockpit control"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "requirement when heading hold mode becomes active -> pilot uses cockpit control",
+            "pilot uses cockpit control -> set heading hold reference"
+          ],
+          "extra": [
+            "heading hold mode becomes the active mode -> pilot sets heading hold reference via cockpit control"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0092",
+        "input_requirement": "As a Consumer, I want to know full details of how the data package schema has changed, so that that I can adjust my scripts to handle it.",
+        "gold_plantuml": "start\n:Get full Details of data package schema changes;\n:Adjust scripts to handle;\nstop",
+        "generated_plantuml": "@startuml\nskinparam style strictuml\n\ntitle Activity: View Data Package Schema Change Details\n\nstart\n\n:Consumer requests schema change details;\n\n:Retrieve data package schema history;\n\n:Identify schema changes (added, modified, removed fields);\n\n:Display full schema change details to Consumer;\n\n:Consumer reviews changes;\n\n:Consumer adjusts scripts to handle schema changes;\n\nstop\n\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "get full details of data package schema changes",
+            "adjust scripts to handle"
+          ],
+          "extra": [
+            "consumer requests schema change details",
+            "retrieve data package schema history",
+            "identify schema changes (added modified removed fields)",
+            "display full schema change details to consumer",
+            "consumer reviews changes",
+            "consumer adjusts scripts to handle schema changes"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "get full details of data package schema changes -> adjust scripts to handle"
+          ],
+          "extra": [
+            "consumer requests schema change details -> retrieve data package schema history",
+            "retrieve data package schema history -> identify schema changes (added modified removed fields)",
+            "identify schema changes (added modified removed fields) -> display full schema change details to consumer",
+            "display full schema change details to consumer -> consumer reviews changes",
+            "consumer reviews changes -> consumer adjusts scripts to handle schema changes"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0028",
+        "input_requirement": "28.\tExporting a Job to a BIAR File1. Log into the LifeCycle Manager tool, and create a new job. For more information on creating a new job, see Creating a New Job on page 372. In the Destination System drop-down list, select Output to a BIAR file option and click Create.3. Click Add objects to add infoobjects to the job. You can use the Manage Dependencies option to manage the dependencies of the selected job.4. Click Promote.The \"Promote - Job Name\" screen appears.5. Click Export.The BIAR file is created. You can save a BIAR file to a File System or an FTP location.6. In the \"Promote - Job Name\"screen, click Biar File Destination. Biar File Destination pane appears.7. Select either File System or FTP.8. To export the BIAR file to a file system, select File System and click Export. The BIAR file is exported to a file system.9. To export the BIAR file to an FTP location, select FTP. Enter appropriate details in the host, port, username, password, directory, and filename fields.10. Click Export.The BIAR file is exported to an FTP location.",
+        "gold_plantuml": "start\n\n:Log in;\n:Create a new job;\nif(More information?) then (yes)\n  :See \"Creating a New Job\";\n  note right: Page 372\nelse (no)\nendif\n\n:Open drop-lists;\n:Select \"Output to a BIAR file\";\n:Click \"Create\";\n\n:Click \"Add objects\";\n:Infoobjects are added;\n\nif(Other operations?) then(yes)\n\nswitch(Option)\n  case(\"Manage Dependencies\" option)\n    :Manage dependencies;\n  case(Click \"Promote\")\n    :\"Promote - Job Name\" screen appears;\nendswitch\n\nelse (no)\nendif\n\n:Click \"Export\";\n:BIAR file is created;\n\nif(Save?) then(yes)\n\n:Open \"Promote - Job Name\"screen;\n:Click \"Biar File Destination\";\n:\"Biar File Destination\" pane appears;\n\nswitch(Location)\n  case(File System)\n    :Select \"File System\";\n    :Click \"Export\";\n    :BIAR file is exported to a file system;\n  case(FTP)\n    :Select \"FTP\";\n    :Enter Host, Port, Username, \\nPassword, Directory, Filename;\n    :Click \"Export\";\n    :BIAR file is exported to an FTP location;\nendswitch\n\nelse (no)\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:Create a new job;\n:In the Destination System drop-down list,\\nselect \"Output to a BIAR file\" option;\n:Click Create;\n:Click Add objects to add infoobjects to the job;\n:Manage Dependencies (optional);\n:Click Promote;\n:\"Promote - Job Name\" screen appears;\n:Click Export;\n:BIAR file is created;\n:Click Biar File Destination;\n:Biar File Destination pane appears;\nif (Select Destination?) then (File System)\n  :Select File System;\n  :Click Export;\n  :BIAR file is exported to a file system;\nelse (FTP)\n  :Select FTP;\n  :Enter details (host, port, username,\\npassword, directory, filename);\n  :Click Export;\n  :BIAR file is exported to an FTP location;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.05,
+          "recall": 0.25,
+          "f1": 0.08333333333333334,
+          "missing": [
+            "log in",
+            "more information?",
+            "see creating a new job"
+          ],
+          "extra": [
+            "log into the lifecycle manager tool",
+            "in the destination system drop-down list select output to a biar file option",
+            "click create",
+            "click add objects to add infoobjects to the job",
+            "manage dependencies (optional)",
+            "click promote",
+            "promote - job name screen appears",
+            "click export",
+            "click export",
+            "click export",
+            "biar file is created",
+            "click biar file destination",
+            "biar file destination pane appears",
+            "select destination?",
+            "select file system",
+            "biar file is exported to a file system",
+            "select ftp",
+            "enter details (host port username password directory filename)",
+            "biar file is exported to an ftp location"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "log in -> create a new job",
+            "create a new job -> more information?",
+            "more information? -> see creating a new job"
+          ],
+          "extra": [
+            "log into the lifecycle manager tool -> create a new job",
+            "create a new job -> in the destination system drop-down list select output to a biar file option",
+            "in the destination system drop-down list select output to a biar file option -> click create",
+            "click create -> click add objects to add infoobjects to the job",
+            "click add objects to add infoobjects to the job -> manage dependencies (optional)",
+            "manage dependencies (optional) -> click promote",
+            "click promote -> promote - job name screen appears",
+            "promote - job name screen appears -> click export",
+            "click export -> biar file is created",
+            "biar file is created -> click biar file destination",
+            "click biar file destination -> biar file destination pane appears",
+            "biar file destination pane appears -> select destination?",
+            "select destination? -> select file system",
+            "select file system -> click export",
+            "click export -> biar file is exported to a file system",
+            "biar file is exported to a file system -> select ftp",
+            "select ftp -> enter details (host port username password directory filename)",
+            "enter details (host port username password directory filename) -> click export",
+            "click export -> biar file is exported to an ftp location"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0078",
+        "input_requirement": "1. The user selects a period of time within the displayed viewing period over which to expand or contract in time. 2. The tool expands or contracts the selected period. If expanding, the selected period becomes the new viewing period. If contracting, the new viewing period becomes twice as long as the selected period and encloses it.",
+        "gold_plantuml": "start\n\n:Selects period within displayed period; \n\nswitch(Operation)\ncase(Expand)\n:Selected period becomes new viewing period;\ncase(Contract)\n:New viewing period becomes twice;\n:Encloses selected period;\nendswitch\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:The user selects a period of time within the displayed viewing period over which to expand or contract in time;\nif (Expand or Contract?) then (Expand)\n  :The selected period becomes the new viewing period;\nelse (Contract)\n  :The new viewing period becomes twice as long as the selected period and encloses it;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.25,
+          "recall": 0.14285714285714285,
+          "f1": 0.18181818181818182,
+          "missing": [
+            "selects period within displayed period",
+            "operation",
+            "expand",
+            "contract",
+            "new viewing period becomes twice",
+            "encloses selected period"
+          ],
+          "extra": [
+            "the user selects a period of time within the displayed viewing period over which to expand or contract in time",
+            "expand or contract?",
+            "the new viewing period becomes twice as long as the selected period and encloses it"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "selects period within displayed period -> operation",
+            "operation -> expand",
+            "expand -> selected period becomes new viewing period",
+            "selected period becomes new viewing period -> contract",
+            "contract -> new viewing period becomes twice",
+            "new viewing period becomes twice -> encloses selected period"
+          ],
+          "extra": [
+            "the user selects a period of time within the displayed viewing period over which to expand or contract in time -> expand or contract?",
+            "expand or contract? -> the selected period becomes the new viewing period",
+            "the selected period becomes the new viewing period -> the new viewing period becomes twice as long as the selected period and encloses it"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0046",
+        "input_requirement": "4. Edit Item Details 4.1. User accesses the main inventory screen 4.2. System displays the Edit Details button 4.3. User clicks the Edit Details button 4.4. System displays the Edit Details screen which displays all existing item details and their detail x department and category assignments 4.5. Optionally, user filters view by detail status (active, inactive, all) 4.6. User edits details 4.6.1. User changes detail x department or category assignments 4.6.2. User changes detail data 4.6.3. User changes detail active x inactive status 4.6.4. User creates new detail 4.6.5. System validates the detail data 4.6.6. System updates the Item detail information 4.7. User clicks the Done button 4.8. User is taken back to the main inventory screen",
+        "gold_plantuml": "start\n\n:Access main inventory screen;\n:Display Edit Details button;\n\n:Click Edit Details button;\n\n:Display Edit Details screen;\nfork\n:All existing item details;\nfork again\n:Detail x department assignments;\nfork again\n:Detail x category assignments;\nend fork\n\nif(Filter view?) then(yes)\n\nswitch(Detail status)\ncase(Active)\n:Active status;\ncase(Inactive)\n:Inactive status;\ncase(All)\n:All status;\nendswitch\n\nelse(no)\nendif\n\n:Edit details;\n\nfork\n:Detail x department/category assignments;\nfork again\n:Detail data;\nfork again\n:Detail active x inactive status;\nfork again\n:Create new detail;\nend fork\n\n:System validates detail data;\n:System updates information;\n\n:Click Done button;\n:Back to main inventory screen;\n\nstop",
+        "generated_plantuml": "@startuml\nskinparam style strictuml\n\nstart\n\n:User accesses the main inventory screen;\n\n:System displays the Edit Details button;\n\n:User clicks the Edit Details button;\n\n:System displays the Edit Details screen\n(displays all existing item details,\ndetail x department,\nand category assignments);\n\nif (Filter view by detail status?) then (Yes)\n  :User filters view by detail status\n  (active, inactive, all);\nelse (No)\nendif\n\nrepeat\n  :User edits details;\n\n  fork\n    :User changes detail x department\n    or category assignments;\n  fork again\n    :User changes detail data;\n  fork again\n    :User changes detail active\n    x inactive status;\n  fork again\n    :User creates new detail;\n  end fork\n\n  :System validates the detail data;\n  :System updates the Item detail information;\n\nrepeat while (Continue editing?) is (Yes)\n-> No;\n\n:User clicks the Done button;\n\n:User is taken back to the main inventory screen;\n\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.16666666666666666,
+          "f1": 0.2222222222222222,
+          "missing": [
+            "display edit details button",
+            "display edit details screen",
+            "all existing item details",
+            "detail x department assignments",
+            "detail x category assignments",
+            "filter view?",
+            "detail status",
+            "active",
+            "active status",
+            "inactive",
+            "inactive status",
+            "all",
+            "all status",
+            "edit details",
+            "detail x department/category assignments",
+            "detail data",
+            "detail active x inactive status",
+            "system updates information",
+            "click done button",
+            "back to main inventory screen"
+          ],
+          "extra": [
+            "system displays the edit details button",
+            "filter view by detail status?",
+            "user edits details",
+            "user changes detail data",
+            "system updates the item detail information",
+            "continue editing?",
+            "user clicks the done button",
+            "user is taken back to the main inventory screen"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.09090909090909091,
+          "recall": 0.043478260869565216,
+          "f1": 0.0588235294117647,
+          "missing": [
+            "access main inventory screen -> display edit details button",
+            "display edit details button -> click edit details button",
+            "click edit details button -> display edit details screen",
+            "display edit details screen -> all existing item details",
+            "all existing item details -> detail x department assignments",
+            "detail x department assignments -> detail x category assignments",
+            "detail x category assignments -> filter view?",
+            "filter view? -> detail status",
+            "detail status -> active",
+            "active -> active status",
+            "active status -> inactive",
+            "inactive -> inactive status",
+            "inactive status -> all",
+            "all -> all status",
+            "all status -> edit details",
+            "edit details -> detail x department/category assignments",
+            "detail x department/category assignments -> detail data",
+            "detail data -> detail active x inactive status",
+            "detail active x inactive status -> create new detail",
+            "system validates detail data -> system updates information"
+          ],
+          "extra": [
+            "user accesses the main inventory screen -> system displays the edit details button",
+            "system displays the edit details button -> user clicks the edit details button",
+            "user clicks the edit details button -> filter view by detail status?",
+            "filter view by detail status? -> user edits details",
+            "user edits details -> user changes detail data",
+            "user changes detail data -> user creates new detail",
+            "system validates the detail data -> system updates the item detail information",
+            "system updates the item detail information -> continue editing?",
+            "continue editing? -> user clicks the done button",
+            "user clicks the done button -> user is taken back to the main inventory screen"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      }
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge|rule"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

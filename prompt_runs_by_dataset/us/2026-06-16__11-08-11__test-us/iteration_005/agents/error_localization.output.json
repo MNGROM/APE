@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, providing no step-by-step process for the model to analyze the requirement's structure. This leads to a failure to decompose compound actions into parallel forks, incorrect control flow for conditional alternatives, and incorrect loop structuring, because the model has no instruction to identify lists, mutually exclusive choices, or repetition cues before generating code."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, leaving the model without reusable modeling guidance. This causes over-literal transcription (lacking guidance to abstract text into imperative verb phrases), misrepresentation of optional actions (lacking mapping of modal verbs like 'can'/'optionally' to conditional branches), and incorrect control flow for alternatives (lacking guidance on when to use `switch`/`case` vs. `fork`/`if`)."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, resulting in no strict constraints against verbatim copying of requirement text and no explicit rules mandating the use of specific PlantUML constructs (like `fork`/`fork again` for concurrent attributes, `switch`/`case` for mutually exclusive paths, or `repeat`/`repeat while` for explicit repetition instructions)."
+    }
+  ]
+}
+```

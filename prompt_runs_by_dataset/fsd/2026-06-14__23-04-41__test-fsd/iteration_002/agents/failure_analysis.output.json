@@ -1,0 +1,30 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "hallucinated_decomposition",
+      "problem": "The generator fabricates detailed, multi-step workflows for simple user stories or constraints, adding activities and control flows that have no basis in the requirement text.",
+      "possible_causes": [
+        "The prompt may lack an instruction to strictly limit the diagram to explicitly stated behaviors, causing the LLM to infer or invent implicit steps.",
+        "The generator defaults to an elaborate 'happy path / error path' structure (e.g., adding success/failure branches) even when the requirement is a simple statement or constraint."
+      ]
+    },
+    {
+      "name": "overlooked_structural_constructs",
+      "problem": "The generator fails to use appropriate UML constructs like partitions (swimlanes) or forks to represent actor boundaries and parallel information, flattening them into a single sequential flow.",
+      "possible_causes": [
+        "The prompt does not instruct the generator to identify distinct system/participant roles and represent them using PlantUML partitions.",
+        "The prompt does not guide the model to use fork/fork again constructs for displaying parallel attributes or simultaneous options as shown in the ground truth."
+      ]
+    },
+    {
+      "name": "shallow_condensation_of_complex_logic",
+      "problem": "For requirements with rich conditional logic or multiple outcomes, the generator oversimplifies the diagram by collapsing distinct paths, omitting conditional checks, or merging separate activities into single nodes.",
+      "possible_causes": [
+        "The prompt may not emphasize the need to faithfully decompose complex conditional text into distinct branching (if/switch) structures.",
+        "The generator prioritizes a linear narrative flow over accurately mapping all specified alternative paths and their specific outcomes."
+      ]
+    }
+  ]
+}
+```

@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for the model to first extract activities at the correct granularity and then construct the control flow, which leads to hallucinated steps, flattened logic, and granularity mismatches."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking reusable modeling guidance on how to map linguistic cues for conditionals, alternatives, and parallelism to PlantUML syntax, causing the model to conflate mutually exclusive choices with concurrent actions and flatten control flows."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, missing critical constraints such as strictly adhering to the provided text without inferring unstated behaviors, preserving the exact step granularity of the requirement, and correctly distinguishing between sequential, alternative, and parallel control flows."
+    }
+  ]
+}
+```

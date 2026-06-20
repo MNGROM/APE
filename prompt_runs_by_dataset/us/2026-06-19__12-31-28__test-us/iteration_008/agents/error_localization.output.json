@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1's instruction to decompose compound steps for 'simultaneous system behaviors' is too vague and likely triggers false-positive parallelism for sequential enumerations or alternative options (e.g., entering name/description/keywords). Additionally, the workflow does not isolate activity extraction from control-flow construction, contributing to omitted activities as the model jumps to abstracting control logic rather than preserving every distinct behavioral step."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The concurrency modeling rule's exception for 'sequential UI steps, configuration options, or sequentially dependent steps' is insufficiently enforced and lacks clear positive heuristics for distinguishing true concurrency from alternative options or attribute lists, leading to false-positive fork/join blocks. Furthermore, it lacks guidance on the structural independence of parallel blocks from the main sequential flow, causing false-negative errors where concurrent tasks are incorrectly nested inside loops or placed sequentially. The loop modeling rule also fails to differentiate iterative loops from simple conditional checks or concurrent periodic tasks."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The granularity rule does not adequately prevent the model from compressing multiple explicit actions into single abstract nodes, leading to missing activities. The convergence rule's restriction against 'stop' nodes inside conditional branches is not extended to parallel fork branches, allowing the model to incorrectly terminate individual forks instead of merging them. The rules also lack constraints against fabricating control logic or activities not explicitly stated in the text, leading to extra activities and extra/wrong relations."
+    }
+  ]
+}
+```

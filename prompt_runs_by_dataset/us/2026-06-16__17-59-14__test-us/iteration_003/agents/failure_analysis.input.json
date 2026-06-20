@@ -1,0 +1,63 @@
+{
+  "requirements": [
+    "19.\tcreate a new job by using the LifeCycle Manager tool1. Log into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, click New Job. The \"New Job\"window appears .3. Enter the name, description, and keywords for the job in the appropriatefields.4. In the Save Job in field, browse and select the folder in which you wantto save the job.5. Select the source system and the destination system from the drop-downlists.If the name of the system is not displayed in the drop-down list, click theLogin to a new CMS option. A new window is launched. Enter the nameof the system along with the user name and password.6. Click Create.",
+    "Requirement\tWhen heading hold mode becomes the active mode the heading hold reference shall be set by the pilot via a cockpit control.",
+    "After the system starts up, if slow charging is active and the front MCU initialization is 0, it enters state 82. From there:\n- When the BMS counter reaches 1 with a battery pre-heating demand of 3, the system transitions to state 126. If slow charging becomes inactive afterward, it shuts down and exits.\n- If a pre-charge failure occurs, the system moves to state 126. Should slow charging be inactive at that point, it shuts down and exits.\n- If slow charging deactivates, the system switches to state 126 before shutting down and exiting.\n- For AC charging/discharging system faults, the system waits through a 10-second timeout before shifting to state 126. If slow charging is inactive following this transition, it shuts down and exits.",
+    "Upon vehicle initialization, the power management subsystem, governed by a real-time operating system (RTOS), monitors all power rails via the PMIC and BMS. If the battery rail voltage is below the defined threshold, a high-priority task checks the engine state. Should the engine be uninitialized and the vehicle confirmed to be in a parking state, an engine start sequence is initiated; this task monitors the engine speed via the FADEC, employing a closed-loop control to adjust the throttle valve opening until the speed stabilizes within the required range. Concurrently, a separate task periodically samples the generator output rail voltage and battery charging status, with these ADC readings triggered by timer interrupts, debounced, and placed into a protected ring buffer. This monitoring loop, which includes CRC checks on critical CAN bus telemetry, continues until the battery rail voltage is verified to be within the safe operating range. Following this, generator output power adjustment and battery status feedback execute as concurrent RTOS tasks managed by priority queues, with the power adjustment employing a PID controller that iterates until generator output stabilizes. Throughout this sequence, a dedicated watchdog task supervises the startup state machine, and all fault recovery handlers implement exponential backoff with staged verification cycles before any retry attempt."
+  ],
+  "predictions": [
+    "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:In the \"Promotion Jobs\" home page, click New Job;\n:The \"New Job\" window appears;\n:Enter the name, description, and keywords for the job in the appropriate fields;\n:In the Save Job in field, browse and select the folder in which you want to save the job;\n:Select the source system and the destination system from the drop-down lists;\nif (Is the name of the system displayed in the drop-down list?) then (No)\n  :Click the Login to a new CMS option;\n  :A new window is launched;\n  :Enter the name of the system along with the user name and password;\nelse (Yes)\nendif\n:Click Create;\n@enduml",
+    "@startuml\nstart\nif (Heading hold mode becomes the active mode?) then (yes)\n  :Set heading hold reference by the pilot via a cockpit control;\nelse (no)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging is active and front MCU initialization is 0?) then (yes)\n  :Enter state 82;\n  if (Condition?) then (BMS counter reaches 1 with battery pre-heating demand of 3)\n    :Transition to state 126;\n    if (Slow charging becomes inactive?) then (yes)\n      :Shut down and exit;\n      stop\n    else (no)\n    endif\n  elseif (Pre-charge failure occurs?) then (yes)\n    :Move to state 126;\n    if (Slow charging is inactive?) then (yes)\n      :Shut down and exit;\n      stop\n    else (no)\n    endif\n  elseif (Slow charging deactivates?) then (yes)\n    :Switch to state 126;\n    :Shut down and exit;\n    stop\n  else (AC charging/discharging system fault)\n    :Wait through a 10-second timeout;\n    :Shift to state 126;\n    if (Slow charging is inactive following this transition?) then (yes)\n      :Shut down and exit;\n      stop\n    else (no)\n    endif\n  endif\nelse (no)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Initialize vehicle;\n:Monitor all power rails via PMIC and BMS;\nif (Battery rail voltage below threshold?) then (yes)\n  :Check engine state via high-priority task;\n  if (Engine uninitialized and vehicle in parking state?) then (yes)\n    :Initiate engine start sequence;\n    repeat\n      :Monitor engine speed via FADEC;\n      :Adjust throttle valve opening via closed-loop control;\n    repeat while (Engine speed stabilizes within required range?) is (no)\n    ->yes;\n  else (no)\n  endif\nelse (no)\nendif\nrepeat\n  fork\n    :Periodically sample generator output rail voltage and battery charging status;\n    :Trigger ADC readings via timer interrupts;\n    :Debounce ADC readings;\n    :Place ADC readings into protected ring buffer;\n  fork again\n    :Perform CRC checks on critical CAN bus telemetry;\n  end fork\nrepeat while (Battery rail voltage within safe operating range?) is (no)\n->yes;\nfork\n  :Adjust generator output power via PID controller;\n  repeat\n    :Iterate PID controller;\n  repeat while (Generator output stabilizes?) is (no)\n  ->yes;\nfork again\n  :Execute battery status feedback;\nend fork\nfork\n  :Supervise startup state machine via dedicated watchdog task;\nfork again\n  :Implement exponential backoff in fault recovery handlers;\n  :Perform staged verification cycles;\n  :Retry attempt;\nend fork\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n\n:Log in LifeCycle Manager tool;\n:Go to \"Promotion Jobs\" home page;\n:Click \"New Job\";\n:\"New Job\"window appears;\n\n:Enter information;\nfork \n:Enter name;\nfork again\n:Enter description;\nfork again\n:Enter keywords;\nend fork\n\n:Go to \"Save Job\" field;\n:Browse and select folder;\n\n:Open drop-downlists;\nif (System name is diaplayed?) then (no)\n:Click \"theLogin\";\n:A new CMS option;\n:A new window is launched;\n\n:Enter information;\nfork \n:Enter system name;\nfork again\n:Enter user name;\nfork again\n:Enter password;\nend fork\n\nelse(yes)\n:Select source system;\n:Select destination system;\nendif\n\n:Click \"Create\";\n\nstop",
+    "start\n\n:Requirement When heading hold mode becomes active;\n:Pilot uses cockpit control;\n:Set heading hold reference;\n\nstop",
+    "start\nif (slow charging is active and front MCU initialization=0) then\n  :enter state 82;\n  if (BMS counter=1 and battery pre-heating demand=3) then\n    :switch to state 126;\n    if (slow charging is inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (pre-charge failure occurs) then\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (slow charging is inactive) then\n    :switch to state 126;\n    :shutdown;\n    stop\n  else if (AC charging/discharging system fault) then\n    while(after 10s)\n    endwhile\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend",
+    "@startuml\n\nstart\n\n:Vehicle initialization;\n:Power management subsystem governed by RTOS;\n:Monitor power rails via PMIC and BMS;\n\nif (Battery rail voltage < defined threshold?) then (yes)\n  :High-priority task checks engine state;\n  if (Engine uninitialized and vehicle in parking state?) then (yes)\n    :Initiate engine start sequence;\n    fork\n    repeat\n    :Monitor engine speed via FADEC;\n    :Employ closed-loop control;\n    :Adjust throttle valve opening;\n    repeat while(Speed stabilizes within required range) is(no)\n\n    fork again\n    repeat\n    :Periodically sample generator output rail voltage and battery charging status;\n    :Trigger ADC readings by timer interrupts;\n    :Debounce;\n    :Place into protected ring buffer;\n    :CRC checks on critical CAN bus telemetry;\n    repeat while(Battery rail voltage within safe operating range) is(no)\n\n:Execute as concurrent RTOS tasks managed by priority queues;\nfork\n  repeat\n  :Generator output power adjustment;\n  :Employ PID controller;\n  repeat while(Generator output stabilizes) is(no)\nfork again\n  :Battery status feedback;\nend fork\nend fork\nelse(no)\nend if\n\nelse(no)\nend if\n\n:Dedicated watchdog task supervises startup state machine;\n:Fault recovery handlers implement exponential backoff with staged verification cycles;\n:Retry attempt;\n\nstop\n\n@enduml"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_loop"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel",
+        "wrong_loop"
+      ]
+    ]
+  }
+}

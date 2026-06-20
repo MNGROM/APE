@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1's extraction logic defaults to grouping comma-separated lists or 'and'-joined clauses into a single activity node unless explicit concurrency cues are present, which directly causes the false-negative parallelism and missing activity errors by collapsing concurrent sub-steps or simultaneous data entries into single nodes. Additionally, the workflow lacks explicit instructions for extracting implied conditional state transitions and nested logic, leading to missing activities and flattened relations."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The concurrency modeling rule's strict requirement for explicit concurrency cues causes false-negative parallelism by failing to recognize simultaneous data entry or independent attributes as valid triggers for fork/join blocks. Conversely, its lack of strict negative boundaries for alternative/sequential options leads to false-positive parallelism. The section also lacks guidance on recognizing implicit conditional logic and state transitions, causing missing activities and wrong relations, and lacks cues for identifying loop boundaries and wait-conditions versus repeat-conditions, causing wrong loops."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The granularity rule's instruction to not infer implicit system interactions fails to prevent the hallucination of error-handling and validation branches (extra_activity). The convergence rule lacks specific guidance on preserving nested conditional logic and correctly routing else/default paths, which leads to flattened relations (missing_or_wrong_relation) and misrouted branches (extra_or_wrong_relation)."
+    }
+  ]
+}
+```

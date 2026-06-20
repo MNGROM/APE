@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Prevent activity compression and enforce parallel flow identification.",
+      "change_instruction": "In Step 1, replace the word 'minimal' with 'complete and granular' and add an instruction to preserve distinct UI elements, data entry fields, and intermediate states as separate nodes rather than summarizing them. In Step 2, add an explicit instruction to identify linguistic cues for simultaneous execution (e.g., 'simultaneously', 'at the same time', 'concurrently') and construct parallel flows using `fork`/`join` for those specific cases, while keeping sequential or alternative lists as non-parallel."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide positive guidance for parallel flows and correct state-based branching constructs.",
+      "change_instruction": "Add a rule providing positive guidance on when to use `fork`/`join`: explicitly state that `fork`/`join` must be used when the requirement uses explicit concurrency cues (e.g., 'simultaneously', 'concurrently', 'at the same time'). Also, revise the nested conditional logic rule to add a qualification: for mutually exclusive state-based transitions or case-like logic (e.g., 'depending on state X'), use `switch`/`endswitch` constructs instead of `if`/`elseif`/`else`."
+    },
+    {
+      "section": "rule",
+      "intent": "Prohibit action decomposition and enforce preservation of granular steps.",
+      "change_instruction": "Add a constraint explicitly prohibiting the decomposition of a single stated action into multiple assumed sub-steps unless those sub-steps are explicitly detailed in the text. Also, add a constraint requiring the model to preserve granular UI elements, data entry fields, and intermediate system states as distinct activity nodes, forbidding their compression into broad abstract activities."
+    }
+  ]
+}

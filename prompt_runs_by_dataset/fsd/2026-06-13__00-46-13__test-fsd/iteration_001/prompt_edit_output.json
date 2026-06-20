@@ -1,0 +1,27 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract discrete activities: Read the requirement and break compound sentences into concise, discrete activities. Ensure each activity is directly grounded in an explicit statement from the text.\n2. Reason about control flow: Identify textual cues for branching, mutual exclusivity, or concurrency. Determine which activities are sequential, conditional, or parallel based strictly on the text.\n3. Map to PlantUML constructs: Translate the reasoned control flow into the appropriate PlantUML structures (if/else, switch, fork/join).\n4. Generate PlantUML code: Output the final diagram code reflecting the extracted activities and mapped control flow."
+    },
+    {
+      "section": "knowledge",
+      "operation": "replace",
+      "content": "Map natural language control-flow cues to PlantUML constructs:\n- 'if', 'when', 'unless' -> if/else/endif\n- 'either/or', 'case', 'depending on' -> switch/endswitch\n- 'simultaneously', 'in parallel', 'at the same time' -> fork/endfork\n- Sequential phrasing ('then', 'after', 'following') -> standard arrow transition between activities"
+    }
+    {
+      "section": "rule",
+      "operation": "replace",
+      "content": "- Strictly ground every activity and relation in explicit statements from the requirement. Do not infer unstated UI interactions, system internals, or implementation details.\n- Do not add transitions, loops, or control-flow edges that are not explicitly supported by the text.\n- Represent structural nodes (such as switch/case labels) as distinct activities rather than merging them."
+    }
+  ],
+  "rationale": "The edits address the empty workflow, knowledge, and rule sections to fix activity granularity and control-flow errors. The workflow enforces extracting and reasoning about activities before coding. The knowledge section provides general mappings from textual cues to PlantUML constructs to prevent flattened or incorrect control flow. The rule section constrains the model from hallucinating extra activities or unsupported relations.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

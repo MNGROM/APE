@@ -1,0 +1,838 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description.\n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n1. Extract activities strictly from the requirement text. Create one activity node for each distinct action or state explicitly mentioned; do not invent UI interactions, system validations, or other unstated implementation details.\n2. Decompose compound actions or sentences describing multiple sequential actions into separate, concise activity nodes.\n3. Identify control-flow keywords in the requirement (e.g., if, unless, alternatively, simultaneously, in parallel) to determine branching and concurrency before writing PlantUML.\n4. Map the identified control-flow semantics to the correct PlantUML constructs and generate the diagram.\n\n## knowledge\n\nUse 'if/else' for binary conditional paths and 'switch/case' for multiple alternative outcomes based on a single choice or variable. Use 'fork/end fork' only for concurrent parallel actions that happen at the same time. Alternative branches in if/else or switch/case must converge at a merge point and must not be sequentially linked.\n\n## rule\n",
+  "evaluation": {
+    "summary": {
+      "count": 10.0,
+      "syntax_pass_rate": 1.0,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.3386427956195398,
+      "node_recall": 0.2687684569952012,
+      "node_f1": 0.293504786589012,
+      "relation_precision": 0.14465867465867466,
+      "relation_recall": 0.12447767918356153,
+      "relation_f1": 0.13136197136197136,
+      "plantuml_compilation_pass_rate": 1.0,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {
+      "missing_activity": 10,
+      "extra_activity": 10,
+      "missing_or_wrong_relation": 10,
+      "extra_or_wrong_relation": 10
+    },
+    "representative_cases": [
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0050",
+        "input_requirement": "2.\tThe Body Vector Output, Vb, of this Function Shall Equal a 3x1 Vector Product of the 3x3 Rotation Matrix Output, DCM321, times the Input Inertial Vector, Vi.",
+        "gold_plantuml": "start\n\n:Body Vector Output Vb;\nif( =DCM321 * Vi?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Input Inertial Vector, Vi;\n:Rotation Matrix Output, DCM321;\n:Compute 3x1 Vector Product of DCM321 times Vi;\n:Set Body Vector Output, Vb equal to the product;\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "body vector output vb",
+            "=dcm321 * vi?",
+            "allowed",
+            "not allowed"
+          ],
+          "extra": [
+            "input inertial vector vi",
+            "rotation matrix output dcm321",
+            "compute 3x1 vector product of dcm321 times vi",
+            "set body vector output vb equal to the product"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "body vector output vb -> =dcm321 * vi?",
+            "=dcm321 * vi? -> allowed",
+            "allowed -> not allowed"
+          ],
+          "extra": [
+            "input inertial vector vi -> rotation matrix output dcm321",
+            "rotation matrix output dcm321 -> compute 3x1 vector product of dcm321 times vi",
+            "compute 3x1 vector product of dcm321 times vi -> set body vector output vb equal to the product"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0056",
+        "input_requirement": "As a site administrator, I want to edit any site member profile, so that I can correct problems for members.",
+        "gold_plantuml": "start\n:Edit site member profile;\n:Correct problems;\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Select site member;\n:Open member profile;\n:Edit profile details;\n:Save profile;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "edit site member profile",
+            "correct problems"
+          ],
+          "extra": [
+            "select site member",
+            "open member profile",
+            "edit profile details",
+            "save profile"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "edit site member profile -> correct problems"
+          ],
+          "extra": [
+            "select site member -> open member profile",
+            "open member profile -> edit profile details",
+            "edit profile details -> save profile"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "us",
+        "case_id": "us-0129",
+        "input_requirement": "As a researcher, I want to have the details of the workflow plan as well as the execution history and results recorded in Neurohub while executing a workflow",
+        "gold_plantuml": "start\n:execute workflow;\nsplit\n:Get the details of the workflow plan;\nsplit again\n:Get the execution history;\nsplit again\n:Get results recorded in Neurohub;\nend split\nstop",
+        "generated_plantuml": "@startuml\nstart\n:View workflow plan details;\nfork\n  :Record execution history;\nfork again\n  :Record execution results;\nend fork\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "execute workflow",
+            "get the details of the workflow plan",
+            "get the execution history",
+            "get results recorded in neurohub"
+          ],
+          "extra": [
+            "view workflow plan details",
+            "record execution history",
+            "record execution results"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "execute workflow -> get the details of the workflow plan",
+            "get the details of the workflow plan -> get the execution history",
+            "get the execution history -> get results recorded in neurohub"
+          ],
+          "extra": [
+            "view workflow plan details -> record execution history",
+            "record execution history -> record execution results"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0015",
+        "input_requirement": "15.\tuse the Manage Systems optionTo add a host system, complete the following steps:1. In the \"Administration Options\" window, click Manage Systems.The list of host names, port numbers, display names, and descriptions isdisplayed.2. Click Add.The \"Add System\" dialog box appears.3. Add the host name, port number, display name, and the description inthe appropriate fields.4. Click Add to add the system.The host system is added to the list.",
+        "gold_plantuml": "start\n\n:Go to \"Administration Options\" window;\n:Click \"Manage Syetems\";\n\n:List is displayed;\nfork\n:Host names;\nfork again\n:Port numbers;\nfork again\n:Display names;\nfork again\n:Descriptions;\nend fork\n\n:Click \"Add\";\n:\"Add System\" dialog box appears;\n\n:Add information;\nfork\n:Host name;\nfork again\n:Port number;\nfork again\n:Display name;\nfork again\n:Description;\nend fork\n\n:Click \"Add\";\n:Host system is added;\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Click Manage Systems;\n:The list of host names, port numbers, display names, and descriptions is displayed;\n:Click Add;\n:The \"Add System\" dialog box appears;\n:Add the host name, port number, display name, and the description in the appropriate fields;\n:Click Add to add the system;\n:The host system is added to the list;\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.42857142857142855,
+          "recall": 0.1875,
+          "f1": 0.26086956521739124,
+          "missing": [
+            "go to administration options window",
+            "list is displayed",
+            "host names",
+            "port numbers",
+            "display names",
+            "descriptions",
+            "click add",
+            "add information",
+            "host name",
+            "port number",
+            "display name",
+            "description",
+            "host system is added"
+          ],
+          "extra": [
+            "the list of host names port numbers display names and descriptions is displayed",
+            "add the host name port number display name and the description in the appropriate fields",
+            "click add to add the system",
+            "the host system is added to the list"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.16666666666666666,
+          "recall": 0.06666666666666667,
+          "f1": 0.09523809523809522,
+          "missing": [
+            "go to administration options window -> click manage syetems",
+            "click manage syetems -> list is displayed",
+            "list is displayed -> host names",
+            "host names -> port numbers",
+            "port numbers -> display names",
+            "display names -> descriptions",
+            "descriptions -> click add",
+            "add system dialog box appears -> add information",
+            "add information -> host name",
+            "host name -> port number",
+            "port number -> display name",
+            "display name -> description",
+            "description -> click add",
+            "click add -> host system is added"
+          ],
+          "extra": [
+            "click manage systems -> the list of host names port numbers display names and descriptions is displayed",
+            "the list of host names port numbers display names and descriptions is displayed -> click add",
+            "the add system dialog box appears -> add the host name port number display name and the description in the appropriate fields",
+            "add the host name port number display name and the description in the appropriate fields -> click add to add the system",
+            "click add to add the system -> the host system is added to the list"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0022",
+        "input_requirement": "22.\tmanage dependencies of an infoobject1. Log into the LifeCycle Manager tool.2. Create a new job. For information on creating a new job, see Creating aNew Job on page 37.3. Add the required infoobjects to the new job.4. In the \"Promotion Jobs\" home page, click Manage Dependencies. The \"Manage Dependencies\" window appears. This window displays the list of infoobjects and their dependents, as shown in the following figure:5. From the Select Dependents drop-down list, select any of the options available to add the dependents to the job. The dependents are displayed on the right side. The dependents are not selected by default; you must explicitly select the dependents you want to promote. For example, if you select All Universes from the Select Dependents drop-down list, then all the universes included in the list of dependentsare automatically selected.6. Click to view the supported filtering options of infoobjects in the drop-down list. Select an option, and click OK. The filtered infoobjects are displayed.7. Click Apply Changes to update the list of dependents.8. Click Apply Changes and Close to save the changes",
+        "gold_plantuml": "start\n\n:Log in LifeCycle Manager tool;\n:Create a new job;\nif (More information?) then(yes)\n:See Creating a New Job on page 37;\nelse(no)\nendif\n\n:Add required infoobjects to new job;\n:Go to \"Promotion Jobs\" home page;\n:Click \"Manage Dependencies\";\n:\"Manage Dependencies\" window appears;\n:List of infoobjects and their dependents is displayed;\n\n:Open Select Dependents drop-down list;\n:Dependents are displayed on the right;\n\nswitch(Selection)\ncase(no)\n :Dependents are not selected;\ncase(All Universes)\n :All universes are automatically selected;\ncase(Other available options)\n :Dependents are added to job;\nendswitch\n\n:Click;\n:View supported filtering options of infoobjects;\n:Select an option;\n:Click \"OK\";\n:Filtered infoobjects are displayed;\n\n:Click \"Apply Changes\";\n:List of dependents is updated;\n\n:Click \"Apply Changes\";\n:Close to save the changes;\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:Create a new job;\n:Add the required infoobjects to the new job;\n:In the \"Promotion Jobs\" home page, click Manage Dependencies;\n:The \"Manage Dependencies\" window appears;\n:From the Select Dependents drop-down list, select an option to add dependents to the job;\nif (Are dependents selected by default?) then (No)\n  :Explicitly select the dependents you want to promote;\nelse (Yes - e.g. All Universes)\n  :Dependents are automatically selected;\nendif\n:Click to view the supported filtering options of infoobjects;\n:Select an option, and click OK;\n:The filtered infoobjects are displayed;\n:Click Apply Changes to update the list of dependents;\n:Click Apply Changes and Close to save the changes;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.42857142857142855,
+          "recall": 0.2222222222222222,
+          "f1": 0.29268292682926833,
+          "missing": [
+            "more information?",
+            "see creating a new job on page 37",
+            "go to promotion jobs home page",
+            "click manage dependencies",
+            "list of infoobjects and their dependents is displayed",
+            "open select dependents drop-down list",
+            "dependents are displayed on the right",
+            "selection",
+            "no",
+            "dependents are not selected",
+            "all universes",
+            "all universes are automatically selected",
+            "other available options",
+            "dependents are added to job",
+            "click",
+            "select an option",
+            "click ok",
+            "click apply changes",
+            "click apply changes",
+            "list of dependents is updated"
+          ],
+          "extra": [
+            "in the promotion jobs home page click manage dependencies",
+            "from the select dependents drop-down list select an option to add dependents to the job",
+            "are dependents selected by default?",
+            "explicitly select the dependents you want to promote",
+            "dependents are automatically selected",
+            "select an option and click ok",
+            "click apply changes to update the list of dependents",
+            "click apply changes and close to save the changes"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.07692307692307693,
+          "recall": 0.038461538461538464,
+          "f1": 0.05128205128205129,
+          "missing": [
+            "create a new job -> more information?",
+            "more information? -> see creating a new job on page 37",
+            "see creating a new job on page 37 -> add required infoobjects to new job",
+            "add required infoobjects to new job -> go to promotion jobs home page",
+            "go to promotion jobs home page -> click manage dependencies",
+            "click manage dependencies -> manage dependencies window appears",
+            "manage dependencies window appears -> list of infoobjects and their dependents is displayed",
+            "list of infoobjects and their dependents is displayed -> open select dependents drop-down list",
+            "open select dependents drop-down list -> dependents are displayed on the right",
+            "dependents are displayed on the right -> selection",
+            "selection -> no",
+            "no -> dependents are not selected",
+            "dependents are not selected -> all universes",
+            "all universes -> all universes are automatically selected",
+            "all universes are automatically selected -> other available options",
+            "other available options -> dependents are added to job",
+            "dependents are added to job -> click",
+            "click -> view supported filtering options of infoobjects",
+            "view supported filtering options of infoobjects -> select an option",
+            "select an option -> click ok"
+          ],
+          "extra": [
+            "create a new job -> add the required infoobjects to the new job",
+            "add the required infoobjects to the new job -> in the promotion jobs home page click manage dependencies",
+            "in the promotion jobs home page click manage dependencies -> the manage dependencies window appears",
+            "the manage dependencies window appears -> from the select dependents drop-down list select an option to add dependents to the job",
+            "from the select dependents drop-down list select an option to add dependents to the job -> are dependents selected by default?",
+            "are dependents selected by default? -> explicitly select the dependents you want to promote",
+            "explicitly select the dependents you want to promote -> dependents are automatically selected",
+            "dependents are automatically selected -> click to view the supported filtering options of infoobjects",
+            "click to view the supported filtering options of infoobjects -> select an option and click ok",
+            "select an option and click ok -> the filtered infoobjects are displayed",
+            "the filtered infoobjects are displayed -> click apply changes to update the list of dependents",
+            "click apply changes to update the list of dependents -> click apply changes and close to save the changes"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "pure",
+        "case_id": "pure-0082",
+        "input_requirement": "1. When presented with the main window, the user may select the “Configure Diagnostics” menu item from the menu entitled “File”. 2. If the user has not already been authenticated as the administrator user, include (Authenticate User). 3. If the user has the appropriate privilege, the tool displays the configuration window. 4. The user may click the “Recall” button to read previously saved changes from a disk file or database. 5. The tool populates the window with the data from the disk file. 6. The user makes the desired changes to the configuration and can click the button labeled “Save” to save the changes. Otherwise, the user can click the button labeled “Close”. 7. If the user clicks the button labeled “Save”, the tool will request confirmation to save the changes. 8. If the user confirms, the tool will request a name for the disk file in which to save the modified data to permanent storage. 9. The user will enter a name for the file or cancel the operation. 10. If the user enters a name for the file, the tool will save the changes. If the user cancels the operation, the tool will perform no function. 11. If the tool completes the save operation, the tool will ask the user if the changes are to be relayed to the diagnostic processing for immediate use. 12. If the user confirms the changes are to be relayed to the diagnostic processing, the tool relays the changes if the processing is currently active. Otherwise, the tool does not relay the changes. 13. If the user clicks the button labeled “Close”, the tool will request confirmation for the close and the potential loss of any changes. 14. If the user confirms, the tool will dismiss the configuration window, ignoring any changes and returns the user to the main window. If the user rejects the initial desire to close, the tool will perform no function.",
+        "gold_plantuml": "start\n\n:Presented with main window;\n:Open “File” menu;\n:Select “Configure Diagnostics” menu item;\n\nif(Administrator user?) then(no)\n:Include (Authenticate User);\nelse(yes)\nendif\n\nif(Have appropriate privilege?) then(yes)\n:Display configuration window;\nelse(no)\nendif\n\n:Click “Recall” button;\n:Read previously saved changes from disk file/database;\n:Populate window with disk file data;\n\nif(Change configuration?) then(yes)\n:Click “Save”;\n:Request confirmation;\nif(Confirm?) then(yes)\n:Request permanent storage disk file name;\nswitch(Operation)\ncase(Enter name)\n:Save changes;\n\n:Complete save operation;\n\n:Ask if relay changes to diagnostic processing for immediate use;\n\nif(Confirm relay?) then(yes)\n if(Processing is active?) then(yes)\n  :Relay changes;\n else(no)\n  :Do not relay changes;\n endif\nelse(no)\nendif\n\ncase(Cancel)\n:Perform no function;\nendswitch\nelse(no)\nendif\n\n\nelse(no)\n:Click “Close”;\n:Request confirmation;\n\nfork\n:For close;\nfork again\n:For potential loss of changes;\nend fork\n\nif(Confirm?) then(yes)\nfork\n:Dismiss configuration window;\nfork again\n:Ignore any changes;\nfork again\n:Return main window;\nend fork\n\nelse(no)\n:Perform no function;\nendif\n\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Select \"Configure Diagnostics\" from \"File\" menu;\nif (Authenticated as administrator?) then (No)\n  :Authenticate User;\nelse (Yes)\nendif\nif (Has appropriate privilege?) then (Yes)\n  :Display configuration window;\n  switch (User action?)\n  case (Click \"Recall\" button)\n    :Read previously saved changes from disk file or database;\n    :Populate window with data from disk file;\n  case (Click \"Save\" button)\n    :Request confirmation to save changes;\n    if (User confirms save?) then (Yes)\n      :Request name for disk file;\n      if (User enters file name?) then (Yes)\n        :Save changes;\n        if (Save operation completes?) then (Yes)\n          if (Relay changes to diagnostic processing?) then (Yes)\n            if (Diagnostic processing currently active?) then (Yes)\n              :Relay changes;\n            else (No)\n              :Do not relay changes;\n            endif\n          else (No)\n          endif\n        else (No)\n        endif\n      else (Cancel operation)\n        :Perform no function;\n      endif\n    else (No)\n    endif\n  case (Click \"Close\" button)\n    :Request confirmation for close and potential loss of changes;\n    if (User confirms close?) then (Yes)\n      :Dismiss configuration window, ignoring changes;\n      :Return to main window;\n    else (No)\n      :Perform no function;\n    endif\n  endswitch\nelse (No)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.37037037037037035,
+          "recall": 0.2857142857142857,
+          "f1": 0.3225806451612903,
+          "missing": [
+            "presented with main window",
+            "open file menu",
+            "select configure diagnostics menu item",
+            "administrator user?",
+            "include (authenticate user)",
+            "populate window with disk file data",
+            "change configuration?",
+            "click save",
+            "request confirmation",
+            "request confirmation",
+            "confirm?",
+            "confirm?",
+            "request permanent storage disk file name",
+            "operation",
+            "enter name",
+            "complete save operation",
+            "ask if relay changes to diagnostic processing for immediate use",
+            "confirm relay?",
+            "processing is active?",
+            "cancel"
+          ],
+          "extra": [
+            "select configure diagnostics from file menu",
+            "authenticated as administrator?",
+            "authenticate user",
+            "user action?",
+            "populate window with data from disk file",
+            "click save button",
+            "request confirmation to save changes",
+            "user confirms save?",
+            "request name for disk file",
+            "user enters file name?",
+            "save operation completes?",
+            "relay changes to diagnostic processing?",
+            "diagnostic processing currently active?",
+            "click close button",
+            "request confirmation for close and potential loss of changes",
+            "user confirms close?",
+            "dismiss configuration window ignoring changes"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.2692307692307692,
+          "recall": 0.20588235294117646,
+          "f1": 0.23333333333333334,
+          "missing": [
+            "presented with main window -> open file menu",
+            "open file menu -> select configure diagnostics menu item",
+            "select configure diagnostics menu item -> administrator user?",
+            "administrator user? -> include (authenticate user)",
+            "display configuration window -> click recall button",
+            "populate window with disk file data -> change configuration?",
+            "change configuration? -> click save",
+            "click save -> request confirmation",
+            "request confirmation -> confirm?",
+            "confirm? -> request permanent storage disk file name",
+            "request permanent storage disk file name -> operation",
+            "operation -> enter name",
+            "enter name -> save changes",
+            "save changes -> complete save operation",
+            "complete save operation -> ask if relay changes to diagnostic processing for immediate use",
+            "ask if relay changes to diagnostic processing for immediate use -> confirm relay?",
+            "confirm relay? -> processing is active?",
+            "processing is active? -> relay changes",
+            "do not relay changes -> cancel",
+            "cancel -> perform no function"
+          ],
+          "extra": [
+            "select configure diagnostics from file menu -> authenticated as administrator?",
+            "authenticated as administrator? -> authenticate user",
+            "display configuration window -> user action?",
+            "user action? -> click recall button",
+            "populate window with data from disk file -> click save button",
+            "click save button -> request confirmation to save changes",
+            "request confirmation to save changes -> user confirms save?",
+            "user confirms save? -> request name for disk file",
+            "request name for disk file -> user enters file name?",
+            "user enters file name? -> save changes",
+            "save changes -> save operation completes?",
+            "save operation completes? -> relay changes to diagnostic processing?",
+            "relay changes to diagnostic processing? -> diagnostic processing currently active?",
+            "diagnostic processing currently active? -> relay changes",
+            "do not relay changes -> perform no function",
+            "click close button -> request confirmation for close and potential loss of changes",
+            "request confirmation for close and potential loss of changes -> user confirms close?",
+            "user confirms close? -> dismiss configuration window ignoring changes",
+            "dismiss configuration window ignoring changes -> return to main window"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0013",
+        "input_requirement": "After the system starts up: if fast charging is active and the BMS manual charging/discharging flag is 0, the system enters state 155. While in state 155:\n\n1. For DCDC state monitoring:\n   - If DCDC state remains 1, stay in state 155.\n   - If the BMS-fast charger handshake flag becomes 1, transition to state 156.\n   - If DCDC state is not 1 or 3 seconds pass, move to state 157.\n   - If fast charging becomes inactive at any point, shut down and end the process.\n\n2. For EAS state monitoring:\n   - If EAS state stays at 1, remain in state 155.\n   - If the handshake flag turns to 1, switch to state 156.\n   - If EAS state isn’t 1 or 3 seconds elapse, shift to state 157.\n   - Should fast charging deactivate, shut down and terminate.\n\n3. For power battery current monitoring:\n   - If current holds at 6.1, maintain state 155.\n   - If the handshake flag changes to 1, advance to state 156.\n   - If current drops below 6.1 or 3 seconds pass, proceed to state 157.\n   - If fast charging stops, shut down and end.\n\n4. For WTCH state monitoring (condition 1):\n   - If WTCH state is 1, continue in state 155.\n   - If the handshake flag sets to 1, change to state 156.\n   - If WTCH state isn’t 1, transition to state 157.\n   - Upon fast charging inactivity, shut down and exit.\n\n5. For WTCH state monitoring (condition 2):\n   - If WTCH state is 3, persist in state 155.\n   - If the handshake flag becomes 1, enter state 156.\n   - If WTCH state isn’t 1, switch to state 157.\n   - If fast charging deactivates, shut down and conclude.",
+        "gold_plantuml": "start\nif (fast charging is active and BMS manual charging/discharging flag=0) then\n  :enter state 155;\n  switch(condtion judgement)\n  case(DCDC state=1)\n    :stay in state 155;\n    if(BMS-fast charger handshake flag=1)then(yes)\n      :switch to state 156;\n      if(DCDC state≠1 or 3s elapsed)then(yes)\n        :switch to state 157;\n        if(fast charging is inactive)then(yes)\n          :shutdown;\n          stop\n        endif\n      endif\n    endif\n  case(EAS state=1)\n    :stay in state 155;\n    if(BMS-fast charger handshake flag=1)then(yes)\n      :switch to state 156;\n      if(EAS state≠1 or 3s elapsed)then(yes)\n        :switch to state 157;\n        if(fast charging is inactive)then(yes)\n          :shutdown;\n          stop\n        endif\n      endif\n    endif\n  case(power battery current=6.1)\n    :stay in state 155;\n    if(BMS-fast charger handshake flag=1)then(yes)\n      :switch to state 156;\n      if(current<6.1 or 3s elapsed)then(yes)\n        :switch to state 157;\n        if(fast charging is inactive)then(yes)\n          :shutdown;\n          stop\n        endif\n      endif\n    endif\n  case(WTCH state=1)\n    :stay in state 155;\n    if(BMS-fast charger handshake flag=1)then(yes)\n      :switch to state 156;\n      if(WTCH state≠1)then(yes)\n        :switch to state 157;\n        if(fast charging is inactive)then(yes)\n          :shutdown;\n          stop\n        endif\n      endif\n    endif\n  case(WTCH state=3)\n    :stay in state 155;\n    if(BMS-fast charger handshake flag=1)then(yes)\n      :switch to state 156;\n      if(WTCH state≠1)then(yes)\n        :switch to state 157;\n        if(fast charging is inactive)then(yes)\n          :shutdown;\n          stop\n        endif\n      endif\n    endif\n  endswitch\nendif\nend",
+        "generated_plantuml": "@startuml\nstart\n:System starts up;\nif (Fast charging active\\nand BMS manual flag = 0?) then (yes)\n  :Enter state 155;\n  fork\n    :DCDC state monitoring;\n    if (Fast charging inactive?) then (yes)\n      :Shut down and end;\n      stop\n    else (no)\n      if (BMS handshake flag = 1?) then (yes)\n        :Transition to state 156;\n      else (no)\n        if (DCDC state = 1?) then (yes)\n          :Stay in state 155;\n        else (no)\n          :Move to state 157;\n        endif\n      endif\n    endif\n  fork again\n    :EAS state monitoring;\n    if (Fast charging inactive?) then (yes)\n      :Shut down and end;\n      stop\n    else (no)\n      if (BMS handshake flag = 1?) then (yes)\n        :Switch to state 156;\n      else (no)\n        if (EAS state = 1?) then (yes)\n          :Remain in state 155;\n        else (no)\n          :Shift to state 157;\n        endif\n      endif\n    endif\n  fork again\n    :Power battery current monitoring;\n    if (Fast charging inactive?) then (yes)\n      :Shut down and end;\n      stop\n    else (no)\n      if (BMS handshake flag = 1?) then (yes)\n        :Advance to state 156;\n      else (no)\n        if (Current = 6.1?) then (yes)\n          :Maintain state 155;\n        else (no)\n          :Proceed to state 157;\n        endif\n      endif\n    endif\n  fork again\n    :WTCH state monitoring (condition 1);\n    if (Fast charging inactive?) then (yes)\n      :Shut down and end;\n      stop\n    else (no)\n      if (BMS handshake flag = 1?) then (yes)\n        :Change to state 156;\n      else (no)\n        if (WTCH state = 1?) then (yes)\n          :Continue in state 155;\n        else (no)\n          :Transition to state 157;\n        endif\n      endif\n    endif\n  fork again\n    :WTCH state monitoring (condition 2);\n    if (Fast charging inactive?) then (yes)\n      :Shut down and end;\n      stop\n    else (no)\n      if (BMS handshake flag = 1?) then (yes)\n        :Enter state 156;\n      else (no)\n        if (WTCH state = 3?) then (yes)\n          :Persist in state 155;\n        else (no)\n          :Switch to state 157;\n        endif\n      endif\n    endif\n  end fork\nelse (no)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.32558139534883723,
+          "recall": 0.32558139534883723,
+          "f1": 0.32558139534883723,
+          "missing": [
+            "fast charging is active and bms manual charging/discharging flag=0",
+            "condtion judgement",
+            "stay in state 155",
+            "stay in state 155",
+            "stay in state 155",
+            "stay in state 155",
+            "bms-fast charger handshake flag=1",
+            "bms-fast charger handshake flag=1",
+            "bms-fast charger handshake flag=1",
+            "bms-fast charger handshake flag=1",
+            "bms-fast charger handshake flag=1",
+            "switch to state 156",
+            "switch to state 156",
+            "switch to state 156",
+            "switch to state 156",
+            "dcdc state 1 or 3s elapsed",
+            "switch to state 157",
+            "switch to state 157",
+            "switch to state 157",
+            "shutdown"
+          ],
+          "extra": [
+            "system starts up",
+            "fast charging active and bms manual flag = 0?",
+            "dcdc state monitoring",
+            "shut down and end",
+            "shut down and end",
+            "shut down and end",
+            "shut down and end",
+            "shut down and end",
+            "bms handshake flag = 1?",
+            "bms handshake flag = 1?",
+            "bms handshake flag = 1?",
+            "bms handshake flag = 1?",
+            "bms handshake flag = 1?",
+            "transition to state 156",
+            "move to state 157",
+            "eas state monitoring",
+            "remain in state 155",
+            "power battery current monitoring",
+            "advance to state 156",
+            "current = 6.1?"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.07142857142857142,
+          "recall": 0.07142857142857142,
+          "f1": 0.07142857142857142,
+          "missing": [
+            "fast charging is active and bms manual charging/discharging flag=0 -> enter state 155",
+            "enter state 155 -> condtion judgement",
+            "condtion judgement -> dcdc state=1",
+            "stay in state 155 -> bms-fast charger handshake flag=1",
+            "stay in state 155 -> bms-fast charger handshake flag=1",
+            "stay in state 155 -> bms-fast charger handshake flag=1",
+            "stay in state 155 -> bms-fast charger handshake flag=1",
+            "stay in state 155 -> bms-fast charger handshake flag=1",
+            "bms-fast charger handshake flag=1 -> switch to state 156",
+            "bms-fast charger handshake flag=1 -> switch to state 156",
+            "bms-fast charger handshake flag=1 -> switch to state 156",
+            "bms-fast charger handshake flag=1 -> switch to state 156",
+            "bms-fast charger handshake flag=1 -> switch to state 156",
+            "switch to state 156 -> dcdc state 1 or 3s elapsed",
+            "dcdc state 1 or 3s elapsed -> switch to state 157",
+            "switch to state 157 -> fast charging is inactive",
+            "switch to state 157 -> fast charging is inactive",
+            "switch to state 157 -> fast charging is inactive",
+            "switch to state 157 -> fast charging is inactive",
+            "switch to state 157 -> fast charging is inactive"
+          ],
+          "extra": [
+            "system starts up -> fast charging active and bms manual flag = 0?",
+            "fast charging active and bms manual flag = 0? -> enter state 155",
+            "enter state 155 -> dcdc state monitoring",
+            "dcdc state monitoring -> fast charging inactive?",
+            "fast charging inactive? -> shut down and end",
+            "fast charging inactive? -> shut down and end",
+            "fast charging inactive? -> shut down and end",
+            "fast charging inactive? -> shut down and end",
+            "fast charging inactive? -> shut down and end",
+            "shut down and end -> bms handshake flag = 1?",
+            "shut down and end -> bms handshake flag = 1?",
+            "shut down and end -> bms handshake flag = 1?",
+            "shut down and end -> bms handshake flag = 1?",
+            "shut down and end -> bms handshake flag = 1?",
+            "bms handshake flag = 1? -> transition to state 156",
+            "transition to state 156 -> dcdc state = 1?",
+            "stay in state 155 -> move to state 157",
+            "move to state 157 -> eas state monitoring",
+            "eas state monitoring -> fast charging inactive?",
+            "bms handshake flag = 1? -> switch to state 156"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0016",
+        "input_requirement": "12.\tThe sensor shall change states from FAULT to TRANSITION when the autopilot is not requesting support (not request) and limits are not exceeded (not limits).",
+        "gold_plantuml": "start\n\nif(Autopilot is not requesting support (not request)?) then(yes)\n if(Limits are not exceeded (not limits)?) then(yes)\n :Sensor change states from FAULT to TRANSITION;\n else(no)\n endif\nelse(no)\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\nif (Autopilot is not requesting support and limits are not exceeded?) then (yes)\n  :Change state from FAULT to TRANSITION;\nelse (no)\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.5,
+          "recall": 0.3333333333333333,
+          "f1": 0.4,
+          "missing": [
+            "autopilot is not requesting support (not request",
+            "limits are not exceeded (not limits"
+          ],
+          "extra": [
+            "autopilot is not requesting support and limits are not exceeded?"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "autopilot is not requesting support (not request -> limits are not exceeded (not limits",
+            "limits are not exceeded (not limits -> sensor change states from fault to transition"
+          ],
+          "extra": [
+            "autopilot is not requesting support and limits are not exceeded? -> change state from fault to transition"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      }
+    ]
+  },
+  "knowledge_gap_policy": {
+    "identify_when": [
+      "the failure reflects reusable UML or PlantUML modeling knowledge missing from the current prompt",
+      "the same modeling mistake appears across multiple cases or failure patterns",
+      "the repair can be expressed as a general modeling principle rather than a case-specific instruction"
+    ],
+    "avoid_when": [
+      "the issue is only caused by provider, timeout, parsing, or other infrastructure errors",
+      "the repair would copy a training case, a gold diagram, or dataset-specific wording",
+      "the issue is only output formatting and is better handled in the output or rule section"
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge|rule"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "short snake_case label",
+        "related_failure_patterns": [
+          "error pattern names from error_patterns"
+        ],
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "gap": "what reusable UML/PlantUML modeling knowledge is missing or unclear",
+        "suggested_knowledge": "concise general knowledge that could be added to the knowledge section"
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

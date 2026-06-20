@@ -1,0 +1,54 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "extra_activity",
+        "problem": "The model consistently fabricates activities not stated in the requirements, such as login steps, navigation, input validation, success/error messages, and error-correction loops.",
+        "possible_causes": [
+          "The prompt does not instruct the model to strictly limit activities to those explicitly mentioned in the requirement, so it fills in plausible but unstated UI/workflow steps.",
+          "The model defaults to a 'complete user journey' template (login → navigate → act → confirm) even when the requirement describes only the core behavior."
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "problem": "Control-flow constructs are frequently mismatched to the requirement's logic: if/elseif is used where switch should be, fork is used where if/else (mutually exclusive alternatives) is appropriate, and conditional branches described in the requirement are omitted entirely.",
+        "possible_causes": [
+          "The prompt lacks guidance on when to use switch vs if/elseif vs fork, so the model defaults to if/elseif for all branching.",
+          "Optional or conditional sub-flows in the requirement (e.g., 'you can also…', 'optionally…') are not recognized as branching points, causing the model to flatten them into a linear sequence."
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "problem": "The model introduces unsupported branching and control structures, such as adding validation if/else branches, repeat loops, or fork blocks that have no basis in the requirement text.",
+        "possible_causes": [
+          "Without an explicit instruction to avoid speculative control flow, the model assumes typical software patterns (validate → error → retry) and inserts them.",
+          "The model treats listed sub-steps (e.g., 4.6.1–4.6.4) as parallel fork branches even when the ground truth uses fork only for display/concurrent information, not for user action alternatives."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "Explicit activities from the requirement are sometimes compressed into a single node or omitted entirely, reducing node recall.",
+        "possible_causes": [
+          "The model merges semantically related actions into one activity node (e.g., 'Pilot uses cockpit control' and 'Set heading hold reference' combined into one), losing granularity present in the ground truth.",
+          "The prompt does not emphasize preserving each distinct behavioral step from the requirement as a separate activity node."
+        ]
+      },
+      {
+        "name": "wrong_parallel",
+        "problem": "The model confuses concurrent/parallel behavior (fork) with mutually exclusive alternatives (switch/if), placing alternative paths inside fork blocks or using fork where switch is expected.",
+        "possible_causes": [
+          "The prompt provides no clear rule for distinguishing 'parallel display of information' (fork) from 'alternative user choices' (switch/if), leading the model to default to fork for any multi-branch structure.",
+          "Enumerated sub-steps in requirements are interpreted as simultaneous rather than alternative, triggering fork instead of the correct construct."
+        ]
+      }
+    ]
+  }
+}

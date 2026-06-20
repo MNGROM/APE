@@ -1,0 +1,70 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "failure_to_decompose_compound_actions_into_parallel_forks",
+        "problem": "When the requirement groups multiple distinct items or attributes together (e.g., 'number, size, availability, and location' or 'name, keywords, and description'), the prediction treats them as a single text block instead of decomposing them into parallel `fork`/`fork again` branches as shown in the ground truth.",
+        "possible_causes": [
+          "The prompt does not explicitly instruct the model to identify lists of attributes or items within a single step and represent them as concurrent parallel activities.",
+          "The model defaults to literal text transcription of steps rather than structural decomposition of compound nouns/lists."
+        ]
+      },
+      {
+        "name": "over_literal_transcription_of_requirements",
+        "problem": "The prediction copies entire sentences or clauses verbatim from the requirement into activity nodes, leading to extra, overly specific activities and missing the abstracted, action-oriented verbs used in the ground truth (e.g., 'Evaluate' instead of 'evaluates diverse fuel resources, cranking paths...').",
+        "possible_causes": [
+          "The prompt lacks guidance to abstract and summarize requirements into concise, imperative verb phrases for activity nodes.",
+          "The model is biased towards preserving the exact wording of the source text rather than interpreting the underlying action."
+        ]
+      },
+      {
+        "name": "incorrect_control_flow_for_conditional_alternatives",
+        "problem": "The prediction uses sequential flows, nested `if` conditions, or `fork` blocks for mutually exclusive choices, whereas the ground truth correctly uses `switch`/`case` or simple `if`/`else` constructs (e.g., adding an item by cloning vs. clicking, or autopilot engage vs. disengage).",
+        "possible_causes": [
+          "The prompt fails to specify that mutually exclusive alternative paths should be modeled using `switch`/`case` blocks rather than parallel or nested conditional structures.",
+          "The model misinterprets listed alternative methods as concurrent actions rather than distinct choices."
+        ]
+      },
+      {
+        "name": "misrepresentation_of_optional_actions",
+        "problem": "Optional behaviors (e.g., 'optionally writes information', 'can be removed') are either forced as mandatory sequential steps or modeled as parallel forks, instead of being represented as conditional `if`/`else` branches as required by the ground truth.",
+        "possible_causes": [
+          "The prompt does not provide clear rules on how to map modal verbs like 'can' or 'optionally' to conditional control flow.",
+          "The model treats optional features as guaranteed parallel steps or standard sequential activities."
+        ]
+      },
+      {
+        "name": "incorrect_loop_structuring_for_repetitive_steps",
+        "problem": "When requirements specify repeating a process (e.g., 'Repeat steps 4 and 5' or 'Repeat steps 2-7'), the prediction either flattens the loop into a single pass, uses an incorrect loop boundary, or places the loop at the wrong scope compared to the ground truth.",
+        "possible_causes": [
+          "The prompt does not adequately instruct the model to identify explicit repetition instructions and encapsulate them within `repeat`/`repeat while` loops at the correct nesting level.",
+          "The model struggles to map natural language repetition cues to the appropriate PlantUML loop boundaries."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is missing, providing no step-by-step process for the model to analyze the requirement's structure. This leads to a failure to decompose compound actions into parallel forks, incorrect control flow for conditional alternatives, and incorrect loop structuring, because the model has no instruction to identify lists, mutually exclusive choices, or repetition cues before generating code."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is missing, leaving the model without reusable modeling guidance. This causes over-literal transcription (lacking guidance to abstract text into imperative verb phrases), misrepresentation of optional actions (lacking mapping of modal verbs like 'can'/'optionally' to conditional branches), and incorrect control flow for alternatives (lacking guidance on when to use `switch`/`case` vs. `fork`/`if`)."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is missing, resulting in no strict constraints against verbatim copying of requirement text and no explicit rules mandating the use of specific PlantUML constructs (like `fork`/`fork again` for concurrent attributes, `switch`/`case` for mutually exclusive paths, or `repeat`/`repeat while` for explicit repetition instructions)."
+      }
+    ]
+  }
+}

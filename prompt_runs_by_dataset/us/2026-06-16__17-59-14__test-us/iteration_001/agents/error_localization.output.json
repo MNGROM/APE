@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no step-by-step process for the generator to follow. This absence fails to guide the generator to first identify high-level abstractions and system states before detailing procedural steps, and does not enforce a declarative, state-based modeling approach over an imperative one, leading to over-decomposition and missing high-level activities."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, lacking essential mapping rules from requirement constructs to PlantUML syntax. This causes the generator to guess how to handle concurrency, temporal behaviors, and conditions, resulting in missing or incorrect parallel forks, loop misrepresentation (e.g., confusing timeouts with if/else branches), and the invention of intermediate procedural steps instead of using guards."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, missing critical constraints to prevent common generation errors. Without explicit rules prohibiting the invention of intermediate calculation/verification steps and enforcing the preservation of explicitly stated high-level components, the generator defaults to fine-grained, sequential, procedural logic."
+    }
+  ]
+}
+```

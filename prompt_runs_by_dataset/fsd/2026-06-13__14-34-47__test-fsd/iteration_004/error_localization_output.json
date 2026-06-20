@@ -1,0 +1,72 @@
+```json
+{
+  "summary": "The most useful repair appears to be in the knowledge and rule sections. The knowledge section lacks reusable modeling principles for distinguishing if/elseif from switch/case and for using fork with simultaneous items. The rule section is empty and needs hard constraints to prevent inventing actor-role decomposition and adding unstated contextual activities.",
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_parallel_fork",
+        "switch_overuse_vs_if_elseif",
+        "missing_decision_nodes",
+        "activity_granularity_mismatch"
+      ],
+      "section_problem": "The knowledge section lacks reusable modeling principles for when to use fork/end fork for simultaneously available items, how to distinguish if/elseif from switch/case for independent conditions, and how to decompose UI interaction sequences without over-combining or over-splitting.",
+      "edit_intent": "Add concise modeling principles addressing simultaneous items (fork), independent conditions (if/elseif vs switch), and UI step decomposition.",
+      "knowledge_gap_ids": [
+        "fork_for_simultaneous_items",
+        "if_elseif_vs_switch_distinction",
+        "ui_step_decomposition"
+      ],
+      "evidence_case_ids": [
+        "bp-0019",
+        "pure-0023",
+        "rac-0017",
+        "pure-0058",
+        "bp-0026",
+        "us-0169"
+      ]
+    },
+    {
+      "section": "rule",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_contextual_activities",
+        "activity_granularity_mismatch",
+        "switch_overuse_vs_if_elseif"
+      ],
+      "section_problem": "The rule section is currently empty, providing no hard constraints to prevent the model from inventing actor-role decomposition, adding unstated contextual activities, or misusing switch/case for independent conditions.",
+      "edit_intent": "Add strict prohibitions against inventing actor-role splits, adding unstated preamble activities, and using switch/case for conditions that are not mutually exclusive alternatives on a single discriminant.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "rac-0008",
+        "rac-0017",
+        "us-0169",
+        "bp-0026"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "knowledge",
+    "rule"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The overall role definition is appropriate and does not contribute to the specific granularity and control-flow errors observed."
+    },
+    {
+      "section": "input",
+      "reason": "The input description is standard and correctly defines the input format; it is not the source of the modeling errors."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement is standard and appropriate; the errors are in the diagram structure, not the output format itself."
+    },
+    {
+      "section": "workflow",
+      "reason": "While workflow could be tweaked, the core failures stem from a lack of reusable modeling knowledge and missing hard constraints, which are better addressed in the knowledge and rule sections to avoid overloading the procedural steps."
+    }
+  ]
+}
+```

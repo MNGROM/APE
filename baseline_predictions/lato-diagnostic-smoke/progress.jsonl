@@ -1,0 +1,35 @@
+{"ts": "2026-06-19T17:30:31+0800", "event": "run_start", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-diagnostic-smoke", "total_cases": 1}
+{"ts": "2026-06-19T17:30:31+0800", "event": "case_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1}
+{"ts": "2026-06-19T17:30:31+0800", "event": "worker_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1}
+{"ts": "2026-06-19T17:30:31+0800", "event": "lato_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow"}
+{"ts": "2026-06-19T17:30:36+0800", "event": "case_error", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "elapsed_sec": 5.046, "error_type": "TimeoutError"}
+{"ts": "2026-06-19T17:30:36+0800", "event": "run_end", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-diagnostic-smoke"}
+{"ts": "2026-06-19T17:31:27+0800", "event": "run_start", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-diagnostic-smoke", "total_cases": 1}
+{"ts": "2026-06-19T17:31:27+0800", "event": "case_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1}
+{"ts": "2026-06-19T17:31:28+0800", "event": "worker_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1}
+{"ts": "2026-06-19T17:31:28+0800", "event": "lato_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow"}
+{"ts": "2026-06-19T17:31:28+0800", "event": "module_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.utils.config_loader"}
+{"ts": "2026-06-19T17:31:35+0800", "event": "case_error", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "elapsed_sec": 8.078, "error_type": "TimeoutError"}
+{"ts": "2026-06-19T17:31:35+0800", "event": "run_end", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-diagnostic-smoke"}
+{"ts": "2026-06-19T17:32:13+0800", "event": "run_start", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-diagnostic-smoke", "total_cases": 1}
+{"ts": "2026-06-19T17:32:13+0800", "event": "case_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1}
+{"ts": "2026-06-19T17:32:13+0800", "event": "worker_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1}
+{"ts": "2026-06-19T17:32:13+0800", "event": "lato_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow"}
+{"ts": "2026-06-19T17:32:13+0800", "event": "module_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.utils.config_loader"}
+{"ts": "2026-06-19T17:32:28+0800", "event": "module_import_end", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.utils.config_loader", "elapsed_sec": 14.813}
+{"ts": "2026-06-19T17:32:28+0800", "event": "module_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.utils.prompt_manager"}
+{"ts": "2026-06-19T17:32:28+0800", "event": "module_import_end", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.utils.prompt_manager", "elapsed_sec": 0.078}
+{"ts": "2026-06-19T17:32:28+0800", "event": "module_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.modules.extract"}
+{"ts": "2026-06-19T17:32:29+0800", "event": "module_import_end", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.modules.extract", "elapsed_sec": 0.61}
+{"ts": "2026-06-19T17:32:29+0800", "event": "module_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.modules.construct"}
+{"ts": "2026-06-19T17:32:29+0800", "event": "module_import_end", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.modules.construct", "elapsed_sec": 0.0}
+{"ts": "2026-06-19T17:32:29+0800", "event": "module_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.modules.integrate"}
+{"ts": "2026-06-19T17:32:29+0800", "event": "module_import_end", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.modules.integrate", "elapsed_sec": 0.015}
+{"ts": "2026-06-19T17:32:29+0800", "event": "module_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.modules.identify"}
+{"ts": "2026-06-19T17:32:36+0800", "event": "module_import_end", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.modules.identify", "elapsed_sec": 6.985}
+{"ts": "2026-06-19T17:32:36+0800", "event": "module_import_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.workflow"}
+{"ts": "2026-06-19T17:32:36+0800", "event": "module_import_end", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "module_name": "src.workflow", "elapsed_sec": 0.0}
+{"ts": "2026-06-19T17:32:36+0800", "event": "lato_import_end", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "elapsed_sec": 22.516}
+{"ts": "2026-06-19T17:32:36+0800", "event": "llm_setup_start", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "step": "build_workflow", "lato_model": "deepseek"}
+{"ts": "2026-06-19T17:32:38+0800", "event": "case_error", "dataset": "bp", "case_id": "bp-0001", "idx": 1, "total": 1, "elapsed_sec": 24.687, "error_type": "ValueError"}
+{"ts": "2026-06-19T17:32:38+0800", "event": "run_end", "output_dir": "D:\\now_to_use\\work4icse\\rq1\\ape\\baseline_predictions\\lato-diagnostic-smoke"}

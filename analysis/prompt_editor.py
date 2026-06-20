@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from llm import LLMClient
-from prompt_ops import extract_json_object, parse_prompt_sections, validate_prompt_revision_plan
+from prompt_ops import extract_json_object, normalize_prompt_revision_plan, parse_prompt_sections, validate_prompt_revision_plan
 from utils.io import read_prompt_file, write_text
 
 
@@ -56,6 +56,8 @@ def propose_prompt_revision(
     if parsed is None:
         write_text(output_path.with_suffix(".rejected.txt"), "Prompt editor did not return a JSON object.\n")
         return None
+    parsed = normalize_prompt_revision_plan(parsed)
+    write_text(output_path, json.dumps(parsed, ensure_ascii=False, indent=2))
     ok, errors = validate_prompt_revision_plan(parsed, max_sections=args.max_sections_per_edit)
     if not ok:
         write_text(output_path.with_suffix(".rejected.txt"), "\n".join(errors) + "\n")

@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "hallucinated_control_flow",
+        "problem": "The generator fabricates complex control-flow structures (conditionals, loops, switches) that are not supported by the requirement text, leading to extra activities and extra/wrong relations.",
+        "possible_causes": [
+          "The prompt may implicitly encourage the model to make diagrams 'richer' or more 'complete' by adding error handling, validation loops, or decision branches.",
+          "The model defaults to a common software design pattern (e.g., input-process-output with validation) instead of strictly adhering to the specified requirement scope."
+        ]
+      },
+      {
+        "name": "over_decomposition_of_activities",
+        "problem": "The generator breaks down high-level requirements into granular, assumed sub-steps, introducing extra activities that are not explicitly stated in the text.",
+        "possible_causes": [
+          "The prompt lacks a strict constraint against inventing implicit sub-actions or decomposing single stated behaviors into multiple steps.",
+          "The model attempts to infer implementation details rather than just modeling the explicitly described behavior."
+        ]
+      },
+      {
+        "name": "missing_conditional_logic",
+        "problem": "The generator fails to represent explicit conditional logic or state-dependent behavior described in the requirements, flattening it into a simple sequence or omitting it entirely.",
+        "possible_causes": [
+          "The prompt does not adequately instruct the model to identify and map conditional phrases (e.g., 'when', 'if', 'shall not') to PlantUML control-flow constructs (e.g., if/else, guards).",
+          "The model struggles to translate state-transition logic or negative constraints into appropriate activity diagram branches."
+        ]
+      },
+      {
+        "name": "missing_parallel_constructs",
+        "problem": "The generator fails to identify and represent concurrent or parallel actions described in the requirements, modeling them sequentially instead.",
+        "possible_causes": [
+          "The prompt does not provide clear guidance on mapping linguistic cues for parallelism (e.g., 'and', simultaneous actions) to PlantUML fork/fork again constructs.",
+          "The model has a strong sequential bias when translating procedural text into activity diagrams."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is empty, providing no step-by-step process for the model to first extract explicit activities, then identify control-flow keywords (conditionals, parallelism), and finally map them to PlantUML constructs. This lack of procedural guidance causes the model to hallucinate control flows, over-decompose activities, and miss conditional or parallel logic."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is empty, lacking reusable modeling guidance and mappings from linguistic cues (e.g., 'if', 'when', 'while', 'simultaneously') to PlantUML control-flow constructs (e.g., if/else, fork/join). This causes the model to miss conditional logic and parallel constructs, and to default to common design patterns rather than strictly adhering to the requirement text."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is empty, missing strict constraints against inventing implicit sub-actions, decomposing single stated behaviors into multiple steps, and fabricating error handling or validation loops. This directly leads to over-decomposition of activities and hallucinated control flows."
+      }
+    ]
+  }
+}

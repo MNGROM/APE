@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is empty, providing no structured process for extracting explicit activities before constructing control-flow, which leads to compressed or omitted activities and mismatched relations."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is empty, offering no guidance on the semantics of PlantUML control-flow constructs (fork vs if/elseif vs switch) or how to map requirement text to them, causing confusion between parallel and mutually exclusive alternatives."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is empty, lacking explicit constraints to strictly limit activities to those stated in the requirement (preventing fabricated steps) and to preserve each distinct behavioral step as a separate node (preventing activity merging)."
+    }
+  ]
+}
+```

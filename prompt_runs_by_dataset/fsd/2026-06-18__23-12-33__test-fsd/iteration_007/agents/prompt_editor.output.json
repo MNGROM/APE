@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Combined intent: Eliminate false-positive parallelism caused by the 'AND' heuristic and enumerations.; Prevent missing activities and flattened relations in nested conditional logic.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Remove the instruction to map independent actions or data entries joined by 'AND' or 'and' using fork/join. Add an explicit check to distinguish true concurrency (simultaneous execution) from enumerations or sequential data entry: if items are attributes, form fields, or sequential inputs, map them sequentially; only map using fork/join if the text contains explicit concurrency cues (e.g., 'simultaneously', 'in parallel').; Add a step requiring the model to explicitly list all extracted conditions and states as distinct activity nodes before constructing control-flow, and enforce that nested conditions must be mapped as nested PlantUML control structures, explicitly forbidding the flattening of inner conditions into the outer branch level."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Remove the false-positive parallelism trigger and add exclusions for enumerations.",
+      "change_instruction": "Remove the clause in rule (4) that triggers fork/join for independent actions joined by 'AND' or 'and'. Add explicit exclusions: do not use fork/join for attribute lists, form field entries, or item enumerations unless accompanied by explicit concurrency cues like 'simultaneously' or 'in parallel'."
+    },
+    {
+      "section": "rule",
+      "intent": "Combined intent: Expand the fork/join exclusion list to cover enumerations and attribute lists.; Prevent extra activities from assumed decomposition.; Enforce correct branching constructs for mutually exclusive alternatives versus conditional evaluations.",
+      "change_instruction": "Combine these requested changes into one coherent section revision: Expand rule (1) to explicitly prohibit fork/join for attribute lists, item enumerations, and data entry fields, in addition to mutually exclusive choices and sequential UI steps.; Add a rule strictly prohibiting the decomposition of high-level stated actions into assumed granular sub-steps (e.g., breaking down a single stated action into separate UI clicks, data retrieval, or intermediate computation steps) unless those sub-steps are explicitly stated in the text.; Add a rule explicitly forbidding the substitution of switch/case with if/elseif/else for mutually exclusive categorical alternatives, and forbidding the substitution of if/elseif/else with switch/case for Boolean or conditional evaluations, to prevent extra or wrong relations."
+    }
+  ]
+}

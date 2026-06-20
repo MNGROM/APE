@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The prediction frequently introduces fork/join blocks for items that are merely lists of attributes, options, or sequential inputs, rather than genuinely concurrent actions (false_positive_parallel). Conversely, it misses fork/join when the ground truth explicitly models concurrent sub-processes or parallel data flows (false_negative_parallel).",
+      "possible_causes": [
+        "The prompt lacks clear criteria for distinguishing true concurrency (simultaneous execution) from enumerations or alternative options, leading the generator to treat bulleted lists as parallel branches.",
+        "The generator defaults to using fork/join as a structural shortcut for grouping related data entries (e.g., entering two fields simultaneously) rather than reserving it for independent parallel flows."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction decomposes high-level requirements into granular, assumed sub-steps that are not present in the ground truth, such as adding explicit UI interactions, data retrieval steps, or intermediate computations.",
+      "possible_causes": [
+        "The prompt does not sufficiently constrain the level of abstraction, causing the model to hallucinate implicit operational steps instead of adhering strictly to the stated requirement actions.",
+        "The generator over-interprets natural language descriptions, translating single requirement statements into multi-step procedural flows."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction collapses or omits explicit activities, states, or conditions that are clearly specified in the requirement and modeled in the ground truth.",
+      "possible_causes": [
+        "The generator tends to compress multiple explicit actions into a single broad activity node, losing necessary behavioral detail.",
+        "The prompt may not emphasize the importance of preserving all explicitly mentioned states and conditions, especially in complex conditional logic flows."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction introduces incorrect control-flow logic, such as replacing mutually exclusive switch/case branches with sequential if/elseif chains, or misplacing conditional checks.",
+      "possible_causes": [
+        "The prompt fails to guide the generator on when to use switch/case (for mutually exclusive alternatives) versus if/elseif (for conditionally sequential logic), leading to structurally inaccurate branching.",
+        "The generator struggles to map natural language conditional structures to the correct PlantUML control-flow constructs, defaulting to simpler but incorrect sequential conditionals."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction omits critical control-flow transitions, such as missing early termination (stop) nodes after shutdown conditions, or failing to represent nested conditional dependencies.",
+      "possible_causes": [
+        "The generator does not consistently enforce terminal states (stop) when specific conditions are met, leaving flows dangling or merging them incorrectly into subsequent logic.",
+        "Complex nested conditions in the requirements are flattened or partially modeled, causing the generator to miss required relational edges between states."
+      ]
+    }
+  ]
+}
+```

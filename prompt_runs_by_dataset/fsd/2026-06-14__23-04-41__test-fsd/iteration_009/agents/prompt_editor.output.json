@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a structured, step-by-step process to counteract sequential bias, prevent over-decomposition, and ensure proper handling of explicit and implicit activities.",
+      "change_instruction": "Add a multi-step workflow requiring the model to: (1) Extract activities strictly stated in the requirement, keeping them at a high level of abstraction without splitting cohesive actions into sub-steps; (2) Identify and infer implicit system-side responses or intermediate states necessary to connect primary actions; (3) Analyze extracted activities for linguistic cues of parallelism and map them to fork/end fork constructs; (4) Construct the final PlantUML code using only the identified activities and relations, without adding unstated control flows."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Equip the model with specific mapping rules from linguistic cues to UML constructs and guidance on abstraction levels.",
+      "change_instruction": "Add knowledge guidelines covering: (1) Parallelism mapping: independent items in a list or simultaneous action cues (e.g., 'meanwhile', 'at the same time') must be mapped to PlantUML fork/end fork constructs rather than sequential arrows; (2) Abstraction level: a single cohesive action with descriptive clauses or preconditions should be represented as one activity node, not decomposed into multiple granular steps; (3) Implicit activities: guidance to identify and make explicit system-side reactions or intermediate states that connect primary user actions."
+    },
+    {
+      "section": "rule",
+      "intent": "Enforce strict adherence to the requirement text and prevent hallucinated control flows.",
+      "change_instruction": "Add strict rules stating: (1) Strictly adhere to the provided requirement text; do not fabricate conditional checks, loops, or error-handling branches unless explicitly stated; (2) Do not add defensive programming patterns (e.g., validation checks, error handling) if they are not present in the requirement; (3) Do not introduce control flow nodes or activities that are not directly stated or logically necessary as implicit system responses."
+    }
+  ]
+}
+```

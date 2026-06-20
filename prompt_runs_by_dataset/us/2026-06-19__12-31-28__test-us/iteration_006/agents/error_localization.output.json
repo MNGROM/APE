@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 1's grouping heuristic and Step 3's concurrency mapping are insufficient for preventing false-positive parallelism; the workflow allows lists, attributes, and sequential steps to trigger fork/join blocks instead of being grouped into single nodes or sequential flows. Additionally, the workflow lacks a distinct step for verifying that all explicitly stated actions are extracted, which contributes to missing activities."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The concurrency modeling rule is failing to prevent false positives for non-concurrent lists, attributes, and sequential steps, while also failing to trigger false negatives when explicit concurrency keywords are present. The exclusions for sequential UI steps and configuration options are not strong enough, and the positive cues for true concurrency are not being effectively recognized by the model."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The granularity rule does not adequately enforce the preservation of every explicit action as a distinct node, allowing the model to collapse multiple steps into broad abstract nodes. Furthermore, it lacks a strict constraint against inventing speculative logic or redundant nodes, which leads to extra activities and extra/wrong relations."
+    }
+  ]
+}
+```

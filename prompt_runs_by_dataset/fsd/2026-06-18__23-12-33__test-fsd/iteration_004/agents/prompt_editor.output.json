@@ -1,0 +1,19 @@
+{
+  "revision_plan": [
+    {
+      "section": "knowledge",
+      "intent": "Restrict false-positive parallelism by removing over-inclusive fork/join triggers.",
+      "change_instruction": "Revise rule (4) to remove 'lists of attributes, options, or grouped items' and 'simultaneous display states' as triggers for fork/join. State that fork/join must ONLY be used when the requirement text explicitly uses concurrency cues (e.g., 'simultaneously', 'at the same time', 'concurrently', 'in parallel'). Explicitly exclude comma-separated lists, attribute enumerations, and UI field displays from fork/join usage, as they represent sequential entry or independent properties, not concurrent execution."
+    },
+    {
+      "section": "workflow",
+      "intent": "Prevent missing activities by enforcing extraction of conditions and constraints, and fix wrong loops by adding retry mapping.",
+      "change_instruction": "In Step 1, add an instruction to explicitly extract and preserve all stated conditions (e.g., 'X available?'), constraints (e.g., 'Cannot do Y'), and specific actions as distinct activity nodes, preventing their collapse into abstract nodes. In Step 2, add an instruction to identify retry or re-entry logic (e.g., 're-enter', 'try again', 're-select') and map it to backward loop edges (using PlantUML `repeat` or `while`) rather than defaulting to linear forward flows."
+    },
+    {
+      "section": "rule",
+      "intent": "Prevent extra activities from personas/descriptions and fix wrong relations from if/switch confusion.",
+      "change_instruction": "Add a rule that user roles, personas, or purely descriptive text must not be converted into activity nodes. Add a rule to distinguish mutually exclusive alternative paths from conditional branches: if the requirement presents a choice among distinct options (e.g., selecting OK, Help, or Cancel; choosing among alternative methods), map it using `switch`/`case`; if the requirement presents a condition that evaluates to true/false (e.g., 'if available, do X, else do Y'), map it using `if`/`elseif`/`else`."
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "hallucinated_control_flow",
+        "problem": "The generator systematically invents UI interactions, system validations, and error-handling branches that are not stated in the requirements (e.g., 'Display validation error message', 'Retry saving information', 'Version not found error').",
+        "possible_causes": [
+          "The prompt lacks a strict constraint forbidding the addition of implicit system behaviors or error-handling logic not explicitly described in the input.",
+          "The generator defaults to a standard 'happy path vs. error path' template for user stories, over-specifying the diagram."
+        ]
+      },
+      {
+        "name": "over_granular_decomposition",
+        "problem": "The generator breaks down high-level requirements into overly granular, step-by-step UI actions (e.g., splitting 'edit profile' into 'selects member', 'view profile', 'click edit', 'display form', 'modify details', 'submit').",
+        "possible_causes": [
+          "The prompt does not instruct the model to preserve the abstraction level of the requirement, leading it to decompose single requirement statements into assumed sub-steps.",
+          "The model treats the diagram as a detailed UI flow rather than a representation of the stated requirement behaviors."
+        ]
+      },
+      {
+        "name": "missing_parallel_fork_decomposition",
+        "problem": "The generator fails to use fork/fork again/end fork constructs to represent multiple items or attributes introduced simultaneously, instead representing them as sequential steps or omitting them entirely.",
+        "possible_causes": [
+          "The prompt does not explicitly guide the model to identify lists of concurrent attributes or multiple items (e.g., 'name, description, and keywords' or 'URL, MIME-Types, size, or timestamp') and map them to parallel forks.",
+          "The model defaults to a strictly sequential activity flow, losing the structural parallelism present in the ground truth."
+        ]
+      },
+      {
+        "name": "missing_conditional_branching_for_alternatives",
+        "problem": "The generator fails to represent alternative options or conditional selections using switch/case or if/else constructs where the ground truth requires them (e.g., handling drop-down list selections like 'All Universes' vs. 'Other options').",
+        "possible_causes": [
+          "The prompt does not instruct the model to actively look for alternative choices or enumerated options in the text and model them as conditional branches.",
+          "The model flattens conditional logic into a single sequential path, missing the requirement's explicit branching scenarios."
+        ]
+      }
+    ]
+  }
+}

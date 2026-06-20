@@ -1,0 +1,18 @@
+{
+  "datasets_dir": "prompt_datasets\\lato",
+  "test_dataset": "bp",
+  "max_test_cases": 1,
+  "test_sample_strategy": "prefix",
+  "sample_seed": 13,
+  "lato_repo": "..\\LATO",
+  "lato_config": "..\\LATO\\src\\utils\\args.yaml",
+  "lato_model": "deepseek",
+  "lato_examples_dir": "..\\LATO\\examples\\lato",
+  "resume": true,
+  "case_timeout_seconds": 1800,
+  "continue_on_error": true,
+  "diagnostic_logs": true,
+  "datasets": {
+    "bp": 1
+  }
+}

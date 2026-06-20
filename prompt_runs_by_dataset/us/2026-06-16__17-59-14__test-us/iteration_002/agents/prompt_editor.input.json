@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "missing_parallel_decomposition",
+        "problem": "The prediction fails to decompose grouped or concurrent items into parallel forks, instead representing them as single sequential activities.",
+        "possible_causes": [
+          "The prompt does not explicitly instruct the model to identify lists of concurrent or grouped items (e.g., 'PWM fans and liquid-cooling actuators', 'name, description, and keywords') and represent them as separate parallel branches.",
+          "The model defaults to a linear, sequential representation when encountering compound nouns or lists, lacking a rule to expand these into `fork`/`fork again` blocks."
+        ]
+      },
+      {
+        "name": "incorrect_loop_construct",
+        "problem": "The prediction misrepresents the scope or type of loop constructs, either using the wrong PlantUML keyword or failing to capture the iterative nature of the requirement.",
+        "possible_causes": [
+          "The prompt lacks clear guidance on mapping different loop semantics (e.g., `while` for continuous monitoring vs. `repeat` for iterative monitoring) to the correct PlantUML syntax.",
+          "The model misinterprets conditional continuous monitoring (e.g., 'while rail voltage remains stable') as a simple conditional branch rather than a loop, and misuses other constructs (like `switch`) for iterative timeouts."
+        ]
+      },
+      {
+        "name": "missing_conditional_branching",
+        "problem": "The prediction omits explicit decision nodes for clearly stated conditional logic, collapsing them into sequential actions.",
+        "possible_causes": [
+          "The prompt does not emphasize the need to explicitly model every conditional check (e.g., 'if the name is not displayed') as an `if`/`else` node rather than just an action.",
+          "The model is biased towards simplifying the diagram by removing conditional branches when the requirement describes a fallback or alternative path."
+        ]
+      },
+      {
+        "name": "missing_activity",
+        "problem": "The prediction omits specific activities or states that are explicitly mentioned in the requirements and ground truth.",
+        "possible_causes": [
+          "The model abstracts or compresses multiple explicit actions into broader, high-level activity nodes, losing granular behaviors.",
+          "The prompt does not enforce strict completeness, allowing the model to drop steps it deems implicit or less important to the main control flow."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is empty, providing no step-by-step process for the model to systematically extract activities, identify concurrent/grouped items for parallel forks, recognize loop semantics, or isolate conditional logic before generating PlantUML code."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is empty, lacking essential modeling guidance on how to map requirement patterns (e.g., lists of concurrent items, continuous monitoring, conditional checks) to their correct PlantUML constructs (e.g., fork/fork again, while/repeat, if/else)."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is empty, failing to enforce strict completeness and preventing the model from abstracting or dropping explicit activities, and lacking syntax rules to ensure the correct PlantUML keywords are used for loops and branches."
+      }
+    ]
+  }
+}

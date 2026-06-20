@@ -1,0 +1,99 @@
+{
+  "requirements": [
+    "As a site administrator, I want to edit any site member profile, so that I can correct problems for members.",
+    "As a camp administrator, I want to be able to keep my information in one place, so that the admins next year can improve on the previous years.",
+    "Migration Tool Execution: Use the command arc_warc_migrate <ARC_FILES> <CONFIG> [options] to migrate content from ARC files to WARC files based on the provided configuration. Ensure the configuration file specifies how fields are translated into WARC records, and handle missing fields by generating errors requiring operator intervention.",
+    "30.\tCreating a New Job1. Log into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, click New Job. The \"New Job\"window appears .3. Enter the name, description, and keywords for the job in the appropriate fields.4. In the Save Job in field, browse and select the folder in which you want to save the job.5. Select the source system and the destination system from the drop-down lists. If the name of the system is not displayed in the drop-down list, click the Login to a new CMS option. A new window is launched. Enter the name of the system along with the user name and password.6. Click Create.",
+    "As a Consumer, I want to view a Datapackage at a particular version online, so that that I can present/discuss the particular data timeslice of interest with other people.",
+    "4.\tThe Rotation Matrix, DCM321, shall be invertible with the exception of the case where theta = +/- pi/2 radians.",
+    "Repackaging Tool Execution: Use the command warc_repackage -i <WARC_FILE> <WARC_PATTERN> [options] to extract and repackage WARC records based on filters like URL, MIME-Types, size, or timestamp. Specify output WARC file names using the provided pattern and include metadata records describing the extraction context.",
+    "22.\tmanage dependencies of an infoobject1. Log into the LifeCycle Manager tool.2. Create a new job. For information on creating a new job, see Creating aNew Job on page 37.3. Add the required infoobjects to the new job.4. In the \"Promotion Jobs\" home page, click Manage Dependencies. The \"Manage Dependencies\" window appears. This window displays the list of infoobjects and their dependents, as shown in the following figure:5. From the Select Dependents drop-down list, select any of the options available to add the dependents to the job. The dependents are displayed on the right side. The dependents are not selected by default; you must explicitly select the dependents you want to promote. For example, if you select All Universes from the Select Dependents drop-down list, then all the universes included in the list of dependentsare automatically selected.6. Click to view the supported filtering options of infoobjects in the drop-down list. Select an option, and click OK. The filtered infoobjects are displayed.7. Click Apply Changes to update the list of dependents.8. Click Apply Changes and Close to save the changes"
+  ],
+  "predictions": [
+    "@startuml\nstart\n:Site Administrator selects a site member;\n:View member profile;\n:Click edit profile;\n:System displays editable profile form;\n:Administrator modifies profile details;\n:Administrator submits changes;\n:System validates input data;\nif (Valid input?) then (yes)\n  :System updates member profile;\n  :Display success message;\nelse (no)\n  :Display validation error message;\n  stop\nendif\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Camp Administrator - Manage Yearly Information\n\nstart\n\n:Camp Administrator logs into the system;\n\n:Access Information Management Dashboard;\n\nfork\n  :Review previous year's information;\nfork again\n  :Input current year's information;\nfork again\n  :Update existing information;\nend fork\n\n:Save information to centralized repository;\n\nif (Information saved successfully?) then (Yes)\n  :Confirm information is stored in one place;\n  :Ensure information is accessible for next year's admins;\n  :Log out of the system;\n  stop\nelse (No)\n  :Display error message;\n  :Retry saving information;\n  stop\nendif\n\n@enduml",
+    "@startuml\nstart\n:Input command: arc_warc_migrate <ARC_FILES> <CONFIG> [options];\n:Read ARC files;\n:Load configuration file;\nif (Configuration specifies field translation?) then (Yes)\n  :Translate ARC fields into WARC records;\n  :Write WARC records to output file;\nelse (No - Missing fields)\n  :Generate error for missing field(s);\n  :Halt migration;\n  :Require operator intervention;\n  stop\nendif\n:Migration complete;\nstop\n@enduml",
+    "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:In the \"Promotion Jobs\" home page, click New Job;\n:The \"New Job\" window appears;\n:Enter the name, description, and keywords for the job;\n:In the Save Job in field, browse and select the folder;\n:Select the source system and the destination system from the drop-down lists;\nif (System name displayed in drop-down list?) then (No)\n  :Click the Login to a new CMS option;\n  :A new window is launched;\n  :Enter the name of the system along with the user name and password;\nelse (Yes)\nendif\n:Click Create;\nstop\n@enduml",
+    "@startuml\nskinparam style strictuml\n\ntitle Consumer Views a Datapackage at a Particular Version\n\nstart\n\n:Consumer navigates to Datapackage;\n\n:Select specific version of Datapackage;\n\n:Request to view Datapackage at selected version;\n\nif (Version exists?) then (Yes)\n  :Retrieve Datapackage at the specific version;\n  :Display Datapackage details for the selected version;\n  :Consumer presents/discusses the data timeslice with others;\nelse (No)\n  :Display \"Version not found\" error;\nendif\n\nstop\n@enduml",
+    "@startuml\nstart\n:Input theta value;\nif (theta == +pi/2 radians?) then (yes)\n  :DCM321 is NOT invertible;\n  stop\nelseif (theta == -pi/2 radians?) then (yes)\n  :DCM321 is NOT invertible;\n  stop\nelse (no)\n  :DCM321 is invertible;\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Execute command: warc_repackage -i <WARC_FILE> <WARC_PATTERN> [options];\n:Parse input arguments and options;\n:Open input WARC file(s);\nrepeat\n  :Read next WARC record;\n  if (Apply filters?) then\n    :Check filter criteria\\n(URL, MIME-Type, Size, Timestamp);\n    if (Record matches filters?) then\n      :Include record for repackaging;\n    else\n      :Exclude record;\n    endif\n  else\n    :Include record for repackaging;\n  endif\nrepeat while (More records in WARC file?) is (Yes)\n-> No;\n:Generate output WARC file name\\nusing provided pattern;\n:Create metadata records\\ndescribing extraction context;\n:Write filtered records and\\nmetadata to output WARC file;\n:Close input and output WARC files;\nstop\n@enduml",
+    "@startuml\nstart\n:Log into the LifeCycle Manager tool;\n:Create a new job;\n:Add the required infoobjects to the new job;\n:In the \"Promotion Jobs\" home page,\\nclick Manage Dependencies;\n:View the \"Manage Dependencies\" window\\n(displaying list of infoobjects and dependents);\n:From the Select Dependents drop-down list,\\nselect an option to add dependents to the job;\n:Explicitly select the specific dependents\\nyou want to promote;\n:Click to view supported filtering options\\nof infoobjects in the drop-down list;\n:Select a filtering option and click OK;\n:Filtered infoobjects are displayed;\n:Click Apply Changes to update the list of dependents;\n:Click Apply Changes and Close to save the changes;\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\n:Edit site member profile;\n:Correct problems;\nstop",
+    "start\n:Keep information in one place;\n:Improve on previous years;\nstop",
+    "start\n\n:Use command arc_warc_migrate <ARC_FILES> <CONFIG> [options];\n:Refer to provided configuration;\n\nfork\n:Specify how fields are translated into WARC records;\nfork again\n:Generate errors requiring operator intervention;\n:Handle missing fields;\nend fork\n\n:Migrate content from ARC files to WARC files;\n\nstop",
+    "start\n:Log in;\n:Go to \"Promotion Jobs\";\n:Click \"New Job\";\n:\"New Job\" window appears;\n\nfork\n  :Enter name;\nfork again\n  :Enter description;\nfork again\n  :Enter keywords;\nend fork\n\n:Go to \"Save Job \" field;\n:Browse and select the folder;\n:Drop-lists appears;\n\nif (System name is displayed?) then (yes)\n  :Select the source system;\n  :Select the destination system;\nelse (no)\n  :Click \"Login\";\n  :Launch a new window;\n  fork\n    :Enter system name;\n  fork again\n    :Enter user name;\n  fork again\n    :Enter password;\nend fork\n\nendif\n\n:Click \"Create\";\nstop",
+    "start\n:view a Datapackage at a particular version online;\n:Present/Discuss particular data timeslice of interest;\nstop",
+    "start\n\n:Rotation Matrix DCM321;\nif(theta = +/- pi/2 radians?) then(yes)\n:Not invertible;\nelse(no)\n:Invertible;\nendif\n\nstop",
+    "start\n\n:Use command warc_repackage -i <WARC_FILE> <WARC_PATTERN> [options];\n\n:Filters;\nfork\n:URL;\nfork again\n:MIME-Types;\nfork again\n:Size;\nfork again\n:Timestamp;\nend fork\n\n:Extract and repackage WARC records;\nfork\n:Use provided pattern;\n:Specify output WARC file names;\nfork again\n:Include metadata records describing extraction context;\nend fork\n\nstop",
+    "start\n\n:Log in LifeCycle Manager tool;\n:Create a new job;\nif (More information?) then(yes)\n:See Creating a New Job on page 37;\nelse(no)\nendif\n\n:Add required infoobjects to new job;\n:Go to \"Promotion Jobs\" home page;\n:Click \"Manage Dependencies\";\n:\"Manage Dependencies\" window appears;\n:List of infoobjects and their dependents is displayed;\n\n:Open Select Dependents drop-down list;\n:Dependents are displayed on the right;\n\nswitch(Selection)\ncase(no)\n :Dependents are not selected;\ncase(All Universes)\n :All universes are automatically selected;\ncase(Other available options)\n :Dependents are added to job;\nendswitch\n\n:Click;\n:View supported filtering options of infoobjects;\n:Select an option;\n:Click \"OK\";\n:Filtered infoobjects are displayed;\n\n:Click \"Apply Changes\";\n:List of dependents is updated;\n\n:Click \"Apply Changes\";\n:Close to save the changes;\n\nstop"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

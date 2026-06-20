@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Provide a step-by-step process to extract explicit activities, identify control-flow cues, and map them to PlantUML constructs, preventing hallucination and omission.",
+      "change_instruction": "Add a structured workflow with the following steps: 1) Extract only the explicitly stated activities/actions from the requirement without adding sub-steps. 2) Identify linguistic cues for control flow (e.g., 'if', 'when', 'while', 'simultaneously', 'in parallel'). 3) Map the extracted activities and identified control flows directly to PlantUML constructs (if/else for conditionals, fork/join for parallelism, while/repeat for loops). 4) Assemble the diagram strictly based on the mapped elements, ensuring no fabricated nodes or relations are added."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide explicit mappings from requirement linguistic cues to PlantUML control-flow constructs to overcome sequential bias and missed logic.",
+      "change_instruction": "Add a concise reference mapping linguistic cues to PlantUML constructs. Include: conditionals ('if', 'when', 'unless', 'in case of') -> if/elseif/else/endif; parallelism ('simultaneously', 'in parallel', 'at the same time', 'concurrently') -> fork/fork again/end fork; loops ('while', 'repeat', 'until', 'for each') -> repeat/while. Emphasize that guard labels must preserve the original requirement meaning."
+    },
+    {
+      "section": "rule",
+      "intent": "Strictly prohibit hallucinated control flows and over-decomposition of activities.",
+      "change_instruction": "Add strict constraints: 1) Do not invent implicit sub-actions or decompose a single stated behavior into multiple granular steps. 2) Do not fabricate error handling, validation loops, or decision branches that are not explicitly stated in the requirement text. 3) Only model activities and control flows that are directly supported by the input text; if no conditional or parallel keywords are present, model the flow as a simple sequence."
+    }
+  ]
+}
+```

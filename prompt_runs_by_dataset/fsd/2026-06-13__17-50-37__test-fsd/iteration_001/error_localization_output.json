@@ -1,0 +1,90 @@
+```json
+{
+  "summary": "The most useful repair appears to be in workflow and knowledge. The workflow section is completely empty, providing no procedural guidance on how to extract activities at the correct granularity or identify control-flow constructs before generating code. The knowledge section lacks reusable UML/PlantUML modeling concepts for activity granularity, switch/case, and parallel forks, which directly causes the missing control-flow and granularity mismatch errors.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_activity_elaboration",
+        "missing_activity_concise_extraction",
+        "missing_control_flow_constructs",
+        "wrong_relation_from_granularity_mismatch"
+      ],
+      "section_problem": "The workflow section is empty, giving the model no procedural steps for extracting activities strictly from the text or identifying control-flow structures (branches, switches, forks) before generating PlantUML.",
+      "edit_intent": "Add a step-by-step procedure requiring the model to first extract concise activities strictly from the text (without inferring sub-steps), then identify control-flow constructs, and finally generate the PlantUML sequence based on those extracted elements.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "lmc-0055",
+        "us-0098",
+        "us-0092",
+        "bp-0010",
+        "bp-0028",
+        "pure-0078",
+        "pure-0046",
+        "lmc-0048"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_activity_elaboration",
+        "missing_activity_concise_extraction",
+        "missing_control_flow_constructs"
+      ],
+      "section_problem": "The knowledge section is empty, lacking reusable UML/PlantUML modeling principles for appropriate activity granularity and the specific syntax/usage for switch/case and parallel forks.",
+      "edit_intent": "Provide reusable modeling knowledge defining that an activity should represent a single distinct stated action (no decomposition or merging), and specify when to use switch/case versus if/else and how to model parallel forks.",
+      "knowledge_gap_ids": [
+        "activity_granularity_and_decomposition",
+        "switch_vs_if_else",
+        "parallel_fork_representation"
+      ],
+      "evidence_case_ids": [
+        "lmc-0055",
+        "us-0098",
+        "us-0092",
+        "lmc-0048",
+        "pure-0078",
+        "bp-0028",
+        "pure-0046"
+      ]
+    },
+    {
+      "section": "rule",
+      "priority": "medium",
+      "failure_patterns": [
+        "extra_activity_elaboration"
+      ],
+      "section_problem": "The rule section is empty, failing to provide hard constraints to prevent the model's default habit of hallucinating implementation details and over-decomposing activities.",
+      "edit_intent": "Add a strict prohibition against inferring unstated implementation steps or decomposing single stated actions into sub-steps, enforcing a one-to-one mapping between requirement actions and diagram activities.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "lmc-0055",
+        "us-0098",
+        "us-0092",
+        "bp-0010",
+        "bp-0028"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The agent task accurately defines the role and scope; the failures stem from missing procedural and conceptual guidance, not a misaligned role definition."
+    },
+    {
+      "section": "input",
+      "reason": "The input section correctly specifies the nature of the input; the failure is in how the model processes it (workflow) and understands the domain constructs (knowledge), not in how the input is described."
+    },
+    {
+      "section": "output",
+      "reason": "The output section correctly mandates PlantUML code only; the errors are in the content and structure of the generated code, not the requested format."
+    }
+  ]
+}
+```

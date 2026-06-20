@@ -1,0 +1,14 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow treats construct identification as separate, sequential steps (2, 3, 4) without addressing how to combine or nest them, leading to flattened concurrent monitoring loops. It also lacks a step to distinguish unconditional triggers from conditional guards, which contributes to spurious control flow."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks guidance on distinguishing passive time-based delays/timeouts from active iterative loops, causing incorrect loop constructs for delays. It also lacks rules for nesting parallel forks inside loops, and fails to differentiate conditional guards (requiring branching) from simple triggers (requiring sequential actions)."
+    }
+  ]
+}
+```

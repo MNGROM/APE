@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "hallucinated_control_flow",
+      "problem": "The generator fabricates decision branches, loops, and error-handling paths that are not specified in the requirements, leading to extra activities and incorrect relations.",
+      "possible_causes": [
+        "The prompt may implicitly encourage the model to make the diagram 'complete' by adding standard UI/UX error handling (e.g., input validation) even when the requirement is a simple declarative statement.",
+        "The model over-interprets user stories, converting the 'so that' clause into a conditional check rather than a simple goal."
+      ]
+    },
+    {
+      "name": "missing_parallel_fork",
+      "problem": "The generator fails to identify and model concurrent or parallel behaviors, representing them sequentially instead.",
+      "possible_causes": [
+        "The prompt lacks instructions to identify lists of simultaneous actions, alternative targets, or concurrent data entries and model them using PlantUML fork/end fork constructs.",
+        "The model defaults to a strictly sequential activity flow when encountering comma-separated lists or multiple simultaneous options."
+      ]
+    },
+    {
+      "name": "over_specification_of_activities",
+      "problem": "The generator decomposes high-level requirements into granular, multi-step interactions that are not present in the source text.",
+      "possible_causes": [
+        "The prompt does not constrain the generator to strictly use the activities described in the text, allowing it to infer unstated sub-steps.",
+        "The model applies common knowledge of how a system works (e.g., profile editing workflows) rather than adhering strictly to the provided requirement."
+      ]
+    },
+    {
+      "name": "missing_conditional_and_optional_paths",
+      "problem": "The generator omits explicit conditional logic and optional steps that are clearly defined in the requirements.",
+      "possible_causes": [
+        "The prompt fails to instruct the model to actively extract and map conditional keywords (e.g., 'if', 'optional', 'if available') into PlantUML if/else or switch/case blocks.",
+        "The model flattens conditional logic into a single sequential path to simplify the diagram, losing required behavioral constraints."
+      ]
+    }
+  ]
+}
+```

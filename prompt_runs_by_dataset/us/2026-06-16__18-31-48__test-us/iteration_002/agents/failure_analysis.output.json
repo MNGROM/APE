@@ -1,0 +1,54 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The generator fails to identify and model concurrent behaviors explicitly described in the requirements, often representing them as sequential steps instead of using fork/end fork constructs.",
+      "possible_causes": [
+        "The prompt may not sufficiently emphasize extracting and mapping explicit parallel markers (e.g., 'concurrently', 'in parallel', 'simultaneously') to PlantUML fork blocks.",
+        "The generator defaults to a linear control-flow interpretation when actions are listed consecutively, even if they are logically concurrent."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The generator misrepresents periodic, retry, or conditional loop behaviors, often using inappropriate PlantUML constructs (like `switch` or `while` for simple delays) or omitting the loop structure entirely.",
+      "possible_causes": [
+        "The prompt lacks clear instructions on how to translate time-based delays (e.g., '10-second timeout') or periodic triggers (e.g., 'periodic loop', 'timer interrupts') into correct PlantUML loop syntax.",
+        "The generator confuses conditional branching with iterative looping, leading to incorrect structural representations."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The prediction omits specific activities or states that are present in the ground truth, particularly granular actions or decomposed elements.",
+      "possible_causes": [
+        "The generator tends to compress multiple explicit actions into a single broad activity node rather than preserving the discrete steps.",
+        "The prompt does not enforce strict completeness, allowing the model to summarize or skip detailed operational steps."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The prediction introduces activities or states that are not supported by the ground truth, often by over-decomposing a single action or adding redundant confirmations.",
+      "possible_causes": [
+        "The generator over-interprets implicit sub-steps, creating nodes for actions that the ground truth considers part of a single activity.",
+        "Lack of strict boundaries in the prompt causes the model to hallucinate intermediate states or UI feedback nodes."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The prediction omits or misrepresents control-flow relations, particularly failing to capture conditional dependencies or the correct nesting of logic.",
+      "possible_causes": [
+        "The generator struggles with complex conditional logic, flattening nested if-else structures or losing the hierarchical relationship between conditions.",
+        "The prompt does not adequately guide the extraction of prerequisite conditions and their direct dependencies."
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "problem": "The prediction adds unsupported or incorrect control-flow relations, such as improper termination paths or incorrect branching flow.",
+      "possible_causes": [
+        "The generator incorrectly routes stop/end actions, creating fragmented or premature termination paths within branches.",
+        "Misinterpretation of the requirement's flow leads to adding edges that logically contradict the specified state transitions."
+      ]
+    }
+  ]
+}
+```

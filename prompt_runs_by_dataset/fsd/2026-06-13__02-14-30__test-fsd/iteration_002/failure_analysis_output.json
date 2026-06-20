@@ -1,0 +1,114 @@
+```json
+{
+  "summary": "The batch mainly fails because the prompt gives weak guidance on activity granularity and grounding, leading to severe missing/extra activity errors. It also lacks guidance on representing concurrent lists and system partitions, causing frequent relation and parallel modeling mistakes.",
+  "error_patterns": [
+    {
+      "name": "missing_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "lmc-0011",
+        "lmc-0038",
+        "bp-0023",
+        "bp-0007"
+      ],
+      "problem": "The model compresses compound actions or sequential steps into single nodes, and omits explicit condition checks or intermediate states mentioned in the requirement.",
+      "suggested_prompt_direction": "Strengthen the instruction to decompose compound sentences into individual sequential actions and to explicitly model condition checks as separate decision nodes.",
+      "target_sections": [
+        "workflow",
+        "input"
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "severity": "high",
+      "evidence_case_ids": [
+        "us-0216",
+        "us-0153",
+        "lmc-0038"
+      ],
+      "problem": "The model hallucinates implementation details, UI interactions, or inferred sub-steps that are not stated in the requirement.",
+      "suggested_prompt_direction": "Emphasize strict grounding: do not invent actions, UI steps, or inferred outcomes; only create activities explicitly stated in the text.",
+      "target_sections": [
+        "workflow",
+        "rule"
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "severity": "high",
+      "evidence_case_ids": [
+        "pure-0030",
+        "lmc-0011",
+        "bp-0007"
+      ],
+      "problem": "The model fails to identify concurrent/parallel lists of items and instead models them sequentially. It also struggles with nested condition relations.",
+      "suggested_prompt_direction": "Add explicit workflow steps to identify lists of concurrent items or parallel triggers in the text and map them to fork/fork again constructs.",
+      "target_sections": [
+        "workflow",
+        "knowledge"
+      ]
+    },
+    {
+      "name": "extra_or_wrong_relation",
+      "severity": "medium",
+      "evidence_case_ids": [
+        "us-0153",
+        "pure-0010",
+        "bp-0023"
+      ],
+      "problem": "The model incorrectly applies fork/end fork for sequential or partitioned actions, creating false parallel relations.",
+      "suggested_prompt_direction": "Clarify the distinction between true concurrency (simultaneous actions) and sequential steps or organizational partitions.",
+      "target_sections": [
+        "knowledge",
+        "rule"
+      ]
+    }
+  ],
+  "knowledge_gaps": [
+    {
+      "id": "concurrent_list_to_fork",
+      "related_failure_patterns": [
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      "evidence_case_ids": [
+        "pure-0030",
+        "bp-0007",
+        "us-0153"
+      ],
+      "gap": "The prompt does not explain how to handle requirement sentences that list multiple items or actions occurring as parallel inputs or simultaneous outputs.",
+      "suggested_knowledge": "When the requirement lists multiple items or actions that happen simultaneously or act as parallel inputs/outputs (e.g., separated by commas, 'and', or 'or' in a list), model them using 'fork/fork again/end fork'. Do not use fork for sequential steps or mere organizational groupings."
+    },
+    {
+      "id": "partition_swimlane",
+      "related_failure_patterns": [
+        "extra_or_wrong_relation",
+        "missing_activity"
+      ],
+      "evidence_case_ids": [
+        "pure-0010"
+      ],
+      "gap": "The prompt lacks guidance on representing requirements that specify different actors, components, or systems responsible for different actions.",
+      "suggested_knowledge": "When the requirement assigns actions to different systems, components, or actors (e.g., 'System A: do X; System B: do Y'), use PlantUML 'partition' blocks to group activities by their responsible entity, rather than modeling them as parallel forks."
+    },
+    {
+      "id": "condition_decomposition",
+      "related_failure_patterns": [
+        "missing_activity",
+        "missing_or_wrong_relation"
+      ],
+      "evidence_case_ids": [
+        "lmc-0011",
+        "lmc-0038"
+      ],
+      "gap": "The prompt does not clearly state how to handle compound conditions (e.g., 'A and B') or implicit condition checks in requirements.",
+      "suggested_knowledge": "When a requirement states a compound condition (e.g., 'when A and B'), decompose it into nested 'if/else' constructs where each condition is checked sequentially. Model explicit condition checks as separate decision nodes rather than merging them into a single activity or condition label."
+    }
+  ],
+  "do_not_optimize_for": [
+    "Do not copy ground-truth PlantUML into the prompt.",
+    "Do not add dataset-specific examples or memorized answers.",
+    "Do not attempt to fix infrastructure or provider errors via prompt changes."
+  ]
+}
+```

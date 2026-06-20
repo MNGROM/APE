@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow does not instruct the model to identify lists of items or multiple simultaneous attributes as candidates for fork decomposition, nor does it guide the model to distinguish concurrent background tasks from conditional sub-tasks to prevent incorrect nesting. It also lacks heuristics for translating 'until'/'while' conditions into repeat-while structures and fails to instruct preserving hierarchical nesting of conditions (e.g., elseif chains or nested if-endif), leading to flattened sequential if-blocks."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks explicit guidance on recognizing lists of items or simultaneous attributes as triggers for fork/fork-again decomposition, and does not differentiate truly concurrent background tasks from conditional sub-tasks. It also lacks clear heuristics for mapping 'until'/'while' conditions and keywords like 'continuously' or 'with bounded retries' to repeat loops. Furthermore, it does not instruct the model to filter out UI feedback/updates as side-effects or consolidate trivial checks into guard conditions, and lacks guidance on mapping complex state-machine logic into structured control flow to preserve deep nesting."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section lacks a prohibition against converting UI feedback, notes, or implicit conditions into explicit action nodes, and lacks instructions to consolidate trivial checks into guard conditions instead of separate activities. It also lacks explicit rules to enforce the preservation of hierarchical nesting for mutually exclusive conditions (e.g., elseif chains) and rules to prevent misrepresenting conditional checks as loop conditions."
+    }
+  ]
+}
+```

@@ -1,0 +1,76 @@
+```json
+{
+  "summary": "The primary failures stem from over-decomposition and hallucination of implicit activities, which cascade into relation errors. The most effective repair targets the workflow and knowledge sections: refining the procedural extraction rules to prevent over-splitting and adding reusable modeling principles for compound actions, conditional outcomes, and inferred steps.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "over_decomposition_of_activities",
+        "invented_implicit_activities",
+        "cascading_relation_errors"
+      ],
+      "section_problem": "Step 2 explicitly instructs to decompose compound actions, causing the model to over-split cohesive requirements. Step 1's prohibition against inventing activities is too narrow (only mentions UI/system validations), allowing other inferred steps to slip in.",
+      "edit_intent": "Revise the extraction and decomposition steps to clarify that compound actions should remain single nodes unless explicit sequential markers are present, and broaden the grounding constraint to forbid inventing any implicit prerequisites, setup, or termination steps.",
+      "knowledge_gap_ids": [
+        "compound_vs_sequential_actions",
+        "avoiding_inferred_steps"
+      ],
+      "evidence_case_ids": [
+        "us-0165",
+        "bp-0005",
+        "bp-0021",
+        "us-0200",
+        "rac-0005",
+        "rac-0019",
+        "lmc-0055"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_conditional_outcomes",
+        "cascading_relation_errors"
+      ],
+      "section_problem": "Lacks reusable modeling principles for distinguishing compound actions from sequential ones, modeling the explicit outcomes of conditional branches, and avoiding inferred steps. This conceptual gap causes the model to rely on its default over-zealous decomposition habits.",
+      "edit_intent": "Add concise modeling principles addressing how to handle compound vs. sequential actions, how to explicitly model conditional outcomes as activity nodes, and a strict rule against inferring unstated prerequisite or termination steps.",
+      "knowledge_gap_ids": [
+        "compound_vs_sequential_actions",
+        "modeling_conditional_outcomes",
+        "avoiding_inferred_steps"
+      ],
+      "evidence_case_ids": [
+        "us-0165",
+        "bp-0021",
+        "lmc-0055",
+        "lmc-0002",
+        "us-0200",
+        "rac-0005"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The agent's role and scope are correctly defined; the failure is in the extraction and modeling procedure, not the overall task definition."
+    },
+    {
+      "section": "input",
+      "reason": "The input specification is accurate and does not contribute to the activity granularity or hallucination issues."
+    },
+    {
+      "section": "output",
+      "reason": "The output format constraint (PlantUML only) is appropriate; syntax errors are not the primary failure mode in this analysis."
+    },
+    {
+      "section": "rule",
+      "reason": "While a hard rule could help, the constraints prefer general reusable knowledge and procedural workflow adjustments over adding new arbitrary rules, especially since the failure is deeply tied to modeling concepts and generation steps."
+    }
+  ]
+}
+```

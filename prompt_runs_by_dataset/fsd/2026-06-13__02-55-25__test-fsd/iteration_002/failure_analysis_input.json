@@ -1,0 +1,919 @@
+{
+  "task": "Analyze batch-level failures for a UML activity diagram prompt. Do not propose a full prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\failure_analysis.md",
+  "current_prompt": "## agent task\n\nYou are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.\n\n## input\n\nThe input is a single textual software requirement or scenario description.\n\n## output\n\nOutput PlantUML code only.\n\n## workflow\n\n## knowledge\n\nUse PlantUML 'fork'/'end fork' to model independent or simultaneous actions, rather than combining them into a single activity or forcing a sequential flow. Use PlantUML 'switch'/'case'/'endswitch' when the requirement describes a choice among mutually exclusive alternatives; reserve 'if'/'else' for conditional logic based on a boolean state.\n\n## rule\n\n1. Strictly ground every activity in the explicit statements of the requirement; do not infer, invent, or over-decompose into unstated implementation or UI steps. 2. Each distinct action explicitly described in the input must map to exactly one activity node; do not merge multiple distinct actions into a single node. 3. Only generate control-flow relations that are directly stated or logically necessary for the explicit sequence and conditions; prohibit assumed validation loops, error branches, or inferred sequential steps.\n",
+  "evaluation": {
+    "summary": {
+      "count": 20.0,
+      "syntax_pass_rate": 0.85,
+      "infrastructure_error_rate": 0.0,
+      "node_precision": 0.45330124223602486,
+      "node_recall": 0.4250796895590387,
+      "node_f1": 0.43073153571025624,
+      "relation_precision": 0.32867999096657635,
+      "relation_recall": 0.33580697631953255,
+      "relation_f1": 0.3310759036560923,
+      "plantuml_compilation_pass_rate": 0.85,
+      "llm_element_evaluated": 0.0,
+      "llm_element_failed": 0.0,
+      "llm_node_precision": 0.0,
+      "llm_node_recall": 0.0,
+      "llm_node_f1": 0.0,
+      "llm_relation_precision": 0.0,
+      "llm_relation_recall": 0.0,
+      "llm_relation_f1": 0.0
+    },
+    "failure_type_counts": {
+      "missing_activity": 16,
+      "extra_activity": 16,
+      "missing_or_wrong_relation": 15,
+      "extra_or_wrong_relation": 15,
+      "syntax_error": 3
+    },
+    "representative_cases": [
+      {
+        "dataset": "bp",
+        "case_id": "bp-0014",
+        "input_requirement": "14.\tlog into the LifeCycle Manager tool.To log into the LifeCycle Manager tool, complete the following steps:1. Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager. The LifeCycle Manager login screen appears.2. In the System field, enter the name of the Central Management Server (CMS) on which the LifeCycle Manager tool is installed.3. Enter the user name and password.4. Select the appropriate authentication method from the Authentication drop-down list.The LifeCycle Manager tool supports the following authentication types:• Enterprise authentication - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system. This is the default authentication method.• LDAP authentication - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system.• Windows AD - This authentication type requires a user name and a password that are recognized by the BusinessObjects Enterprise system.The LDAP, Windows AD, and other third-party authentication types require a special setup. For information on setting up these authentication types, see the BusinessObjects Enterprise Administrator's Guide.5. Click Log on.",
+        "gold_plantuml": "start\n\n:Select \"Start\";\n:Select \"Programs\";\n:Select \"BusinessObjects XI 3.1\";\n:Select \"BusinessObjects Enterprise\";\n:Select \"BusinessObjects LifeCycle Manager\";\n:LifeCycle Manager login screen appears;\n\n:Go to System field;\n:Enter CMS name;\n:Enter username and password;\n\n:Open Authentication drop-down list;\n:Select authentication method;\n\nif(Default method?) then(yes)\n  :Enterprise authentication;\n  :Recognize user name and password;\nelse(no)\nswitch (Other Methods)\ncase(LDAP)\n  :Recognize user name and password;\n  :Special setup;\ncase(Windows AD)\n  :Recognize user name and password;\n  :Special setup;\ncase(other third-party types)\n  :Special setup;\nendswitch\nendif\n\n:Click \"Log on\";\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Select Start > Programs > BusinessObjects XI 3.1 > BusinessObjects Enterprise > BusinessObjects LifeCycle Manager;\n:Enter the name of the Central Management Server (CMS) in the System field;\n:Enter the user name and password;\nswitch\ncase (Enterprise authentication)\n    :Select Enterprise authentication from the Authentication drop-down list;\ncase (LDAP authentication)\n    :Select LDAP authentication from the Authentication drop-down list;\ncase (Windows AD)\n    :Select Windows AD authentication from the Authentication drop-down list;\nendswitch\n:Click Log on;\n@enduml",
+        "syntax": {
+          "passed": false,
+          "errors": [
+            "ERROR"
+          ]
+        },
+        "plantuml_compilation": {
+          "passed": false,
+          "errors": [
+            "ERROR",
+            "Some diagram description contains errors"
+          ]
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.4,
+          "recall": 0.16666666666666666,
+          "f1": 0.23529411764705882,
+          "missing": [
+            "select start",
+            "select programs",
+            "select businessobjects xi 3.1",
+            "select businessobjects enterprise",
+            "select businessobjects lifecycle manager",
+            "lifecycle manager login screen appears",
+            "go to system field",
+            "enter cms name",
+            "open authentication drop-down list",
+            "select authentication method",
+            "default method?",
+            "recognize user name and password",
+            "recognize user name and password",
+            "recognize user name and password",
+            "other methods",
+            "ldap",
+            "special setup",
+            "special setup",
+            "special setup",
+            "other third-party types"
+          ],
+          "extra": [
+            "select start > programs > businessobjects xi 3.1 > businessobjects enterprise > businessobjects lifecycle manager",
+            "enter the name of the central management server (cms) in the system field",
+            "select enterprise authentication from the authentication drop-down list",
+            "ldap authentication",
+            "select ldap authentication from the authentication drop-down list",
+            "select windows ad authentication from the authentication drop-down list"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "select start -> select programs",
+            "select programs -> select businessobjects xi 3.1",
+            "select businessobjects xi 3.1 -> select businessobjects enterprise",
+            "select businessobjects enterprise -> select businessobjects lifecycle manager",
+            "select businessobjects lifecycle manager -> lifecycle manager login screen appears",
+            "lifecycle manager login screen appears -> go to system field",
+            "go to system field -> enter cms name",
+            "enter cms name -> enter username and password",
+            "enter username and password -> open authentication drop-down list",
+            "open authentication drop-down list -> select authentication method",
+            "select authentication method -> default method?",
+            "default method? -> enterprise authentication",
+            "enterprise authentication -> recognize user name and password",
+            "recognize user name and password -> other methods",
+            "other methods -> ldap",
+            "ldap -> recognize user name and password",
+            "recognize user name and password -> special setup",
+            "recognize user name and password -> special setup",
+            "special setup -> windows ad",
+            "windows ad -> recognize user name and password"
+          ],
+          "extra": [
+            "select start > programs > businessobjects xi 3.1 > businessobjects enterprise > businessobjects lifecycle manager -> enter the name of the central management server (cms) in the system field",
+            "enter the name of the central management server (cms) in the system field -> enter the user name and password",
+            "enter the user name and password -> enterprise authentication",
+            "enterprise authentication -> select enterprise authentication from the authentication drop-down list",
+            "select enterprise authentication from the authentication drop-down list -> ldap authentication",
+            "ldap authentication -> select ldap authentication from the authentication drop-down list",
+            "select ldap authentication from the authentication drop-down list -> windows ad",
+            "windows ad -> select windows ad authentication from the authentication drop-down list",
+            "select windows ad authentication from the authentication drop-down list -> click log on"
+          ]
+        },
+        "failure_types": [
+          "syntax_error",
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0012",
+        "input_requirement": "After the system starts up:\n- If charging is active (charging=1) and the front MCU high-voltage detection flag is 0, transition to state 153.\n- If the BMS-fast charger handshake flag is 0 and the front MCU high-voltage flag is 0, enter state 155.\n\nWhile in state 155:\n1. If pre-charge failure occurs, move to state 175. If fast charging remains inactive after this, shut down and end the process.\n2. If a high-voltage shutdown request (for charging/discharging) is detected (value=2), wait 0.8 seconds before entering state 175. If fast charging is inactive afterward, shut down and end.\n3. If the ignition switch status is 2, remain in state 155. If a high-voltage shutdown request (value=2) exists during this, pause for 0.8 seconds. If the ignition switch reads 0, proceed to state 175. Should fast charging be inactive following these actions, shut down and end.\n4. If fast charging is inactive, immediately switch to state 175, shut down, and terminate the process.",
+        "gold_plantuml": "start\nif (charging=1 and front MCU high-voltage detection flag=0) then(yes)\n  :switch to state 153;\n  if (BMS-fast charger handshake flag=0 and front MCU high-voltage flag=0) then(yes)\n    :enter state 155;\n    switch(condition judgement)\n    case (pre-charge failure occurs)\n      :switch to state 175;\n      if(fast charging is inactive)then(yes)\n        :shutdown;\n        stop\n      endif\n    case (high-voltage shutdown request charging/discharging =2)\n      :wait 0.8s;\n      :switch to state 175;\n      if(fast charging is inactive)then(yes)\n        :shutdown;\n        stop\n      endif\n    case (ignition switch=2)\n      :stay in state 155;\n      if (high-voltage shutdown request charging/discharging =2) then\n        :wait 0.8s;\n        if (ignition switch=0) then\n          :switch to state 175;\n          if(fast charging is inactive)then(yes)\n            :shutdown;\n            stop\n          endif\n        endif\n      endif\n    case (fast charging is inactive)\n      :switch to state 175;\n      :shutdown;\n      stop\n    endswitch\n  endif\nendif\nend",
+        "generated_plantuml": "@startuml\nstart\n:System starts up;\nif (charging=1 and front MCU high-voltage detection flag=0?) then (yes)\n  :Transition to state 153;\nelse (no)\nendif\nif (BMS-fast charger handshake flag=0 and front MCU high-voltage flag=0?) then (yes)\n  :Enter state 155;\nelse (no)\nendif\n\nswitch\ncase (pre-charge failure occurs)\n  :Move to state 175;\n  if (fast charging remains inactive?) then (yes)\n    :Shut down;\n    end\n  else (no)\n  endif\ncase (high-voltage shutdown request (value=2) is detected)\n  :Wait 0.8 seconds;\n  :Enter state 175;\n  if (fast charging is inactive afterward?) then (yes)\n    :Shut down;\n    end\n  else (no)\n  endif\ncase (ignition switch status is 2)\n  :Remain in state 155;\n  if (high-voltage shutdown request (value=2) exists?) then (yes)\n    :Pause for 0.8 seconds;\n  else (no)\n  endif\n  if (ignition switch reads 0?) then (yes)\n    :Proceed to state 175;\n  else (no)\n  endif\n  if (fast charging is inactive?) then (yes)\n    :Shut down;\n    end\n  else (no)\n  endif\ncase (fast charging is inactive)\n  :Switch to state 175;\n  :Shut down;\n  end\nendswitch\n@enduml",
+        "syntax": {
+          "passed": false,
+          "errors": [
+            "ERROR"
+          ]
+        },
+        "plantuml_compilation": {
+          "passed": false,
+          "errors": [
+            "ERROR",
+            "Some diagram description contains errors"
+          ]
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.48,
+          "recall": 0.48,
+          "f1": 0.48,
+          "missing": [
+            "switch to state 153",
+            "condition judgement",
+            "switch to state 175",
+            "switch to state 175",
+            "switch to state 175",
+            "fast charging is inactive",
+            "high-voltage shutdown request charging/discharging =2",
+            "high-voltage shutdown request charging/discharging =2",
+            "wait 0.8s",
+            "wait 0.8s",
+            "ignition switch=2",
+            "stay in state 155",
+            "ignition switch=0"
+          ],
+          "extra": [
+            "system starts up",
+            "transition to state 153",
+            "move to state 175",
+            "high-voltage shutdown request (value=2",
+            "high-voltage shutdown request (value=2",
+            "wait 0.8 seconds",
+            "enter state 175",
+            "fast charging is inactive afterward?",
+            "ignition switch status is 2",
+            "remain in state 155",
+            "pause for 0.8 seconds",
+            "ignition switch reads 0?",
+            "proceed to state 175"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.4583333333333333,
+          "recall": 0.4583333333333333,
+          "f1": 0.4583333333333333,
+          "missing": [
+            "enter state 155 -> condition judgement",
+            "condition judgement -> pre-charge failure occurs",
+            "switch to state 175 -> fast charging is inactive",
+            "switch to state 175 -> fast charging is inactive",
+            "shutdown -> high-voltage shutdown request charging/discharging =2",
+            "high-voltage shutdown request charging/discharging =2 -> wait 0.8s",
+            "high-voltage shutdown request charging/discharging =2 -> wait 0.8s",
+            "wait 0.8s -> switch to state 175",
+            "shutdown -> ignition switch=2",
+            "ignition switch=2 -> stay in state 155",
+            "stay in state 155 -> high-voltage shutdown request charging/discharging =2",
+            "wait 0.8s -> ignition switch=0",
+            "ignition switch=0 -> switch to state 175"
+          ],
+          "extra": [
+            "system starts up -> charging=1 and front mcu high-voltage detection flag=0?",
+            "enter state 155 -> pre-charge failure occurs",
+            "move to state 175 -> fast charging remains inactive?",
+            "shut down -> high-voltage shutdown request (value=2",
+            "high-voltage shutdown request (value=2 -> wait 0.8 seconds",
+            "wait 0.8 seconds -> enter state 175",
+            "enter state 175 -> fast charging is inactive afterward?",
+            "shut down -> ignition switch status is 2",
+            "ignition switch status is 2 -> remain in state 155",
+            "remain in state 155 -> high-voltage shutdown request (value=2",
+            "high-voltage shutdown request (value=2 -> pause for 0.8 seconds",
+            "pause for 0.8 seconds -> ignition switch reads 0?",
+            "ignition switch reads 0? -> proceed to state 175"
+          ]
+        },
+        "failure_types": [
+          "syntax_error",
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "rac",
+        "case_id": "rac-0004",
+        "input_requirement": "After the system starts up:\n- If slow charging is active (state 1) and the charging/discharging system is powered up, switch to state 95.\n- If the vehicle charging/discharging mode is 2 and the system is powered up, switch to state 105. Then, while in state 105:\n  1) If the high-voltage shutdown value is 3 or 4, switch to state 115. If slow charging becomes inactive during this, shut down and end the process.\n  2) If a high-voltage shutdown request (value 3) occurs while the ignition is on (position 2), return to state 105. If the ignition turns off (position 0), switch to state 115. If slow charging becomes inactive, shut down and end.\n  3) If a pre-charge failure happens, switch to state 115. If slow charging becomes inactive, shut down and end.\n  4) If an AC discharge system fault occurs, switch to state 115. If slow charging becomes inactive, shut down and end.\n  5) If slow charging becomes inactive, switch to state 115, then shut down and end.",
+        "gold_plantuml": "start\nif (slow charging state is 1 and charging/discharging power-up is ready) then\n  :switch to state 95;\n if (vehicle charging/discharging mode is 2 and power-up is ready) then\n  :switch to state 105;\n  switch(condition judgement) \n  case (high-voltage shutdown charging/discharging value is 3 or 4)\n    :switch to state 115;\n     if (slow charging?) then(no)\n     :shutdown;\n     stop\n     end if\n  case (high-voltage shutdown request is 3 and ignition switch is 2)\n    :switch to state 105;\n    if(ignition switch becomes 0) then\n    :switch to state 115;\n     if (slow charging?) then(no)\n          :shutdown;\n     stop\n     end if\n    end if\n  case (pre-charge failure occurs)\n    :switch to state 115;\n    if (slow charging?) then(no)\n         :shut down;\n     stop\n     end if\n  case (AC discharge system fault occurs)\n    :switch to state 115;\n    if (slow charging?) then(no)\n         :shutdown;\n     stop\n     end if\n  case (slow charging is inactive)\n   :switch to state 115;\n    if (slow charging?) then(no)\n         :shutdown;\n     stop\n     end if\n  endswitch\n  end if\n  end if\n  end",
+        "generated_plantuml": "@startuml\nstart\n:System starts up;\nswitch\ncase (Slow charging is active (state 1) and the charging/discharging system is powered up)\n  :Switch to state 95;\ncase (Vehicle charging/discharging mode is 2 and the system is powered up)\n  :Switch to state 105;\n  switch\n  case (High-voltage shutdown value is 3 or 4)\n    :Switch to state 115;\n    if (Slow charging becomes inactive) then (yes)\n      :Shut down;\n      end\n    endif\n  case (High-voltage shutdown request (value 3) occurs while the ignition is on (position 2))\n    :Return to state 105;\n    if (Slow charging becomes inactive) then (yes)\n      :Shut down;\n      end\n    endif\n  case (Ignition turns off (position 0))\n    :Switch to state 115;\n    if (Slow charging becomes inactive) then (yes)\n      :Shut down;\n      end\n    endif\n  case (Pre-charge failure happens)\n    :Switch to state 115;\n    if (Slow charging becomes inactive) then (yes)\n      :Shut down;\n      end\n    endif\n  case (AC discharge system fault occurs)\n    :Switch to state 115;\n    if (Slow charging becomes inactive) then (yes)\n      :Shut down;\n      end\n    endif\n  case (Slow charging becomes inactive)\n    :Switch to state 115;\n    :Shut down;\n    end\n  endswitch\nendswitch\n@enduml",
+        "syntax": {
+          "passed": false,
+          "errors": [
+            "ERROR"
+          ]
+        },
+        "plantuml_compilation": {
+          "passed": false,
+          "errors": [
+            "ERROR",
+            "Some diagram description contains errors"
+          ]
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.5,
+          "recall": 0.5185185185185185,
+          "f1": 0.509090909090909,
+          "missing": [
+            "slow charging state is 1 and charging/discharging power-up is ready",
+            "vehicle charging/discharging mode is 2 and power-up is ready",
+            "switch to state 105",
+            "condition judgement",
+            "high-voltage shutdown charging/discharging value is 3 or 4",
+            "slow charging?",
+            "slow charging?",
+            "slow charging?",
+            "slow charging?",
+            "slow charging?",
+            "high-voltage shutdown request is 3 and ignition switch is 2",
+            "ignition switch becomes 0",
+            "pre-charge failure occurs"
+          ],
+          "extra": [
+            "system starts up",
+            "slow charging is active (state 1",
+            "vehicle charging/discharging mode is 2 and the system is powered up",
+            "high-voltage shutdown value is 3 or 4",
+            "slow charging becomes inactive",
+            "slow charging becomes inactive",
+            "slow charging becomes inactive",
+            "slow charging becomes inactive",
+            "slow charging becomes inactive",
+            "shut down",
+            "high-voltage shutdown request (value 3",
+            "return to state 105",
+            "ignition turns off (position 0",
+            "pre-charge failure happens"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.18518518518518517,
+          "recall": 0.19230769230769232,
+          "f1": 0.18867924528301885,
+          "missing": [
+            "slow charging state is 1 and charging/discharging power-up is ready -> switch to state 95",
+            "switch to state 95 -> vehicle charging/discharging mode is 2 and power-up is ready",
+            "vehicle charging/discharging mode is 2 and power-up is ready -> switch to state 105",
+            "switch to state 105 -> condition judgement",
+            "condition judgement -> high-voltage shutdown charging/discharging value is 3 or 4",
+            "high-voltage shutdown charging/discharging value is 3 or 4 -> switch to state 115",
+            "switch to state 115 -> slow charging?",
+            "switch to state 115 -> slow charging?",
+            "switch to state 115 -> slow charging?",
+            "switch to state 115 -> slow charging?",
+            "switch to state 115 -> slow charging?",
+            "slow charging? -> shutdown",
+            "slow charging? -> shutdown",
+            "slow charging? -> shutdown",
+            "slow charging? -> shutdown",
+            "shutdown -> high-voltage shutdown request is 3 and ignition switch is 2",
+            "high-voltage shutdown request is 3 and ignition switch is 2 -> switch to state 105",
+            "switch to state 105 -> ignition switch becomes 0",
+            "ignition switch becomes 0 -> switch to state 115",
+            "shutdown -> pre-charge failure occurs"
+          ],
+          "extra": [
+            "system starts up -> slow charging is active (state 1",
+            "slow charging is active (state 1 -> switch to state 95",
+            "switch to state 95 -> vehicle charging/discharging mode is 2 and the system is powered up",
+            "vehicle charging/discharging mode is 2 and the system is powered up -> switch to state 105",
+            "switch to state 105 -> high-voltage shutdown value is 3 or 4",
+            "high-voltage shutdown value is 3 or 4 -> switch to state 115",
+            "switch to state 115 -> slow charging becomes inactive",
+            "switch to state 115 -> slow charging becomes inactive",
+            "switch to state 115 -> slow charging becomes inactive",
+            "switch to state 115 -> slow charging becomes inactive",
+            "slow charging becomes inactive -> shut down",
+            "slow charging becomes inactive -> shut down",
+            "slow charging becomes inactive -> shut down",
+            "slow charging becomes inactive -> shut down",
+            "slow charging becomes inactive -> shut down",
+            "shut down -> high-voltage shutdown request (value 3",
+            "high-voltage shutdown request (value 3 -> return to state 105",
+            "return to state 105 -> slow charging becomes inactive",
+            "shut down -> ignition turns off (position 0",
+            "ignition turns off (position 0 -> switch to state 115"
+          ]
+        },
+        "failure_types": [
+          "syntax_error",
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0011",
+        "input_requirement": "7.\tThe autopilot shall change states from PULLUP to TRANSITION when the system is supported and sensor data is good.",
+        "gold_plantuml": "start\n\nif(System is supported?) then(yes)\n if(Sensor data is good?) then(yes)\n :Autopilot change states from PULLUP to TRANSITION;\n else(no)\n endif\nelse(no)\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:PULLUP;\nif (System is supported and sensor data is good?) then (yes)\n  :TRANSITION;\nelse (no)\nendif\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "system is supported?",
+            "sensor data is good?",
+            "autopilot change states from pullup to transition"
+          ],
+          "extra": [
+            "pullup",
+            "system is supported and sensor data is good?",
+            "transition"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "system is supported? -> sensor data is good?",
+            "sensor data is good? -> autopilot change states from pullup to transition"
+          ],
+          "extra": [
+            "pullup -> system is supported and sensor data is good?",
+            "system is supported and sensor data is good? -> transition"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0038",
+        "input_requirement": "4.\tThe absolute error between the zt truth data and the output z shall never exceed a tolerance of 0.01, for the equivalent input of (xt, yt).",
+        "gold_plantuml": "start\n\n:For equivalent input of (xt, yt);\n\nif(absolute error between zt truth data and output z <= 0.01?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Compute absolute error between zt truth data and output z for equivalent input of (xt, yt);\nswitch (Absolute error <= 0.01?)\ncase (True)\n:Error tolerance met;\ncase (False)\n:Error tolerance exceeded;\nendswitch\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "for equivalent input of (xt yt)",
+            "absolute error between zt truth data and output z <= 0.01?",
+            "allowed",
+            "not allowed"
+          ],
+          "extra": [
+            "compute absolute error between zt truth data and output z for equivalent input of (xt yt)",
+            "absolute error <= 0.01?",
+            "true",
+            "error tolerance met",
+            "false",
+            "error tolerance exceeded"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "for equivalent input of (xt yt) -> absolute error between zt truth data and output z <= 0.01?",
+            "absolute error between zt truth data and output z <= 0.01? -> allowed",
+            "allowed -> not allowed"
+          ],
+          "extra": [
+            "compute absolute error between zt truth data and output z for equivalent input of (xt yt) -> absolute error <= 0.01?",
+            "absolute error <= 0.01? -> true",
+            "true -> error tolerance met",
+            "error tolerance met -> false",
+            "false -> error tolerance exceeded"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "lmc",
+        "case_id": "lmc-0056",
+        "input_requirement": "8.\tThe determinant of the Rotation Matrix, |DCM321|, shall be equal to 1.0.",
+        "gold_plantuml": "start\n\n:Determinant of Rotation Matrix |DCM321|;\nif( =10?) then(yes)\n:Allowed;\nelse(no)\n:Not allowed;\nendif\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Calculate the determinant of the Rotation Matrix |DCM321|;\nif (Is |DCM321| equal to 1.0?) then (Yes)\n  :Pass requirement;\nelse (No)\n  :Fail requirement;\nendif\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "determinant of rotation matrix dcm321",
+            "=10?",
+            "allowed",
+            "not allowed"
+          ],
+          "extra": [
+            "calculate the determinant of the rotation matrix dcm321",
+            "is dcm321 equal to 1.0?",
+            "pass requirement",
+            "fail requirement"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "determinant of rotation matrix dcm321 -> =10?",
+            "=10? -> allowed",
+            "allowed -> not allowed"
+          ],
+          "extra": [
+            "calculate the determinant of the rotation matrix dcm321 -> is dcm321 equal to 1.0?",
+            "is dcm321 equal to 1.0? -> pass requirement",
+            "pass requirement -> fail requirement"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0023",
+        "input_requirement": "23.\tpromote a jobLog into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, select the job that you want to promote. You can also right-click the home page screen, and click Promote.3. From the source and the destination systems drop-down lists, select the source and destination systems.Note:Ensure that you have logged into both the source and destination systems before you proceed with the promotion process.4. In the External Change Management ID field, enter the appropriate value, and click Save.5. Click Mappings. Click Edit Mappings if you want to create and validate mappings.6. Click Security Settings, if required. The following options are displayed:• Do not Promote Security - This is the default option.• Promote Security - Use this option to promote jobs along with theassociated security rights.• Include application rights - This option is enabled only if you select Promote Security. If the objects in the job inherit any application rights, the job is promoted along with these rights. You can also click View Security to view the security dependencies of the infoobjects in the job.7. Click Test Promote to ensure that there is no conflict between CUIDs in the source and destination systems. The promotion details are displayed. The first column displays the objects to be promoted, and the second column displays the promotion status. The LifeCycle Manager tool classifies the selected objects into users, groups, universes, and so on.Note:Running the Test Promote feature does not commit any infoobjects for promotion. The result of a test promote can be any of the following:• Overwritten - The infoobject in the destination is overwritten by the infoobject in the source system.• Mapped - The following infoobject types are mapped to the destination system: folders, users, user groups, and custom roles. An infoobject is mapped to the destination system and promoted only if the Security option is enabled. Otherwise, the infoobject is not promoted.• Copied - The infoobject in the source system is copied to the destination system.• Dropped - The infoobject is not promoted from the source system to the destination system.• Warning - The infoobject in the destination system is the newer version and you can remove the infoobject from the Job. However, if you want to promote, the infoobject gets promoted.8. Click Schedule Job if you want to schedule the job promotion.9. Click Promote.",
+        "gold_plantuml": "start\n\n:Log in LifeCycle Manager tool;\nswitch(Selection method)\ncase(1)\n:Go to \"Promotion Jobs\" home page;\n:Select the job want to promote;\ncase(2)\n:Right-click;\n:Click \"Promote\";\nendswitch\n\n:Open source and destination systems drop-down lists;\n:Select source and destination systems;\n\nif(Have logged into both source and destination systems) then(no)\nstop\nelse(yes)\nendif\n\n:Go to External Change Management ID field;\n:Enter appropriate value;\n:Click \"Save\";\n\n:Click \"Mappings\";\nif(Create and validate mappings) then(yes)\n:Click \"Edit Mappings\";\nelse(no)\nendif\n\nif(See Security Settings?) then(yes)\n:Click \"Security Settings\";\n:Options are displayed;\nfork\n:\"Do not Promote Security\";\nnote right:Default option\nfork again\n:\"Promote Security\";\n:Promote jobs along with associated security rights;\nfork again\n:\"Include application rights\";\n\nif (Select \"Promote Security\"?) then(yes)\n:The option is enabled;\n  if(Objects inherit any application rights?) then(yes)\n  :Job is promoted along with these rights;\n  else(no)\n  endif\nelse(no)\nendif\nend fork\n\nif(Click \"View Security\"?) then(yes)\n:View infoobjects security dependencies;\nelse(no)\nendif\nendif\n\n:Click \"Test Promote\";\n:Ensure no conflict between CUIDs in the source and destination systems;\n:Promotion details are displayed;\n\nfork\n:First column;\n:Objects to be promoted;\nfork again\n:Second column;\n:Promotion status;\nend fork\n\n:LifeCycle Manager tool classifies selected objects;\n\n:Run Test Promote feature;\n:Commit no infoobjects for promotion;\n\nswitch(Results)\ncase(Overwritten)\n :Infoobject in destination is overwritten by infoobject in source system;\ncase(Mapped)\n :Infoobject types;\n fork\n :Folders,\n fork again\n :Users;\n fork again\n :User groups;\n fork again\n :Custom roles;\n end fork\n\n if(Security option is enabled?) then(yes)\n :Infoobject is mapped to destination system and promoted;\n else(no)\n :Infoobject is not promoted;\n endif\ncase(Copied)\n :Infoobject in source system is copied to destination system;\ncase(Dropped)\n :Infoobject is not promoted from source system to destination system;\ncase(Warning)\n :Infoobject in destination system is the newer version;\n :Remove infoobject from Job;\nif(Promote?) then(yes)\n :Infoobject gets promoted;\nelse(no)\nendif\nendswitch\n\nif(Schedule job promotion?) then(yes)\n:Click \"Schedule Job\";\nelse(no)\nendif\n\n:Click \"Promote\";\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Promote a jobLog into the LifeCycle Manager tool;\n:Select the job to promote\\n(Or right-click home page and click Promote);\n:Select source and destination systems from drop-down lists;\n:Enter External Change Management ID and click Save;\n:Click Mappings;\n:Click Edit Mappings to create and validate mappings;\nswitch (Security Settings required?)\ncase (Do not Promote Security)\n  :Select Do not Promote Security (default);\ncase (Promote Security)\n  :Select Promote Security;\n  if (Include application rights?) then (Yes)\n    :Select Include application rights;\n  endif\nendswitch\n:Click View Security to view security dependencies;\n:Click Test Promote to ensure no CUID conflict;\n:View promotion details and status;\nswitch (Test Promote result)\ncase (Overwritten)\n  :Infoobject in destination is overwritten by source;\ncase (Mapped)\n  :Infoobject is mapped to destination system;\ncase (Copied)\n  :Infoobject in source is copied to destination;\ncase (Dropped)\n  :Infoobject is not promoted;\ncase (Warning)\n  :Infoobject in destination is newer version;\nendswitch\nif (Schedule Job promotion?) then (Yes)\n  :Click Schedule Job;\nendif\n:Click Promote;\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.13333333333333333,
+          "recall": 0.19047619047619047,
+          "f1": 0.1568627450980392,
+          "missing": [
+            "log in lifecycle manager tool",
+            "selection method",
+            "1",
+            "go to promotion jobs home page",
+            "select the job want to promote",
+            "2",
+            "right-click",
+            "select source and destination systems",
+            "have logged into both source and destination systems",
+            "go to external change management id field",
+            "enter appropriate value",
+            "click save",
+            "create and validate mappings",
+            "click edit mappings",
+            "see security settings?",
+            "click security settings",
+            "options are displayed"
+          ],
+          "extra": [
+            "promote a joblog into the lifecycle manager tool",
+            "select the job to promote (or right-click home page and click promote)",
+            "enter external change management id and click save",
+            "click edit mappings to create and validate mappings",
+            "security settings required?",
+            "select do not promote security (default)",
+            "promote security",
+            "select promote security",
+            "include application rights?",
+            "select include application rights",
+            "click view security to view security dependencies",
+            "click test promote to ensure no cuid conflict",
+            "view promotion details and status",
+            "test promote result",
+            "overwritten",
+            "infoobject in destination is overwritten by source",
+            "mapped",
+            "infoobject is mapped to destination system",
+            "copied",
+            "infoobject in source is copied to destination"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "log in lifecycle manager tool -> selection method",
+            "selection method -> 1",
+            "1 -> go to promotion jobs home page",
+            "go to promotion jobs home page -> select the job want to promote",
+            "select the job want to promote -> 2",
+            "2 -> right-click",
+            "right-click -> click promote",
+            "click promote -> open source and destination systems drop-down lists",
+            "open source and destination systems drop-down lists -> select source and destination systems",
+            "select source and destination systems -> have logged into both source and destination systems",
+            "have logged into both source and destination systems -> go to external change management id field",
+            "go to external change management id field -> enter appropriate value",
+            "enter appropriate value -> click save",
+            "click save -> click mappings",
+            "click mappings -> create and validate mappings",
+            "create and validate mappings -> click edit mappings",
+            "click edit mappings -> see security settings?",
+            "see security settings? -> click security settings",
+            "click security settings -> options are displayed",
+            "options are displayed -> do not promote security"
+          ],
+          "extra": [
+            "promote a joblog into the lifecycle manager tool -> select the job to promote (or right-click home page and click promote)",
+            "select the job to promote (or right-click home page and click promote) -> select source and destination systems from drop-down lists",
+            "select source and destination systems from drop-down lists -> enter external change management id and click save",
+            "enter external change management id and click save -> click mappings",
+            "click mappings -> click edit mappings to create and validate mappings",
+            "click edit mappings to create and validate mappings -> security settings required?",
+            "security settings required? -> do not promote security",
+            "do not promote security -> select do not promote security (default)",
+            "select do not promote security (default) -> promote security",
+            "promote security -> select promote security",
+            "select promote security -> include application rights?",
+            "include application rights? -> select include application rights",
+            "select include application rights -> click view security to view security dependencies",
+            "click view security to view security dependencies -> click test promote to ensure no cuid conflict",
+            "click test promote to ensure no cuid conflict -> view promotion details and status",
+            "view promotion details and status -> test promote result",
+            "test promote result -> overwritten",
+            "overwritten -> infoobject in destination is overwritten by source",
+            "infoobject in destination is overwritten by source -> mapped",
+            "mapped -> infoobject is mapped to destination system"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      },
+      {
+        "dataset": "bp",
+        "case_id": "bp-0007",
+        "input_requirement": "7.\tLoading Transaction Data1. Go to the Data Warehousing Workbench; in the Modeling area choose Info Provider. The transformation and the Data source are displayed in the Info Area below the Info Cube Sales Overview.2. In the context menu of the Data source, choose Create Info Package...3. On the next screen, enter a description for the Info Package and choose Save. The Info Package maintenance screen for the scheduler appears.4. Go to the tab page Schedule and choose Start.5. To check the load process, choose Monitor in the toolbar of Info Package maintenance.6. On the next screen, select the date and choose Execute. The monitor for the load process is displayed.7. Select the load process for your Data source from the tree at the left of the screen.8. Exit the Info Package maintenance screen.9. From the context menu of the Data source, choose Create Data Transfer Process.... The system displays a generated description, the type, source and target of the data transfer process.10. Choose Continue.11. The data transfer process maintenance screen appears.12. Go to tab page Extraction and select extraction mode Full.13. Activate the data transfer process.14. Go to tab page Execute and choose Execute.",
+        "gold_plantuml": "start\n\n:Go to Data Warehousing Workbench;\n:Go to Modeling area;\n:Choose \"Info Provider\";\n\n:Info Area displays information;\nfork\n  :Transformation;\nfork again\n  :Data source;\nend fork\n\n:Open Data source context menu;\n:Choose \"Create Info Package...\";\n\n:Enter description;\n:Choose \"Save\";\n:The Info Package maintenance screen appears;\n\n:Go to tab page Schedule;\n:Choose \"Start\";\n\n:Open the toolbar;\n:Choose \"Monitor\";\n:Check the load process;\n\n:Select date;\n:Choose \"Execute\";\n\n:The monitor is displayed;\n:Select load process from left tree;\n\n:Exit Info Package maintenance;\n\n:Open Data Source context menu;\n:Choose \"Create Data Transfer Process...\";\n:Information is displayed;\n\nfork\n:Description;\nfork again\n:Type;\nfork again\n:Source;\nfork again\n:Target;\nend fork\n\n:Choose \"Continue\";\n\n:Data Transfer Process maintenance screen appears;\n:Go to tab page Extraction;\n:Select extraction mode \"Full\";\n\n:Activate data transfer process;\n\n:Go to tab page Execute;\n:Choose \"Execute\";\n\nstop",
+        "generated_plantuml": "@startuml\nstart\n:Go to the Data Warehousing Workbench;\n:In the Modeling area choose Info Provider;\n:In the context menu of the Data source, choose Create Info Package...;\n:Enter a description for the Info Package and choose Save;\n:Go to the tab page Schedule and choose Start;\n:Choose Monitor in the toolbar of Info Package maintenance;\n:Select the date and choose Execute;\n:Select the load process for your Data source from the tree at the left of the screen;\n:Exit the Info Package maintenance screen;\n:From the context menu of the Data source, choose Create Data Transfer Process...;\n:Choose Continue;\n:Go to tab page Extraction and select extraction mode Full;\n:Activate the data transfer process;\n:Go to tab page Execute and choose Execute;\nstop\n@enduml",
+        "syntax": {
+          "passed": true,
+          "errors": []
+        },
+        "plantuml_compilation": {
+          "passed": true,
+          "errors": []
+        },
+        "llm_element_metrics": {
+          "enabled": false,
+          "status": "disabled",
+          "node_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "relation_metrics": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "gt_elements": {},
+          "pred_elements": {},
+          "matching": {},
+          "counts": {},
+          "error": null
+        },
+        "node_metrics": {
+          "precision": 0.2857142857142857,
+          "recall": 0.11428571428571428,
+          "f1": 0.16326530612244897,
+          "missing": [
+            "go to modeling area",
+            "choose info provider",
+            "info area displays information",
+            "transformation",
+            "data source",
+            "open data source context menu",
+            "open data source context menu",
+            "choose create info package...",
+            "enter description",
+            "choose save",
+            "go to tab page schedule",
+            "choose start",
+            "open the toolbar",
+            "choose monitor",
+            "check the load process",
+            "select date",
+            "choose execute",
+            "choose execute",
+            "the monitor is displayed",
+            "select load process from left tree"
+          ],
+          "extra": [
+            "in the modeling area choose info provider",
+            "in the context menu of the data source choose create info package...",
+            "enter a description for the info package and choose save",
+            "go to the tab page schedule and choose start",
+            "choose monitor in the toolbar of info package maintenance",
+            "select the date and choose execute",
+            "select the load process for your data source from the tree at the left of the screen",
+            "from the context menu of the data source choose create data transfer process...",
+            "go to tab page extraction and select extraction mode full",
+            "go to tab page execute and choose execute"
+          ]
+        },
+        "relation_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "missing": [
+            "go to data warehousing workbench -> go to modeling area",
+            "go to modeling area -> choose info provider",
+            "choose info provider -> info area displays information",
+            "info area displays information -> transformation",
+            "transformation -> data source",
+            "data source -> open data source context menu",
+            "open data source context menu -> choose create info package...",
+            "choose create info package... -> enter description",
+            "enter description -> choose save",
+            "choose save -> the info package maintenance screen appears",
+            "the info package maintenance screen appears -> go to tab page schedule",
+            "go to tab page schedule -> choose start",
+            "choose start -> open the toolbar",
+            "open the toolbar -> choose monitor",
+            "choose monitor -> check the load process",
+            "check the load process -> select date",
+            "select date -> choose execute",
+            "choose execute -> the monitor is displayed",
+            "the monitor is displayed -> select load process from left tree",
+            "select load process from left tree -> exit info package maintenance"
+          ],
+          "extra": [
+            "go to the data warehousing workbench -> in the modeling area choose info provider",
+            "in the modeling area choose info provider -> in the context menu of the data source choose create info package...",
+            "in the context menu of the data source choose create info package... -> enter a description for the info package and choose save",
+            "enter a description for the info package and choose save -> go to the tab page schedule and choose start",
+            "go to the tab page schedule and choose start -> choose monitor in the toolbar of info package maintenance",
+            "choose monitor in the toolbar of info package maintenance -> select the date and choose execute",
+            "select the date and choose execute -> select the load process for your data source from the tree at the left of the screen",
+            "select the load process for your data source from the tree at the left of the screen -> exit the info package maintenance screen",
+            "exit the info package maintenance screen -> from the context menu of the data source choose create data transfer process...",
+            "from the context menu of the data source choose create data transfer process... -> choose continue",
+            "choose continue -> go to tab page extraction and select extraction mode full",
+            "go to tab page extraction and select extraction mode full -> activate the data transfer process",
+            "activate the data transfer process -> go to tab page execute and choose execute"
+          ]
+        },
+        "failure_types": [
+          "missing_activity",
+          "extra_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ]
+      }
+    ]
+  },
+  "knowledge_gap_policy": {
+    "identify_when": [
+      "the failure reflects reusable UML or PlantUML modeling knowledge missing from the current prompt",
+      "the same modeling mistake appears across multiple cases or failure patterns",
+      "the repair can be expressed as a general modeling principle rather than a case-specific instruction"
+    ],
+    "avoid_when": [
+      "the issue is only caused by provider, timeout, parsing, or other infrastructure errors",
+      "the repair would copy a training case, a gold diagram, or dataset-specific wording",
+      "the issue is only output formatting and is better handled in the output or rule section"
+    ]
+  },
+  "required_output_schema": {
+    "summary": "string",
+    "error_patterns": [
+      {
+        "name": "short snake_case label",
+        "severity": "low|medium|high",
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "problem": "what went wrong at the batch level",
+        "suggested_prompt_direction": "general prompt-level direction",
+        "target_sections": [
+          "agent task|input|output|workflow|knowledge|rule"
+        ]
+      }
+    ],
+    "knowledge_gaps": [
+      {
+        "id": "short snake_case label",
+        "related_failure_patterns": [
+          "error pattern names from error_patterns"
+        ],
+        "evidence_case_ids": [
+          "case id strings"
+        ],
+        "gap": "what reusable UML/PlantUML modeling knowledge is missing or unclear",
+        "suggested_knowledge": "concise general knowledge that could be added to the knowledge section"
+      }
+    ],
+    "do_not_optimize_for": [
+      "string"
+    ]
+  }
+}

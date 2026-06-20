@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "knowledge",
+      "intent": "Add missing knowledge on loop constructs, hierarchical conditional nesting, state/outcome representation, and PlantUML syntax dependencies.",
+      "change_instruction": "Expand the knowledge section to include: (1) repeat/while loops for iterative or periodic language (e.g., 'repeat', 'until', 'for each'); (2) guidance that hierarchical or dependent conditions (e.g., 'under that condition') must be modeled as nested if/switch structures, not flat independent ones; (3) a rule that outcome labels, state descriptions, and contextual setup statements should be represented as activity nodes; (4) explicit syntactic dependencies for PlantUML control-flow, noting that elseif must follow an if, and switch requires endswitch."
+    },
+    {
+      "section": "workflow",
+      "intent": "Add steps to identify parallel and iterative behaviors, preserve conditional nesting, and capture contextual states and outcomes.",
+      "change_instruction": "Update Step 1 to instruct the model to identify and extract: (a) simultaneous or co-occurring behaviors for fork/join; (b) iterative or repetitive language for repeat/while loops; (c) contextual states, outcome labels, and setup statements as distinct activity items; (d) hierarchical dependencies among conditions. Update Step 2 to require mapping the extracted parallel items to fork/join, iterative items to repeat/while, and preserving the hierarchical nesting of conditions in the diagram structure."
+    },
+    {
+      "section": "rule",
+      "intent": "Relax Rule 1 to allow contextual states and outcome labels without permitting speculative inference.",
+      "change_instruction": "Revise Rule 1 to clarify that while speculative activities and control-flow must not be invented, contextual state descriptions, outcome labels (e.g., 'Allowed'/'Not allowed'), and setup statements explicitly present in the requirement text must be included as activity nodes."
+    }
+  ]
+}
+```

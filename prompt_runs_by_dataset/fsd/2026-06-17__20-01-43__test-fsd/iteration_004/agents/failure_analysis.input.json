@@ -1,0 +1,99 @@
+{
+  "requirements": [
+    "After the system starts up, if slow charging is active, we enter power-up mode. Then:\n\n1) When the high-voltage shutdown request (charging/discharging) flag is 2, switch to state 115. After switching:\n   a. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If the BMS self-check counter shows 1, switch to state 130. If slow charging becomes inactive, shut down and end.\n   b. If the flag drops to 0 with CP duty cycle at 85%, switch to state 126. If battery pre-heating is required, switch to state 130. If slow charging becomes inactive, shut down and end.\n   c. If the flag drops to 0 while the BMS self-check counter is 1, switch to state 126. If CP duty cycle hits 85% with CP amplitude at 3000, switch to state 130. If slow charging becomes inactive, shut down and end.\n\n2) When the central control charging/discharging command is 2 and the vehicle isn't in charging/discharging mode, switch to state 110. Then:\n   - If the high-voltage shutdown request flag becomes 2, switch to state 115.\n   - If the flag drops to 0 with CP duty cycle at 88%, switch to state 126.\n   - If the central control command is 1 while charging state is 2, switch to state 130.\n   - If slow charging becomes inactive, shut down and end.",
+    "19.\tcreate a new job by using the LifeCycle Manager tool1. Log into the LifeCycle Manager tool.2. In the \"Promotion Jobs\" home page, click New Job. The \"New Job\"window appears .3. Enter the name, description, and keywords for the job in the appropriatefields.4. In the Save Job in field, browse and select the folder in which you wantto save the job.5. Select the source system and the destination system from the drop-downlists.If the name of the system is not displayed in the drop-down list, click theLogin to a new CMS option. A new window is launched. Enter the nameof the system along with the user name and password.6. Click Create.",
+    "26.\tmodify the properties of a Crystal report1. In the \"Promote\" window, click Mappings.2. Click Crystal Report Mappings.The list of Crystal reports in the source system is displayed.3. Select the required Crystal report, and click Edit Crystal Report Properties. The \"Edit Crystal Report Properties\" tab appears, as shown in the following figure: This tab displays the list of properties and their values.4. Modify the appropriate fields, and click Apply. The Crystal Report Mappings tab appears.Note:• If you edit a Crystal report in the source system, the following message is displayed beside the Crystal report: edited• A Crystal Report created using Universes cannot be mapped in the Crystal Report Mappings. However, it can be mapped in the Connections Mappings.• Crystal Reports are grouped based on the same servers. You can either map a single Crystal Report or the group,. However, you cannot map multiple Crystal reports at the same time.5. Click Save or Promote per your requirements。",
+    "2.\tWhen the determinant of B(inv(Wp’)B’ is > 1e-12 as indicated by ridge_on set to False, the inversion of the B(inv(Wp’)B’ matrix should be accurate to 12 digits precision in that each element in the check output matrix is within a 1e-12 tolerance with respect to the elements of a 3x3 identity matrix.",
+    "1. User opens KeePass and select Open->Database 2. User navigates through his folders 3. User selects a database 4. User types Master Password 5. The main database window opens 3.2.2.2.1 Alternative Data Flow 1 3a. User selects a type of folder non suitable for database 3b. A message “file not found” appears 3c. User selects another folder 3.2.2.2.2 Alternative Data Flow 2 4a. Master Password is wrong 4b. A message “invalid/wrong key” appears 4c. User types another master key 3.2.2.2.3 Alternative Data Flow 3 3. User chooses cancel 4. Exit from KeePass",
+    "Transferring to Full Supervision shall occur automatically when a movement authority and all other necessary information is received through track-to-train transmission. The trainborne equipment shall remain in Full Supervision until the trainborne equipment is not active any longer, when Shunting is selected, or when Partial Supervision information is received.",
+    "4.\tThe Rotation Matrix, DCM321, shall be invertible with the exception of the case where theta = +/- pi/2 radians.",
+    "After the system starts up, if slow charging is active and the front MCU initialization is 0, it enters state 82. From there:\n- When the BMS counter reaches 1 with a battery pre-heating demand of 3, the system transitions to state 126. If slow charging becomes inactive afterward, it shuts down and exits.\n- If a pre-charge failure occurs, the system moves to state 126. Should slow charging be inactive at that point, it shuts down and exits.\n- If slow charging deactivates, the system switches to state 126 before shutting down and exiting.\n- For AC charging/discharging system faults, the system waits through a 10-second timeout before shifting to state 126. If slow charging is inactive following this transition, it shuts down and exits."
+  ],
+  "predictions": [
+    "@startuml\nstart\n:System starts up;\nif (Slow charging is active?) then (yes)\n  :Enter power-up mode;\n  switch (Condition)\n    case (High-voltage shutdown request flag is 2)\n      :Switch to state 115;\n      switch (Condition after switching)\n        case (Flag drops to 0 with CP duty cycle at 85%)\n          :Switch to state 126;\n        case (BMS self-check counter shows 1)\n          :Switch to state 130;\n        case (Slow charging becomes inactive)\n          :Shut down and end;\n      endswitch\n    case (High-voltage shutdown request flag is 2)\n      :Switch to state 115;\n      switch (Condition after switching)\n        case (Flag drops to 0 with CP duty cycle at 85%)\n          :Switch to state 126;\n        case (Battery pre-heating is required)\n          :Switch to state 130;\n        case (Slow charging becomes inactive)\n          :Shut down and end;\n      endswitch\n    case (High-voltage shutdown request flag is 2)\n      :Switch to state 115;\n      switch (Condition after switching)\n        case (Flag drops to 0 while BMS self-check counter is 1)\n          :Switch to state 126;\n        case (CP duty cycle hits 85% with CP amplitude at 3000)\n          :Switch to state 130;\n        case (Slow charging becomes inactive)\n          :Shut down and end;\n      endswitch\n    case (Central control charging/discharging command is 2 and vehicle isn't in charging/discharging mode)\n      :Switch to state 110;\n      switch (Condition)\n        case (High-voltage shutdown request flag becomes 2)\n          :Switch to state 115;\n        case (Flag drops to 0 with CP duty cycle at 88%)\n          :Switch to state 126;\n        case (Central control command is 1 while charging state is 2)\n          :Switch to state 130;\n        case (Slow charging becomes inactive)\n          :Shut down and end;\n      endswitch\n  endswitch\nelse (no)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Log into the LifeCycle Manager tool.;\n:In the \"Promotion Jobs\" home page, click New Job.;\n:The \"New Job\" window appears.;\n:Enter the name, description, and keywords for the job in the appropriate fields.;\n:In the Save Job in field, browse and select the folder in which you want to save the job.;\n:Select the source system and the destination system from the drop-down lists.;\nif (the name of the system is not displayed in the drop-down list?) then (yes)\n  :click the Login to a new CMS option.;\n  :A new window is launched.;\n  :Enter the name of the system along with the user name and password.;\nelse (no)\nendif\n:Click Create.;\nstop\n@enduml",
+    "@startuml\nstart\n:In the \"Promote\" window, click Mappings;\n:Click Crystal Report Mappings;\n:The list of Crystal reports in the source system is displayed;\n:Select the required Crystal report, and click Edit Crystal Report Properties;\n:The \"Edit Crystal Report Properties\" tab appears;\n:This tab displays the list of properties and their values;\n:Modify the appropriate fields, and click Apply;\n:The Crystal Report Mappings tab appears;\nif (per your requirements) then (Save)\n  :Click Save;\nelse (Promote)\n  :Click Promote;\nendif\n@enduml",
+    "@startuml\nstart\nif (determinant of B(inv(Wp'))B' > 1e-12\\n(ridge_on set to False)?) then (Yes)\n  :Invert the B(inv(Wp'))B' matrix;\n  :Check if each element in the output matrix\\nis within a 1e-12 tolerance with respect\\nto the elements of a 3x3 identity matrix;\nelse (No)\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:User opens KeePass and select Open->Database;\n:User navigates through his folders;\nif (User chooses cancel?) then (yes)\n  :Exit from KeePass;\n  stop\nelse (no)\n  :User selects a database;\n  if (User selects a type of folder non suitable for database?) then (yes)\n    :A message \"file not found\" appears;\n    :User selects another folder;\n  else (no)\n  endif\n  :User types Master Password;\n  if (Master Password is wrong?) then (yes)\n    :A message \"invalid/wrong key\" appears;\n    :User types another master key;\n  else (no)\n  endif\n  :The main database window opens;\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:Receive a movement authority and all other necessary information through track-to-train transmission;\n:Transfer to Full Supervision automatically;\nswitch (Condition to exit Full Supervision)\ncase (Trainborne equipment is not active any longer)\ncase (Shunting is selected)\ncase (Partial Supervision information is received)\nendswitch\nstop\n@enduml",
+    "@startuml\nstart\n:Invert the Rotation Matrix DCM321;\nif (theta = +/- pi/2 radians?) then (yes)\nelse (no)\n  :Matrix is invertible;\nendif\nstop\n@enduml",
+    "@startuml\nstart\n:System starts up;\nif (Slow charging is active\\nand front MCU initialization is 0?) then (yes)\n  :Enter state 82;\n  switch (Condition?)\n  case (BMS counter reaches 1\\nwith battery pre-heating demand of 3)\n    :Transition to state 126;\n    if (Slow charging becomes inactive?) then (yes)\n      :Shut down and exit;\n      stop\n    else (no)\n    endif\n  case (Pre-charge failure occurs)\n    :Move to state 126;\n    if (Slow charging is inactive?) then (yes)\n      :Shut down and exit;\n      stop\n    else (no)\n    endif\n  case (Slow charging deactivates)\n    :Switch to state 126;\n    :Shut down and exit;\n    stop\n  case (AC charging/discharging system fault)\n    :Wait through a 10-second timeout;\n    :Shift to state 126;\n    if (Slow charging is inactive?) then (yes)\n      :Shut down and exit;\n      stop\n    else (no)\n    endif\n  endswitch\nelse (no)\nendif\nstop\n@enduml"
+  ],
+  "ground_truths": [
+    "start\nif (slow charging is active) then\n  :enter power-up mode;\n  if (high-voltage shutdown request charging/discharging is 2 and BMS self-check counter is 0) then\n    :switch to state 127;\n    if (slow charging is inactive and front MCU collateral shutdown request flag is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    else if (slow charging is inactive) then\n      :issue 2.2s timeout warning;\n      :switch to state 128;\n      :enter shutdown state;\n      stop\n    else if (slow charging is inactive and BMS self-check counter is 1) then\n      :switch to state 128;\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend",
+    "start\n\n:Log in LifeCycle Manager tool;\n:Go to \"Promotion Jobs\" home page;\n:Click \"New Job\";\n:\"New Job\"window appears;\n\n:Enter information;\nfork \n:Enter name;\nfork again\n:Enter description;\nfork again\n:Enter keywords;\nend fork\n\n:Go to \"Save Job\" field;\n:Browse and select folder;\n\n:Open drop-downlists;\nif (System name is diaplayed?) then (no)\n:Click \"theLogin\";\n:A new CMS option;\n:A new window is launched;\n\n:Enter information;\nfork \n:Enter system name;\nfork again\n:Enter user name;\nfork again\n:Enter password;\nend fork\n\nelse(yes)\n:Select source system;\n:Select destination system;\nendif\n\n:Click \"Create\";\n\nstop",
+    "start\n\n:Open the \"Promote\" window;\n:Click \"Mappings\";\n:Click \"Crystal Report Mappings\";\n\n:List of Crystal reports is displayed;\n:Select required Crystal Report;\n:Click \"Edit Crystal Report Properties\";\n\n:\"Edit Crystal Report Properties\" tab appears;\nnote right\nDisplays list of properties \nand their values\nend note\n\n:Modify appropriate fields;\n:Click \"Apply\";\n\nif (Edited in source system?) then (yes)\n  :\"edited\" is displayed;\nendif\n\nif (Created using Universes?) then (yes)\n  :Cannot be mapped;\n  :Use \"Connections Mappings\";\n  stop\nelse\n  :Proceed with mapping;\nendif\n\nswitch (Mapping scope)\ncase (Single)\n  :Map single report;\ncase (Group)\n  :Map the group;\ncase (Multiple)\n  :Not allowed;\n  stop\nendswitch\n\n:Click \"Save\" or \"Promote\";\n\nstop",
+    "start\n\n:Ridge_on set to False;\n:Determinant of B(inv(Wp’)B’> 1e-12;\n:Each element with respect to 3x3 identity matrix elements < 1e-12 tolerance;\n:B(inv(Wp’)B’matrix inversion be accurate to 12 digits precision;\n\nstop",
+    "start\n\n:Open KeePass;\n:Select Open->Database;\n\n:Navigate through folders;\n\n:Select database;\nif(Folder is suitable?) then(no)\n:“File not found” appears;\n:Select another folder;\nelse(yes)\nendif\n\n:Choose cancel;\n:Exit from KeePass;\n\n:Type Master Password;\n\nif(Password is right?) then(no)\n:“Invalid/wrong key” appears;\n:Type another master key;\nelse(yes)\nendif\n\n:Main database window opens;\n\nstop",
+    "start\n:Receive through track-to-train transmission;\n\nfork\n:Movement authority;\nfork again\n:All other necessary information;\nend fork\n\n:Transfer to Full Supervision automatically;\n\nif(Trainborne equipment active?) then(yes)\n:Remain in Full Supervision;\nelse(no)\n:Exit Full Supervision;\nstop\nendif\n\nif(Shunting is selected?) then(no)\n:Remain in Full Supervision;\nelse(yes)\n:Exit Full Supervision;\nstop\nendif\n\nif(Partial Supervision information?) then(no)\n:Remain in Full Supervision;\nelse(yes)\n:Exit Full Supervision;\nstop\nendif\n\nstop",
+    "start\n\n:Rotation Matrix DCM321;\nif(theta = +/- pi/2 radians?) then(yes)\n:Not invertible;\nelse(no)\n:Invertible;\nendif\n\nstop",
+    "start\nif (slow charging is active and front MCU initialization=0) then\n  :enter state 82;\n  if (BMS counter=1 and battery pre-heating demand=3) then\n    :switch to state 126;\n    if (slow charging is inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (pre-charge failure occurs) then\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  else if (slow charging is inactive) then\n    :switch to state 126;\n    :shutdown;\n    stop\n  else if (AC charging/discharging system fault) then\n    while(after 10s)\n    endwhile\n    :switch to state 126;\n    if (slow charging inactive) then\n      :shutdown;\n      stop\n    endif\n  endif\nendif\nend"
+  ],
+  "failure_types": {
+    "guide": {
+      "syntax_error": "The generated text is not syntactically valid PlantUML or is missing required PlantUML wrappers.",
+      "missing_activity": "The prediction omits activities or states that appear in the ground truth; triggered by low node recall.",
+      "extra_activity": "The prediction adds unsupported activities or states; triggered by low node precision.",
+      "missing_or_wrong_relation": "The prediction omits or misrepresents control-flow relations; triggered by low relation recall.",
+      "extra_or_wrong_relation": "The prediction adds unsupported or incorrect control-flow relations; triggered by low relation precision.",
+      "wrong_parallel": "The prediction likely mishandles parallel/concurrent behavior.",
+      "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
+      "generation_error": "The generation call failed before a usable prediction was produced.",
+      "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
+      "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior."
+    },
+    "by_case": [
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_loop"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation",
+        "wrong_parallel"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ],
+      [
+        "missing_activity",
+        "extra_activity",
+        "missing_or_wrong_relation",
+        "extra_or_wrong_relation"
+      ]
+    ]
+  }
+}

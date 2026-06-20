@@ -1,0 +1,62 @@
+{
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "(None)",
+    "knowledge": "(None)",
+    "rule": "(None)"
+  },
+  "failure_analysis": {
+    "error_patterns": [
+      {
+        "name": "hallucinated_control_flow",
+        "problem": "The generator fabricates conditional checks, loops, and error-handling branches that are not stated or implied in the requirements.",
+        "possible_causes": [
+          "The prompt may lack explicit instructions to strictly adhere to the provided text, causing the LLM to rely on its prior knowledge of typical software workflows.",
+          "The LLM defaults to adding defensive programming patterns (e.g., validation checks, error handling) even when the requirement is purely descriptive or declarative."
+        ]
+      },
+      {
+        "name": "over_decomposition_of_activities",
+        "problem": "The generator splits single, cohesive actions from the requirement into multiple granular steps, leading to extra activities and relations.",
+        "possible_causes": [
+          "The prompt may not specify the appropriate level of abstraction, leading the generator to treat implicit sub-steps as explicit activity nodes.",
+          "The generator interprets descriptive clauses or preconditions as separate sequential actions rather than attributes of a single activity."
+        ]
+      },
+      {
+        "name": "missing_parallel_fork_representation",
+        "problem": "The generator fails to identify and represent concurrent or parallel behaviors, modeling them as purely sequential flows instead.",
+        "possible_causes": [
+          "The prompt does not adequately guide the model to recognize linguistic cues for parallelism (e.g., lists of independent items, simultaneous actions) and map them to PlantUML fork/end fork constructs.",
+          "The generator has a strong sequential bias, defaulting to linear step-by-step translation even when actions are independent."
+        ]
+      },
+      {
+        "name": "omission_of_implicit_or_contextual_activities",
+        "problem": "The generator omits activities that are logically necessary or explicitly detailed in the ground truth but only implicitly stated in the requirement.",
+        "possible_causes": [
+          "The prompt may not instruct the model to infer and make explicit the intermediate states or system responses that connect the primary user actions.",
+          "The generator focuses only on the main actor's actions, ignoring system-side reactions or contextual steps required to complete the scenario."
+        ]
+      }
+    ]
+  },
+  "error_localization": {
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "section_problem": "The workflow section is missing, providing no step-by-step process for the LLM to follow. This absence forces the model to rely on its internal biases, leading it to fabricate unstated control flows, over-decompose activities, and default to sequential translation instead of properly identifying parallel behaviors or inferring implicit contextual activities."
+      },
+      {
+        "section": "knowledge",
+        "section_problem": "The knowledge section is missing, leaving the model without guidance on how to map linguistic cues to UML constructs. It lacks instructions on recognizing parallelism cues for fork/fork-end constructs, determining the appropriate level of abstraction to prevent over-decomposition, and identifying when to infer implicit system-side activities."
+      },
+      {
+        "section": "rule",
+        "section_problem": "The rule section is missing, resulting in no strict constraints against hallucination. Without explicit rules to strictly adhere to the provided text and avoid adding unstated defensive programming patterns (like validation checks or error handling), the model freely fabricates control flows."
+      }
+    ]
+  }
+}

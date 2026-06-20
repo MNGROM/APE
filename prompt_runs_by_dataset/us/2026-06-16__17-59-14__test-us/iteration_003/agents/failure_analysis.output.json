@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "missing_parallel_decomposition",
+      "problem": "The prediction fails to decompose grouped or concurrent actions into parallel forks (fork/fork again/end fork), instead representing them as single, monolithic activity nodes or sequential steps.",
+      "possible_causes": [
+        "The prompt does not explicitly instruct the model to identify multiple simultaneous or logically parallel sub-actions within a single requirement sentence and represent them using PlantUML's fork syntax.",
+        "The model defaults to a strictly sequential interpretation of listed items (e.g., 'name, description, and keywords') rather than recognizing them as concurrent or decomposable parallel tasks."
+      ]
+    },
+    {
+      "name": "spurious_control_flow_for_conditions",
+      "problem": "The prediction introduces unnecessary conditional branches (if/else) for requirements that describe unconditional triggers or states, leading to extra and incorrect relations.",
+      "possible_causes": [
+        "The prompt over-emphasizes conditional logic, causing the model to interpret any 'when' or 'if' clause as a decision node rather than a trigger for an unconditional action.",
+        "Lack of guidance on distinguishing between a conditional guard (requiring a branch) and a simple precondition/trigger (requiring a sequential activity)."
+      ]
+    },
+    {
+      "name": "incorrect_loop_construct_for_delays",
+      "problem": "The prediction uses active loop constructs (like 'repeat') to represent passive time delays or timeouts, whereas the ground truth uses passive waiting constructs (like 'while').",
+      "possible_causes": [
+        "The prompt does not differentiate between active iterative loops (e.g., polling, PID control) and passive time-based delays/timeouts, leading the model to default to 'repeat' for any time-related requirement.",
+        "Insufficient examples in the prompt demonstrating how to correctly model a fixed-duration wait or timeout in PlantUML activity diagrams."
+      ]
+    },
+    {
+      "name": "flattened_concurrent_monitoring_loops",
+      "problem": "The prediction separates concurrent monitoring loops into sequential steps or misplaces their boundaries, failing to capture that they execute in parallel within a larger iterative cycle.",
+      "possible_causes": [
+        "The prompt lacks clear rules for nesting parallel forks inside loops, causing the model to flatten the structure to avoid complex nesting.",
+        "Difficulty in parsing requirements where multiple periodic tasks (e.g., engine speed monitoring and ADC sampling) occur concurrently within the same overarching loop condition."
+      ]
+    }
+  ]
+}
+```

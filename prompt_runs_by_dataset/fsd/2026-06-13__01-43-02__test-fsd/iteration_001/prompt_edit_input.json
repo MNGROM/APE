@@ -1,0 +1,189 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "",
+    "knowledge": "",
+    "rule": ""
+  },
+  "failure_analysis": {
+    "summary": "The batch primarily fails due to severe activity granularity and grounding issues, resulting in both missing and extra activities across all cases. The model either over-decomposes simple requirements into hallucinated UI/system steps or under-decomposes complex requirements by merging multiple distinct steps into single verbose activities. This fundamental activity mismatch cascades into completely missing or incorrect control-flow relations, as the generated diagram structure diverges heavily from the expected gold standard.",
+    "error_patterns": [
+      {
+        "name": "missing_activity",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0010",
+          "lmc-0055",
+          "us-0098",
+          "lmc-0048",
+          "us-0092",
+          "bp-0028",
+          "pure-0078",
+          "pure-0046"
+        ],
+        "problem": "The model fails to extract and represent explicit behaviors at the expected granularity. It compresses multiple distinct steps into single, verbose activities (e.g., merging 'Pilot uses cockpit control' and 'Set heading hold reference' into one node) and omits intermediate system states or UI feedback mentioned in the requirement.",
+        "suggested_prompt_direction": "Instruct the model to decompose requirements into fine-grained, atomic activities where each action or system response is a distinct step. Emphasize preserving intermediate states and explicit system feedback as separate activities.",
+        "target_sections": [
+          "workflow",
+          "rule"
+        ]
+      },
+      {
+        "name": "extra_activity",
+        "severity": "high",
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055",
+          "bp-0028"
+        ],
+        "problem": "The model hallucinates activities not present in the requirement, particularly for user stories where it invents detailed UI interactions (e.g., 'System displays success message', 'System validates input') or decomposes implied setup steps (e.g., 'Initialize Rotation Matrix').",
+        "suggested_prompt_direction": "Strengthen grounding constraints to ensure the model only generates activities explicitly stated or unambiguously required by the input text, strictly forbidding inferred UI steps, validation logic, or system responses not mentioned.",
+        "target_sections": [
+          "rule",
+          "input"
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0010",
+          "pure-0078",
+          "pure-0046",
+          "bp-0028"
+        ],
+        "problem": "Control-flow relations are frequently missing or incorrect because the model fails to identify conditional branches, parallel forks, and switches explicitly described in the text. It defaults to a flat, sequential flow, missing alternative paths (if/else) and concurrent paths (fork).",
+        "suggested_prompt_direction": "Provide explicit workflow guidance to identify decision points (if/else), alternative paths (switch/case), and concurrent actions (fork) from the requirement text, and map them to the corresponding PlantUML control-flow structures.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "extra_or_wrong_relation",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055",
+          "pure-0078"
+        ],
+        "problem": "The model introduces incorrect sequential relations between activities that should be parallel or alternative, often stringing together hallucinated steps or merging separate branches into a single linear flow.",
+        "suggested_prompt_direction": "Encourage the model to evaluate the dependency between activities before linking them sequentially, ensuring that independent or alternative actions are not artificially serialized.",
+        "target_sections": [
+          "workflow",
+          "rule"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML into the prompt.",
+      "Do not add dataset-specific examples or memorized answers.",
+      "Do not attempt to fix syntax errors as the compilation pass rate is already 100%."
+    ]
+  },
+  "error_localization": {
+    "summary": "The primary failures stem from a lack of procedural and constraint guidance, causing the model to hallucinate extra activities, compress distinct steps, and default to flat sequential flows. The empty 'workflow' and 'rule' sections are the most critical targets for repair, as they should dictate activity extraction granularity, grounding, and control-flow reasoning.",
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "priority": "high",
+        "failure_patterns": [
+          "missing_activity",
+          "missing_or_wrong_relation",
+          "extra_or_wrong_relation"
+        ],
+        "section_problem": "The workflow section is currently empty, providing no step-by-step procedure for decomposing requirements into atomic activities or for identifying and mapping control-flow structures (decisions, parallel forks) from text to PlantUML.",
+        "edit_intent": "Add a generation procedure that instructs the model to first extract fine-grained, atomic activities from the text, then identify control-flow dependencies (conditionals, concurrency), and finally construct the diagram structure accordingly.",
+        "evidence_case_ids": [
+          "bp-0010",
+          "lmc-0055",
+          "us-0098",
+          "lmc-0048",
+          "us-0092",
+          "bp-0028",
+          "pure-0078",
+          "pure-0046"
+        ]
+      },
+      {
+        "section": "rule",
+        "priority": "high",
+        "failure_patterns": [
+          "extra_activity",
+          "missing_activity",
+          "extra_or_wrong_relation"
+        ],
+        "section_problem": "The rule section is empty, offering no hard constraints to prevent hallucinated UI steps or to enforce strict grounding to the provided text. It also lacks rules against artificially serializing independent or alternative actions.",
+        "edit_intent": "Introduce strict grounding constraints (e.g., forbid inferred UI steps, validation, or system responses not in the text) and rules for evaluating dependencies before creating sequential links to prevent artificial serialization.",
+        "evidence_case_ids": [
+          "us-0098",
+          "us-0092",
+          "lmc-0055",
+          "bp-0028",
+          "pure-0078"
+        ]
+      }
+    ],
+    "recommended_edit_sections": [
+      "workflow",
+      "rule"
+    ],
+    "do_not_edit_sections": [
+      {
+        "section": "output",
+        "reason": "The compilation pass rate is already 100%, meaning the output format and PlantUML syntax requirements are already well-handled; editing this section is unnecessary and risks introducing regressions."
+      },
+      {
+        "section": "agent task",
+        "reason": "The agent's overall role and scope are clearly defined and do not contribute to the specific granularity and grounding failures observed."
+      },
+      {
+        "section": "input",
+        "reason": "The input section accurately describes the input format; the failure is in how the model processes the text (workflow) and what it is allowed to infer (rule), not in how it reads the input."
+      },
+      {
+        "section": "knowledge",
+        "reason": "While UML/PlantUML modeling knowledge could help, the constraints limit edits to a maximum of 2 sections. The procedural (workflow) and grounding (rule) deficits are the root causes, making them higher priority than reusable modeling knowledge."
+      }
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge",
+      "rule"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

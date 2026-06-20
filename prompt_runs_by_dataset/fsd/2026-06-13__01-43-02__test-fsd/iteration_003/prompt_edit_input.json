@@ -1,0 +1,183 @@
+{
+  "task": "Edit fixed sections of a UML activity diagram generation prompt.",
+  "system_prompt_file": "D:\\now_to_use\\work4icse\\rq1\\ape\\prompt_workspace\\prompt_editor.md",
+  "current_prompt_sections": {
+    "agent task": "You are a UML activity diagram code generation agent. Your task is to convert natural-language software requirements into PlantUML code for UML activity diagrams.",
+    "input": "The input is a single textual software requirement or scenario description.",
+    "output": "Output PlantUML code only.",
+    "workflow": "1. Extract activities: Read the requirement and identify every distinct action, event, or system response as a separate, atomic activity. Do not merge multiple distinct steps into a single verbose activity; preserve intermediate states and explicit feedback as individual steps.\n2. Identify control-flow: Analyze the extracted activities for dependencies, conditional branches (if/else), alternative paths (switch/case), and concurrent actions (fork/join). Map these directly to PlantUML structures (if/else, switch, fork).\n3. Evaluate dependencies: Before linking two activities sequentially, confirm that the second activity logically depends on the completion of the first. Do not artificially serialize independent or alternative actions.\n4. Generate PlantUML: Construct the diagram using the extracted activities and identified control-flow structures.",
+    "knowledge": "",
+    "rule": "- Strict grounding: Only include activities explicitly stated or unambiguously required by the input text. Do not infer or add UI interactions, validation logic, or system responses that are not mentioned.\n- Atomic granularity: Each activity must represent a single, distinct action or state. Avoid combining multiple steps into one node.\n- No artificial serialization: Independent actions must not be linked sequentially. Alternative actions must be placed in separate branches, not a single linear sequence."
+  },
+  "failure_analysis": {
+    "summary": "The batch primarily fails due to a severe activity granularity mismatch and poor control-flow modeling. The model consistently over-decomposes requirements into inferred, overly granular steps (causing extra activities and relations) while failing to capture the explicit structural control-flow (branches, switches, parallel forks) and exact phrasing from the text (causing missing activities and relations).",
+    "error_patterns": [
+      {
+        "name": "activity_granularity_mismatch",
+        "severity": "high",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "us-0056",
+          "bp-0015",
+          "lmc-0016"
+        ],
+        "problem": "The model splits single explicit actions into multiple inferred sub-steps (e.g., 'Edit profile' into 'Select member -> Open profile -> Edit details -> Save') or adds assumed initial states (e.g., 'Sensor is in FAULT state'), resulting in extra activities and missing the exact required activities.",
+        "suggested_prompt_direction": "Strengthen the rule on strict grounding to prohibit inferring unstated sub-steps or initial states. Emphasize mapping one explicit requirement action to exactly one activity node, preserving the original phrasing.",
+        "target_sections": [
+          "rule",
+          "workflow"
+        ]
+      },
+      {
+        "name": "missing_control_flow_structures",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0015",
+          "us-0129",
+          "bp-0022",
+          "pure-0082"
+        ],
+        "problem": "The model defaults to linear sequential flows even when the text describes concurrent actions (fork/join) or alternative cases (switch/case). For example, parallel lists of items are serialized, and alternative drop-down options are merged into a single activity.",
+        "suggested_prompt_direction": "Enhance the workflow step for identifying control-flow to explicitly instruct the model to look for keywords indicating concurrency (e.g., 'as well as', 'and' between independent actions) and alternative choices (e.g., 'select from options'), and map them to fork/join and switch/case structures respectively.",
+        "target_sections": [
+          "workflow",
+          "knowledge"
+        ]
+      },
+      {
+        "name": "flattened_conditional_logic",
+        "severity": "medium",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "rac-0013",
+          "pure-0082"
+        ],
+        "problem": "Conditional checks and their resulting system responses are often merged into single activity nodes or modeled incorrectly (e.g., using fork for mutually exclusive conditions). The model fails to separate the condition (as a branch node) from the resulting action.",
+        "suggested_prompt_direction": "Instruct the model to separate conditional checks (if/else, switch) from the resulting activities. Conditions should be modeled as branch/decision nodes, and the subsequent actions should be distinct activity nodes within the appropriate branch.",
+        "target_sections": [
+          "workflow",
+          "rule"
+        ]
+      },
+      {
+        "name": "missing_or_wrong_relation",
+        "severity": "high",
+        "evidence_case_ids": [
+          "bp-0022",
+          "pure-0082",
+          "rac-0013"
+        ],
+        "problem": "Because activities are over-decomposed and control-flow structures are omitted, the relations between the correct gold activities are entirely missing. The generated relations connect the wrong, overly granular nodes in a flat sequence.",
+        "suggested_prompt_direction": "Addressing the activity granularity and control-flow structure issues will inherently fix the relation errors. Additionally, advise the model to establish relations based on the identified structural boundaries (forks, switches) rather than simple textual succession.",
+        "target_sections": [
+          "workflow"
+        ]
+      }
+    ],
+    "do_not_optimize_for": [
+      "Do not copy ground-truth PlantUML into the prompt.",
+      "Do not add dataset-specific examples or memorized answers.",
+      "Do not simply instruct the model to 'generate more activities' or 'generate fewer activities' without addressing the structural decomposition logic."
+    ]
+  },
+  "error_localization": {
+    "summary": "The primary failures stem from over-decomposition of activities and missing structural control-flow modeling. The 'workflow' section lacks explicit guidance on identifying concurrency/alternatives and separating conditions from actions, while the 'rule' section lacks a strict prohibition against inferring unstated sub-steps. Editing these two sections addresses the root causes of the activity and relation errors.",
+    "section_diagnoses": [
+      {
+        "section": "workflow",
+        "priority": "high",
+        "failure_patterns": [
+          "activity_granularity_mismatch",
+          "missing_control_flow_structures",
+          "flattened_conditional_logic",
+          "missing_or_wrong_relation"
+        ],
+        "section_problem": "The workflow does not guide the model to map explicit requirement actions directly to single activity nodes without inferring sub-steps. It also fails to instruct the model to look for linguistic cues of concurrency and alternatives, and does not specify separating conditional checks from their resulting actions.",
+        "edit_intent": "Enhance the extraction step to enforce 1:1 mapping of explicit text actions to activities. Add explicit instructions to identify concurrency/alternative keywords and map them to fork/switch structures. Instruct separating condition checks (decision nodes) from subsequent actions within branches.",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "us-0056",
+          "bp-0015",
+          "lmc-0016",
+          "us-0129",
+          "bp-0022",
+          "pure-0082",
+          "rac-0013"
+        ]
+      },
+      {
+        "section": "rule",
+        "priority": "high",
+        "failure_patterns": [
+          "activity_granularity_mismatch",
+          "flattened_conditional_logic"
+        ],
+        "section_problem": "The current strict grounding rule does not explicitly prohibit inferring unstated sub-steps or assumed initial states, allowing the model to over-decompose activities. It also lacks a hard constraint on modeling conditional checks as distinct branch/decision nodes rather than merging them with actions.",
+        "edit_intent": "Strengthen the strict grounding rule to explicitly forbid inferring sub-steps or initial states not stated in the text. Add a rule enforcing that conditional checks must be modeled as separate decision/branch nodes, not merged into activity nodes.",
+        "evidence_case_ids": [
+          "lmc-0050",
+          "us-0056",
+          "bp-0015",
+          "lmc-0016",
+          "rac-0013",
+          "pure-0082"
+        ]
+      }
+    ],
+    "recommended_edit_sections": [
+      "workflow",
+      "rule"
+    ],
+    "do_not_edit_sections": [
+      {
+        "section": "agent task",
+        "reason": "The overall role and scope are correctly defined; the errors are in execution logic and constraints, not the agent's fundamental task definition."
+      },
+      {
+        "section": "input",
+        "reason": "The input specification is accurate and not the source of the modeling failures."
+      },
+      {
+        "section": "output",
+        "reason": "The output format requirement (PlantUML only) is appropriate; the errors are structural and semantic, not syntactic format issues."
+      },
+      {
+        "section": "knowledge",
+        "reason": "While adding UML knowledge could help, the constraints limit edits to 2 sections. The workflow and rule sections are more direct and impactful places to embed the necessary procedural and constraint-based fixes."
+      }
+    ]
+  },
+  "constraints": {
+    "allowed_sections": [
+      "agent task",
+      "input",
+      "output",
+      "workflow",
+      "knowledge",
+      "rule"
+    ],
+    "allowed_operations": [
+      "replace",
+      "append"
+    ],
+    "max_sections_per_edit": 2,
+    "do_not_change_section_structure": true,
+    "prefer_general_rules_over_dataset_specific_examples": true,
+    "max_prompt_chars": 9000
+  },
+  "required_output_schema": {
+    "edits": [
+      {
+        "section": "one of agent task, input, output, workflow, knowledge, rule",
+        "operation": "replace|append",
+        "content": "new section content or content to append, without markdown headings"
+      }
+    ],
+    "rationale": "short explanation",
+    "expected_effect": {
+      "node_f1": "increase|neutral|risk",
+      "relation_f1": "increase|neutral|risk",
+      "syntax_pass_rate": "increase|neutral|risk"
+    }
+  }
+}

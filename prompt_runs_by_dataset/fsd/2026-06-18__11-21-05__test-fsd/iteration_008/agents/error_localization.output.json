@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "Step 3 strictly limits fork/join to explicit linguistic cues like 'simultaneously' or 'concurrently', and explicitly prohibits interpreting grammatical lists of items, attributes, or options as concurrent flows. This directly causes the false-negative parallelism error, as the model is instructed to default such lists to sequential or alternative branches rather than recognizing independent concurrent actions."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section reinforces the false-negative parallelism by explicitly stating that enumerations, lists of attributes, or lists of options are sequential or alternative and must not be modeled with fork/join. Additionally, it lacks clear guidance on distinguishing when independent items in a list represent concurrent activities versus sequential/alternative steps. It also does not adequately differentiate the structural cues for switch/case versus if/elseif, leading to flattened conditional logic."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule prohibiting adding control flow edges not directly supported by the requirement's stated sequence, combined with the strict sequential interpretation of lists, prevents the model from inferring valid parallel control flow for independent actions. The rule against compressing multiple explicitly stated actions is contradicted by the sequentialization of lists, contributing to missing activities. Furthermore, the rules lack constraints against forcing explicit else/stop branches when the logic should implicitly continue."
+    }
+  ]
+}
+```

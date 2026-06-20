@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow does not instruct the model to decompose compound actions or lists of concurrent items into parallel fork structures, leading to flattened parallelism. It also lacks guidance on placing independent system tasks as sibling parallel branches rather than nesting them inside the closest conditional block. Furthermore, it fails to distinguish between user-driven iterative workflows and system-level periodic tasks, causing overgeneralized repeat loops. Finally, it does not specify how to handle state-machine-like transitions using flat, early-exit if-stop structures instead of deeply nested if-else blocks."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks explicit guidance on decomposing compound actions into parallel forks, only mentioning when to use forks for explicitly concurrent tasks. It also fails to provide rules for mapping independent system tasks (e.g., background periodic tasks) to top-level or sibling parallel structures. Additionally, it does not differentiate between a user-driven iterative workflow and a system-level periodic task, nor does it specify that mutually exclusive state-machine transitions should be modeled as flat, early-exit if-stop branches rather than deeply nested if-else or switch structures."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rules prohibit representing concurrent tasks as sequential steps and misplacing loop boundaries, but they do not explicitly forbid collapsing compound concurrent items into single monolithic nodes or nesting independent parallel tasks inside conditional blocks. They also lack a rule enforcing the use of flat, early-exit if-stop structures for mutually exclusive conditions that lead to terminal states, and they do not prohibit wrapping the entire activity sequence in a repeat loop for system-level periodic tasks."
+    }
+  ]
+}
+```

@@ -1,0 +1,12 @@
+{
+  "dataset": "fsd",
+  "inputs": {
+    "prompt": "prompt_final.md",
+    "cases": "test_cases.json"
+  },
+  "outputs": {
+    "records": "test/records.jsonl",
+    "summary": "test/summary.json",
+    "analysis": "test/analysis.md"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "count": 1.0,
+  "syntax_pass_rate": 1.0,
+  "infrastructure_error_rate": 0.0,
+  "node_precision": 1.0,
+  "node_recall": 1.0,
+  "node_f1": 1.0,
+  "relation_precision": 1.0,
+  "relation_recall": 1.0,
+  "relation_f1": 1.0,
+  "higen_compilation_pass_rate": 1.0,
+  "higen_llm_evaluated": 0.0,
+  "higen_llm_failed": 0.0,
+  "llm_node_precision": 0.0,
+  "llm_node_recall": 0.0,
+  "llm_node_f1": 0.0,
+  "llm_relation_precision": 0.0,
+  "llm_relation_recall": 0.0,
+  "llm_relation_f1": 0.0
+}

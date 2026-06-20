@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities strictly from the explicit text of the requirement. Identify each distinct action as a single concise activity, preserving the core action and object without merging sequential distinct actions.\n2. Identify control-flow constructs in the requirement: alternative paths (if/else), mutually exclusive cases based on a variable (switch/case), and concurrent actions (fork).\n3. Generate the PlantUML code by assembling only the extracted activities and identified control-flow constructs, strictly following the sequence and logic described in the requirement."
+    },
+    {
+      "section": "knowledge",
+      "operation": "append",
+      "content": "An activity should represent a single distinct action stated in the requirement; do not decompose a stated action into sub-steps or merge sequential distinct actions into one. Use PlantUML `switch`/`case`/`endswitch` when the requirement describes multiple mutually exclusive paths based on different values of a single variable or category; use `if`/`else` for simple binary conditions. Use `fork`/`fork again`/`end fork` when the requirement indicates that multiple actions happen concurrently or represent independent parallel components."
+    }
+  ],
+  "rationale": "The workflow edit provides a step-by-step procedure to extract activities at the correct granularity and identify control-flow constructs before generating code, directly addressing the missing procedural guidance. The knowledge edit supplies reusable UML/PlantUML modeling principles for activity granularity, switch/case versus if/else, and parallel forks, addressing the identified knowledge gaps without using dataset-specific examples.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

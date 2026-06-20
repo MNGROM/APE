@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section provides conflicting cues for parallelism: Step 1 allows decomposition based on 'simultaneous system behaviors', which leads to false-positive parallelism for sequential or enumerated items, while Step 3 only broadly mentions mapping 'explicit concurrency keywords' to fork/join, failing to enforce their use and causing false-negative parallelism. Additionally, Step 1's grouping rule directly causes missing activities by instructing the model to collapse lists of attributes or parameters into a single node."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section's concurrency modeling rule is the primary source of false-positive parallelism; the exception for 'simultaneous system behaviors' is too vague and overrides the sequential exclusions, causing the model to misidentify non-concurrent lists as parallel. It also contributes to false-negative parallelism by not establishing a definitive, prioritized mapping from explicit keywords like 'concurrently' or 'simultaneously' to fork/join blocks. Furthermore, the loop modeling rule lacks guidance on identifying loop scope and exit conditions, leading to incorrect loop boundaries."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The granularity rule contradicts the workflow and knowledge sections by forbidding the collapse of distinct specified actions, yet fails to override the explicit instructions that allow collapsing, leaving the model confused and causing both missing activities and extra hallucinated activities. The convergence rule is insufficient for complex control-flow, lacking specific instructions on how to handle nested conditional logic (like switch/case inside if-else) or how to properly represent conditional transitions, resulting in missing, wrong, or flattened relations."
+    }
+  ]
+}
+```

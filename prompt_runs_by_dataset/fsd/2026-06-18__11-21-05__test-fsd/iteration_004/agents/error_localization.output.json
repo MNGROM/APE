@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section lacks a step for identifying and modeling repetitive or corrective behaviors (loops), causing the model to treat them as one-time sequential branches. Additionally, it does not explicitly guide the extraction and routing of termination conditions or early exits, leading to misrouted control flows and missing 'stop' nodes."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks reusable modeling guidance for identifying and constructing loops (e.g., 'while'/'repeat') from linguistic cues of repetition or retry logic. It also fails to provide heuristics for distinguishing true concurrent execution from grammatical lists of attributes, and lacks guidance on mapping termination conditions and early exits, which results in misrouted relations and incorrect parallel forks."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section's instruction to 'preserve granular UI elements... as distinct activity nodes' contradicts the rule against inventing implicit steps, encouraging over-decomposition where the model splits single actions into multiple hallucinated sub-steps or adds unmentioned decision nodes. It also lacks an explicit prohibition against dropping alternative or edge-case flows, which leads to missing activities."
+    }
+  ]
+}
+```

@@ -1,0 +1,21 @@
+```json
+{
+  "revision_plan": [
+    {
+      "section": "workflow",
+      "intent": "Prevent the model from defaulting to sequential interpretation and dropping activities when handling complex nested logic.",
+      "change_instruction": "Add a workflow step requiring the model to first identify all explicit activities and structural markers (including implicit parallelism markers) before determining control flow. Add a final verification step requiring the model to cross-check the generated diagram against the extracted activity list to ensure no leaf-level activities are dropped and no simple statements are over-fragmented."
+    },
+    {
+      "section": "knowledge",
+      "intent": "Provide precise mapping rules for loop semantics, nested loop scoping, and implicit parallelism, while preventing over-fragmentation.",
+      "change_instruction": "Expand the knowledge section with: (1) Explicit mapping rules distinguishing loop semantics (e.g., map 'repeat until' to `repeat`/`repeat while` for action-then-condition, and 'while [condition]' or duration/timeout constraints to `while`/`end while` for condition-then-action). (2) A rule for correctly scoping loops nested within conditional branches (the loop must close within its parent conditional branch). (3) Additional linguistic markers for implicit parallelism (e.g., 'separate task', 'periodically', 'in the background') and instructions to map them to `fork`/`end fork`. (4) A rule stating that a single, simple requirement statement should map to exactly one activity node, prohibiting over-fragmentation."
+    },
+    {
+      "section": "rule",
+      "intent": "Constrain the model from over-decomposing statements and creating artificial loop-back flows or incorrect transition scopes.",
+      "change_instruction": "Add the following explicit rules: (1) Prohibit over-decomposing a single, simple requirement statement into multiple unnecessary activity nodes. (2) Prohibit artificial loop-back flows; loop-back transitions must strictly correspond to explicit iterative markers in the text and must return to the correct scope without crossing conditional boundaries not specified in the requirement. (3) Require that transitions between activities strictly follow the extracted control-flow relations, prohibiting spurious transitions added to simplify complex structures."
+    }
+  ]
+}
+```

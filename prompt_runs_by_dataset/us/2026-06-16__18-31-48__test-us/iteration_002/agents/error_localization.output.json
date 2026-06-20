@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "section_problem": "The workflow section is missing, providing no step-by-step process for the generator to first extract discrete activities (preventing compression or over-decomposition) and then to explicitly identify control-flow patterns like concurrency, loops, and conditional dependencies before mapping them to PlantUML syntax."
+    },
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section is missing, failing to provide the generator with explicit mapping rules from natural-language parallel markers (e.g., 'concurrently') to PlantUML fork/end fork constructs, time-based/periodic triggers to loop syntax, and guidelines for distinguishing conditional branching from iterative looping."
+    },
+    {
+      "section": "rule",
+      "section_problem": "The rule section is missing, lacking strict constraints to enforce completeness of granular activities, prevent hallucination of unsupported intermediate states, and ensure correct nesting and termination of conditional/parallel branches without premature stops."
+    }
+  ]
+}
+```

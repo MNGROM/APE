@@ -1,0 +1,46 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "wrong_parallel",
+      "problem": "The model fails to identify and represent concurrent behaviors, defaulting to strictly sequential flows instead of using PlantUML's `fork`/`end fork` constructs where the ground truth specifies them.",
+      "possible_causes": [
+        "The prompt lacks explicit instructions or examples for identifying parallel behaviors (e.g., multiple attributes, simultaneous sub-tasks) and translating them into `fork`/`end fork` blocks.",
+        "The model is biased towards linearizing all listed actions, treating comma-separated or bulleted items as sequential steps rather than concurrent operations."
+      ]
+    },
+    {
+      "name": "wrong_loop",
+      "problem": "The model fails to recognize repeated or iterative behaviors described in the requirements, rendering them as linear sequences instead of using `repeat`/`while` loops.",
+      "possible_causes": [
+        "The prompt does not guide the model to detect iterative keywords (e.g., 'repeat', 'every', 'until') and map them to PlantUML loop constructs.",
+        "The model lacks examples of how to collapse repetitive procedural steps into proper loop structures."
+      ]
+    },
+    {
+      "name": "extra_activity",
+      "problem": "The model frequently hallucinates activities that are not grounded in the requirements, such as inventing user actions for user stories or over-decomposing single actions into multiple unnecessary steps.",
+      "possible_causes": [
+        "The prompt does not constrain the model against inventing implicit steps, leading it to 'fill in the blanks' for high-level requirements like user stories.",
+        "Lack of instruction to keep activity nodes abstract and strictly faithful to the source text without assuming unstated interactions."
+      ]
+    },
+    {
+      "name": "missing_or_wrong_relation",
+      "problem": "The model struggles with complex conditional logic, often misplacing nested conditions, incorrectly chaining mutually exclusive branches sequentially, or failing to represent nested if-else dependencies accurately.",
+      "possible_causes": [
+        "The prompt lacks clear guidelines or structural patterns for translating deeply nested or cascading conditional logic into correct PlantUML `if`/`elseif`/`endif` hierarchies.",
+        "The model attempts to flatten complex state-transition logic into sequential checks rather than preserving the required nested control-flow structure."
+      ]
+    },
+    {
+      "name": "missing_activity",
+      "problem": "The model omits required structural and behavioral elements from the requirements, such as swimlanes (partitions) for system actors or specific validation/decision outcomes.",
+      "possible_causes": [
+        "The prompt does not instruct the model to use `partition` blocks to represent distinct actors or systems mentioned in the requirements.",
+        "The model prioritizes the main success path and drops alternative paths, error checks, or specific conditional outcomes."
+      ]
+    }
+  ]
+}
+```

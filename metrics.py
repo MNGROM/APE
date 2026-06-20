@@ -166,6 +166,17 @@ def _format_relation(source: str, target: str, kind: str | None = None) -> str:
     return relation
 
 
+def _dedupe_preserving_order(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        deduped.append(item)
+    return deduped
+
+
 def _parse_relation(text: str) -> RelationParts | None:
     match = re.match(r"^(.*?)\s+->\s+(.*?)(?:\s+\[([^\[\]]*)\])?$", text)
     if not match:
@@ -176,6 +187,50 @@ def _parse_relation(text: str) -> RelationParts | None:
     if not source or not target:
         return None
     return RelationParts(source=source, target=target, kind=kind)
+
+
+_PLANTUML_ARROW_PATTERN = r"(?:-+(?:\[[^\]]+\]|left|right|up|down|[#A-Za-z0-9_,]+)*-*>)|(?:=+>)"
+_TRANSITION_STATEMENT_RE = re.compile(
+    rf"^\s*(?P<source>.+?)\s*(?P<arrow>{_PLANTUML_ARROW_PATTERN})\s*(?P<target>.+?)\s*$",
+    flags=re.IGNORECASE,
+)
+_SHORTHAND_ARROW_RE = re.compile(
+    rf"^\s*(?P<arrow>{_PLANTUML_ARROW_PATTERN})\s*(?P<label>.*?)\s*;?\s*$",
+    flags=re.IGNORECASE,
+)
+
+
+def _strip_statement_suffix(text: str) -> str:
+    return text.strip().rstrip(";").strip()
+
+
+def _split_transition_target_label(text: str) -> tuple[str, str]:
+    value = _strip_statement_suffix(text)
+    if ":" not in value:
+        return value, ""
+    target, label = value.split(":", 1)
+    return target.strip(), label.strip()
+
+
+def _parse_transition_statement(line: str) -> RelationParts | None:
+    match = _TRANSITION_STATEMENT_RE.match(line)
+    if not match:
+        return None
+    target, label = _split_transition_target_label(match.group("target"))
+    source = normalize_label(match.group("source"))
+    target = normalize_label(target)
+    label = normalize_label(label)
+    if not source or not target:
+        return None
+    return RelationParts(source=source, target=target, kind=label)
+
+
+def _parse_shorthand_arrow_label(line: str) -> str | None:
+    match = _SHORTHAND_ARROW_RE.match(line)
+    if not match:
+        return None
+    label = normalize_label(_strip_statement_suffix(match.group("label")))
+    return label or None
 
 
 def _relation_type(kind: str) -> str:
@@ -216,6 +271,7 @@ def _starts_new_plantuml_statement(line: str) -> bool:
         "fork",
         "fork again",
         "end fork",
+        "fork end",
         "endfork",
         "split",
         "split again",
@@ -234,7 +290,10 @@ def _starts_new_plantuml_statement(line: str) -> bool:
         "end",
         "}",
     )
-    return any(lower == prefix or lower.startswith(prefix + " ") or lower.startswith(prefix + "(") for prefix in prefixes)
+    return (
+        _parse_shorthand_arrow_label(line) is not None
+        or any(lower == prefix or lower.startswith(prefix + " ") or lower.startswith(prefix + "(") for prefix in prefixes)
+    )
 
 
 def _logical_plantuml_lines(code: str) -> list[str]:
@@ -312,6 +371,12 @@ def extract_activity_graph(uml_code: str) -> ActivityGraph:
             flattened.extend(branch)
         return flattened
 
+    def relabel_current_tails(kind: str) -> None:
+        nonlocal current_tails
+        if not current_tails:
+            return
+        current_tails = [(source, kind) for source, _ in current_tails]
+
     for line in _logical_plantuml_lines(code):
         if not line:
             continue
@@ -336,6 +401,11 @@ def extract_activity_graph(uml_code: str) -> ActivityGraph:
         if lower.startswith("partition ") or lower.startswith("group ") or lower == "}":
             continue
 
+        shorthand_label = _parse_shorthand_arrow_label(line)
+        if shorthand_label:
+            relabel_current_tails(shorthand_label)
+            continue
+
         if line.startswith(":") and ";" in line:
             label = line[1 : line.rfind(";")]
             add_node(label)
@@ -348,18 +418,15 @@ def extract_activity_graph(uml_code: str) -> ActivityGraph:
                 nodes.append(label)
             continue
 
-        transition_match = re.match(r"^(.+?)\s*(?:-+>|=+>|-->|->)\s*(.+?)(?:\s*:\s*(.*))?$", line)
-        if transition_match:
-            source = normalize_label(transition_match.group(1))
-            target = normalize_label(transition_match.group(2))
-            label = normalize_label(transition_match.group(3) or "")
-            if source and source not in nodes:
-                nodes.append(source)
-            if target and target not in nodes:
-                nodes.append(target)
-            if source and target and source != target:
-                relations.append(_format_relation(source, target, label or "transition"))
-            current_tails = [(target, None)] if target else []
+        transition = _parse_transition_statement(line)
+        if transition:
+            if transition.source not in nodes:
+                nodes.append(transition.source)
+            if transition.target not in nodes:
+                nodes.append(transition.target)
+            if transition.source != transition.target:
+                relations.append(_format_relation(transition.source, transition.target, transition.kind or "transition"))
+            current_tails = [(transition.target, None)]
             continue
 
         if_match = re.match(r"^if\s*\((.*?)\)\s*then\b", line, flags=re.IGNORECASE)
@@ -470,7 +537,7 @@ def extract_activity_graph(uml_code: str) -> ActivityGraph:
                 current_tails = list(frame.source_tails)
             continue
 
-        if lower in {"end fork", "endfork", "end split", "split end", "endsplit"}:
+        if lower in {"end fork", "fork end", "endfork", "end split", "split end", "endsplit"}:
             frame = stack.pop() if stack and isinstance(stack[-1], ForkFrame) else None
             if frame:
                 save_current_branch(frame)
@@ -481,7 +548,10 @@ def extract_activity_graph(uml_code: str) -> ActivityGraph:
         if condition:
             add_node(condition)
 
-    return ActivityGraph(nodes=nodes, relations=relations)
+    return ActivityGraph(
+        nodes=_dedupe_preserving_order(nodes),
+        relations=_dedupe_preserving_order(relations),
+    )
 
 
 def iter_semantic_elements(uml_code: str) -> list[str]:

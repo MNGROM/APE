@@ -1,0 +1,72 @@
+```json
+{
+  "summary": "The primary failures stem from a lack of grounding (causing hallucinated extra activities) and missing reusable PlantUML control-flow modeling knowledge (causing incorrect or missing relations). The most effective repair targets the 'rule' section to enforce strict grounding and granularity constraints, and the 'knowledge' section to provide reusable PlantUML construct mappings for parallel and mutually exclusive flows.",
+  "section_diagnoses": [
+    {
+      "section": "rule",
+      "priority": "high",
+      "failure_patterns": [
+        "extra_activity",
+        "missing_activity",
+        "extra_or_wrong_relation"
+      ],
+      "section_problem": "The current prompt provides no hard constraints, allowing the model to freely hallucinate implementation details, over-decompose requirements, and invent unstated control-flow paths.",
+      "edit_intent": "Add concise, overriding constraints that strictly prohibit inferring unstated implementation steps, require one explicit requirement action to map to one activity node, and forbid generating relations not directly supported by the input text.",
+      "knowledge_gap_ids": [
+        "activity_granularity_and_grounding"
+      ],
+      "evidence_case_ids": [
+        "us-0098",
+        "us-0019",
+        "us-0092",
+        "lmc-0040",
+        "lmc-0055",
+        "pure-0012",
+        "pure-0078",
+        "lmc-0048"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_or_wrong_relation",
+        "missing_activity"
+      ],
+      "section_problem": "The prompt lacks reusable UML/PlantUML modeling knowledge, causing the model to use incorrect control-flow constructs (e.g., if/else instead of switch/case) and fail to represent simultaneous actions correctly.",
+      "edit_intent": "Provide explicit, reusable mapping rules from requirement logic (parallel actions, mutually exclusive alternatives) to their corresponding PlantUML constructs (fork/end fork, switch/case/endswitch).",
+      "knowledge_gap_ids": [
+        "parallel_fork_join",
+        "mutually_exclusive_switch"
+      ],
+      "evidence_case_ids": [
+        "pure-0012",
+        "pure-0078",
+        "lmc-0048"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "rule",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The agent's role and scope are correctly defined; the errors are caused by missing constraints and knowledge, not a misdefined task."
+    },
+    {
+      "section": "input",
+      "reason": "The input specification is accurate and not the source of the hallucination or modeling errors."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement (PlantUML code only) is appropriate; the failures are in the diagram's content and structure, not the output format."
+    },
+    {
+      "section": "workflow",
+      "reason": "While workflow could help, the constraints limit edits to 2 sections. The procedural steps are less critical here than establishing hard grounding rules (rule) and correct construct mappings (knowledge), which directly address the most severe failure patterns."
+    }
+  ]
+}
+```

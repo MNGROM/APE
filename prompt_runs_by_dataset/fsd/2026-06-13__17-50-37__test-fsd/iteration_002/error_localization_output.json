@@ -1,0 +1,72 @@
+```json
+{
+  "summary": "The most useful repair appears to be in the workflow and knowledge sections. The workflow section gives weak procedural guidance on strictly grounding activities and sequencing control flow, while the knowledge section lacks reusable UML/PlantUML concepts for parallel lists, compound conditions, and swimlanes, which directly causes the observed relation and construct errors.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "over_decomposition_and_hallucination",
+        "activity_merging_and_omission",
+        "cascading_relation_errors"
+      ],
+      "section_problem": "The workflow section gives weak guidance on moving from requirements to activities, allowing the model to infer, hallucinate, or merge actions rather than extracting them strictly, which cascades into incorrect control-flow relations.",
+      "edit_intent": "Strengthen the procedural steps to enforce strict grounding of activities to explicit text, prohibit inferring sub-steps or merging distinct actions, and ensure relations are assembled strictly based on the extracted activities and requirement logic.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "lmc-0038",
+        "us-0216",
+        "pure-0010",
+        "bp-0023",
+        "bp-0007",
+        "pure-0030",
+        "rac-0004"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "missing_parallel_constructs",
+        "flattened_conditional_logic",
+        "over_decomposition_and_hallucination"
+      ],
+      "section_problem": "The knowledge section lacks reusable guidance for identifying parallel constructs from requirement lists, modeling compound conditions as nested structures, and using partitions for distinct actors, leading to sequential flattening and hallucinated activities.",
+      "edit_intent": "Add concise modeling principles for using fork constructs for concurrent/independent lists, nesting compound conditions, and applying partitions for distinct actors to prevent structural misinterpretations.",
+      "knowledge_gap_ids": [
+        "parallel_list_to_fork",
+        "compound_condition_nesting",
+        "partition_for_swimlanes"
+      ],
+      "evidence_case_ids": [
+        "pure-0030",
+        "bp-0007",
+        "pure-0010",
+        "lmc-0011"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "agent task",
+      "reason": "The overall role and scope are correctly defined; the failure stems from procedural and knowledge gaps, not the agent's defined task."
+    },
+    {
+      "section": "input",
+      "reason": "The input section accurately describes the input format; the issue is how the agent processes the text, not how it reads it."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement (PlantUML code only) is appropriate; the errors are in the generated content's logic and structure, not the output format specification."
+    },
+    {
+      "section": "rule",
+      "reason": "While adding a hard constraint rule could help, the constraints limit edits to 2 sections. The procedural (workflow) and reusable modeling (knowledge) sections are more impactful root causes to address than adding redundant prohibitions here."
+    }
+  ]
+}
+```

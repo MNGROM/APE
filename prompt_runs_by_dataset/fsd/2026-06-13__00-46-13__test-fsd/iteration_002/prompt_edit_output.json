@@ -1,0 +1,22 @@
+```json
+{
+  "edits": [
+    {
+      "section": "workflow",
+      "operation": "replace",
+      "content": "1. Extract activities: Read the requirement and identify every distinct action or state explicitly described. Create exactly one activity node for each distinct action; do not merge multiple actions into a single node.\n2. Reason about control flow: Determine the sequence, branching, and concurrency between the extracted activities based strictly on the requirement text. Map conditional logic (if/else, switch) for mutually exclusive paths and parallel logic (fork/join) for concurrent paths.\n3. Generate PlantUML: Write the PlantUML code representing the grounded activities and their control-flow relations. Do not add activities or implementation steps not stated in the requirement."
+    },
+    {
+      "section": "rule",
+      "operation": "replace",
+      "content": "- Grounding: Every activity node must correspond to an explicit action or state described in the requirement. Do not invent, infer, or add implicit implementation or operational steps.\n- Granularity: Each activity node must represent a single, distinct action. Do not combine multiple distinct actions into one composite node.\n- Parallel vs. Alternative: Use fork/join for actions that occur concurrently. Use switch/if for mutually exclusive alternative paths. Do not represent concurrent actions as switch cases or alternatives as parallel forks."
+    }
+  ],
+  "rationale": "The edits target the root cause of the high-severity failures: the lack of procedural guidance and constraints for activity extraction and grounding. The new workflow enforces a step-by-step process to first extract explicit activities, then reason about control flow, and finally generate PlantUML. The new rules strictly prohibit hallucinating implementation details and merging distinct actions, while also clarifying the distinction between parallel and alternative flows.",
+  "expected_effect": {
+    "node_f1": "increase",
+    "relation_f1": "increase",
+    "syntax_pass_rate": "neutral"
+  }
+}
+```

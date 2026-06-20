@@ -1,0 +1,38 @@
+```json
+{
+  "error_patterns": [
+    {
+      "name": "hallucinated_control_flow",
+      "problem": "The generator fabricates conditional checks, loops, and error-handling branches that are not stated or implied in the requirements.",
+      "possible_causes": [
+        "The prompt may lack explicit instructions to strictly adhere to the provided text, causing the LLM to rely on its prior knowledge of typical software workflows.",
+        "The LLM defaults to adding defensive programming patterns (e.g., validation checks, error handling) even when the requirement is purely descriptive or declarative."
+      ]
+    },
+    {
+      "name": "over_decomposition_of_activities",
+      "problem": "The generator splits single, cohesive actions from the requirement into multiple granular steps, leading to extra activities and relations.",
+      "possible_causes": [
+        "The prompt may not specify the appropriate level of abstraction, leading the generator to treat implicit sub-steps as explicit activity nodes.",
+        "The generator interprets descriptive clauses or preconditions as separate sequential actions rather than attributes of a single activity."
+      ]
+    },
+    {
+      "name": "missing_parallel_fork_representation",
+      "problem": "The generator fails to identify and represent concurrent or parallel behaviors, modeling them as purely sequential flows instead.",
+      "possible_causes": [
+        "The prompt does not adequately guide the model to recognize linguistic cues for parallelism (e.g., lists of independent items, simultaneous actions) and map them to PlantUML fork/end fork constructs.",
+        "The generator has a strong sequential bias, defaulting to linear step-by-step translation even when actions are independent."
+      ]
+    },
+    {
+      "name": "omission_of_implicit_or_contextual_activities",
+      "problem": "The generator omits activities that are logically necessary or explicitly detailed in the ground truth but only implicitly stated in the requirement.",
+      "possible_causes": [
+        "The prompt may not instruct the model to infer and make explicit the intermediate states or system responses that connect the primary user actions.",
+        "The generator focuses only on the main actor's actions, ignoring system-side reactions or contextual steps required to complete the scenario."
+      ]
+    }
+  ]
+}
+```

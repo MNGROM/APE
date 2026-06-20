@@ -1,0 +1,72 @@
+```json
+{
+  "summary": "The most useful repair appears to be in workflow and knowledge. The workflow section needs stronger procedural guidance to prevent hallucination and enforce decomposition of compound actions, while the knowledge section needs reusable UML/PlantUML concepts for handling compound conditions, concurrent lists, and enumerated alternatives.",
+  "section_diagnoses": [
+    {
+      "section": "workflow",
+      "priority": "high",
+      "failure_patterns": [
+        "invented_implementation_activities",
+        "over_compressed_activities",
+        "flattened_control_flow",
+        "missing_parallel_decomposition"
+      ],
+      "section_problem": "The workflow section gives weak guidance on strictly grounding activities in the text and fails to instruct the model to decompose compound phrases, lists, and multi-action sentences into separate nodes before determining control flow.",
+      "edit_intent": "Strengthen the extraction step to explicitly forbid inventing actions and mandate decomposing compound phrases, lists, and simultaneous actions into distinct activity nodes prior to mapping control-flow constructs.",
+      "knowledge_gap_ids": [],
+      "evidence_case_ids": [
+        "us-0056",
+        "lmc-0050",
+        "bp-0015",
+        "lmc-0016",
+        "bp-0022",
+        "us-0129"
+      ]
+    },
+    {
+      "section": "knowledge",
+      "priority": "high",
+      "failure_patterns": [
+        "flattened_control_flow",
+        "missing_parallel_decomposition"
+      ],
+      "section_problem": "The knowledge section lacks reusable modeling principles for handling compound conditions, concurrent lists, and enumerated alternative outcomes, causing the model to collapse these into single nodes or sequential flows.",
+      "edit_intent": "Add concise modeling principles for decomposing compound conditions into nested branches, mapping simultaneous lists to fork/join blocks, and using switch/case for enumerated alternatives.",
+      "knowledge_gap_ids": [
+        "compound_condition_decomposition",
+        "list_and_compound_decomposition_to_fork",
+        "switch_case_for_alternative_outcomes"
+      ],
+      "evidence_case_ids": [
+        "lmc-0016",
+        "lmc-0050",
+        "bp-0015",
+        "us-0129",
+        "bp-0022"
+      ]
+    }
+  ],
+  "recommended_edit_sections": [
+    "workflow",
+    "knowledge"
+  ],
+  "do_not_edit_sections": [
+    {
+      "section": "rule",
+      "reason": "The primary failures stem from missing procedural decomposition steps and reusable modeling concepts, which are better addressed in workflow and knowledge. Adding another rule risks redundancy with the existing workflow step 1 constraint against inventing activities."
+    },
+    {
+      "section": "agent task",
+      "reason": "The agent's overall role and scope are correctly defined; the errors lie in execution procedure and modeling knowledge, not the task definition."
+    },
+    {
+      "section": "input",
+      "reason": "The input section accurately describes the input format; the failure is in how the model processes the text, not how it reads it."
+    },
+    {
+      "section": "output",
+      "reason": "The output format requirement (PlantUML only) is appropriate; the errors are structural and semantic within the PlantUML, not the output format itself."
+    }
+  ]
+}
+```

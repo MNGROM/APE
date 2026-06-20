@@ -1,0 +1,18 @@
+```json
+{
+  "section_diagnoses": [
+    {
+      "section": "knowledge",
+      "section_problem": "The knowledge section lacks definitions and heuristics for swimlanes/partitions, nested conditional logic, and compound guard conditions. The existing guidance on fork versus switch/if is insufficient to prevent the model from misidentifying parallel and alternative flows, and it does not address how to model concurrent information display."
+    },
+    {
+      "section": "workflow",
+      "section_problem": "The workflow's extraction step fails to instruct the model to capture actor roles for partitions or the hierarchical structure of conditionals, causing the model to flatten nested logic and omit swimlanes during diagram construction."
+    },
+    {
+      "section": "rule",
+      "section_problem": "Rule 1's strict prohibition on adding implicit steps (e.g., login) may inadvertently cause the omission of explicit prerequisite checks or guard conditions. Furthermore, the rules lack a specific constraint against over-decomposing conditions into explanatory activity nodes or adding intermediate computational steps."
+    }
+  ]
+}
+```
