@@ -314,7 +314,6 @@ def run_method(
 def write_comparison_report(output_dir: Path, summaries: dict[str, dict[str, float]]) -> None:
     keys = [
         "count",
-        "syntax_pass_rate",
         "plantuml_compilation_pass_rate",
         "node_precision",
         "node_recall",

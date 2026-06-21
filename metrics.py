@@ -815,7 +815,6 @@ def summarize_records(records: list[EvaluationRecord]) -> dict[str, float]:
     relation_recall = avg([r.relation_metrics.recall for r in records])
     return {
         "count": float(len(records)),
-        "syntax_pass_rate": avg([1.0 if r.syntax.passed else 0.0 for r in records]),
         "infrastructure_error_rate": avg([1.0 if "infrastructure_error" in r.failure_types else 0.0 for r in records]),
         "node_precision": node_precision,
         "node_recall": node_recall,
@@ -838,7 +837,6 @@ def summarize_records(records: list[EvaluationRecord]) -> dict[str, float]:
 def format_summary(summary: dict[str, float]) -> str:
     text = (
         f"count={int(summary['count'])}, "
-        f"syntax={summary['syntax_pass_rate']:.1%}, "
         f"plantuml_compile={summary['plantuml_compilation_pass_rate']:.1%}, "
         f"N-F1={summary['node_f1']:.3f}, "
         f"R-F1={summary['relation_f1']:.3f}"

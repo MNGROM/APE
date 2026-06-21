@@ -345,7 +345,6 @@ def compare_summaries(baseline: dict[str, Any], method: dict[str, Any]) -> dict[
         "relation_precision",
         "relation_recall",
         "relation_f1",
-        "syntax_pass_rate",
         "plantuml_compilation_pass_rate",
     )
     delta: dict[str, Any] = {}
@@ -434,7 +433,7 @@ def main() -> int:
         "notes": [
             "LATO baseline here refers to src.workflow.LATO.workflow, not zero-shot.",
             "This comparison reuses APE deterministic metrics so both methods are scored under one evaluator.",
-            "syntax_pass_rate is stricter because it checks wrapper presence, while plantuml_compilation_pass_rate wraps body-only PlantUML before compile.",
+            "plantuml_compilation_pass_rate is the retained syntax-validity proxy because compilable PlantUML is the stricter executable artifact check.",
         ],
     }
     write_json(output_dir / "report.json", report)

@@ -1,6 +1,7 @@
 import unittest
 
-from metrics import extract_activity_graph
+from llm_element_metrics import CompilationResult, LLMElementMetrics, PRF
+from metrics import EvaluationRecord, MetricBundle, SyntaxResult, extract_activity_graph, summarize_records
 
 
 class MetricsParserTest(unittest.TestCase):
@@ -139,6 +140,37 @@ stop
         self.assertEqual(graph.nodes.count("abort cycle"), 1)
         self.assertEqual(graph.relations.count("abort cycle -> monitor [fork]"), 1)
         self.assertEqual(graph.relations.count("abort cycle -> log [fork]"), 1)
+
+    def test_summary_excludes_syntax_pass_rate(self) -> None:
+        metric = MetricBundle(precision=1.0, recall=1.0, f1=1.0, missing=[], extra=[])
+        zero = PRF(precision=0.0, recall=0.0, f1=0.0)
+        record = EvaluationRecord(
+            dataset="demo",
+            case_id="demo-1",
+            input_requirement="Do work",
+            gold_plantuml="@startuml\n@enduml",
+            generated_plantuml="@startuml\n@enduml",
+            syntax=SyntaxResult(passed=True, errors=[]),
+            node_metrics=metric,
+            relation_metrics=metric,
+            plantuml_compilation=CompilationResult(passed=True, errors=[]),
+            llm_element_metrics=LLMElementMetrics(
+                enabled=False,
+                status="disabled",
+                node_metrics=zero,
+                relation_metrics=zero,
+                gt_elements={},
+                pred_elements={},
+                matching={},
+                counts={},
+            ),
+            failure_types=[],
+        )
+
+        summary = summarize_records([record])
+
+        self.assertNotIn("syntax_pass_rate", summary)
+        self.assertEqual(summary["plantuml_compilation_pass_rate"], 1.0)
 
 
 if __name__ == "__main__":

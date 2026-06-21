@@ -11,6 +11,7 @@ def decision(
 ) -> dict:
     accepted, payload = acceptance_decision(
         iteration=2,
+        bootstrap_allowed=False,
         baseline_summary=baseline_summary,
         candidate_summary=candidate_summary,
         candidate_prompt="candidate",
@@ -107,6 +108,73 @@ class AcceptanceGateTest(unittest.TestCase):
 
         self.assertFalse(payload["accepted"])
         self.assertFalse(payload["safety_gate"]["llm_semantic_guard_ok"])
+
+    def test_zero_growth_ratio_disables_ratio_gate(self) -> None:
+        accepted, payload = acceptance_decision(
+            iteration=2,
+            bootstrap_allowed=False,
+            baseline_summary={
+                "node_f1": 0.50,
+                "relation_f1": 0.40,
+                "plantuml_compilation_pass_rate": 1.0,
+                "infrastructure_error_rate": 0.0,
+            },
+            candidate_summary={
+                "node_f1": 0.50,
+                "relation_f1": 0.45,
+                "plantuml_compilation_pass_rate": 1.0,
+                "infrastructure_error_rate": 0.0,
+            },
+            candidate_prompt="candidate" * 100,
+            baseline_prompt="base",
+            max_prompt_growth_ratio=0.0,
+            max_prompt_chars=9000,
+            min_relation_delta=-0.15,
+            min_node_delta=-0.15,
+            min_compile_delta=-0.10,
+            relation_accept_delta=0.03,
+            node_accept_delta=0.03,
+            compile_accept_delta=0.10,
+            metric_source="deterministic",
+        )
+
+        self.assertTrue(accepted)
+        self.assertTrue(payload["prompt_growth_ratio_ok"])
+        self.assertTrue(payload["prompt_size_ok"])
+
+    def test_bootstrap_is_explicitly_disabled_after_first_acceptance(self) -> None:
+        accepted, payload = acceptance_decision(
+            iteration=1,
+            bootstrap_allowed=False,
+            baseline_summary={
+                "node_f1": 0.40,
+                "relation_f1": 0.30,
+                "plantuml_compilation_pass_rate": 1.0,
+                "infrastructure_error_rate": 0.0,
+            },
+            candidate_summary={
+                "node_f1": 0.45,
+                "relation_f1": 0.35,
+                "plantuml_compilation_pass_rate": 1.0,
+                "infrastructure_error_rate": 0.0,
+            },
+            candidate_prompt="candidate" * 100,
+            baseline_prompt="base",
+            max_prompt_growth_ratio=1.1,
+            max_prompt_chars=9000,
+            min_relation_delta=-0.15,
+            min_node_delta=-0.15,
+            min_compile_delta=-0.10,
+            relation_accept_delta=0.03,
+            node_accept_delta=0.03,
+            compile_accept_delta=0.10,
+            metric_source="deterministic",
+        )
+
+        self.assertFalse(accepted)
+        self.assertFalse(payload["bootstrap_gate"]["allowed"])
+        self.assertFalse(payload["bootstrap_accept"])
+        self.assertFalse(payload["prompt_size_ok"])
 
 
 if __name__ == "__main__":
