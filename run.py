@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import dataclasses
 import json
 import os
@@ -44,6 +45,15 @@ from metrics import DEFAULT_EMBEDDING_MODEL, format_summary, summarize_records
 from reporting import refresh_run_reports, write_iteration_reports
 from utils.io import read_prompt_file, read_text, write_text
 from versioning import initialize_run_prompt, make_run_dir, write_run_args
+
+
+ITERATION_TEST_METRIC_KEYS = (
+    "node_f1",
+    "relation_f1",
+    "llm_node_f1",
+    "llm_relation_f1",
+    "plantuml_compilation_pass_rate",
+)
 
 
 def validate_glm_args(args: argparse.Namespace) -> None:
@@ -421,6 +431,98 @@ def write_evaluation_records(path: Path, records: list[Any]) -> None:
     write_text(path, ("\n".join(lines) + "\n") if lines else "")
 
 
+def evaluate_iteration_test(
+    *,
+    prompt: str,
+    test_cases: list[Case],
+    test_dataset: str,
+    args: argparse.Namespace,
+    llm_client: LLMClient,
+    run_dir: Path,
+    iter_dir: Path,
+    iteration: int,
+) -> dict[str, float]:
+    test_dir = iter_dir / "test"
+    records_path = test_dir / "records.jsonl"
+    summary_path = test_dir / "summary.json"
+    analysis_path = test_dir / "analysis.md"
+    manifest = {
+        "dataset": test_dataset,
+        "iteration": iteration,
+        "inputs": {
+            "prompt": "prompts/after.md",
+            "cases": "../test_cases.json",
+        },
+        "outputs": {
+            "records": "test/records.jsonl",
+            "summary": "test/summary.json",
+            "analysis": "test/analysis.md",
+        },
+    }
+    write_text(test_dir / "manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+    records, summary = evaluate_cases(
+        prompt=prompt,
+        cases=test_cases,
+        args=args,
+        llm_client=llm_client,
+        output_path=records_path,
+        state_dir=run_dir,
+        phase=f"iteration_{iteration:03d}:held_out_test",
+    )
+    write_text(summary_path, json.dumps(summary, ensure_ascii=False, indent=2))
+    write_text(analysis_path, build_analysis(records, summary))
+    print(f"[iteration {iteration}] held-out test {format_summary(summary)}")
+    return summary
+
+
+def write_iteration_test_metric_plot(run_dir: Path) -> None:
+    rows: list[dict[str, float | int]] = []
+    for iter_dir in sorted(run_dir.glob("iteration_*")):
+        try:
+            iteration = int(iter_dir.name.rsplit("_", 1)[-1])
+        except ValueError:
+            continue
+        summary_path = iter_dir / "test" / "summary.json"
+        if not summary_path.exists():
+            continue
+        summary = json.loads(read_text(summary_path))
+        row: dict[str, float | int] = {"iteration": iteration}
+        for key in ITERATION_TEST_METRIC_KEYS:
+            row[key] = float(summary.get(key, 0.0))
+        rows.append(row)
+
+    csv_path = run_dir / "iteration_test_metrics.csv"
+    fieldnames = ["iteration", *ITERATION_TEST_METRIC_KEYS]
+    with csv_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    if not rows:
+        return
+
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    x_values = [int(row["iteration"]) for row in rows]
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    for key in ITERATION_TEST_METRIC_KEYS:
+        y_values = [float(row[key]) for row in rows]
+        ax.plot(x_values, y_values, marker="o", linewidth=2, label=key)
+    ax.set_xlabel("Iteration")
+    ax.set_ylabel("Metric")
+    ax.set_title("Held-out Test Metrics by Iteration")
+    ax.set_xticks(x_values)
+    ax.set_ylim(0.0, 1.0)
+    ax.grid(True, linestyle="--", alpha=0.35)
+    ax.legend(loc="best")
+    fig.tight_layout()
+    fig.savefig(run_dir / "iteration_test_metrics.png", dpi=160)
+    plt.close(fig)
+
+
 def run_training_iterations(
     *,
     args: argparse.Namespace,
@@ -429,6 +531,8 @@ def run_training_iterations(
     run_dir: Path,
     work_prompt_path: Path,
     label: str,
+    test_cases: list[Case] | None = None,
+    test_dataset: str | None = None,
 ) -> tuple[str, dict[str, float]]:
     print(f"[run] {label}, train_cases={len(train_cases)}")
     print(f"[run] train distribution: {describe_case_distribution(train_cases)}")
@@ -1050,11 +1154,27 @@ def run_training_iterations(
             f"[iteration {iteration}] epoch complete: "
             f"accepted={epoch_accepted_count}, rejected={epoch_rejected_count}, skipped={epoch_skipped_count}"
         )
+        if test_cases is not None and test_dataset is not None:
+            print(f"\n[iteration {iteration}] evaluating held-out dataset {test_dataset}")
+            evaluate_iteration_test(
+                prompt=prompt,
+                test_cases=test_cases,
+                test_dataset=test_dataset,
+                args=args,
+                llm_client=llm_client,
+                run_dir=run_dir,
+                iter_dir=iter_dir,
+                iteration=iteration,
+            )
+            write_iteration_test_metric_plot(run_dir)
+            refresh_run_reports(run_dir)
 
     final_prompt = best_prompt if args.use_best_prompt_for_test else read_text(work_prompt_path)
     write_text(run_dir / "prompt_final.md", final_prompt)
     if args.use_best_prompt_for_test:
         write_text(work_prompt_path, final_prompt)
+    if test_cases is not None and test_dataset is not None:
+        write_iteration_test_metric_plot(run_dir)
     refresh_run_reports(run_dir)
     return final_prompt, last_summary
 
@@ -1118,6 +1238,8 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
         run_dir=run_dir,
         work_prompt_path=work_prompt_path,
         label=f"test={test_dataset}",
+        test_cases=test_cases,
+        test_dataset=test_dataset,
     )
 
     print(f"\n[test] evaluating held-out dataset {test_dataset}")

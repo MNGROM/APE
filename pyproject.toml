@@ -9,6 +9,7 @@ authors = [
     { name = "Curry09" },
 ]
 dependencies = [
+    "matplotlib>=3.8",
     "python-dotenv>=1.0",
     "sentence-transformers>=3.0",
 ]
