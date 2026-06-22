@@ -204,8 +204,7 @@ Runs are written under `prompt_runs/`. Important files include:
 - `iteration_NNN/gate_predictions.jsonl`: candidate gate predictions and metrics.
 - `iteration_NNN/gate_summary.json`: candidate gate summary.
 - `iteration_NNN/prompt_acceptance.json`: accept/reject decision with `safety_gate`, `benefit_gate`, and `rejection_reasons`.
-- `prompt_best.md`: best prompt observed on training evaluation.
-- `prompt_final.md`: prompt used for final held-out testing.
+- `prompt_final.md`: final current prompt produced by training and used for final held-out testing.
 - `test_summary.json`, `test_analysis.md`: held-out test results.
 - `run_state.json`, `rate_limit_events.jsonl`: provider retry state and event log.
 

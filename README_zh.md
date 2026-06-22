@@ -203,8 +203,7 @@ relation_f1_delta >= 0.01
 - `iteration_NNN/gate_predictions.jsonl`：candidate gate 生成结果和指标。
 - `iteration_NNN/gate_summary.json`：candidate gate 汇总。
 - `iteration_NNN/prompt_acceptance.json`：接收/拒绝决策，包含 `safety_gate`、`benefit_gate` 和 `rejection_reasons`。
-- `prompt_best.md`：训练中表现最好的 prompt。
-- `prompt_final.md`：最终测试使用的 prompt。
+- `prompt_final.md`：训练结束后的 current prompt，也是最终测试使用的 prompt。
 - `test_summary.json`、`test_analysis.md`：held-out 测试结果。
 - `run_state.json`、`rate_limit_events.jsonl`：provider 重试状态和事件流。
 

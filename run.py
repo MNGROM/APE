@@ -273,16 +273,6 @@ def acceptance_metric_keys(metric_source: str, candidate_summary: dict[str, floa
     raise ValueError(f"Unsupported acceptance metric source: {metric_source}")
 
 
-def metric_priority_key(summary: dict[str, float]) -> tuple[float, float, float, float, float]:
-    return (
-        -summary.get("infrastructure_error_rate", 0.0),
-        summary.get("relation_f1", 0.0),
-        summary.get("node_f1", 0.0),
-        summary.get("plantuml_compilation_pass_rate", 0.0),
-        summary.get("syntax_pass_rate", 0.0),
-    )
-
-
 def iteration_paths(iter_dir: Path) -> dict[str, Path]:
     return {
         "manifest": iter_dir / "manifest.json",
@@ -540,9 +530,6 @@ def run_training_iterations(
 
     prompt = read_text(work_prompt_path)
     last_summary: dict[str, float] = {}
-    best_prompt = prompt
-    best_summary: dict[str, float] = {}
-    best_metric_key: tuple[float, float, float, float, float] | None = None
     global_update_step = 0
 
     for iteration in range(1, args.iterations + 1):
@@ -631,28 +618,6 @@ def run_training_iterations(
             )
             write_iteration_manifest(batch_dir, manifest)
 
-            current_metric_key = metric_priority_key(summary)
-            if best_metric_key is None or current_metric_key > best_metric_key:
-                best_metric_key = current_metric_key
-                best_prompt = prompt
-                best_summary = summary
-                write_text(run_dir / "prompt_best.md", best_prompt)
-                write_text(
-                    run_dir / "best_prompt_summary.json",
-                    json.dumps(
-                        {
-                            "iteration": iteration,
-                            "batch_index": batch_index,
-                            "global_update_step": global_update_step,
-                            "phase": "train_before_evolve",
-                            "selection_policy": "relation_f1, then node_f1, then plantuml_compilation_pass_rate, with infrastructure_error_rate as a hard priority",
-                            "metric_priority_key": list(best_metric_key),
-                            "summary": best_summary,
-                        },
-                        ensure_ascii=False,
-                        indent=2,
-                    ),
-                )
             analysis = build_analysis(records, summary)
             write_text(paths["analysis_overview"], analysis)
             print(f"{log_prefix} train {format_summary(summary)}")
@@ -1169,10 +1134,8 @@ def run_training_iterations(
             write_iteration_test_metric_plot(run_dir)
             refresh_run_reports(run_dir)
 
-    final_prompt = best_prompt if args.use_best_prompt_for_test else read_text(work_prompt_path)
+    final_prompt = read_text(work_prompt_path)
     write_text(run_dir / "prompt_final.md", final_prompt)
-    if args.use_best_prompt_for_test:
-        write_text(work_prompt_path, final_prompt)
     if test_cases is not None and test_dataset is not None:
         write_iteration_test_metric_plot(run_dir)
     refresh_run_reports(run_dir)
@@ -1385,7 +1348,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--max-prompt-growth-ratio", type=float, default=6.0, help="Reject candidate prompts that grow more than this ratio over the current prompt")
     parser.add_argument("--max-prompt-chars", type=int, default=9000, help="Reject candidate prompts longer than this many characters")
-    parser.add_argument("--use-best-prompt-for-test", action=argparse.BooleanOptionalAction, default=True, help="Use the best validation prompt for held-out testing")
     parser.add_argument("--plantuml-compile-timeout", type=int, default=30, help="Timeout in seconds for PlantUML compilation checks")
     parser.add_argument("--llm-element-metrics", action=argparse.BooleanOptionalAction, default=True, help="Run LLM semantic node/relation P/R/F1 metrics; use --no-llm-element-metrics for cheap local smoke tests")
     parser.add_argument("--llm-judge-temperature", type=float, default=0.0)
