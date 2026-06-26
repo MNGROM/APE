@@ -15,6 +15,7 @@ def rewrite_prompt(
     *,
     current_prompt: str,
     revision_plan: dict[str, Any],
+    candidate_constraints: dict[str, Any] | None = None,
     args: Any,
     llm_client: LLMClient,
     output_input_path: Path,
@@ -26,6 +27,8 @@ def rewrite_prompt(
         "current_prompt": current_prompt,
         "revision_plan": revision_plan,
     }
+    if candidate_constraints is not None:
+        payload["candidate_constraints"] = candidate_constraints
     write_text(output_input_path, json.dumps(payload, ensure_ascii=False, indent=2))
     messages = [
         {

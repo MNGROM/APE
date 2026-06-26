@@ -77,6 +77,10 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         print("[config] Both temperature and top_p are set; GLM docs recommend adjusting only one.", flush=True)
     if args.max_prompt_growth_ratio < 1.0:
         raise ValueError("--max-prompt-growth-ratio must be at least 1.0")
+    if args.bootstrap_max_prompt_growth_ratio is None:
+        args.bootstrap_max_prompt_growth_ratio = max(args.max_prompt_growth_ratio, 10.0)
+    if args.bootstrap_max_prompt_growth_ratio < args.max_prompt_growth_ratio:
+        raise ValueError("--bootstrap-max-prompt-growth-ratio must be at least --max-prompt-growth-ratio")
     if args.max_prompt_chars < 1000:
         raise ValueError("--max-prompt-chars is too small for the required prompt sections")
     if args.llm_max_retries < 0:
@@ -148,11 +152,13 @@ def choose_iteration_batch(
 def acceptance_decision(
     *,
     iteration: int,
+    allow_bootstrap: bool,
     baseline_summary: dict[str, float],
     candidate_summary: dict[str, float],
     candidate_prompt: str,
     baseline_prompt: str,
     max_prompt_growth_ratio: float,
+    bootstrap_max_prompt_growth_ratio: float,
     max_prompt_chars: int,
     min_relation_delta: float,
     min_node_delta: float,
@@ -173,6 +179,7 @@ def acceptance_decision(
     infrastructure_delta = candidate_summary.get("infrastructure_error_rate", 0.0) - baseline_summary.get("infrastructure_error_rate", 0.0)
     prompt_growth_ratio = len(candidate_prompt) / max(1, len(baseline_prompt))
     prompt_size_ok = len(candidate_prompt) <= max_prompt_chars and prompt_growth_ratio <= max_prompt_growth_ratio
+    bootstrap_prompt_size_ok = len(candidate_prompt) <= max_prompt_chars and prompt_growth_ratio <= bootstrap_max_prompt_growth_ratio
     llm_metrics_available = candidate_summary.get("llm_element_evaluated", 0.0) > 0 and baseline_summary.get("llm_element_evaluated", 0.0) > 0
     llm_semantic_guard_ok = True
     if metric_source == "hybrid" and llm_metrics_available:
@@ -196,26 +203,30 @@ def acceptance_decision(
         "node_improved": node_delta >= node_accept_delta,
         "compile_improved_without_semantic_regression": compile_delta >= compile_accept_delta and node_delta >= 0 and relation_delta >= 0,
     }
-    bootstrap_prompt_size_ok = len(candidate_prompt) <= max_prompt_chars
     bootstrap_gate = {
-        "is_first_iteration": iteration == 1,
+        "bootstrap_allowed": allow_bootstrap,
         "node_improved": node_delta >= node_accept_delta,
         "relation_improved": relation_delta >= relation_accept_delta,
         "infrastructure_delta_ok": infrastructure_delta <= 0,
-        "prompt_chars_ok": bootstrap_prompt_size_ok,
+        "prompt_size_ok": bootstrap_prompt_size_ok,
     }
     standard_accept = all(safety_gate.values()) and any(benefit_gate.values())
     bootstrap_accept = all(bootstrap_gate.values())
     accept = standard_accept or bootstrap_accept
-    rejection_reasons = [] if accept else [
-        name
-        for name, ok in {
-            "standard_safety_gate": all(safety_gate.values()),
-            "has_required_metric_benefit": any(benefit_gate.values()),
-            "bootstrap_gate": bootstrap_accept,
-        }.items()
-        if not ok
-    ]
+    bootstrap_status = (
+        "accepted"
+        if bootstrap_accept
+        else "available_failed"
+        if allow_bootstrap
+        else "disabled_after_first_acceptance"
+    )
+    rejection_checks = {
+        "standard_safety_gate": all(safety_gate.values()),
+        "has_required_metric_benefit": any(benefit_gate.values()),
+    }
+    if allow_bootstrap:
+        rejection_checks["bootstrap_gate"] = bootstrap_accept
+    rejection_reasons = [] if accept else [name for name, ok in rejection_checks.items() if not ok]
     return accept, {
         "accepted": accept,
         "metric_deltas": {
@@ -229,6 +240,17 @@ def acceptance_decision(
         "acceptance_metric_source": metric_source,
         "acceptance_node_metric": node_metric_key,
         "acceptance_relation_metric": relation_metric_key,
+        "prompt_growth": {
+            "baseline_chars": len(baseline_prompt),
+            "candidate_chars": len(candidate_prompt),
+            "growth_ratio": prompt_growth_ratio,
+            "max_prompt_growth_ratio": max_prompt_growth_ratio,
+            "bootstrap_max_prompt_growth_ratio": bootstrap_max_prompt_growth_ratio,
+            "max_prompt_chars": max_prompt_chars,
+            "standard_prompt_size_ok": prompt_size_ok,
+            "bootstrap_prompt_size_ok": bootstrap_prompt_size_ok,
+            "allow_bootstrap": allow_bootstrap,
+        },
         "compile_delta": compile_delta,
         "node_delta": node_delta,
         "relation_delta": relation_delta,
@@ -246,11 +268,12 @@ def acceptance_decision(
         "safety_gate": safety_gate,
         "benefit_gate": benefit_gate,
         "bootstrap_gate": bootstrap_gate,
+        "bootstrap_status": bootstrap_status,
         "standard_accept": standard_accept,
         "bootstrap_accept": bootstrap_accept,
         "acceptance_mode": "standard" if standard_accept else "bootstrap" if bootstrap_accept else "rejected",
         "rejection_reasons": rejection_reasons,
-        "acceptance_policy": "standard: accept when every safety gate passes and at least one selected metric benefit gate passes; iteration 1 bootstrap: accept when selected node and relation metrics both improve enough, infrastructure is not worse, and prompt size is ok",
+        "acceptance_policy": "standard: accept when every safety gate passes and at least one selected metric benefit gate passes; bootstrap before first accepted update: accept when selected node and relation metrics both improve enough, infrastructure is not worse, and prompt size is ok",
         "prompt_chars_before": len(baseline_prompt),
         "prompt_chars_candidate": len(candidate_prompt),
         "prompt_growth_ratio": prompt_growth_ratio,
@@ -421,6 +444,23 @@ def write_evaluation_records(path: Path, records: list[Any]) -> None:
     write_text(path, ("\n".join(lines) + "\n") if lines else "")
 
 
+def candidate_prompt_constraints(*, current_prompt: str, args: argparse.Namespace, allow_bootstrap: bool) -> dict[str, Any]:
+    effective_growth_ratio = args.bootstrap_max_prompt_growth_ratio if allow_bootstrap else args.max_prompt_growth_ratio
+    max_candidate_chars = min(
+        args.max_prompt_chars,
+        int(len(current_prompt) * effective_growth_ratio),
+    )
+    return {
+        "current_prompt_chars": len(current_prompt),
+        "max_prompt_chars": args.max_prompt_chars,
+        "max_prompt_growth_ratio": effective_growth_ratio,
+        "max_candidate_chars": max_candidate_chars,
+        "bootstrap_allowed": allow_bootstrap,
+        "standard_max_prompt_growth_ratio": args.max_prompt_growth_ratio,
+        "bootstrap_max_prompt_growth_ratio": args.bootstrap_max_prompt_growth_ratio,
+    }
+
+
 def evaluate_iteration_test(
     *,
     prompt: str,
@@ -531,6 +571,7 @@ def run_training_iterations(
     prompt = read_text(work_prompt_path)
     last_summary: dict[str, float] = {}
     global_update_step = 0
+    has_accepted_update = False
 
     for iteration in range(1, args.iterations + 1):
         iter_dir = run_dir / f"iteration_{iteration:03d}"
@@ -835,9 +876,16 @@ def run_training_iterations(
             )
             write_iteration_manifest(batch_dir, manifest)
 
+            allow_bootstrap = not has_accepted_update
+            candidate_constraints = candidate_prompt_constraints(
+                current_prompt=prompt,
+                args=args,
+                allow_bootstrap=allow_bootstrap,
+            )
             candidate = rewrite_prompt(
                 current_prompt=prompt,
                 revision_plan=revision_plan,
+                candidate_constraints=candidate_constraints,
                 args=args,
                 llm_client=llm_client,
                 output_input_path=paths["prompt_rewriter_input"],
@@ -980,11 +1028,13 @@ def run_training_iterations(
 
             accepted, decision = acceptance_decision(
                 iteration=global_update_step,
+                allow_bootstrap=allow_bootstrap,
                 baseline_summary=baseline_for_gate,
                 candidate_summary=candidate_summary,
                 candidate_prompt=candidate,
                 baseline_prompt=prompt,
                 max_prompt_growth_ratio=args.max_prompt_growth_ratio,
+                bootstrap_max_prompt_growth_ratio=args.bootstrap_max_prompt_growth_ratio,
                 max_prompt_chars=args.max_prompt_chars,
                 min_relation_delta=args.acceptance_min_relation_delta,
                 min_node_delta=args.acceptance_min_node_delta,
@@ -998,6 +1048,7 @@ def run_training_iterations(
 
             if accepted:
                 epoch_accepted_count += 1
+                has_accepted_update = True
                 prompt = candidate
                 write_text(work_prompt_path, prompt)
                 write_text(paths["prompt_after"], prompt)
@@ -1346,8 +1397,9 @@ def build_parser() -> argparse.ArgumentParser:
         default=0,
         help="Maximum fixed prompt sections a prompt edit may modify; 0 disables the limit",
     )
-    parser.add_argument("--max-prompt-growth-ratio", type=float, default=6.0, help="Reject candidate prompts that grow more than this ratio over the current prompt")
-    parser.add_argument("--max-prompt-chars", type=int, default=9000, help="Reject candidate prompts longer than this many characters")
+    parser.add_argument("--max-prompt-growth-ratio", type=float, default=3.0, help="Reject candidate prompts that grow more than this ratio over the current prompt")
+    parser.add_argument("--bootstrap-max-prompt-growth-ratio", type=float, default=None, help="Prompt growth ratio allowed before the first accepted prompt update; defaults to max(--max-prompt-growth-ratio, 6.0)")
+    parser.add_argument("--max-prompt-chars", type=int, default=4000, help="Reject candidate prompts longer than this many characters")
     parser.add_argument("--plantuml-compile-timeout", type=int, default=30, help="Timeout in seconds for PlantUML compilation checks")
     parser.add_argument("--llm-element-metrics", action=argparse.BooleanOptionalAction, default=True, help="Run LLM semantic node/relation P/R/F1 metrics; use --no-llm-element-metrics for cheap local smoke tests")
     parser.add_argument("--llm-judge-temperature", type=float, default=0.0)
