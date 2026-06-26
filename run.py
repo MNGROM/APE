@@ -12,12 +12,14 @@ from pathlib import Path
 from typing import Any
 
 from analysis.error_localization import localize_errors
+from analysis.epoch_planner import plan_epoch_revision
 from analysis.failure_analysis import analyze_failures, build_analysis
 from analysis.prompt_editor import propose_prompt_revision
 from analysis.prompt_rewriter import rewrite_prompt
 from config import (
     DEFAULT_BASE_URL,
     DEFAULT_DATASETS_DIR,
+    DEFAULT_EPOCH_PLANNER_PROMPT_PATH,
     DEFAULT_ERROR_LOCALIZATION_PROMPT_PATH,
     DEFAULT_FAILURE_ANALYSIS_PROMPT_PATH,
     DEFAULT_LLM_TIMEOUT,
@@ -63,6 +65,7 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         "analysis_thinking",
         "localization_thinking",
         "editor_thinking",
+        "epoch_planner_thinking",
         "judge_thinking",
         "element_extraction_thinking",
     )
@@ -89,8 +92,8 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--analysis-batch-size and --gate-batch-size must be positive")
     if args.max_sections_per_edit < 0 or args.max_sections_per_edit > len(SECTION_NAMES):
         raise ValueError("--max-sections-per-edit must be 0 (unlimited) or between 1 and the number of fixed prompt sections")
-    if args.analysis_max_tokens < 1 or args.localization_max_tokens < 1 or args.editor_max_tokens < 1:
-        raise ValueError("--analysis-max-tokens, --localization-max-tokens, and --editor-max-tokens must be positive")
+    if args.analysis_max_tokens < 1 or args.localization_max_tokens < 1 or args.editor_max_tokens < 1 or args.epoch_planner_max_tokens < 1:
+        raise ValueError("--analysis-max-tokens, --localization-max-tokens, --editor-max-tokens, and --epoch-planner-max-tokens must be positive")
     if args.llm_judge_max_tokens < 1:
         raise ValueError("--llm-judge-max-tokens must be positive")
     if args.llm_judge_max_retries < 1:
@@ -317,6 +320,8 @@ def iteration_paths(iter_dir: Path) -> dict[str, Path]:
         "error_localization_output": iter_dir / "agents" / "error_localization.output.json",
         "prompt_editor_input": iter_dir / "agents" / "prompt_editor.input.json",
         "prompt_editor_output": iter_dir / "agents" / "prompt_editor.output.json",
+        "epoch_planner_input": iter_dir / "agents" / "epoch_planner.input.json",
+        "epoch_planner_output": iter_dir / "agents" / "epoch_planner.output.json",
         "prompt_rewriter_input": iter_dir / "agents" / "prompt_rewriter.input.json",
         "prompt_rewriter_output": iter_dir / "agents" / "prompt_rewriter.output.json",
         "acceptance": iter_dir / "decision" / "acceptance.json",
@@ -363,6 +368,10 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
                 "prompt_editor": {
                     "input": rel_to_iter(iter_dir, paths["prompt_editor_input"]),
                     "output": rel_to_iter(iter_dir, paths["prompt_editor_output"]),
+                },
+                "epoch_planner": {
+                    "input": rel_to_iter(iter_dir, paths["epoch_planner_input"]),
+                    "output": rel_to_iter(iter_dir, paths["epoch_planner_output"]),
                 },
                 "prompt_rewriter": {
                     "input": rel_to_iter(iter_dir, paths["prompt_rewriter_input"]),
@@ -577,7 +586,7 @@ def run_training_iterations(
         iter_dir = run_dir / f"iteration_{iteration:03d}"
         epoch_paths = iteration_paths(iter_dir)
         epoch_manifest = make_iteration_manifest(iter_dir, iteration, epoch_paths)
-        epoch_manifest["mode"] = "epoch_with_online_batch_updates"
+        epoch_manifest["mode"] = "epoch_planner_updates" if args.training_update_mode == "epoch" else "epoch_with_online_batch_updates"
         epoch_prompt_before = prompt
         write_text(epoch_paths["prompt_before"], prompt)
         write_case_manifest(epoch_paths["analysis_cases"], train_cases)
@@ -596,8 +605,10 @@ def run_training_iterations(
         epoch_accepted_count = 0
         epoch_rejected_count = 0
         epoch_skipped_count = 0
+        epoch_collected_count = 0
         epoch_records = []
         batch_summaries: list[dict[str, Any]] = []
+        batch_revision_inputs: list[dict[str, Any]] = []
         print(f"\n[iteration {iteration}] training epoch with {len(training_batches)} batch(es)")
 
         for batch_index, analysis_cases in enumerate(training_batches, start=1):
@@ -876,6 +887,41 @@ def run_training_iterations(
             )
             write_iteration_manifest(batch_dir, manifest)
 
+            batch_revision_inputs.append(
+                {
+                    "analysis_summary": summary,
+                    "failure_analysis": failure_analysis,
+                    "error_localization": error_localization,
+                    "revision_plan": revision_plan.get("revision_plan", []),
+                }
+            )
+            epoch_collected_count += 1
+            if args.training_update_mode == "epoch":
+                write_text(paths["prompt_after"], prompt)
+                record_stage(
+                    manifest,
+                    "epoch_revision_collection",
+                    status="success",
+                    inputs={
+                        "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
+                        "revision_plan": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
+                    },
+                    outputs={"prompt_after": rel_to_iter(batch_dir, paths["prompt_after"])},
+                    note="batch-local revision plan collected for epoch planner; prompt unchanged",
+                )
+                write_iteration_manifest(batch_dir, manifest)
+                finalize_iteration_reports(
+                    run_dir=run_dir,
+                    iter_dir=batch_dir,
+                    iteration=global_update_step,
+                    prompt_before=prompt_before,
+                    prompt_after=prompt,
+                    candidate_prompt=None,
+                    analysis_summary=summary,
+                )
+                print(f"{log_prefix} revision plan collected for epoch planner")
+                continue
+
             allow_bootstrap = not has_accepted_update
             candidate_constraints = candidate_prompt_constraints(
                 current_prompt=prompt,
@@ -1122,15 +1168,234 @@ def run_training_iterations(
                 )
 
         epoch_summary = summarize_records(epoch_records)
-        epoch_acceptance = {
-            "accepted": epoch_accepted_count > 0,
-            "acceptance_mode": "online_batch_updates",
-            "rejection_reasons": [] if epoch_accepted_count > 0 else ["no_batch_candidate_accepted"],
-            "batch_count": len(training_batches),
-            "accepted_batch_count": epoch_accepted_count,
-            "rejected_batch_count": epoch_rejected_count,
-            "skipped_batch_count": epoch_skipped_count,
-        }
+        epoch_candidate_prompt: str | None = None
+        epoch_baseline_gate_summary: dict[str, float] | None = None
+        epoch_candidate_summary: dict[str, float] | None = None
+        epoch_acceptance: dict[str, Any] | None = None
+
+        if args.training_update_mode == "epoch":
+            if args.no_evolve:
+                epoch_acceptance = {
+                    "accepted": False,
+                    "acceptance_mode": "epoch_planner",
+                    "rejection_reasons": ["no_evolve"],
+                    "batch_count": len(training_batches),
+                    "collected_batch_count": epoch_collected_count,
+                    "skipped_batch_count": epoch_skipped_count,
+                }
+            elif not batch_revision_inputs:
+                epoch_acceptance = {
+                    "accepted": False,
+                    "acceptance_mode": "epoch_planner",
+                    "rejection_reasons": ["no_batch_revision_plans"],
+                    "batch_count": len(training_batches),
+                    "collected_batch_count": epoch_collected_count,
+                    "skipped_batch_count": epoch_skipped_count,
+                }
+            else:
+                print(f"[iteration {iteration}] planning epoch revision from {len(batch_revision_inputs)} batch plan(s)")
+                epoch_revision_plan = plan_epoch_revision(
+                    current_prompt=prompt,
+                    batch_revision_inputs=batch_revision_inputs,
+                    args=args,
+                    llm_client=llm_client,
+                    output_input_path=epoch_paths["epoch_planner_input"],
+                    output_path=epoch_paths["epoch_planner_output"],
+                    state_dir=run_dir,
+                    iteration=iteration,
+                )
+                if epoch_revision_plan is None:
+                    epoch_skipped_count += 1
+                    epoch_acceptance = {
+                        "accepted": False,
+                        "acceptance_mode": "epoch_planner",
+                        "rejection_reasons": ["epoch_planner_invalid"],
+                        "batch_count": len(training_batches),
+                        "collected_batch_count": epoch_collected_count,
+                        "skipped_batch_count": epoch_skipped_count,
+                    }
+                    record_stage(
+                        epoch_manifest,
+                        "epoch_planner",
+                        status="invalid",
+                        inputs={"batch_revision_inputs": rel_to_iter(iter_dir, epoch_paths["epoch_planner_input"])},
+                        outputs={"output": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
+                    )
+                else:
+                    record_stage(
+                        epoch_manifest,
+                        "epoch_planner",
+                        status="success",
+                        inputs={"batch_revision_inputs": rel_to_iter(iter_dir, epoch_paths["epoch_planner_input"])},
+                        outputs={"revision_plan": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
+                    )
+                    allow_bootstrap = not has_accepted_update
+                    candidate_constraints = candidate_prompt_constraints(
+                        current_prompt=prompt,
+                        args=args,
+                        allow_bootstrap=allow_bootstrap,
+                    )
+                    epoch_candidate_prompt = rewrite_prompt(
+                        current_prompt=prompt,
+                        revision_plan=epoch_revision_plan,
+                        candidate_constraints=candidate_constraints,
+                        args=args,
+                        llm_client=llm_client,
+                        output_input_path=epoch_paths["prompt_rewriter_input"],
+                        output_path=epoch_paths["prompt_rewriter_output"],
+                        state_dir=run_dir,
+                        iteration=iteration,
+                    )
+                    if epoch_candidate_prompt is None:
+                        epoch_skipped_count += 1
+                        epoch_acceptance = {
+                            "accepted": False,
+                            "acceptance_mode": "epoch_planner",
+                            "rejection_reasons": ["prompt_rewriter_invalid"],
+                            "batch_count": len(training_batches),
+                            "collected_batch_count": epoch_collected_count,
+                            "skipped_batch_count": epoch_skipped_count,
+                        }
+                        record_stage(
+                            epoch_manifest,
+                            "prompt_rewriter",
+                            status="invalid",
+                            inputs={"revision_plan": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
+                            outputs={"output": rel_to_iter(iter_dir, epoch_paths["prompt_rewriter_output"])},
+                        )
+                    else:
+                        write_text(epoch_paths["prompt_candidate"], epoch_candidate_prompt)
+                        record_stage(
+                            epoch_manifest,
+                            "prompt_rewriter",
+                            status="success",
+                            inputs={"revision_plan": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
+                            outputs={
+                                "input": rel_to_iter(iter_dir, epoch_paths["prompt_rewriter_input"]),
+                                "output": rel_to_iter(iter_dir, epoch_paths["prompt_rewriter_output"]),
+                                "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                            },
+                        )
+                        gate_cases = choose_iteration_batch(
+                            train_cases,
+                            args=args,
+                            iteration=iteration,
+                            batch_size=args.gate_batch_size,
+                            strategy=args.candidate_sample_strategy,
+                            seed_offset=40_000,
+                        )
+                        print(f"[iteration {iteration}] epoch gate distribution: {describe_case_distribution(gate_cases)}")
+                        write_case_manifest(epoch_paths["gate_cases"], gate_cases)
+                        candidate_records, epoch_candidate_summary = evaluate_cases(
+                            prompt=epoch_candidate_prompt,
+                            cases=gate_cases,
+                            args=args,
+                            llm_client=llm_client,
+                            output_path=epoch_paths["gate_candidate_records"],
+                            state_dir=run_dir,
+                            phase=f"iteration_{iteration:03d}:epoch_gate_candidate",
+                        )
+                        write_text(epoch_paths["gate_candidate_summary"], json.dumps(epoch_candidate_summary, ensure_ascii=False, indent=2))
+                        baseline_gate_records, epoch_baseline_gate_summary = evaluate_cases(
+                            prompt=prompt,
+                            cases=gate_cases,
+                            args=args,
+                            llm_client=llm_client,
+                            output_path=epoch_paths["gate_baseline_records"],
+                            state_dir=run_dir,
+                            phase=f"iteration_{iteration:03d}:epoch_gate_baseline",
+                        )
+                        write_text(epoch_paths["gate_baseline_summary"], json.dumps(epoch_baseline_gate_summary, ensure_ascii=False, indent=2))
+                        record_stage(
+                            epoch_manifest,
+                            "epoch_gate_evaluation",
+                            status="success",
+                            inputs={
+                                "baseline_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_before"]),
+                                "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                                "cases": rel_to_iter(iter_dir, epoch_paths["gate_cases"]),
+                            },
+                            outputs={
+                                "baseline_records": rel_to_iter(iter_dir, epoch_paths["gate_baseline_records"]),
+                                "baseline_summary": rel_to_iter(iter_dir, epoch_paths["gate_baseline_summary"]),
+                                "candidate_records": rel_to_iter(iter_dir, epoch_paths["gate_candidate_records"]),
+                                "candidate_summary": rel_to_iter(iter_dir, epoch_paths["gate_candidate_summary"]),
+                            },
+                        )
+                        if has_only_infrastructure_errors(baseline_gate_records + candidate_records):
+                            epoch_skipped_count += 1
+                            epoch_acceptance = {
+                                "accepted": False,
+                                "acceptance_mode": "epoch_planner",
+                                "rejection_reasons": ["epoch_gate_infrastructure_only"],
+                                "batch_count": len(training_batches),
+                                "collected_batch_count": epoch_collected_count,
+                                "skipped_batch_count": epoch_skipped_count,
+                            }
+                        else:
+                            accepted, decision = acceptance_decision(
+                                iteration=iteration,
+                                allow_bootstrap=allow_bootstrap,
+                                baseline_summary=epoch_baseline_gate_summary,
+                                candidate_summary=epoch_candidate_summary,
+                                candidate_prompt=epoch_candidate_prompt,
+                                baseline_prompt=prompt,
+                                max_prompt_growth_ratio=args.max_prompt_growth_ratio,
+                                bootstrap_max_prompt_growth_ratio=args.bootstrap_max_prompt_growth_ratio,
+                                max_prompt_chars=args.max_prompt_chars,
+                                min_relation_delta=args.acceptance_min_relation_delta,
+                                min_node_delta=args.acceptance_min_node_delta,
+                                min_compile_delta=args.acceptance_min_compile_delta,
+                                relation_accept_delta=args.relation_accept_delta,
+                                node_accept_delta=args.node_accept_delta,
+                                compile_accept_delta=args.compile_accept_delta,
+                                metric_source=args.acceptance_metric_source,
+                            )
+                            decision.update(
+                                {
+                                    "training_update_mode": "epoch_planner",
+                                    "batch_count": len(training_batches),
+                                    "collected_batch_count": epoch_collected_count,
+                                    "skipped_batch_count": epoch_skipped_count,
+                                }
+                            )
+                            epoch_acceptance = decision
+                            if accepted:
+                                epoch_accepted_count = 1
+                                has_accepted_update = True
+                                prompt = epoch_candidate_prompt
+                                write_text(work_prompt_path, prompt)
+                                print(f"[iteration {iteration}] epoch candidate accepted: {work_prompt_path}")
+                            else:
+                                epoch_rejected_count = 1
+                                write_text(epoch_paths["rejected_by_gate"], json.dumps(decision, ensure_ascii=False, indent=2))
+                                print(
+                                    f"[iteration {iteration}] epoch candidate rejected "
+                                    f"(reasons={', '.join(decision['rejection_reasons'])})"
+                                )
+                        if epoch_acceptance is not None:
+                            record_stage(
+                                epoch_manifest,
+                                "acceptance",
+                                status="accepted" if epoch_acceptance.get("accepted") else "rejected",
+                                inputs={
+                                    "baseline_summary": rel_to_iter(iter_dir, epoch_paths["gate_baseline_summary"]),
+                                    "candidate_summary": rel_to_iter(iter_dir, epoch_paths["gate_candidate_summary"]),
+                                    "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                                },
+                                outputs={"decision": rel_to_iter(iter_dir, epoch_paths["acceptance"])},
+                            )
+
+        if epoch_acceptance is None:
+            epoch_acceptance = {
+                "accepted": epoch_accepted_count > 0,
+                "acceptance_mode": "online_batch_updates",
+                "rejection_reasons": [] if epoch_accepted_count > 0 else ["no_batch_candidate_accepted"],
+                "batch_count": len(training_batches),
+                "accepted_batch_count": epoch_accepted_count,
+                "rejected_batch_count": epoch_rejected_count,
+                "skipped_batch_count": epoch_skipped_count,
+            }
         write_text(epoch_paths["prompt_after"], prompt)
         write_evaluation_records(epoch_paths["analysis_records"], epoch_records)
         write_text(epoch_paths["analysis_summary"], json.dumps(epoch_summary, ensure_ascii=False, indent=2))
@@ -1161,8 +1426,10 @@ def run_training_iterations(
             iteration=iteration,
             prompt_before=epoch_prompt_before,
             prompt_after=prompt,
-            candidate_prompt=None,
+            candidate_prompt=epoch_candidate_prompt,
             analysis_summary=epoch_summary,
+            baseline_gate_summary=epoch_baseline_gate_summary,
+            candidate_summary=epoch_candidate_summary,
             acceptance=epoch_acceptance,
         )
         last_summary = epoch_summary
@@ -1335,6 +1602,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--failure-analysis-prompt-path", type=Path, default=DEFAULT_FAILURE_ANALYSIS_PROMPT_PATH, help="System prompt markdown for the failure-analysis model")
     parser.add_argument("--error-localization-prompt-path", type=Path, default=DEFAULT_ERROR_LOCALIZATION_PROMPT_PATH, help="System prompt markdown for the error-localization model")
     parser.add_argument("--prompt-editor-prompt-path", type=Path, default=DEFAULT_PROMPT_EDITOR_PROMPT_PATH, help="System prompt markdown for the prompt-edit model")
+    parser.add_argument("--epoch-planner-prompt-path", type=Path, default=DEFAULT_EPOCH_PLANNER_PROMPT_PATH, help="System prompt markdown for the epoch-level revision planner model")
     parser.add_argument("--prompt-rewriter-prompt-path", type=Path, default=DEFAULT_PROMPT_REWRITER_PROMPT_PATH, help="System prompt markdown for the prompt-rewrite model")
     parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
     parser.add_argument("--plantuml-jar", type=Path, default=DEFAULT_PLANTUML_JAR)
@@ -1343,6 +1611,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-test-cases", type=int, default=0, help="0 means all test cases")
     parser.add_argument("--analysis-batch-size", type=int, default=10, help="Training batch size used for generation and failure analysis")
     parser.add_argument("--gate-batch-size", type=int, default=10, help="Training batch size used to accept or reject edited prompts")
+    parser.add_argument("--training-update-mode", choices=["epoch", "online"], default="epoch", help="epoch collects batch-local revision plans and applies one epoch-level update; online updates after each accepted batch")
     parser.add_argument("--sample-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to select limited training cases")
     parser.add_argument("--test-sample-strategy", choices=["stratified", "random", "prefix"], default="prefix", help="How to select limited held-out test cases")
     parser.add_argument("--candidate-sample-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to select candidate gate cases")
@@ -1354,16 +1623,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--analysis-temperature", type=float, default=0.2)
     parser.add_argument("--localization-temperature", type=float, default=0.2)
     parser.add_argument("--editor-temperature", type=float, default=0.2)
+    parser.add_argument("--epoch-planner-temperature", type=float, default=0.2)
     parser.add_argument("--top-p", type=optional_float, default=None, help="GLM top_p, or 'omit' to use provider default")
     parser.add_argument("--max-tokens", type=int, default=12000)
     parser.add_argument("--analysis-max-tokens", type=int, default=4096)
     parser.add_argument("--localization-max-tokens", type=int, default=4096)
     parser.add_argument("--editor-max-tokens", type=int, default=4096)
+    parser.add_argument("--epoch-planner-max-tokens", type=int, default=4096)
     parser.add_argument("--thinking", choices=["enabled", "disabled"], default=os.environ.get("ZHIPU_THINKING_TYPE", DEFAULT_THINKING_TYPE), help="Default thinking mode for all model calls unless an agent-specific option overrides it")
     parser.add_argument("--generation-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_GENERATION_THINKING_TYPE", "inherit"), help="Thinking mode for PlantUML generation calls")
     parser.add_argument("--analysis-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_ANALYSIS_THINKING_TYPE", "inherit"), help="Thinking mode for failure-analysis calls")
     parser.add_argument("--localization-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_LOCALIZATION_THINKING_TYPE", "inherit"), help="Thinking mode for error-localization calls")
     parser.add_argument("--editor-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_EDITOR_THINKING_TYPE", "inherit"), help="Thinking mode for prompt-editor calls")
+    parser.add_argument("--epoch-planner-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_EPOCH_PLANNER_THINKING_TYPE", "inherit"), help="Thinking mode for epoch-planner calls")
     parser.add_argument("--judge-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_JUDGE_THINKING_TYPE", "inherit"), help="Thinking mode for optional LLM semantic judge calls")
     parser.add_argument("--do-sample", type=optional_bool, default=None, help="GLM do_sample, or 'omit' to use provider default")
     parser.add_argument("--llm-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
@@ -1427,6 +1699,7 @@ def main() -> None:
     args.failure_analysis_prompt_path = args.failure_analysis_prompt_path.resolve()
     args.error_localization_prompt_path = args.error_localization_prompt_path.resolve()
     args.prompt_editor_prompt_path = args.prompt_editor_prompt_path.resolve()
+    args.epoch_planner_prompt_path = args.epoch_planner_prompt_path.resolve()
     args.prompt_rewriter_prompt_path = args.prompt_rewriter_prompt_path.resolve()
     args.runs_dir = args.runs_dir.resolve()
     args.plantuml_jar = args.plantuml_jar.resolve()
@@ -1439,6 +1712,7 @@ def main() -> None:
     args.analysis_thinking = resolve_agent_thinking(args.analysis_thinking, args.thinking)
     args.localization_thinking = resolve_agent_thinking(args.localization_thinking, args.thinking)
     args.editor_thinking = resolve_agent_thinking(args.editor_thinking, args.thinking)
+    args.epoch_planner_thinking = resolve_agent_thinking(args.epoch_planner_thinking, args.thinking)
     args.judge_thinking = resolve_agent_thinking(args.judge_thinking, args.thinking)
     args.element_extraction_thinking = resolve_agent_thinking(args.element_extraction_thinking, args.thinking)
     args.llm_judge_model = args.model
@@ -1453,6 +1727,7 @@ def main() -> None:
     read_prompt_file(args.failure_analysis_prompt_path, label="failure analysis")
     read_prompt_file(args.error_localization_prompt_path, label="error localization")
     read_prompt_file(args.prompt_editor_prompt_path, label="prompt editor")
+    read_prompt_file(args.epoch_planner_prompt_path, label="epoch planner")
     read_prompt_file(args.prompt_rewriter_prompt_path, label="prompt rewriter")
 
     llm_client = make_llm_client(args)
