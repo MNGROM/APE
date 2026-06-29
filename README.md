@@ -89,6 +89,13 @@ Use one dataset as held-out test and the other five as training data:
 python run.py --test-dataset fsd --iterations 3
 ```
 
+Optionally evaluate the original seed prompt as `iteration_000/test` before
+training:
+
+```powershell
+python run.py --test-dataset fsd --eval-initial-test
+```
+
 Run leave-one-dataset-out over all six datasets:
 
 ```powershell
@@ -110,10 +117,15 @@ current prompt
 -> batch failure-analysis model
 -> error-localization model maps failures to prompt sections
 -> prompt-editor model emits structured section edits
--> program applies valid edits
--> gate batch candidate evaluation
--> accept or reject candidate prompt
+-> epoch-planner model merges batch revision plans
+-> prompt-rewriter model emits the next prompt
+-> apply the epoch candidate prompt directly
+-> held-out test evaluation
 ```
+
+The `online` update mode still uses the candidate gate after each batch. In the
+default `epoch` update mode, the old gate-batch accept/reject path is disabled;
+the held-out test metrics are the comparison signal.
 
 The prompt editor does not rewrite arbitrary files. It returns JSON edits for
 the fixed markdown sections in `tst.md`:
@@ -149,8 +161,9 @@ Disable the LLM semantic judge for cheap local checks:
 python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-Candidate acceptance no longer uses a weighted aggregate score. It uses
-metric gates directly.
+Online candidate acceptance no longer uses a weighted aggregate score. It uses
+metric gates directly. The default epoch mode applies epoch-level prompt updates
+directly and does not run the gate-batch acceptance path.
 
 All Safety Gate checks must pass before the Benefit Gate is considered:
 
@@ -172,7 +185,9 @@ or plantuml_compile_delta >= 0.05 with no N-F1/R-F1 regression
 ```
 
 This prevents compilation improvements from compensating for semantic quality
-regressions. Held-out testing uses the best training prompt by default.
+regressions in online mode. Held-out testing runs as `iteration_NNN/test`; the
+workflow no longer runs a second duplicate held-out test after all training
+completes.
 
 Iteration 1 has a bootstrap exception: if both `N-F1` and `R-F1` clearly
 improve (`+0.02` and `+0.01` by default), no new infrastructure errors appear,
@@ -186,7 +201,7 @@ Runs are written under `prompt_runs/`. Important files include:
 - `run_args.json`: sanitized run configuration.
 - `train_cases.json`, `test_cases.json`: actual sampled cases.
 - `prompt_evolution.md`: prompt evolution overview for the run, including the initial prompt, per-iteration change links, and best/final prompts.
-- `metrics_overview.md`: metric overview for the run, including per-iteration analysis/gate/candidate metrics and held-out test metrics.
+- `metrics_overview.md`: metric overview for the run, focused on `iteration_NNN/test` held-out metrics.
 - `iteration_NNN/analysis_batch_cases.json`: batch used for failure analysis.
 - `iteration_NNN/predictions.jsonl`: generated PlantUML and metrics for the analysis batch.
 - `iteration_NNN/evaluation_summary.json`: analysis-batch metric summary.
@@ -200,12 +215,13 @@ Runs are written under `prompt_runs/`. Important files include:
 - `iteration_NNN/prompt_edit_input.json`: input sent to the prompt-editor model, including failure analysis and localization.
 - `iteration_NNN/prompt_edit_output.json`: structured prompt edit result.
 - `iteration_NNN/candidate_prompt.md`: candidate prompt after applying edits.
-- `iteration_NNN/gate_cases.json`: gate-batch case manifest.
-- `iteration_NNN/gate_predictions.jsonl`: candidate gate predictions and metrics.
-- `iteration_NNN/gate_summary.json`: candidate gate summary.
-- `iteration_NNN/prompt_acceptance.json`: accept/reject decision with `safety_gate`, `benefit_gate`, and `rejection_reasons`.
-- `prompt_final.md`: final current prompt produced by training and used for final held-out testing.
-- `test_summary.json`, `test_analysis.md`: held-out test results.
+- `iteration_NNN/gate_cases.json`: gate-batch case manifest, used by online updates.
+- `iteration_NNN/gate_predictions.jsonl`: candidate gate predictions and metrics, used by online updates.
+- `iteration_NNN/gate_summary.json`: candidate gate summary, used by online updates.
+- `iteration_NNN/prompt_acceptance.json`: prompt update decision; epoch mode records direct application, online mode records gate accept/reject details.
+- `iteration_000/test/summary.json`, `iteration_000/test/analysis.md`: optional original-prompt held-out test results when `--eval-initial-test` is used.
+- `iteration_NNN/test/summary.json`, `iteration_NNN/test/analysis.md`: per-iteration held-out test results.
+- `prompt_final.md`: final current prompt produced by training.
 - `run_state.json`, `rate_limit_events.jsonl`: provider retry state and event log.
 
 Existing historical runs can be refreshed without rerunning model calls:

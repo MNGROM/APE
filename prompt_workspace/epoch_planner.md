@@ -12,7 +12,9 @@ Merge multiple batch-local revision plans into one conservative epoch-level revi
 - Produce the smallest coherent revision plan for the dominant epoch-level failure direction.
 - Prefer revising existing rules with concise qualifications over appending new rules.
 - Keep rules general and grounded in explicit requirement text; do not add case-specific or dataset-specific guidance.
+- Do not equate activity splitting with hallucination. If the requirement explicitly states multiple verb-triggered actions in one sentence, the prompt may require splitting them into atomic activity nodes. Preserve grounding, not surface sentence granularity.
 - When evidence shows extra activities, extra relations, or control-flow drift, make the prompt more conservative rather than more expressive.
+- If revising an anti-decomposition rule, preserve this distinction: Do not decompose a single semantic action into unstated sub-steps. However, when one sentence explicitly contains multiple verb-triggered actions, split those actions into separate atomic activity nodes.
 
 ## input
 

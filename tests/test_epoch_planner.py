@@ -50,6 +50,12 @@ class EpochPlannerTest(unittest.TestCase):
 
         self.assertEqual(args.training_update_mode, "epoch")
         self.assertEqual(args.epoch_planner_thinking, "inherit")
+        self.assertFalse(args.eval_initial_test)
+
+    def test_parser_enables_initial_test_baseline(self) -> None:
+        args = build_parser().parse_args(["--eval-initial-test"])
+
+        self.assertTrue(args.eval_initial_test)
 
     def test_plan_epoch_revision_builds_payload_and_normalizes_output(self) -> None:
         response = json.dumps(

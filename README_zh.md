@@ -87,6 +87,14 @@ python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 
 python run.py --test-dataset fsd --iterations 3
 ```
 
+如果需要在训练前用原始种子 prompt 得到 held-out 基线指标：
+
+```powershell
+python run.py --test-dataset fsd --eval-initial-test
+```
+
+该基线会写入 `iteration_000/test`。
+
 六个数据集全部做 leave-one-dataset-out：
 
 ```powershell
@@ -108,10 +116,14 @@ python run.py --test-dataset all --iterations 3
 -> batch 失败分析模型
 -> 错误原因定位模型把失败映射到 prompt section
 -> prompt editor 模型输出结构化 section edits
--> 程序应用合法 edits
--> gate batch 评估候选 prompt
--> 接受或拒绝候选 prompt
+-> epoch planner 合并 batch revision plans
+-> prompt rewriter 输出下一版 prompt
+-> 直接应用 epoch candidate prompt
+-> held-out test 评估
 ```
+
+`online` 更新模式仍保留 batch 后的 candidate gate。默认 `epoch` 更新模式下，
+旧的 gate-batch 接收/拒绝路径已禁用，主要比较信号来自 held-out test 指标。
 
 prompt editor 不能任意重写文件。它只能返回针对 `tst.md` 固定 section 的
 JSON edits：
@@ -150,7 +162,8 @@ JSON edits：
 python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-候选接收不再使用加权总分，而是使用多指标门控。
+online 模式的候选接收不再使用加权总分，而是使用多指标门控。默认 epoch
+模式会直接应用 epoch-level prompt 更新，不再运行 gate-batch 接收/拒绝路径。
 
 Safety Gate 全部通过后，才会进入 Benefit Gate：
 
@@ -171,12 +184,13 @@ relation_f1_delta >= 0.01
 或 plantuml_compile_delta >= 0.05 且 N-F1/R-F1 都不下降
 ```
 
-这样编译率提升不能单独抵消节点和关系质量的回退。
+这样在 online 模式下，编译率提升不能单独抵消节点和关系质量的回退。
 
 第 1 轮有 bootstrap 例外：如果 `N-F1` 和 `R-F1` 都达到明显提升
 （默认分别为 `+0.02` 和 `+0.01`），且没有新增基础设施错误、prompt 未超长，
 则可以接收。后续轮次使用上面的标准门控。
-最终 held-out 测试默认使用训练中表现最好的 prompt。
+held-out 测试写入 `iteration_NNN/test`；全部训练结束后不再额外重复运行一次
+root-level held-out test。
 
 ## 输出
 
@@ -185,7 +199,7 @@ relation_f1_delta >= 0.01
 - `run_args.json`：脱敏后的运行配置。
 - `train_cases.json`、`test_cases.json`：实际采样 case。
 - `prompt_evolution.md`：本次 run 的 prompt 演化总览，集中查看初始 prompt、每轮变更入口、best/final prompt。
-- `metrics_overview.md`：本次 run 的指标总览，集中查看每轮 analysis/gate/candidate 以及 held-out test 指标。
+- `metrics_overview.md`：本次 run 的指标总览，集中查看 `iteration_NNN/test` held-out 指标。
 - `iteration_NNN/analysis_batch_cases.json`：失败分析 batch。
 - `iteration_NNN/predictions.jsonl`：analysis batch 的生成结果和指标。
 - `iteration_NNN/evaluation_summary.json`：analysis batch 汇总指标。
@@ -199,12 +213,13 @@ relation_f1_delta >= 0.01
 - `iteration_NNN/prompt_edit_input.json`：发送给 prompt editor 的输入，包含失败分析和错误定位。
 - `iteration_NNN/prompt_edit_output.json`：结构化 prompt edit 输出。
 - `iteration_NNN/candidate_prompt.md`：应用 edits 后的候选 prompt。
-- `iteration_NNN/gate_cases.json`：gate batch 样例。
-- `iteration_NNN/gate_predictions.jsonl`：candidate gate 生成结果和指标。
-- `iteration_NNN/gate_summary.json`：candidate gate 汇总。
-- `iteration_NNN/prompt_acceptance.json`：接收/拒绝决策，包含 `safety_gate`、`benefit_gate` 和 `rejection_reasons`。
-- `prompt_final.md`：训练结束后的 current prompt，也是最终测试使用的 prompt。
-- `test_summary.json`、`test_analysis.md`：held-out 测试结果。
+- `iteration_NNN/gate_cases.json`：gate batch 样例，仅 online 更新模式使用。
+- `iteration_NNN/gate_predictions.jsonl`：candidate gate 生成结果和指标，仅 online 更新模式使用。
+- `iteration_NNN/gate_summary.json`：candidate gate 汇总，仅 online 更新模式使用。
+- `iteration_NNN/prompt_acceptance.json`：prompt 更新决策；epoch 模式记录直接应用，online 模式记录 gate 接收/拒绝细节。
+- `iteration_000/test/summary.json`、`iteration_000/test/analysis.md`：使用 `--eval-initial-test` 时生成的原始 prompt held-out 基线结果。
+- `iteration_NNN/test/summary.json`、`iteration_NNN/test/analysis.md`：每轮 held-out 测试结果。
+- `prompt_final.md`：训练结束后的 current prompt。
 - `run_state.json`、`rate_limit_events.jsonl`：provider 重试状态和事件流。
 
 已完成的历史 run 可以用下面的命令补生成这几个人类可读报告：

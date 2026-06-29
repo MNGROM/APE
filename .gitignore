@@ -7,4 +7,5 @@ __pycache__/
 .DS_Store
 uv.lock
 prompt_runs/
+seed_prompt_runs/
 .codex_test_deps/
