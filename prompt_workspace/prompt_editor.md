@@ -27,10 +27,13 @@ You will receive:
 - `current_prompt_sections`
 - `failure_analysis`
 - `error_localization`
+- `edit_budget`: hard constraints for this revision plan, including `max_revision_items` and binding `guidance`.
 
 ## output
 
 Output JSON only and follow the example shape below.
+
+Each revision_plan item should include `operation`. For `replace_existing`, `qualify_existing`, and `merge_existing`, include non-empty `text_to_modify`.
 
 Example shape:
 
@@ -38,11 +41,14 @@ Example shape:
   "revision_plan": [
     {
       "section": "knowledge",
-      "intent": "Strengthen conditional-branch modeling knowledge.",
-      "change_instruction": "Add a concise rule explaining that requirements with alternatives, guarded outcomes, yes/no branches, or mutually exclusive paths should be represented with if/elseif/else structures, and that guard labels should preserve the requirement meaning."
+      "operation": "qualify_existing",
+      "text_to_modify": "Use fork only for explicit parallel work.",
+      "intent": "Tighten fork/join modeling knowledge.",
+      "change_instruction": "Revise the existing fork guidance to exclude ordinary lists, alternatives, attributes, and sequential UI steps unless the requirement explicitly states parallel or simultaneous execution."
     },
     {
       "section": "workflow",
+      "operation": "append_new",
       "intent": "Separate activity extraction from control-flow construction.",
       "change_instruction": "Add a workflow step requiring the model to first identify explicit activities from the requirement, then construct control-flow relations among those activities instead of compressing multiple actions into broad nodes."
     }

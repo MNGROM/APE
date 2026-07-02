@@ -79,18 +79,18 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--top-p must be between 0.01 and 0.99, or 'omit'")
     if args.top_p is not None:
         print("[config] Both temperature and top_p are set; GLM docs recommend adjusting only one.", flush=True)
-    if args.max_prompt_growth_ratio < 1.0:
-        raise ValueError("--max-prompt-growth-ratio must be at least 1.0")
-    if args.bootstrap_max_prompt_growth_ratio is None:
-        args.bootstrap_max_prompt_growth_ratio = max(args.max_prompt_growth_ratio, 10.0)
-    if args.bootstrap_max_prompt_growth_ratio < args.max_prompt_growth_ratio:
-        raise ValueError("--bootstrap-max-prompt-growth-ratio must be at least --max-prompt-growth-ratio")
     if args.max_prompt_chars < 1000:
         raise ValueError("--max-prompt-chars is too small for the required prompt sections")
     if args.llm_max_retries < 0:
         raise ValueError("--llm-max-retries must be non-negative")
     if args.analysis_batch_size < 1 or args.gate_batch_size < 1:
         raise ValueError("--analysis-batch-size and --gate-batch-size must be positive")
+    if args.validation_gate_size < 0:
+        raise ValueError("--validation-gate-size must be non-negative")
+    if args.validation_gate_seed < 0:
+        raise ValueError("--validation-gate-seed must be non-negative")
+    if args.initial_max_sections_per_edit < 0 or args.initial_max_sections_per_edit > len(SECTION_NAMES):
+        raise ValueError("--initial-max-sections-per-edit must be 0 (unlimited) or between 1 and the number of fixed prompt sections")
     if args.max_sections_per_edit < 0 or args.max_sections_per_edit > len(SECTION_NAMES):
         raise ValueError("--max-sections-per-edit must be 0 (unlimited) or between 1 and the number of fixed prompt sections")
     if args.analysis_max_tokens < 1 or args.localization_max_tokens < 1 or args.editor_max_tokens < 1 or args.epoch_planner_max_tokens < 1:
@@ -103,10 +103,10 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--element-extraction-max-tokens must be positive")
     if args.element_extraction_max_retries < 1:
         raise ValueError("--element-extraction-max-retries must be positive")
+    if args.bootstrap_node_accept_delta < 0 or args.bootstrap_relation_accept_delta < 0:
+        raise ValueError("--bootstrap-node-accept-delta and --bootstrap-relation-accept-delta must be non-negative")
     if args.llm_element_metrics and not args.api_key:
         raise ValueError("LLM semantic element metrics require the main API key via ZHIPU_LLM_API_KEY or --api-key")
-    if args.acceptance_metric_source == "llm" and not args.llm_element_metrics:
-        raise ValueError("--acceptance-metric-source llm requires --llm-element-metrics")
     if args.element_extractor == "llm" and not args.api_key:
         raise ValueError("LLM element extraction requires the main API key via ZHIPU_LLM_API_KEY or --api-key")
 
@@ -161,8 +161,6 @@ def acceptance_decision(
     candidate_summary: dict[str, float],
     candidate_prompt: str,
     baseline_prompt: str,
-    max_prompt_growth_ratio: float,
-    bootstrap_max_prompt_growth_ratio: float,
     max_prompt_chars: int,
     min_relation_delta: float,
     min_node_delta: float,
@@ -170,34 +168,38 @@ def acceptance_decision(
     relation_accept_delta: float,
     node_accept_delta: float,
     compile_accept_delta: float,
-    metric_source: str,
+    min_syntax_delta: float = -0.01,
+    min_node_precision_delta: float = -0.02,
+    min_relation_precision_delta: float = -0.02,
+    bootstrap_min_compile_delta: float = -0.10,
+    bootstrap_min_syntax_delta: float = -0.10,
+    bootstrap_node_accept_delta: float = 0.05,
+    bootstrap_relation_accept_delta: float = 0.05,
 ) -> tuple[bool, dict[str, Any]]:
+    syntax_delta = candidate_summary.get("syntax_pass_rate", 0.0) - baseline_summary.get("syntax_pass_rate", 0.0)
     compile_delta = candidate_summary.get("plantuml_compilation_pass_rate", 0.0) - baseline_summary.get("plantuml_compilation_pass_rate", 0.0)
-    deterministic_node_delta = candidate_summary.get("node_f1", 0.0) - baseline_summary.get("node_f1", 0.0)
-    deterministic_relation_delta = candidate_summary.get("relation_f1", 0.0) - baseline_summary.get("relation_f1", 0.0)
+    node_precision_delta = candidate_summary.get("node_precision", 0.0) - baseline_summary.get("node_precision", 0.0)
+    relation_precision_delta = candidate_summary.get("relation_precision", 0.0) - baseline_summary.get("relation_precision", 0.0)
+    node_delta = candidate_summary.get("node_f1", 0.0) - baseline_summary.get("node_f1", 0.0)
+    relation_delta = candidate_summary.get("relation_f1", 0.0) - baseline_summary.get("relation_f1", 0.0)
     llm_node_delta = candidate_summary.get("llm_node_f1", 0.0) - baseline_summary.get("llm_node_f1", 0.0)
     llm_relation_delta = candidate_summary.get("llm_relation_f1", 0.0) - baseline_summary.get("llm_relation_f1", 0.0)
-    node_metric_key, relation_metric_key = acceptance_metric_keys(metric_source, candidate_summary)
-    node_delta = candidate_summary.get(node_metric_key, 0.0) - baseline_summary.get(node_metric_key, 0.0)
-    relation_delta = candidate_summary.get(relation_metric_key, 0.0) - baseline_summary.get(relation_metric_key, 0.0)
     infrastructure_delta = candidate_summary.get("infrastructure_error_rate", 0.0) - baseline_summary.get("infrastructure_error_rate", 0.0)
-    prompt_growth_ratio = len(candidate_prompt) / max(1, len(baseline_prompt))
-    prompt_size_ok = len(candidate_prompt) <= max_prompt_chars and prompt_growth_ratio <= max_prompt_growth_ratio
-    bootstrap_prompt_size_ok = len(candidate_prompt) <= max_prompt_chars and prompt_growth_ratio <= bootstrap_max_prompt_growth_ratio
+    prompt_size_ok = len(candidate_prompt) <= max_prompt_chars
     llm_metrics_available = candidate_summary.get("llm_element_evaluated", 0.0) > 0 and baseline_summary.get("llm_element_evaluated", 0.0) > 0
     llm_semantic_guard_ok = True
-    if metric_source == "hybrid" and llm_metrics_available:
-        llm_semantic_guard_ok = not (
-            (llm_node_delta < -node_accept_delta and llm_relation_delta < -relation_accept_delta)
-            or llm_relation_delta < -0.10
-            or (compile_delta < 0 and (llm_node_delta < 0 or llm_relation_delta < 0))
-        )
+    bootstrap_llm_guard_ok = True
+    if llm_metrics_available:
+        llm_semantic_guard_ok = llm_node_delta >= -0.01 and llm_relation_delta >= -0.015
+        bootstrap_llm_guard_ok = llm_node_delta >= 0.0 and llm_relation_delta >= 0.0
 
     safety_gate = {
+        "syntax_not_significantly_worse": syntax_delta >= min_syntax_delta,
         "compile_not_significantly_worse": compile_delta >= min_compile_delta,
         "node_not_significantly_worse": node_delta >= min_node_delta,
         "relation_not_significantly_worse": relation_delta >= min_relation_delta,
-        "semantic_metrics_not_both_down": not (node_delta < 0 and relation_delta < 0),
+        "node_precision_not_significantly_worse": node_precision_delta >= min_node_precision_delta,
+        "relation_precision_not_significantly_worse": relation_precision_delta >= min_relation_precision_delta,
         "llm_semantic_guard_ok": llm_semantic_guard_ok,
         "infrastructure_delta_ok": infrastructure_delta <= 0,
         "prompt_size_ok": prompt_size_ok,
@@ -209,10 +211,13 @@ def acceptance_decision(
     }
     bootstrap_gate = {
         "bootstrap_allowed": allow_bootstrap,
-        "node_improved": node_delta >= node_accept_delta,
-        "relation_improved": relation_delta >= relation_accept_delta,
+        "syntax_within_bootstrap_tolerance": syntax_delta >= bootstrap_min_syntax_delta,
+        "compile_within_bootstrap_tolerance": compile_delta >= bootstrap_min_compile_delta,
+        "node_improved": node_delta >= bootstrap_node_accept_delta,
+        "relation_improved": relation_delta >= bootstrap_relation_accept_delta,
+        "llm_semantic_guard_ok": bootstrap_llm_guard_ok,
         "infrastructure_delta_ok": infrastructure_delta <= 0,
-        "prompt_size_ok": bootstrap_prompt_size_ok,
+        "prompt_size_ok": prompt_size_ok,
     }
     standard_accept = all(safety_gate.values()) and any(benefit_gate.values())
     bootstrap_accept = all(bootstrap_gate.values())
@@ -234,41 +239,47 @@ def acceptance_decision(
     return accept, {
         "accepted": accept,
         "metric_deltas": {
+            "syntax_pass_rate": syntax_delta,
             "plantuml_compilation_pass_rate": compile_delta,
-            "node_f1": deterministic_node_delta,
-            "relation_f1": deterministic_relation_delta,
+            "node_precision": node_precision_delta,
+            "relation_precision": relation_precision_delta,
+            "node_f1": node_delta,
+            "relation_f1": relation_delta,
             "llm_node_f1": llm_node_delta,
             "llm_relation_f1": llm_relation_delta,
             "infrastructure_error_rate": infrastructure_delta,
         },
-        "acceptance_metric_source": metric_source,
-        "acceptance_node_metric": node_metric_key,
-        "acceptance_relation_metric": relation_metric_key,
         "prompt_growth": {
             "baseline_chars": len(baseline_prompt),
             "candidate_chars": len(candidate_prompt),
-            "growth_ratio": prompt_growth_ratio,
-            "max_prompt_growth_ratio": max_prompt_growth_ratio,
-            "bootstrap_max_prompt_growth_ratio": bootstrap_max_prompt_growth_ratio,
             "max_prompt_chars": max_prompt_chars,
-            "standard_prompt_size_ok": prompt_size_ok,
-            "bootstrap_prompt_size_ok": bootstrap_prompt_size_ok,
+            "prompt_size_ok": prompt_size_ok,
             "allow_bootstrap": allow_bootstrap,
         },
+        "syntax_delta": syntax_delta,
         "compile_delta": compile_delta,
         "node_delta": node_delta,
         "relation_delta": relation_delta,
-        "deterministic_node_delta": deterministic_node_delta,
-        "deterministic_relation_delta": deterministic_relation_delta,
+        "node_precision_delta": node_precision_delta,
+        "relation_precision_delta": relation_precision_delta,
+        "deterministic_node_delta": node_delta,
+        "deterministic_relation_delta": relation_delta,
         "llm_node_delta": llm_node_delta,
         "llm_relation_delta": llm_relation_delta,
         "infrastructure_delta": infrastructure_delta,
+        "min_syntax_delta": min_syntax_delta,
         "min_compile_delta": min_compile_delta,
         "min_node_delta": min_node_delta,
         "min_relation_delta": min_relation_delta,
+        "min_node_precision_delta": min_node_precision_delta,
+        "min_relation_precision_delta": min_relation_precision_delta,
         "relation_accept_delta": relation_accept_delta,
         "node_accept_delta": node_accept_delta,
         "compile_accept_delta": compile_accept_delta,
+        "bootstrap_min_compile_delta": bootstrap_min_compile_delta,
+        "bootstrap_min_syntax_delta": bootstrap_min_syntax_delta,
+        "bootstrap_node_accept_delta": bootstrap_node_accept_delta,
+        "bootstrap_relation_accept_delta": bootstrap_relation_accept_delta,
         "safety_gate": safety_gate,
         "benefit_gate": benefit_gate,
         "bootstrap_gate": bootstrap_gate,
@@ -277,27 +288,14 @@ def acceptance_decision(
         "bootstrap_accept": bootstrap_accept,
         "acceptance_mode": "standard" if standard_accept else "bootstrap" if bootstrap_accept else "rejected",
         "rejection_reasons": rejection_reasons,
-        "acceptance_policy": "standard: accept when every safety gate passes and at least one selected metric benefit gate passes; bootstrap before first accepted update: accept when selected node and relation metrics both improve enough, infrastructure is not worse, and prompt size is ok",
+        "acceptance_policy": "standard: accept when every non-regression check passes and at least one deterministic node/relation/compile benefit gate passes; bootstrap before first accepted update: tolerate limited syntax/compile regression only when deterministic node and relation F1 both improve strongly, LLM metrics do not regress when available, infrastructure is not worse, and prompt size is ok",
         "prompt_chars_before": len(baseline_prompt),
         "prompt_chars_candidate": len(candidate_prompt),
-        "prompt_growth_ratio": prompt_growth_ratio,
-        "max_prompt_growth_ratio": max_prompt_growth_ratio,
         "max_prompt_chars": max_prompt_chars,
         "prompt_size_ok": prompt_size_ok,
         "baseline_summary": baseline_summary,
         "candidate_summary": candidate_summary,
     }
-
-
-def acceptance_metric_keys(metric_source: str, candidate_summary: dict[str, float]) -> tuple[str, str]:
-    if metric_source == "deterministic":
-        return "node_f1", "relation_f1"
-    if metric_source == "llm":
-        return "llm_node_f1", "llm_relation_f1"
-    if metric_source == "hybrid":
-        llm_available = candidate_summary.get("llm_element_evaluated", 0.0) > 0
-        return ("llm_node_f1", "llm_relation_f1") if llm_available else ("node_f1", "relation_f1")
-    raise ValueError(f"Unsupported acceptance metric source: {metric_source}")
 
 
 def iteration_paths(iter_dir: Path) -> dict[str, Path]:
@@ -308,6 +306,12 @@ def iteration_paths(iter_dir: Path) -> dict[str, Path]:
         "prompt_after": iter_dir / "prompts" / "after.md",
         "analysis_cases": iter_dir / "batches" / "analysis_cases.json",
         "gate_cases": iter_dir / "batches" / "gate_cases.json",
+        "validation_cases": iter_dir / "validation_gate" / "cases.json",
+        "validation_baseline_records": iter_dir / "validation_gate" / "baseline_records.jsonl",
+        "validation_baseline_summary": iter_dir / "validation_gate" / "baseline_summary.json",
+        "validation_candidate_records": iter_dir / "validation_gate" / "candidate_records.jsonl",
+        "validation_candidate_summary": iter_dir / "validation_gate" / "candidate_summary.json",
+        "validation_analysis": iter_dir / "validation_gate" / "analysis.md",
         "analysis_records": iter_dir / "evaluation" / "analysis_records.jsonl",
         "analysis_summary": iter_dir / "evaluation" / "analysis_summary.json",
         "analysis_overview": iter_dir / "evaluation" / "analysis_overview.md",
@@ -347,6 +351,14 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
             "batches": {
                 "analysis_cases": rel_to_iter(iter_dir, paths["analysis_cases"]),
                 "gate_cases": rel_to_iter(iter_dir, paths["gate_cases"]),
+            },
+            "validation_gate": {
+                "cases": rel_to_iter(iter_dir, paths["validation_cases"]),
+                "baseline_records": rel_to_iter(iter_dir, paths["validation_baseline_records"]),
+                "baseline_summary": rel_to_iter(iter_dir, paths["validation_baseline_summary"]),
+                "candidate_records": rel_to_iter(iter_dir, paths["validation_candidate_records"]),
+                "candidate_summary": rel_to_iter(iter_dir, paths["validation_candidate_summary"]),
+                "analysis": rel_to_iter(iter_dir, paths["validation_analysis"]),
             },
             "evaluation": {
                 "analysis_records": rel_to_iter(iter_dir, paths["analysis_records"]),
@@ -475,25 +487,57 @@ def split_training_batches(train_cases: list[Case], batch_size: int, *, strategy
     return batches
 
 
+def split_validation_gate_cases(cases: list[Case], args: argparse.Namespace) -> tuple[list[Case], list[Case]]:
+    if not args.validation_gate or args.validation_gate_size <= 0 or len(cases) < 2:
+        return list(cases), []
+
+    max_gate_size_for_pool = max(1, len(cases) // 3)
+    gate_size = min(args.validation_gate_size, max_gate_size_for_pool, len(cases) - 1)
+    validation_cases = select_cases_with_strategy(
+        cases,
+        limit=gate_size,
+        strategy=args.validation_gate_strategy,
+        seed=args.validation_gate_seed,
+    )
+    validation_ids = {(case.dataset, case.case_id) for case in validation_cases}
+    optimize_cases = [case for case in cases if (case.dataset, case.case_id) not in validation_ids]
+    return optimize_cases, validation_cases
+
+
 def write_evaluation_records(path: Path, records: list[Any]) -> None:
     lines = [json.dumps(dataclasses.asdict(record), ensure_ascii=False) for record in records]
     write_text(path, ("\n".join(lines) + "\n") if lines else "")
 
 
 def candidate_prompt_constraints(*, current_prompt: str, args: argparse.Namespace, allow_bootstrap: bool) -> dict[str, Any]:
-    effective_growth_ratio = args.bootstrap_max_prompt_growth_ratio if allow_bootstrap else args.max_prompt_growth_ratio
-    max_candidate_chars = min(
-        args.max_prompt_chars,
-        int(len(current_prompt) * effective_growth_ratio),
-    )
     return {
         "current_prompt_chars": len(current_prompt),
         "max_prompt_chars": args.max_prompt_chars,
-        "max_prompt_growth_ratio": effective_growth_ratio,
-        "max_candidate_chars": max_candidate_chars,
+        "max_candidate_chars": args.max_prompt_chars,
         "bootstrap_allowed": allow_bootstrap,
-        "standard_max_prompt_growth_ratio": args.max_prompt_growth_ratio,
-        "bootstrap_max_prompt_growth_ratio": args.bootstrap_max_prompt_growth_ratio,
+    }
+
+
+def make_edit_budget(*, has_accepted_update: bool, args: argparse.Namespace, agent: str) -> dict[str, Any]:
+    max_revision_items = args.max_sections_per_edit if has_accepted_update else args.initial_max_sections_per_edit
+    if has_accepted_update:
+        guidance = [
+            "Revise only the single highest-impact section.",
+            "Prefer modifying or tightening existing guidance over adding independent new rules.",
+        ]
+    elif agent == "epoch_planner":
+        guidance = [
+            "Merge batch-local plans into the smallest revision supported by the strongest repeated evidence.",
+            "Prefer modifying or tightening existing guidance over adding independent new rules.",
+        ]
+    else:
+        guidance = [
+            "A small multi-section revision is allowed only when the current prompt lacks core generation guidance.",
+            "Revise only sections directly supported by failure analysis and error localization.",
+        ]
+    return {
+        "max_revision_items": max_revision_items,
+        "guidance": guidance,
     }
 
 
@@ -602,6 +646,78 @@ def evaluate_initial_iteration_test(
     return summary
 
 
+def evaluate_validation_gate(
+    *,
+    baseline_prompt: str,
+    candidate_prompt: str,
+    validation_cases: list[Case],
+    args: argparse.Namespace,
+    llm_client: LLMClient,
+    run_dir: Path,
+    iter_dir: Path,
+    paths: dict[str, Path],
+    iteration: int,
+    allow_bootstrap: bool,
+    phase_prefix: str,
+) -> tuple[list[Any], list[Any], dict[str, float], dict[str, float], dict[str, Any]]:
+    write_case_manifest(paths["validation_cases"], validation_cases)
+    baseline_records, baseline_summary = evaluate_cases(
+        prompt=baseline_prompt,
+        cases=validation_cases,
+        args=args,
+        llm_client=llm_client,
+        output_path=paths["validation_baseline_records"],
+        state_dir=run_dir,
+        phase=f"{phase_prefix}:validation_baseline",
+    )
+    candidate_records, candidate_summary = evaluate_cases(
+        prompt=candidate_prompt,
+        cases=validation_cases,
+        args=args,
+        llm_client=llm_client,
+        output_path=paths["validation_candidate_records"],
+        state_dir=run_dir,
+        phase=f"{phase_prefix}:validation_candidate",
+    )
+    write_text(paths["validation_baseline_summary"], json.dumps(baseline_summary, ensure_ascii=False, indent=2))
+    write_text(paths["validation_candidate_summary"], json.dumps(candidate_summary, ensure_ascii=False, indent=2))
+    write_text(
+        paths["validation_analysis"],
+        "# Validation Gate Analysis\n\n"
+        "## Baseline\n\n"
+        + build_analysis(baseline_records, baseline_summary).strip()
+        + "\n\n## Candidate\n\n"
+        + build_analysis(candidate_records, candidate_summary).strip()
+        + "\n",
+    )
+    accepted, decision = acceptance_decision(
+        iteration=iteration,
+        allow_bootstrap=allow_bootstrap,
+        baseline_summary=baseline_summary,
+        candidate_summary=candidate_summary,
+        candidate_prompt=candidate_prompt,
+        baseline_prompt=baseline_prompt,
+        max_prompt_chars=args.max_prompt_chars,
+        min_relation_delta=args.acceptance_min_relation_delta,
+        min_node_delta=args.acceptance_min_node_delta,
+        min_compile_delta=args.acceptance_min_compile_delta,
+        relation_accept_delta=args.relation_accept_delta,
+        node_accept_delta=args.node_accept_delta,
+        compile_accept_delta=args.compile_accept_delta,
+        min_syntax_delta=args.acceptance_min_syntax_delta,
+        min_node_precision_delta=args.acceptance_min_node_precision_delta,
+        min_relation_precision_delta=args.acceptance_min_relation_precision_delta,
+        bootstrap_min_compile_delta=args.bootstrap_min_compile_delta,
+        bootstrap_min_syntax_delta=args.bootstrap_min_syntax_delta,
+        bootstrap_node_accept_delta=args.bootstrap_node_accept_delta,
+        bootstrap_relation_accept_delta=args.bootstrap_relation_accept_delta,
+    )
+    decision["accepted"] = accepted
+    decision["evaluation_source"] = "validation_gate"
+    decision["validation_case_count"] = len(validation_cases)
+    return baseline_records, candidate_records, baseline_summary, candidate_summary, decision
+
+
 def write_iteration_test_metric_plot(run_dir: Path) -> None:
     rows: list[dict[str, float | int]] = []
     for iter_dir in sorted(run_dir.glob("iteration_*")):
@@ -658,11 +774,16 @@ def run_training_iterations(
     run_dir: Path,
     work_prompt_path: Path,
     label: str,
+    validation_cases: list[Case] | None = None,
     test_cases: list[Case] | None = None,
     test_dataset: str | None = None,
 ) -> tuple[str, dict[str, float]]:
     print(f"[run] {label}, train_cases={len(train_cases)}")
     print(f"[run] train distribution: {describe_case_distribution(train_cases)}")
+    validation_cases = list(validation_cases or [])
+    if validation_cases:
+        print(f"[run] validation gate cases={len(validation_cases)}")
+        print(f"[run] validation gate distribution: {describe_case_distribution(validation_cases)}")
     print(f"[run] output={run_dir}")
 
     prompt = read_text(work_prompt_path)
@@ -679,6 +800,8 @@ def run_training_iterations(
         epoch_prompt_before = prompt
         write_text(epoch_paths["prompt_before"], prompt)
         write_case_manifest(epoch_paths["analysis_cases"], train_cases)
+        if validation_cases:
+            write_case_manifest(epoch_paths["validation_cases"], validation_cases)
 
         training_batches = split_training_batches(train_cases, args.analysis_batch_size, strategy=args.training_batch_strategy)
         epoch_manifest["train_batch_count"] = len(training_batches)
@@ -923,10 +1046,16 @@ def run_training_iterations(
             )
             write_iteration_manifest(batch_dir, manifest)
 
+            editor_edit_budget = make_edit_budget(
+                has_accepted_update=has_accepted_update,
+                args=args,
+                agent="prompt_editor",
+            )
             revision_plan = propose_prompt_revision(
                 current_prompt=prompt,
                 failure_analysis=failure_analysis,
                 error_localization=error_localization,
+                edit_budget=editor_edit_budget,
                 args=args,
                 llm_client=llm_client,
                 output_input_path=paths["prompt_editor_input"],
@@ -1079,38 +1208,63 @@ def run_training_iterations(
             )
             write_iteration_manifest(batch_dir, manifest)
 
-            gate_cases = choose_iteration_batch(
-                train_cases,
-                args=args,
-                iteration=global_update_step,
-                batch_size=args.gate_batch_size,
-                strategy=args.candidate_sample_strategy,
-                seed_offset=40_000,
-            )
-            print(f"{log_prefix} gate distribution: {describe_case_distribution(gate_cases)}")
-            write_case_manifest(paths["gate_cases"], gate_cases)
+            using_validation_gate = bool(validation_cases)
+            if using_validation_gate:
+                gate_cases = list(validation_cases)
+                gate_source = "validation_gate"
+                gate_cases_path = paths["validation_cases"]
+                gate_candidate_records_path = paths["validation_candidate_records"]
+                gate_candidate_summary_path = paths["validation_candidate_summary"]
+                gate_baseline_records_path = paths["validation_baseline_records"]
+                gate_baseline_summary_path = paths["validation_baseline_summary"]
+                candidate_stage_name = "validation_candidate_evaluation"
+                baseline_stage_name = "validation_baseline_evaluation"
+                candidate_phase = "validation_candidate"
+                baseline_phase = "validation_baseline"
+            else:
+                gate_cases = choose_iteration_batch(
+                    train_cases,
+                    args=args,
+                    iteration=global_update_step,
+                    batch_size=args.gate_batch_size,
+                    strategy=args.candidate_sample_strategy,
+                    seed_offset=40_000,
+                )
+                gate_source = "training_gate"
+                gate_cases_path = paths["gate_cases"]
+                gate_candidate_records_path = paths["gate_candidate_records"]
+                gate_candidate_summary_path = paths["gate_candidate_summary"]
+                gate_baseline_records_path = paths["gate_baseline_records"]
+                gate_baseline_summary_path = paths["gate_baseline_summary"]
+                candidate_stage_name = "gate_candidate_evaluation"
+                baseline_stage_name = "gate_baseline_evaluation"
+                candidate_phase = "gate_candidate"
+                baseline_phase = "baseline_gate_eval"
+            print(f"{log_prefix} {gate_source} distribution: {describe_case_distribution(gate_cases)}")
+            write_case_manifest(gate_cases_path, gate_cases)
             candidate_records, candidate_summary = evaluate_cases(
                 prompt=candidate,
                 cases=gate_cases,
                 args=args,
                 llm_client=llm_client,
-                output_path=paths["gate_candidate_records"],
+                output_path=gate_candidate_records_path,
                 state_dir=run_dir,
-                phase=f"{phase_prefix}:gate_candidate",
+                phase=f"{phase_prefix}:{candidate_phase}",
             )
-            write_text(paths["gate_candidate_summary"], json.dumps(candidate_summary, ensure_ascii=False, indent=2))
+            write_text(gate_candidate_summary_path, json.dumps(candidate_summary, ensure_ascii=False, indent=2))
             record_stage(
                 manifest,
-                "gate_candidate_evaluation",
+                candidate_stage_name,
                 status="success",
                 inputs={
                     "candidate_prompt": rel_to_iter(batch_dir, paths["prompt_candidate"]),
-                    "cases": rel_to_iter(batch_dir, paths["gate_cases"]),
+                    "cases": rel_to_iter(batch_dir, gate_cases_path),
                 },
                 outputs={
-                    "records": rel_to_iter(batch_dir, paths["gate_candidate_records"]),
-                    "summary": rel_to_iter(batch_dir, paths["gate_candidate_summary"]),
+                    "records": rel_to_iter(batch_dir, gate_candidate_records_path),
+                    "summary": rel_to_iter(batch_dir, gate_candidate_summary_path),
                 },
+                note=f"candidate evaluated on {gate_source}",
             )
             write_iteration_manifest(batch_dir, manifest)
 
@@ -1121,23 +1275,24 @@ def run_training_iterations(
                     cases=gate_cases,
                     args=args,
                     llm_client=llm_client,
-                    output_path=paths["gate_baseline_records"],
+                    output_path=gate_baseline_records_path,
                     state_dir=run_dir,
-                    phase=f"{phase_prefix}:baseline_gate_eval",
+                    phase=f"{phase_prefix}:{baseline_phase}",
                 )
-                write_text(paths["gate_baseline_summary"], json.dumps(baseline_for_gate, ensure_ascii=False, indent=2))
+                write_text(gate_baseline_summary_path, json.dumps(baseline_for_gate, ensure_ascii=False, indent=2))
                 record_stage(
                     manifest,
-                    "gate_baseline_evaluation",
+                    baseline_stage_name,
                     status="success",
                     inputs={
                         "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                        "cases": rel_to_iter(batch_dir, paths["gate_cases"]),
+                        "cases": rel_to_iter(batch_dir, gate_cases_path),
                     },
                     outputs={
-                        "records": rel_to_iter(batch_dir, paths["gate_baseline_records"]),
-                        "summary": rel_to_iter(batch_dir, paths["gate_baseline_summary"]),
+                        "records": rel_to_iter(batch_dir, gate_baseline_records_path),
+                        "summary": rel_to_iter(batch_dir, gate_baseline_summary_path),
                     },
+                    note=f"baseline evaluated on {gate_source}",
                 )
                 write_iteration_manifest(batch_dir, manifest)
                 if has_only_infrastructure_errors(baseline_gate_records + candidate_records):
@@ -1172,8 +1327,6 @@ def run_training_iterations(
                 candidate_summary=candidate_summary,
                 candidate_prompt=candidate,
                 baseline_prompt=prompt,
-                max_prompt_growth_ratio=args.max_prompt_growth_ratio,
-                bootstrap_max_prompt_growth_ratio=args.bootstrap_max_prompt_growth_ratio,
                 max_prompt_chars=args.max_prompt_chars,
                 min_relation_delta=args.acceptance_min_relation_delta,
                 min_node_delta=args.acceptance_min_node_delta,
@@ -1181,8 +1334,18 @@ def run_training_iterations(
                 relation_accept_delta=args.relation_accept_delta,
                 node_accept_delta=args.node_accept_delta,
                 compile_accept_delta=args.compile_accept_delta,
-                metric_source=args.acceptance_metric_source,
+                min_syntax_delta=args.acceptance_min_syntax_delta,
+                min_node_precision_delta=args.acceptance_min_node_precision_delta,
+                min_relation_precision_delta=args.acceptance_min_relation_precision_delta,
+                bootstrap_min_compile_delta=args.bootstrap_min_compile_delta,
+                bootstrap_min_syntax_delta=args.bootstrap_min_syntax_delta,
+                bootstrap_node_accept_delta=args.bootstrap_node_accept_delta,
+                bootstrap_relation_accept_delta=args.bootstrap_relation_accept_delta,
             )
+            decision["evaluation_source"] = gate_source
+            decision["gate_case_count"] = len(gate_cases)
+            if using_validation_gate:
+                decision["validation_case_count"] = len(gate_cases)
             write_text(paths["acceptance"], json.dumps(decision, ensure_ascii=False, indent=2))
 
             if accepted:
@@ -1190,16 +1353,17 @@ def run_training_iterations(
                 has_accepted_update = True
                 prompt = candidate
                 write_text(work_prompt_path, prompt)
+                write_text(run_dir / "prompt_best.md", prompt)
                 write_text(paths["prompt_after"], prompt)
                 record_stage(
                     manifest,
                     "acceptance",
                     status="accepted",
                     inputs={
-                        "baseline_summary": rel_to_iter(batch_dir, paths["gate_baseline_summary"])
-                        if paths["gate_baseline_summary"].exists()
+                        "baseline_summary": rel_to_iter(batch_dir, gate_baseline_summary_path)
+                        if gate_baseline_summary_path.exists()
                         else rel_to_iter(batch_dir, paths["analysis_summary"]),
-                        "candidate_summary": rel_to_iter(batch_dir, paths["gate_candidate_summary"]),
+                        "candidate_summary": rel_to_iter(batch_dir, gate_candidate_summary_path),
                         "candidate_prompt": rel_to_iter(batch_dir, paths["prompt_candidate"]),
                     },
                     outputs={
@@ -1230,10 +1394,10 @@ def run_training_iterations(
                     "acceptance",
                     status="rejected",
                     inputs={
-                        "baseline_summary": rel_to_iter(batch_dir, paths["gate_baseline_summary"])
-                        if paths["gate_baseline_summary"].exists()
+                        "baseline_summary": rel_to_iter(batch_dir, gate_baseline_summary_path)
+                        if gate_baseline_summary_path.exists()
                         else rel_to_iter(batch_dir, paths["analysis_summary"]),
-                        "candidate_summary": rel_to_iter(batch_dir, paths["gate_candidate_summary"]),
+                        "candidate_summary": rel_to_iter(batch_dir, gate_candidate_summary_path),
                         "candidate_prompt": rel_to_iter(batch_dir, paths["prompt_candidate"]),
                     },
                     outputs={
@@ -1287,9 +1451,15 @@ def run_training_iterations(
                 }
             else:
                 print(f"[iteration {iteration}] planning epoch revision from {len(batch_revision_inputs)} batch plan(s)")
+                epoch_edit_budget = make_edit_budget(
+                    has_accepted_update=has_accepted_update,
+                    args=args,
+                    agent="epoch_planner",
+                )
                 epoch_revision_plan = plan_epoch_revision(
                     current_prompt=prompt,
                     batch_revision_inputs=batch_revision_inputs,
+                    edit_budget=epoch_edit_budget,
                     args=args,
                     llm_client=llm_client,
                     output_input_path=epoch_paths["epoch_planner_input"],
@@ -1369,32 +1539,101 @@ def run_training_iterations(
                                 "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
                             },
                         )
-                        epoch_accepted_count = 1
-                        has_accepted_update = True
-                        prompt = epoch_candidate_prompt
-                        write_text(work_prompt_path, prompt)
-                        epoch_acceptance = {
-                            "accepted": True,
-                            "acceptance_mode": "epoch_direct_update",
-                            "gate_evaluated": False,
-                            "rejection_reasons": [],
-                            "training_update_mode": "epoch_planner",
-                            "batch_count": len(training_batches),
-                            "collected_batch_count": epoch_collected_count,
-                            "skipped_batch_count": epoch_skipped_count,
-                            "note": "Epoch mode directly applies the epoch-level candidate prompt; gate evaluation is disabled for epoch training.",
-                        }
-                        record_stage(
-                            epoch_manifest,
-                            "acceptance",
-                            status="accepted",
-                            inputs={
-                                "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
-                            },
-                            outputs={"decision": rel_to_iter(iter_dir, epoch_paths["acceptance"])},
-                            note="gate evaluation disabled for epoch training; candidate prompt applied directly",
-                        )
-                        print(f"[iteration {iteration}] epoch candidate applied directly: {work_prompt_path}")
+                        if validation_cases:
+                            print(f"[iteration {iteration}] evaluating epoch candidate on fixed validation gate")
+                            (
+                                _validation_baseline_records,
+                                _validation_candidate_records,
+                                epoch_baseline_gate_summary,
+                                epoch_candidate_summary,
+                                epoch_acceptance,
+                            ) = evaluate_validation_gate(
+                                baseline_prompt=prompt,
+                                candidate_prompt=epoch_candidate_prompt,
+                                validation_cases=validation_cases,
+                                args=args,
+                                llm_client=llm_client,
+                                run_dir=run_dir,
+                                iter_dir=iter_dir,
+                                paths=epoch_paths,
+                                iteration=iteration,
+                                allow_bootstrap=allow_bootstrap,
+                                phase_prefix=f"iteration_{iteration:03d}:epoch",
+                            )
+                            write_text(epoch_paths["acceptance"], json.dumps(epoch_acceptance, ensure_ascii=False, indent=2))
+                            if epoch_acceptance["accepted"]:
+                                epoch_accepted_count = 1
+                                has_accepted_update = True
+                                prompt = epoch_candidate_prompt
+                                write_text(work_prompt_path, prompt)
+                                write_text(run_dir / "prompt_best.md", prompt)
+                                record_stage(
+                                    epoch_manifest,
+                                    "validation_gate",
+                                    status="accepted",
+                                    inputs={
+                                        "baseline_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_before"]),
+                                        "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                                        "cases": rel_to_iter(iter_dir, epoch_paths["validation_cases"]),
+                                    },
+                                    outputs={
+                                        "baseline_summary": rel_to_iter(iter_dir, epoch_paths["validation_baseline_summary"]),
+                                        "candidate_summary": rel_to_iter(iter_dir, epoch_paths["validation_candidate_summary"]),
+                                        "decision": rel_to_iter(iter_dir, epoch_paths["acceptance"]),
+                                    },
+                                )
+                                print(f"[iteration {iteration}] epoch candidate accepted by validation gate: {work_prompt_path}")
+                            else:
+                                epoch_rejected_count = 1
+                                write_text(epoch_paths["rejected_by_gate"], json.dumps(epoch_acceptance, ensure_ascii=False, indent=2))
+                                record_stage(
+                                    epoch_manifest,
+                                    "validation_gate",
+                                    status="rejected",
+                                    inputs={
+                                        "baseline_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_before"]),
+                                        "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                                        "cases": rel_to_iter(iter_dir, epoch_paths["validation_cases"]),
+                                    },
+                                    outputs={
+                                        "baseline_summary": rel_to_iter(iter_dir, epoch_paths["validation_baseline_summary"]),
+                                        "candidate_summary": rel_to_iter(iter_dir, epoch_paths["validation_candidate_summary"]),
+                                        "decision": rel_to_iter(iter_dir, epoch_paths["acceptance"]),
+                                        "rejection_copy": rel_to_iter(iter_dir, epoch_paths["rejected_by_gate"]),
+                                    },
+                                )
+                                print(
+                                    f"[iteration {iteration}] epoch candidate rejected by validation gate "
+                                    f"(reasons={', '.join(epoch_acceptance['rejection_reasons'])}); prompt unchanged"
+                                )
+                        else:
+                            epoch_accepted_count = 1
+                            has_accepted_update = True
+                            prompt = epoch_candidate_prompt
+                            write_text(work_prompt_path, prompt)
+                            write_text(run_dir / "prompt_best.md", prompt)
+                            epoch_acceptance = {
+                                "accepted": True,
+                                "acceptance_mode": "epoch_direct_update",
+                                "gate_evaluated": False,
+                                "rejection_reasons": [],
+                                "training_update_mode": "epoch_planner",
+                                "batch_count": len(training_batches),
+                                "collected_batch_count": epoch_collected_count,
+                                "skipped_batch_count": epoch_skipped_count,
+                                "note": "Validation gate is disabled; epoch candidate prompt applied directly.",
+                            }
+                            record_stage(
+                                epoch_manifest,
+                                "acceptance",
+                                status="accepted",
+                                inputs={
+                                    "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                                },
+                                outputs={"decision": rel_to_iter(iter_dir, epoch_paths["acceptance"])},
+                                note="validation gate disabled; candidate prompt applied directly",
+                            )
+                            print(f"[iteration {iteration}] epoch candidate applied directly: {work_prompt_path}")
 
         if epoch_acceptance is None:
             epoch_acceptance = {
@@ -1474,15 +1713,19 @@ def run_train_only(args: argparse.Namespace, datasets: dict[str, list[Case]], ll
     train_dataset = train_dataset.lower()
     if train_dataset not in datasets:
         raise ValueError(f"Unknown train dataset {train_dataset!r}. Available: {', '.join(sorted(datasets))}")
-    train_cases = select_cases_with_strategy(
+    train_pool_cases = select_cases_with_strategy(
         datasets[train_dataset],
         limit=args.max_train_cases,
         strategy=args.sample_strategy,
         seed=args.sample_seed,
     )
+    train_cases, validation_cases = split_validation_gate_cases(train_pool_cases, args)
     run_dir = make_run_dir(args.runs_dir, f"train-{train_dataset}")
     write_run_args(args, run_dir)
+    write_case_manifest(run_dir / "train_pool_cases.json", train_pool_cases)
     write_case_manifest(run_dir / "train_cases.json", train_cases)
+    if validation_cases:
+        write_case_manifest(run_dir / "validation_gate_cases.json", validation_cases)
     work_prompt_path = initialize_run_prompt(args.prompt_path, run_dir)
     _, summary = run_training_iterations(
         args=args,
@@ -1491,6 +1734,7 @@ def run_train_only(args: argparse.Namespace, datasets: dict[str, list[Case]], ll
         run_dir=run_dir,
         work_prompt_path=work_prompt_path,
         label=f"train_only={train_dataset}",
+        validation_cases=validation_cases,
     )
     return summary
 
@@ -1502,12 +1746,13 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
 
     train_cases_all = [case for name, cases in datasets.items() if name != test_dataset for case in cases]
     test_cases_all = datasets[test_dataset]
-    train_cases = select_cases_with_strategy(
+    train_pool_cases = select_cases_with_strategy(
         train_cases_all,
         limit=args.max_train_cases,
         strategy=args.sample_strategy,
         seed=args.sample_seed,
     )
+    train_cases, validation_cases = split_validation_gate_cases(train_pool_cases, args)
     test_cases = select_cases_with_strategy(
         test_cases_all,
         limit=args.max_test_cases,
@@ -1517,10 +1762,17 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
 
     run_dir = make_run_dir(args.runs_dir, f"test-{test_dataset}")
     write_run_args(args, run_dir)
+    write_case_manifest(run_dir / "train_pool_cases.json", train_pool_cases)
     write_case_manifest(run_dir / "train_cases.json", train_cases)
+    if validation_cases:
+        write_case_manifest(run_dir / "validation_gate_cases.json", validation_cases)
     write_case_manifest(run_dir / "test_cases.json", test_cases)
     work_prompt_path = initialize_run_prompt(args.prompt_path, run_dir)
-    print(f"[run] test={test_dataset}, train_cases={len(train_cases)}, test_cases={len(test_cases)}")
+    print(
+        f"[run] test={test_dataset}, train_pool_cases={len(train_pool_cases)}, "
+        f"train_cases={len(train_cases)}, validation_gate_cases={len(validation_cases)}, "
+        f"test_cases={len(test_cases)}"
+    )
     print(f"[run] test distribution: {describe_case_distribution(test_cases)}")
     initial_summary: dict[str, float] | None = None
     if args.eval_initial_test:
@@ -1541,6 +1793,7 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
         run_dir=run_dir,
         work_prompt_path=work_prompt_path,
         label=f"test={test_dataset}",
+        validation_cases=validation_cases,
         test_cases=test_cases,
         test_dataset=test_dataset,
     )
@@ -1614,6 +1867,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sample-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to select limited training cases")
     parser.add_argument("--test-sample-strategy", choices=["stratified", "random", "prefix"], default="prefix", help="How to select limited held-out test cases")
     parser.add_argument("--candidate-sample-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to select candidate gate cases")
+    parser.add_argument("--validation-gate", action=argparse.BooleanOptionalAction, default=True, help="Reserve a fixed validation gate split from the training pool; use --no-validation-gate to disable")
+    parser.add_argument("--validation-gate-size", type=int, default=30, help="Maximum number of training-pool cases reserved for validation gate; capped at about one third of the sampled training pool, 0 disables the split")
+    parser.add_argument("--validation-gate-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to choose fixed validation gate cases from the sampled training pool")
+    parser.add_argument("--validation-gate-seed", type=int, default=20260629, help="Seed used only for selecting fixed validation gate cases")
     parser.add_argument("--sample-seed", type=int, default=13)
     parser.add_argument("--model", default=os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL))
     parser.add_argument("--api-key", default=os.environ.get("ZHIPU_LLM_API_KEY", ""))
@@ -1650,26 +1907,31 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--element-extraction-max-tokens", type=int, default=4096, help="Max tokens for LLM element extraction")
     parser.add_argument("--element-extraction-max-retries", type=int, default=3, help="JSON/schema retries for LLM element extraction")
     parser.add_argument("--element-extraction-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_ELEMENT_EXTRACTION_THINKING_TYPE", "inherit"), help="Thinking mode for LLM element extraction calls")
-    parser.add_argument("--acceptance-min-node-delta", type=float, default=-0.15, help="Minimum node F1 delta tolerated by the safety gate")
-    parser.add_argument("--acceptance-min-relation-delta", type=float, default=-0.15, help="Minimum relation F1 delta tolerated by the safety gate")
-    parser.add_argument("--acceptance-min-compile-delta", type=float, default=-0.10, help="Minimum PlantUML compilation pass-rate delta tolerated by the safety gate")
-    parser.add_argument("--relation-accept-delta", type=float, default=0.03, help="Relation F1 delta logged as a positive signal in the acceptance decision")
-    parser.add_argument("--node-accept-delta", type=float, default=0.03, help="Node F1 delta logged as a positive signal in the acceptance decision")
-    parser.add_argument("--compile-accept-delta", type=float, default=0.10, help="PlantUML compilation pass-rate delta that can accept a candidate when node and relation F1 do not regress")
+    parser.add_argument("--acceptance-min-node-delta", type=float, default=-0.01, help="Minimum node F1 delta tolerated by the standard validation gate")
+    parser.add_argument("--acceptance-min-relation-delta", type=float, default=-0.01, help="Minimum relation F1 delta tolerated by the standard validation gate")
+    parser.add_argument("--acceptance-min-compile-delta", type=float, default=-0.01, help="Minimum PlantUML compilation pass-rate delta tolerated by the standard validation gate")
+    parser.add_argument("--acceptance-min-syntax-delta", type=float, default=-0.01, help="Minimum syntax pass-rate delta tolerated by the standard validation gate")
+    parser.add_argument("--acceptance-min-node-precision-delta", type=float, default=-0.02, help="Minimum node precision delta tolerated by the standard validation gate")
+    parser.add_argument("--acceptance-min-relation-precision-delta", type=float, default=-0.02, help="Minimum relation precision delta tolerated by the standard validation gate")
+    parser.add_argument("--relation-accept-delta", type=float, default=0.02, help="Relation F1 delta required as a positive signal in the standard validation gate")
+    parser.add_argument("--node-accept-delta", type=float, default=0.02, help="Node F1 delta required as a positive signal in the standard validation gate")
+    parser.add_argument("--compile-accept-delta", type=float, default=0.05, help="PlantUML compilation pass-rate delta that can accept a candidate when node and relation F1 do not regress")
+    parser.add_argument("--bootstrap-min-compile-delta", type=float, default=-0.10, help="Minimum PlantUML compilation pass-rate delta tolerated before the first accepted update")
+    parser.add_argument("--bootstrap-min-syntax-delta", type=float, default=-0.10, help="Minimum syntax pass-rate delta tolerated before the first accepted update")
+    parser.add_argument("--bootstrap-node-accept-delta", type=float, default=0.05, help="Node F1 delta required before the first accepted update")
+    parser.add_argument("--bootstrap-relation-accept-delta", type=float, default=0.05, help="Relation F1 delta required before the first accepted update")
     parser.add_argument(
-        "--acceptance-metric-source",
-        choices=["deterministic", "llm", "hybrid"],
-        default="deterministic",
-        help="Metric source used by the acceptance gate; hybrid uses LLM node/relation metrics when available with a deterministic-compatible safety policy",
+        "--initial-max-sections-per-edit",
+        type=int,
+        default=3,
+        help="Maximum fixed prompt sections a prompt edit may revise before the first accepted update; 0 disables the limit",
     )
     parser.add_argument(
         "--max-sections-per-edit",
         type=int,
-        default=0,
-        help="Maximum fixed prompt sections a prompt edit may modify; 0 disables the limit",
+        default=1,
+        help="Maximum fixed prompt sections a prompt edit may revise after the first accepted update; 0 disables the limit",
     )
-    parser.add_argument("--max-prompt-growth-ratio", type=float, default=3.0, help="Reject candidate prompts that grow more than this ratio over the current prompt")
-    parser.add_argument("--bootstrap-max-prompt-growth-ratio", type=float, default=None, help="Prompt growth ratio allowed before the first accepted prompt update; defaults to max(--max-prompt-growth-ratio, 6.0)")
     parser.add_argument("--max-prompt-chars", type=int, default=4000, help="Reject candidate prompts longer than this many characters")
     parser.add_argument("--plantuml-compile-timeout", type=int, default=30, help="Timeout in seconds for PlantUML compilation checks")
     parser.add_argument("--llm-element-metrics", action=argparse.BooleanOptionalAction, default=True, help="Run LLM semantic node/relation P/R/F1 metrics; use --no-llm-element-metrics for cheap local smoke tests")

@@ -15,6 +15,7 @@ def plan_epoch_revision(
     *,
     current_prompt: str,
     batch_revision_inputs: list[dict[str, Any]],
+    edit_budget: dict[str, Any],
     args: Any,
     llm_client: LLMClient,
     output_input_path: Path,
@@ -25,6 +26,7 @@ def plan_epoch_revision(
     payload = {
         "current_prompt_sections": parse_prompt_sections(current_prompt),
         "batch_revision_inputs": batch_revision_inputs,
+        "edit_budget": edit_budget,
     }
     write_text(output_input_path, json.dumps(payload, ensure_ascii=False, indent=2))
     messages = [
@@ -53,7 +55,7 @@ def plan_epoch_revision(
         return None
     parsed = normalize_prompt_revision_plan(parsed)
     write_text(output_path, json.dumps(parsed, ensure_ascii=False, indent=2))
-    ok, errors = validate_prompt_revision_plan(parsed, max_sections=args.max_sections_per_edit)
+    ok, errors = validate_prompt_revision_plan(parsed, max_sections=edit_budget.get("max_revision_items"))
     if not ok:
         write_text(output_path.with_suffix(".rejected.txt"), "\n".join(errors) + "\n")
         print(f"[evolve] Rejected epoch revision plan: {'; '.join(errors)}", flush=True)

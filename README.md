@@ -119,13 +119,17 @@ current prompt
 -> prompt-editor model emits structured section edits
 -> epoch-planner model merges batch revision plans
 -> prompt-rewriter model emits the next prompt
--> apply the epoch candidate prompt directly
+-> fixed validation-gate evaluation accepts or rejects the candidate
 -> held-out test evaluation
 ```
 
-The `online` update mode still uses the candidate gate after each batch. In the
-default `epoch` update mode, the old gate-batch accept/reject path is disabled;
-the held-out test metrics are the comparison signal.
+By default, the sampled training pool is split into optimization cases and a
+fixed validation gate (`--validation-gate-size 30`, capped at about one third
+of the sampled training pool for small runs). Validation cases are not used by
+failure analysis or prompt evolution agents. In `epoch` mode the epoch candidate
+must pass this fixed gate before `work.md` is updated. In `online` mode each
+batch candidate uses the same fixed gate; when `--no-validation-gate` is set,
+online mode falls back to the old sampled training gate.
 
 The prompt editor does not rewrite arbitrary files. It returns JSON edits for
 the fixed markdown sections in `tst.md`:
@@ -139,8 +143,9 @@ the fixed markdown sections in `tst.md`:
 ## rule
 ```
 
-By default, at most two sections may be edited per iteration
-(`--max-sections-per-edit 2`).
+By default, at most three sections may be planned before the first accepted
+update (`--initial-max-sections-per-edit 3`), and at most one section after
+that (`--max-sections-per-edit 1`).
 
 ## Evaluation
 
@@ -161,17 +166,19 @@ Disable the LLM semantic judge for cheap local checks:
 python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-Online candidate acceptance no longer uses a weighted aggregate score. It uses
-metric gates directly. The default epoch mode applies epoch-level prompt updates
-directly and does not run the gate-batch acceptance path.
+Candidate acceptance no longer uses a weighted aggregate score. It is a direct
+accept/reject decision over the validation gate summaries.
 
 All Safety Gate checks must pass before the Benefit Gate is considered:
 
 ```text
-plantuml_compile_delta >= -0.05
-node_f1_delta >= -0.02
+syntax_pass_rate_delta >= -0.01
+plantuml_compile_delta >= -0.01
+node_f1_delta >= -0.01
 relation_f1_delta >= -0.01
-N-F1 and R-F1 must not regress at the same time
+node_precision_delta >= -0.02
+relation_precision_delta >= -0.02
+LLM node/relation F1 must not regress beyond the guard when available
 infrastructure_error_delta <= 0
 prompt_size_ok
 ```
@@ -179,46 +186,51 @@ prompt_size_ok
 At least one Benefit Gate signal must pass:
 
 ```text
-relation_f1_delta >= 0.01
+relation_f1_delta >= 0.02
 or node_f1_delta >= 0.02
-or plantuml_compile_delta >= 0.05 with no N-F1/R-F1 regression
+or plantuml_compile_delta >= 0.05 with no node/relation F1 regression
 ```
 
 This prevents compilation improvements from compensating for semantic quality
-regressions in online mode. Held-out testing runs as `iteration_NNN/test`; the
-workflow no longer runs a second duplicate held-out test after all training
-completes.
+regressions. Held-out testing runs as `iteration_NNN/test`; the workflow no
+longer runs a second duplicate held-out test after all training completes.
 
 Iteration 1 has a bootstrap exception: if both `N-F1` and `R-F1` clearly
-improve (`+0.02` and `+0.01` by default), no new infrastructure errors appear,
-and the prompt stays within the size guard, the candidate can be accepted.
-Later iterations use the standard gates above.
+improve (`+0.05` and `+0.05` by default), syntax/compile pass rates stay within
+the relaxed tolerance (`-0.10` by default), no new infrastructure errors appear,
+LLM metrics do not regress when available, and the prompt stays within the
+absolute `--max-prompt-chars` limit, the candidate can be accepted. Later
+iterations use the standard gates above.
 
 ## Outputs
 
 Runs are written under `prompt_runs/`. Important files include:
 
 - `run_args.json`: sanitized run configuration.
-- `train_cases.json`, `test_cases.json`: actual sampled cases.
+- `train_pool_cases.json`: sampled training pool before the validation split.
+- `train_cases.json`: optimization cases used by the prompt-evolution agents.
+- `validation_gate_cases.json`: fixed validation cases reserved from the training pool.
+- `test_cases.json`: held-out test cases.
 - `prompt_evolution.md`: prompt evolution overview for the run, including the initial prompt, per-iteration change links, and best/final prompts.
 - `metrics_overview.md`: metric overview for the run, focused on `iteration_NNN/test` held-out metrics.
-- `iteration_NNN/analysis_batch_cases.json`: batch used for failure analysis.
-- `iteration_NNN/predictions.jsonl`: generated PlantUML and metrics for the analysis batch.
-- `iteration_NNN/evaluation_summary.json`: analysis-batch metric summary.
-- `iteration_NNN/prompt_change.md`: per-iteration prompt change report with before/after diff, candidate acceptance, and rejection reasons.
-- `iteration_NNN/metrics_report.md`: per-iteration metric report with analysis, baseline gate, candidate gate, and deltas.
-- `iteration_NNN/analysis/overview.md`: human-readable failure report.
-- `iteration_NNN/failure_analysis_input.json`: input sent to the failure-analysis model.
-- `iteration_NNN/failure_analysis_output.json`: structured failure-analysis result.
-- `iteration_NNN/error_localization_input.json`: input sent to the error-localization model.
-- `iteration_NNN/error_localization_output.json`: section-level localization result.
-- `iteration_NNN/prompt_edit_input.json`: input sent to the prompt-editor model, including failure analysis and localization.
-- `iteration_NNN/prompt_edit_output.json`: structured prompt edit result.
-- `iteration_NNN/candidate_prompt.md`: candidate prompt after applying edits.
-- `iteration_NNN/gate_cases.json`: gate-batch case manifest, used by online updates.
-- `iteration_NNN/gate_predictions.jsonl`: candidate gate predictions and metrics, used by online updates.
-- `iteration_NNN/gate_summary.json`: candidate gate summary, used by online updates.
-- `iteration_NNN/prompt_acceptance.json`: prompt update decision; epoch mode records direct application, online mode records gate accept/reject details.
+- `iteration_NNN/batches/analysis_cases.json`: optimization cases evaluated in the iteration.
+- `iteration_NNN/evaluation/analysis_records.jsonl`: generated PlantUML and metrics for optimization cases.
+- `iteration_NNN/evaluation/analysis_summary.json`: optimization-case metric summary.
+- `iteration_NNN/reports/prompt_change.md`: per-iteration prompt change report with before/after diff, candidate acceptance, and rejection reasons.
+- `iteration_NNN/reports/metrics_report.md`: per-iteration metric report with analysis, validation/gate baseline, candidate, and deltas.
+- `iteration_NNN/evaluation/analysis_overview.md`: human-readable failure report.
+- `iteration_NNN/agents/failure_analysis.input.json`: input sent to the failure-analysis model.
+- `iteration_NNN/agents/failure_analysis.output.json`: structured failure-analysis result.
+- `iteration_NNN/agents/error_localization.input.json`: input sent to the error-localization model.
+- `iteration_NNN/agents/error_localization.output.json`: section-level localization result.
+- `iteration_NNN/agents/prompt_editor.input.json`: input sent to the prompt-editor model, including failure analysis and localization.
+- `iteration_NNN/agents/prompt_editor.output.json`: structured prompt edit result.
+- `iteration_NNN/prompts/candidate.md`: candidate prompt emitted by the prompt rewriter.
+- `iteration_NNN/validation_gate/cases.json`: fixed validation cases used for candidate acceptance.
+- `iteration_NNN/validation_gate/baseline_records.jsonl`, `iteration_NNN/validation_gate/baseline_summary.json`: current-prompt validation baseline.
+- `iteration_NNN/validation_gate/candidate_records.jsonl`, `iteration_NNN/validation_gate/candidate_summary.json`: candidate-prompt validation result.
+- `iteration_NNN/decision/acceptance.json`: prompt update decision with `accepted: true/false` and rejection reasons.
+- `iteration_NNN/train_batches/batch_NNN/batches/gate_cases.json`: sampled training gate cases, only used when validation gate is disabled in online mode.
 - `iteration_000/test/summary.json`, `iteration_000/test/analysis.md`: optional original-prompt held-out test results when `--eval-initial-test` is used.
 - `iteration_NNN/test/summary.json`, `iteration_NNN/test/analysis.md`: per-iteration held-out test results.
 - `prompt_final.md`: final current prompt produced by training.

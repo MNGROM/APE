@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from analysis.epoch_planner import plan_epoch_revision
-from run import build_parser
+from run import build_parser, make_edit_budget
 
 
 PROMPT = """## agent task
@@ -51,6 +51,8 @@ class EpochPlannerTest(unittest.TestCase):
         self.assertEqual(args.training_update_mode, "epoch")
         self.assertEqual(args.epoch_planner_thinking, "inherit")
         self.assertFalse(args.eval_initial_test)
+        self.assertEqual(args.initial_max_sections_per_edit, 3)
+        self.assertEqual(args.max_sections_per_edit, 1)
 
     def test_parser_enables_initial_test_baseline(self) -> None:
         args = build_parser().parse_args(["--eval-initial-test"])
@@ -97,10 +99,15 @@ class EpochPlannerTest(unittest.TestCase):
                 epoch_planner_thinking="disabled",
                 max_sections_per_edit=0,
             )
+            edit_budget = {
+                "max_revision_items": 1,
+                "guidance": ["Merge batch-local plans into the smallest revision."],
+            }
 
             result = plan_epoch_revision(
                 current_prompt=PROMPT,
                 batch_revision_inputs=batch_inputs,
+                edit_budget=edit_budget,
                 args=args,
                 llm_client=llm_client,
                 output_input_path=input_path,
@@ -114,6 +121,7 @@ class EpochPlannerTest(unittest.TestCase):
             self.assertEqual(result["revision_plan"][0]["section"], "knowledge")
             payload = json.loads(input_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["batch_revision_inputs"], batch_inputs)
+            self.assertEqual(payload["edit_budget"], edit_budget)
             self.assertNotIn("planning_constraints", payload)
             self.assertEqual(json.loads(output_path.read_text(encoding="utf-8")), result)
             self.assertEqual(llm_client.calls[0]["messages"][0]["content"], "Planner system prompt")
@@ -121,6 +129,20 @@ class EpochPlannerTest(unittest.TestCase):
             self.assertEqual(llm_client.calls[0]["kwargs"]["max_tokens"], 1234)
             self.assertEqual(llm_client.calls[0]["kwargs"]["thinking"], "disabled")
             self.assertEqual(llm_client.calls[0]["kwargs"]["retry_phase"], "epoch_planner")
+
+    def test_make_edit_budget_switches_after_first_accepted_update(self) -> None:
+        args = build_parser().parse_args([
+            "--initial-max-sections-per-edit",
+            "3",
+            "--max-sections-per-edit",
+            "1",
+        ])
+
+        initial_budget = make_edit_budget(has_accepted_update=False, args=args, agent="prompt_editor")
+        refinement_budget = make_edit_budget(has_accepted_update=True, args=args, agent="prompt_editor")
+
+        self.assertEqual(initial_budget["max_revision_items"], 3)
+        self.assertEqual(refinement_budget["max_revision_items"], 1)
 
 
 if __name__ == "__main__":

@@ -4,12 +4,12 @@
 
 ## 1. prompt_editor 修改 section 数量限制
 
-当前 `analysis/prompt_editor.py::propose_prompt_revision` 会调用 `prompt_ops.validate_prompt_revision_plan` 校验 `revision_plan`，其中 `max_sections_per_edit` 默认来自 `run.py` 的 `--max-sections-per-edit=2`。
+当前 `analysis/prompt_editor.py::propose_prompt_revision` 会调用 `prompt_ops.validate_prompt_revision_plan` 校验 `revision_plan`。预算由 `run.py` 生成并写入 agent 输入的 `edit_budget`：首次接受更新前默认 `--initial-max-sections-per-edit=3`，首次接受更新后默认 `--max-sections-per-edit=1`。
 
 问题：
 
-- `prompt_workspace/prompt_editor.md` 没有告诉 agent 最多只能规划 2 个 section。
-- 实际运行中 agent 可能输出 3 个 section，例如同时修改 `workflow`、`knowledge`、`rule`。
+- 旧版本 `prompt_workspace/prompt_editor.md` 没有告诉 agent 最多能规划几个 section。
+- 实际运行中 agent 可能输出过多 section，例如同时修改 `workflow`、`knowledge`、`rule`。
 - 代码会拒绝该输出并写入 `prompt_editor.output.rejected.txt`，导致本轮 evolution 中止。
 - 即使取消 section 数量上限，`revision_plan` 仍要求同一个 section 只能出现一次；当前 `prompt_workspace/prompt_editor.md` 没有明确这一点，agent 可能把同一 section 拆成多条 revision plan item，触发 `Section '...' is planned more than once` 校验失败。
 
@@ -147,26 +147,29 @@
 当前处理建议：
 
 - 保持二者分开。
-- acceptance gate 继续以 deterministic embedding metrics 为主。
-- LLM judge 用作辅助诊断和人工分析参考。
+- acceptance gate 使用 deterministic `node_f1` / `relation_f1` 做 accept/reject 的收益和非回退判断。
+- LLM judge 用作辅助诊断；当 LLM metrics 可用时，也作为语义回退 guard。
 
-## 6. acceptance gate 采样波动
+## 6. acceptance gate 采样波动（已处理）
 
-当前 `run.py::acceptance_decision` 主要比较 gate batch 上的 `node_f1`、`relation_f1`、`plantuml_compilation_pass_rate` 和 `infrastructure_error_rate`。
+当前 `run.py::split_validation_gate_cases` 会先从 sampled training pool 中固定留出 validation gate cases，
+小样本 run 会把 validation gate 限制在训练池的大约三分之一以内。
+这些样例不会进入 failure analysis、error localization、prompt editor 或 epoch planner。
+`run.py::acceptance_decision` 比较 fixed validation gate 上的 `node_f1`、`relation_f1`、
+`plantuml_compilation_pass_rate`、`syntax_pass_rate`、precision、LLM guard 和
+`infrastructure_error_rate`。
 
-问题：
+已处理的问题：
 
-- gate batch 较小时，指标波动可能比较大。
-- candidate 是否被接受可能受采样影响。
-- 当前不急于处理，但需要后续设计。
+- candidate 是否被接受不再依赖每轮重新抽样的 gate batch。
+- epoch mode 不再直接应用 epoch candidate prompt，而是先经过 fixed validation gate。
+- online mode 默认也使用同一组 fixed validation gate。
 
-后续可选方案：
+剩余风险：
 
-- 增大 gate batch。
-- 固定每轮 gate cases，减少采样差异。
-- 使用多批次平均。
-- 对关键指标设置置信区间或重复评估。
-- 分离 smoke gate 和 final validation gate。
+- validation gate 仍然来自 training pool，不等同于 held-out test。
+- validation gate 过小仍可能有代表性不足的问题。
+- 如果后续要进一步降低方差，可以增大 `--validation-gate-size` 或做重复运行比较。
 
 ## 7. compare_lato_eval 异常分类
 
@@ -188,3 +191,55 @@
 - 在 `compare_lato_eval.py` 中复用 `evaluation.is_infrastructure_error`。
 - 异常属于基础设施问题时追加 `infrastructure_error`。
 - summary 中已有 `infrastructure_error_rate` 字段，可直接受益。
+
+## 8. 多候选 prompt 生成与选择（待设计）
+
+当前每轮只生成一个 candidate prompt。收紧 validation gate 后，单个 candidate 很容易因为某个局部回退被拒绝，即使它在另一些核心指标上有明显收益。
+
+问题：
+
+- 单候选机制把一次 LLM 改写的偶然性直接传递给 gate。
+- candidate 可能同时包含有效改进和有害副作用，当前流程只能整体接受或整体拒绝。
+- 如果 candidate 被拒，下一轮通常重新生成一个新 candidate，而不是围绕“接近通过但失败的 candidate”做修复。
+
+后续可考虑的设计：
+
+- 对同一个 revision plan 生成多个候选，例如：
+  - `conservative`：只做最小必要修改，优先替换或压缩已有规则；
+  - `balanced`：按 revision plan 正常修改；
+  - `aggressive`：允许更完整地重写相关 section。
+- 所有候选先经过同一组 validation gate。
+- 只接受通过 safety gate 且收益最大的 candidate。
+- 如果没有候选通过，记录最接近通过的候选及其失败原因，供下一轮 planner 使用。
+- 报告中需要列出每个候选的 prompt diff、validation summary、gate delta 和 rejection reasons，避免结果不可解释。
+
+实现影响：
+
+- `prompt_rewriter` 输出 schema 需要从单个 `candidate_prompt` 扩展为候选列表，或新增独立 multi-candidate rewriter。
+- `run.py` 需要支持 candidate 级目录结构，例如 `candidates/candidate_001/`。
+- acceptance decision 需要从单候选判断扩展为候选排序和选择。
+- 成本会上升，适合在 validation gate 已稳定后再实现。
+
+## 9. 两级 validation gate（待设计）
+
+当前 candidate 直接进入固定 validation gate。gate 变硬后，完整评估成本较高，而且所有候选都承担同样的评估成本。
+
+后续可考虑两级 gate：
+
+- `mini_gate`：固定小样本，用于快速筛掉明显差的 candidate。
+- `full_gate`：较大的固定 validation set，只评估通过 mini gate 或接近通过的 candidate。
+- 最终 accept/reject 只能基于 full gate，mini gate 只用于节省成本和排序候选。
+
+设计原则：
+
+- mini gate 和 full gate 都必须从 training pool 中固定切分，不能使用 held-out test。
+- mini gate 不能替代 full gate 做最终接收决策。
+- 报告中需要明确 candidate 是在哪一级 gate 被拒绝。
+- 如果使用多候选机制，mini gate 可以先对候选排序，再把 top-k 送入 full gate。
+
+实现影响：
+
+- `split_validation_gate_cases` 需要扩展为 mini/full 两组固定 case。
+- `evaluate_validation_gate` 需要支持分阶段输出。
+- `acceptance.json` 需要记录 mini/full 两级 summary、delta 和 rejection reasons。
+- `metrics_report.md` 需要区分 `mini_gate_*` 与 `full_gate_*`。

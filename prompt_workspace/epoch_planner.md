@@ -22,6 +22,7 @@ You will receive:
 
 - `current_prompt_sections`
 - `batch_revision_inputs`
+- `edit_budget`: hard constraints for the final epoch-level revision plan, including `max_revision_items` and binding `guidance`.
 
 Each batch item may include:
 
@@ -34,10 +35,14 @@ Each batch item may include:
 
 Output JSON only and follow the example shape below.
 
+Each revision_plan item should include `operation`. For `replace_existing`, `qualify_existing`, and `merge_existing`, include non-empty `text_to_modify`.
+
 {
   "revision_plan": [
     {
       "section": "knowledge",
+      "operation": "qualify_existing",
+      "text_to_modify": "Use fork only for explicit parallel work.",
       "intent": "Constrain fork/join modeling to explicit concurrency evidence.",
       "change_instruction": "Revise the fork/join rule to say that fork/fork again/end fork should only be used when the requirement explicitly states simultaneous or parallel execution, and must not be triggered by ordinary lists, attributes, alternatives, or sequential UI steps."
     }
