@@ -2,37 +2,14 @@
 
 本文档记录当前代码理解阶段发现的工程问题、评估风险和后续设计方向。当前阶段只作为备忘，不代表已经实现。
 
-## 1. prompt_editor 修改 section 数量限制
+## 1. prompt_editor 修改 section 数量限制（已处理）
 
-当前 `analysis/prompt_editor.py::propose_prompt_revision` 会调用 `prompt_ops.validate_prompt_revision_plan` 校验 `revision_plan`。预算由 `run.py` 生成并写入 agent 输入的 `edit_budget`：首次接受更新前默认 `--initial-max-sections-per-edit=3`，首次接受更新后默认 `--max-sections-per-edit=1`。
+当前 `analysis/prompt_editor.py::propose_prompt_revision` 不再按 `max_revision_items` 硬拒绝 section 数量，只做 `revision_plan` schema 和重复 section 校验。`prompt_editor` 输入中的 `edit_budget` 现在只提供 guidance；`epoch_planner` 仍使用 `max_revision_items` 约束最终 epoch-level revision plan。
 
-问题：
+仍需注意：
 
-- 旧版本 `prompt_workspace/prompt_editor.md` 没有告诉 agent 最多能规划几个 section。
-- 实际运行中 agent 可能输出过多 section，例如同时修改 `workflow`、`knowledge`、`rule`。
-- 代码会拒绝该输出并写入 `prompt_editor.output.rejected.txt`，导致本轮 evolution 中止。
-- 即使取消 section 数量上限，`revision_plan` 仍要求同一个 section 只能出现一次；当前 `prompt_workspace/prompt_editor.md` 没有明确这一点，agent 可能把同一 section 拆成多条 revision plan item，触发 `Section '...' is planned more than once` 校验失败。
-
-短期处理建议：
-
-- 先取消或显著放宽该限制，让 prompt evolution 能继续走到 `prompt_rewriter` 和 gate。
-- 如果后续仍需要限制，应同时更新 `prompt_workspace/prompt_editor.md`，明确写入最多可修改的 section 数量。
-- 同时需要在 `prompt_workspace/prompt_editor.md` 明确要求：`revision_plan` 中每个 fixed section 最多只能出现一次；若同一 section 有多条修改意图，必须合并到同一个 item 的 `intent` / `change_instruction` 中。
-
-后续更稳妥方案：
-
-- 将 section 数量限制从硬失败改成软约束。
-- 当超出限制时，可让 agent 自我压缩 revision plan，或只拒绝低优先级 section。
-- 在进入严格 schema 校验前增加一个 normalize/merge 步骤，将同 section 的多条 revision plan item 自动合并，减少整轮 evolution 因格式细节报废。
-
-计划中的代码层修复：
-
-- 优先在 `prompt_ops.py` 中新增 `normalize_prompt_revision_plan`，在 `analysis/prompt_editor.py::propose_prompt_revision` 执行严格校验前调用。
-- 合并粒度以 `section` 为键，保留首次出现的 section 顺序。
-- 同一 section 下的多个 `intent` 合并为一个简短列表式意图说明。
-- 同一 section 下的多个 `change_instruction` 合并为一个总指令，要求后续 rewriter 将这些修改整合成该 section 的一次 coherent revision，而不是拆成多个 section item。
-- 合并后再执行现有 `validate_prompt_revision_plan`，因此 invalid section、空 intent、空 change_instruction 等真实 schema 错误仍然会被拒绝。
-- `max_sections_per_edit > 0` 时，先合并重复 section，再按合并后的 section 数量判断是否超限；不静默丢弃 section，避免隐藏实验设置。
+- `revision_plan` 中同一个 section 仍然只能出现一次。
+- 如果后续要恢复 section 数量限制，应放回 `epoch_planner`，而不是 `prompt_editor`。
 
 ## 2. failure_analysis 输出 schema 校验不足
 
@@ -162,8 +139,7 @@
 已处理的问题：
 
 - candidate 是否被接受不再依赖每轮重新抽样的 gate batch。
-- epoch mode 不再直接应用 epoch candidate prompt，而是先经过 fixed validation gate。
-- online mode 默认也使用同一组 fixed validation gate。
+- epoch candidate 先经过 fixed validation gate，再决定是否更新 current prompt.
 
 剩余风险：
 

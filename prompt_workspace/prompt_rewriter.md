@@ -12,11 +12,6 @@ You will receive:
 
 - `current_prompt`
 - `revision_plan`
-- `candidate_constraints` when a prompt length budget is active
-
-## candidate constraints
-
-If `candidate_constraints` is provided, the rewritten `candidate_prompt` must not exceed `max_candidate_chars`. Prefer concise generalized edits, replacement, or compression over appending long case-specific rule lists. Preserve the fixed section structure while staying within the character budget.
 
 ## output
 

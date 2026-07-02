@@ -27,7 +27,7 @@ You will receive:
 - `current_prompt_sections`
 - `failure_analysis`
 - `error_localization`
-- `edit_budget`: hard constraints for this revision plan, including `max_revision_items` and binding `guidance`.
+- `edit_budget`: guidance for this revision plan.
 
 ## output
 

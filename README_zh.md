@@ -124,10 +124,8 @@ python run.py --test-dataset all --iterations 3
 
 默认会先从采样后的训练池中固定留出 validation gate（`--validation-gate-size 30`，
 小样本 run 会限制在采样训练池的大约三分之一以内）。这些样例不会进入
-failure analysis 或 prompt evolution agents。`epoch` 模式下，epoch candidate
-必须先通过这组固定 validation gate，才会更新 `work.md`。`online` 模式下，
-每个 batch candidate 也使用同一组固定 validation gate；只有设置
-`--no-validation-gate` 时，才会回退到旧的训练集采样 gate。
+failure analysis 或 prompt evolution agents。epoch candidate 必须先通过这组
+固定 validation gate，才会更新 `work.md`。
 
 prompt editor 不能任意重写文件。它只能返回针对 `tst.md` 固定 section 的
 JSON edits：
@@ -141,7 +139,7 @@ JSON edits：
 ## rule
 ```
 
-默认首次接受更新前最多规划三个 section，首次接受更新后每轮最多规划一个 section：
+epoch planner 会应用最终合并 revision plan 的 section 数量预算：
 
 ```text
 --initial-max-sections-per-edit 3
@@ -229,7 +227,6 @@ root-level held-out test。
 - `iteration_NNN/validation_gate/baseline_records.jsonl`、`iteration_NNN/validation_gate/baseline_summary.json`：当前 prompt 的 validation baseline。
 - `iteration_NNN/validation_gate/candidate_records.jsonl`、`iteration_NNN/validation_gate/candidate_summary.json`：candidate prompt 的 validation 结果。
 - `iteration_NNN/decision/acceptance.json`：prompt 更新决策，核心字段是 `accepted: true/false` 和拒绝原因。
-- `iteration_NNN/train_batches/batch_NNN/batches/gate_cases.json`：仅在 online 模式且关闭 validation gate 时使用的训练集采样 gate。
 - `iteration_000/test/summary.json`、`iteration_000/test/analysis.md`：使用 `--eval-initial-test` 时生成的原始 prompt held-out 基线结果。
 - `iteration_NNN/test/summary.json`、`iteration_NNN/test/analysis.md`：每轮 held-out 测试结果。
 - `prompt_final.md`：训练结束后的 current prompt。

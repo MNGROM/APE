@@ -48,7 +48,6 @@ class EpochPlannerTest(unittest.TestCase):
     def test_parser_defaults_to_epoch_training_mode(self) -> None:
         args = build_parser().parse_args([])
 
-        self.assertEqual(args.training_update_mode, "epoch")
         self.assertEqual(args.epoch_planner_thinking, "inherit")
         self.assertFalse(args.eval_initial_test)
         self.assertEqual(args.initial_max_sections_per_edit, 3)
@@ -138,11 +137,13 @@ class EpochPlannerTest(unittest.TestCase):
             "1",
         ])
 
-        initial_budget = make_edit_budget(has_accepted_update=False, args=args, agent="prompt_editor")
-        refinement_budget = make_edit_budget(has_accepted_update=True, args=args, agent="prompt_editor")
+        editor_budget = make_edit_budget(has_accepted_update=False, args=args, agent="prompt_editor")
+        planner_initial_budget = make_edit_budget(has_accepted_update=False, args=args, agent="epoch_planner")
+        planner_refinement_budget = make_edit_budget(has_accepted_update=True, args=args, agent="epoch_planner")
 
-        self.assertEqual(initial_budget["max_revision_items"], 3)
-        self.assertEqual(refinement_budget["max_revision_items"], 1)
+        self.assertNotIn("max_revision_items", editor_budget)
+        self.assertEqual(planner_initial_budget["max_revision_items"], 3)
+        self.assertEqual(planner_refinement_budget["max_revision_items"], 1)
 
 
 if __name__ == "__main__":

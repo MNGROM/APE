@@ -90,7 +90,7 @@ class PromptEditorTest(unittest.TestCase):
             payload = json.loads(input_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["edit_budget"], edit_budget)
 
-    def test_prompt_editor_rejects_revision_plan_over_budget(self) -> None:
+    def test_prompt_editor_does_not_hard_limit_section_count(self) -> None:
         response = json.dumps(
             {
                 "revision_plan": [
@@ -126,7 +126,7 @@ class PromptEditorTest(unittest.TestCase):
                 current_prompt=PROMPT,
                 failure_analysis={"error_patterns": []},
                 error_localization={"section_diagnoses": []},
-                edit_budget={"max_revision_items": 1, "guidance": []},
+                edit_budget={"guidance": []},
                 args=args,
                 llm_client=FakeLLMClient(response),
                 output_input_path=input_path,
@@ -135,9 +135,10 @@ class PromptEditorTest(unittest.TestCase):
                 iteration=1,
             )
 
-            self.assertIsNone(result)
-            rejected = output_path.with_suffix(".rejected.txt").read_text(encoding="utf-8")
-            self.assertIn("At most 1 sections may be revised", rejected)
+            self.assertIsNotNone(result)
+            payload = json.loads(input_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["edit_budget"], {"guidance": []})
+            self.assertNotIn("max_revision_items", payload["edit_budget"])
 
 
 if __name__ == "__main__":

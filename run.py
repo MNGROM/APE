@@ -83,8 +83,8 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--max-prompt-chars is too small for the required prompt sections")
     if args.llm_max_retries < 0:
         raise ValueError("--llm-max-retries must be non-negative")
-    if args.analysis_batch_size < 1 or args.gate_batch_size < 1:
-        raise ValueError("--analysis-batch-size and --gate-batch-size must be positive")
+    if args.analysis_batch_size < 1:
+        raise ValueError("--analysis-batch-size must be positive")
     if args.validation_gate_size < 0:
         raise ValueError("--validation-gate-size must be non-negative")
     if args.validation_gate_seed < 0:
@@ -305,7 +305,6 @@ def iteration_paths(iter_dir: Path) -> dict[str, Path]:
         "prompt_candidate": iter_dir / "prompts" / "candidate.md",
         "prompt_after": iter_dir / "prompts" / "after.md",
         "analysis_cases": iter_dir / "batches" / "analysis_cases.json",
-        "gate_cases": iter_dir / "batches" / "gate_cases.json",
         "validation_cases": iter_dir / "validation_gate" / "cases.json",
         "validation_baseline_records": iter_dir / "validation_gate" / "baseline_records.jsonl",
         "validation_baseline_summary": iter_dir / "validation_gate" / "baseline_summary.json",
@@ -315,10 +314,6 @@ def iteration_paths(iter_dir: Path) -> dict[str, Path]:
         "analysis_records": iter_dir / "evaluation" / "analysis_records.jsonl",
         "analysis_summary": iter_dir / "evaluation" / "analysis_summary.json",
         "analysis_overview": iter_dir / "evaluation" / "analysis_overview.md",
-        "gate_candidate_records": iter_dir / "evaluation" / "gate_candidate_records.jsonl",
-        "gate_candidate_summary": iter_dir / "evaluation" / "gate_candidate_summary.json",
-        "gate_baseline_records": iter_dir / "evaluation" / "gate_baseline_records.jsonl",
-        "gate_baseline_summary": iter_dir / "evaluation" / "gate_baseline_summary.json",
         "failure_analysis_input": iter_dir / "agents" / "failure_analysis.input.json",
         "failure_analysis_output": iter_dir / "agents" / "failure_analysis.output.json",
         "error_localization_input": iter_dir / "agents" / "error_localization.input.json",
@@ -350,7 +345,6 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
             },
             "batches": {
                 "analysis_cases": rel_to_iter(iter_dir, paths["analysis_cases"]),
-                "gate_cases": rel_to_iter(iter_dir, paths["gate_cases"]),
             },
             "validation_gate": {
                 "cases": rel_to_iter(iter_dir, paths["validation_cases"]),
@@ -364,10 +358,6 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
                 "analysis_records": rel_to_iter(iter_dir, paths["analysis_records"]),
                 "analysis_summary": rel_to_iter(iter_dir, paths["analysis_summary"]),
                 "analysis_overview": rel_to_iter(iter_dir, paths["analysis_overview"]),
-                "gate_candidate_records": rel_to_iter(iter_dir, paths["gate_candidate_records"]),
-                "gate_candidate_summary": rel_to_iter(iter_dir, paths["gate_candidate_summary"]),
-                "gate_baseline_records": rel_to_iter(iter_dir, paths["gate_baseline_records"]),
-                "gate_baseline_summary": rel_to_iter(iter_dir, paths["gate_baseline_summary"]),
             },
             "agents": {
                 "failure_analysis": {
@@ -509,32 +499,27 @@ def write_evaluation_records(path: Path, records: list[Any]) -> None:
     write_text(path, ("\n".join(lines) + "\n") if lines else "")
 
 
-def candidate_prompt_constraints(*, current_prompt: str, args: argparse.Namespace, allow_bootstrap: bool) -> dict[str, Any]:
-    return {
-        "current_prompt_chars": len(current_prompt),
-        "max_prompt_chars": args.max_prompt_chars,
-        "max_candidate_chars": args.max_prompt_chars,
-        "bootstrap_allowed": allow_bootstrap,
-    }
-
-
 def make_edit_budget(*, has_accepted_update: bool, args: argparse.Namespace, agent: str) -> dict[str, Any]:
-    max_revision_items = args.max_sections_per_edit if has_accepted_update else args.initial_max_sections_per_edit
-    if has_accepted_update:
-        guidance = [
-            "Revise only the single highest-impact section.",
-            "Prefer modifying or tightening existing guidance over adding independent new rules.",
-        ]
-    elif agent == "epoch_planner":
+    if agent == "epoch_planner":
+        max_revision_items = args.max_sections_per_edit if has_accepted_update else args.initial_max_sections_per_edit
         guidance = [
             "Merge batch-local plans into the smallest revision supported by the strongest repeated evidence.",
             "Prefer modifying or tightening existing guidance over adding independent new rules.",
         ]
     else:
-        guidance = [
-            "A small multi-section revision is allowed only when the current prompt lacks core generation guidance.",
-            "Revise only sections directly supported by failure analysis and error localization.",
-        ]
+        if has_accepted_update:
+            guidance = [
+                "Revise only the single highest-impact section.",
+                "Prefer modifying or tightening existing guidance over adding independent new rules.",
+            ]
+        else:
+            guidance = [
+                "A small multi-section revision is allowed only when the current prompt lacks core generation guidance.",
+                "Revise only sections directly supported by failure analysis and error localization.",
+            ]
+        return {
+            "guidance": guidance,
+        }
     return {
         "max_revision_items": max_revision_items,
         "guidance": guidance,
@@ -796,7 +781,7 @@ def run_training_iterations(
         iter_dir = run_dir / f"iteration_{iteration:03d}"
         epoch_paths = iteration_paths(iter_dir)
         epoch_manifest = make_iteration_manifest(iter_dir, iteration, epoch_paths)
-        epoch_manifest["mode"] = "epoch_planner_updates" if args.training_update_mode == "epoch" else "epoch_with_online_batch_updates"
+        epoch_manifest["mode"] = "epoch_planner_updates"
         epoch_prompt_before = prompt
         write_text(epoch_paths["prompt_before"], prompt)
         write_case_manifest(epoch_paths["analysis_cases"], train_cases)
@@ -1118,533 +1103,225 @@ def run_training_iterations(
                 }
             )
             epoch_collected_count += 1
-            if args.training_update_mode == "epoch":
-                write_text(paths["prompt_after"], prompt)
-                record_stage(
-                    manifest,
-                    "epoch_revision_collection",
-                    status="success",
-                    inputs={
-                        "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                        "revision_plan": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
-                    },
-                    outputs={"prompt_after": rel_to_iter(batch_dir, paths["prompt_after"])},
-                    note="batch-local revision plan collected for epoch planner; prompt unchanged",
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                finalize_iteration_reports(
-                    run_dir=run_dir,
-                    iter_dir=batch_dir,
-                    iteration=global_update_step,
-                    prompt_before=prompt_before,
-                    prompt_after=prompt,
-                    candidate_prompt=None,
-                    analysis_summary=summary,
-                )
-                print(f"{log_prefix} revision plan collected for epoch planner")
-                continue
-
-            allow_bootstrap = not has_accepted_update
-            candidate_constraints = candidate_prompt_constraints(
-                current_prompt=prompt,
-                args=args,
-                allow_bootstrap=allow_bootstrap,
-            )
-            candidate = rewrite_prompt(
-                current_prompt=prompt,
-                revision_plan=revision_plan,
-                candidate_constraints=candidate_constraints,
-                args=args,
-                llm_client=llm_client,
-                output_input_path=paths["prompt_rewriter_input"],
-                output_path=paths["prompt_rewriter_output"],
-                state_dir=run_dir,
-                iteration=global_update_step,
-            )
-            if candidate is None:
-                epoch_skipped_count += 1
-                write_text(paths["prompt_after"], prompt)
-                record_stage(
-                    manifest,
-                    "prompt_rewriter",
-                    status="invalid",
-                    inputs={
-                        "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                        "revision_plan": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
-                    },
-                    outputs={
-                        "input": rel_to_iter(batch_dir, paths["prompt_rewriter_input"]),
-                        "output": rel_to_iter(batch_dir, paths["prompt_rewriter_output"]),
-                        "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
-                    },
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                finalize_iteration_reports(
-                    run_dir=run_dir,
-                    iter_dir=batch_dir,
-                    iteration=global_update_step,
-                    prompt_before=prompt_before,
-                    prompt_after=prompt,
-                    candidate_prompt=None,
-                    analysis_summary=summary,
-                )
-                print(f"{log_prefix} prompt rewrite invalid; prompt unchanged")
-                continue
-
-            write_text(paths["prompt_candidate"], candidate)
+            write_text(paths["prompt_after"], prompt)
             record_stage(
                 manifest,
-                "prompt_rewriter",
+                "epoch_revision_collection",
                 status="success",
                 inputs={
                     "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
                     "revision_plan": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
                 },
-                outputs={
-                    "input": rel_to_iter(batch_dir, paths["prompt_rewriter_input"]),
-                    "output": rel_to_iter(batch_dir, paths["prompt_rewriter_output"]),
-                    "candidate_prompt": rel_to_iter(batch_dir, paths["prompt_candidate"]),
-                },
+                outputs={"prompt_after": rel_to_iter(batch_dir, paths["prompt_after"])},
+                note="batch-local revision plan collected for epoch planner; prompt unchanged",
             )
             write_iteration_manifest(batch_dir, manifest)
-
-            using_validation_gate = bool(validation_cases)
-            if using_validation_gate:
-                gate_cases = list(validation_cases)
-                gate_source = "validation_gate"
-                gate_cases_path = paths["validation_cases"]
-                gate_candidate_records_path = paths["validation_candidate_records"]
-                gate_candidate_summary_path = paths["validation_candidate_summary"]
-                gate_baseline_records_path = paths["validation_baseline_records"]
-                gate_baseline_summary_path = paths["validation_baseline_summary"]
-                candidate_stage_name = "validation_candidate_evaluation"
-                baseline_stage_name = "validation_baseline_evaluation"
-                candidate_phase = "validation_candidate"
-                baseline_phase = "validation_baseline"
-            else:
-                gate_cases = choose_iteration_batch(
-                    train_cases,
-                    args=args,
-                    iteration=global_update_step,
-                    batch_size=args.gate_batch_size,
-                    strategy=args.candidate_sample_strategy,
-                    seed_offset=40_000,
-                )
-                gate_source = "training_gate"
-                gate_cases_path = paths["gate_cases"]
-                gate_candidate_records_path = paths["gate_candidate_records"]
-                gate_candidate_summary_path = paths["gate_candidate_summary"]
-                gate_baseline_records_path = paths["gate_baseline_records"]
-                gate_baseline_summary_path = paths["gate_baseline_summary"]
-                candidate_stage_name = "gate_candidate_evaluation"
-                baseline_stage_name = "gate_baseline_evaluation"
-                candidate_phase = "gate_candidate"
-                baseline_phase = "baseline_gate_eval"
-            print(f"{log_prefix} {gate_source} distribution: {describe_case_distribution(gate_cases)}")
-            write_case_manifest(gate_cases_path, gate_cases)
-            candidate_records, candidate_summary = evaluate_cases(
-                prompt=candidate,
-                cases=gate_cases,
-                args=args,
-                llm_client=llm_client,
-                output_path=gate_candidate_records_path,
-                state_dir=run_dir,
-                phase=f"{phase_prefix}:{candidate_phase}",
-            )
-            write_text(gate_candidate_summary_path, json.dumps(candidate_summary, ensure_ascii=False, indent=2))
-            record_stage(
-                manifest,
-                candidate_stage_name,
-                status="success",
-                inputs={
-                    "candidate_prompt": rel_to_iter(batch_dir, paths["prompt_candidate"]),
-                    "cases": rel_to_iter(batch_dir, gate_cases_path),
-                },
-                outputs={
-                    "records": rel_to_iter(batch_dir, gate_candidate_records_path),
-                    "summary": rel_to_iter(batch_dir, gate_candidate_summary_path),
-                },
-                note=f"candidate evaluated on {gate_source}",
-            )
-            write_iteration_manifest(batch_dir, manifest)
-
-            baseline_for_gate = summary
-            if gate_cases != analysis_cases:
-                baseline_gate_records, baseline_for_gate = evaluate_cases(
-                    prompt=prompt,
-                    cases=gate_cases,
-                    args=args,
-                    llm_client=llm_client,
-                    output_path=gate_baseline_records_path,
-                    state_dir=run_dir,
-                    phase=f"{phase_prefix}:{baseline_phase}",
-                )
-                write_text(gate_baseline_summary_path, json.dumps(baseline_for_gate, ensure_ascii=False, indent=2))
-                record_stage(
-                    manifest,
-                    baseline_stage_name,
-                    status="success",
-                    inputs={
-                        "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                        "cases": rel_to_iter(batch_dir, gate_cases_path),
-                    },
-                    outputs={
-                        "records": rel_to_iter(batch_dir, gate_baseline_records_path),
-                        "summary": rel_to_iter(batch_dir, gate_baseline_summary_path),
-                    },
-                    note=f"baseline evaluated on {gate_source}",
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                if has_only_infrastructure_errors(baseline_gate_records + candidate_records):
-                    epoch_skipped_count += 1
-                    write_text(paths["prompt_after"], prompt)
-                    record_stage(
-                        manifest,
-                        "acceptance",
-                        status="skipped",
-                        note="gate baseline and candidate records were all infrastructure errors",
-                        outputs={"prompt_after": rel_to_iter(batch_dir, paths["prompt_after"])},
-                    )
-                    write_iteration_manifest(batch_dir, manifest)
-                    finalize_iteration_reports(
-                        run_dir=run_dir,
-                        iter_dir=batch_dir,
-                        iteration=global_update_step,
-                        prompt_before=prompt_before,
-                        prompt_after=prompt,
-                        candidate_prompt=candidate,
-                        analysis_summary=summary,
-                        baseline_gate_summary=baseline_for_gate,
-                        candidate_summary=candidate_summary,
-                    )
-                    print(f"{log_prefix} candidate gate had only infrastructure failures; prompt unchanged")
-                    continue
-
-            accepted, decision = acceptance_decision(
+            finalize_iteration_reports(
+                run_dir=run_dir,
+                iter_dir=batch_dir,
                 iteration=global_update_step,
-                allow_bootstrap=allow_bootstrap,
-                baseline_summary=baseline_for_gate,
-                candidate_summary=candidate_summary,
-                candidate_prompt=candidate,
-                baseline_prompt=prompt,
-                max_prompt_chars=args.max_prompt_chars,
-                min_relation_delta=args.acceptance_min_relation_delta,
-                min_node_delta=args.acceptance_min_node_delta,
-                min_compile_delta=args.acceptance_min_compile_delta,
-                relation_accept_delta=args.relation_accept_delta,
-                node_accept_delta=args.node_accept_delta,
-                compile_accept_delta=args.compile_accept_delta,
-                min_syntax_delta=args.acceptance_min_syntax_delta,
-                min_node_precision_delta=args.acceptance_min_node_precision_delta,
-                min_relation_precision_delta=args.acceptance_min_relation_precision_delta,
-                bootstrap_min_compile_delta=args.bootstrap_min_compile_delta,
-                bootstrap_min_syntax_delta=args.bootstrap_min_syntax_delta,
-                bootstrap_node_accept_delta=args.bootstrap_node_accept_delta,
-                bootstrap_relation_accept_delta=args.bootstrap_relation_accept_delta,
+                prompt_before=prompt_before,
+                prompt_after=prompt,
+                candidate_prompt=None,
+                analysis_summary=summary,
             )
-            decision["evaluation_source"] = gate_source
-            decision["gate_case_count"] = len(gate_cases)
-            if using_validation_gate:
-                decision["validation_case_count"] = len(gate_cases)
-            write_text(paths["acceptance"], json.dumps(decision, ensure_ascii=False, indent=2))
-
-            if accepted:
-                epoch_accepted_count += 1
-                has_accepted_update = True
-                prompt = candidate
-                write_text(work_prompt_path, prompt)
-                write_text(run_dir / "prompt_best.md", prompt)
-                write_text(paths["prompt_after"], prompt)
-                record_stage(
-                    manifest,
-                    "acceptance",
-                    status="accepted",
-                    inputs={
-                        "baseline_summary": rel_to_iter(batch_dir, gate_baseline_summary_path)
-                        if gate_baseline_summary_path.exists()
-                        else rel_to_iter(batch_dir, paths["analysis_summary"]),
-                        "candidate_summary": rel_to_iter(batch_dir, gate_candidate_summary_path),
-                        "candidate_prompt": rel_to_iter(batch_dir, paths["prompt_candidate"]),
-                    },
-                    outputs={
-                        "decision": rel_to_iter(batch_dir, paths["acceptance"]),
-                        "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
-                    },
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                finalize_iteration_reports(
-                    run_dir=run_dir,
-                    iter_dir=batch_dir,
-                    iteration=global_update_step,
-                    prompt_before=prompt_before,
-                    prompt_after=prompt,
-                    candidate_prompt=candidate,
-                    analysis_summary=summary,
-                    baseline_gate_summary=baseline_for_gate,
-                    candidate_summary=candidate_summary,
-                    acceptance=decision,
-                )
-                print(f"{log_prefix} prompt updated: {work_prompt_path}")
-            else:
-                epoch_rejected_count += 1
-                write_text(paths["rejected_by_gate"], json.dumps(decision, ensure_ascii=False, indent=2))
-                write_text(paths["prompt_after"], prompt)
-                record_stage(
-                    manifest,
-                    "acceptance",
-                    status="rejected",
-                    inputs={
-                        "baseline_summary": rel_to_iter(batch_dir, gate_baseline_summary_path)
-                        if gate_baseline_summary_path.exists()
-                        else rel_to_iter(batch_dir, paths["analysis_summary"]),
-                        "candidate_summary": rel_to_iter(batch_dir, gate_candidate_summary_path),
-                        "candidate_prompt": rel_to_iter(batch_dir, paths["prompt_candidate"]),
-                    },
-                    outputs={
-                        "decision": rel_to_iter(batch_dir, paths["acceptance"]),
-                        "rejection_copy": rel_to_iter(batch_dir, paths["rejected_by_gate"]),
-                        "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
-                    },
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                finalize_iteration_reports(
-                    run_dir=run_dir,
-                    iter_dir=batch_dir,
-                    iteration=global_update_step,
-                    prompt_before=prompt_before,
-                    prompt_after=prompt,
-                    candidate_prompt=candidate,
-                    analysis_summary=summary,
-                    baseline_gate_summary=baseline_for_gate,
-                    candidate_summary=candidate_summary,
-                    acceptance=decision,
-                )
-                print(
-                    f"{log_prefix} candidate rejected by acceptance gate "
-                    f"(reasons={', '.join(decision['rejection_reasons'])}); prompt unchanged"
-                )
+            print(f"{log_prefix} revision plan collected for epoch planner")
 
         epoch_summary = summarize_records(epoch_records)
         epoch_candidate_prompt: str | None = None
         epoch_baseline_gate_summary: dict[str, float] | None = None
         epoch_candidate_summary: dict[str, float] | None = None
-        epoch_acceptance: dict[str, Any] | None = None
+        epoch_acceptance: dict[str, Any] = {
+            "accepted": False,
+            "acceptance_mode": "epoch_planner",
+            "rejection_reasons": [],
+            "batch_count": len(training_batches),
+            "collected_batch_count": epoch_collected_count,
+            "skipped_batch_count": epoch_skipped_count,
+        }
 
-        if args.training_update_mode == "epoch":
-            if args.no_evolve:
-                epoch_acceptance = {
-                    "accepted": False,
-                    "acceptance_mode": "epoch_planner",
-                    "rejection_reasons": ["no_evolve"],
-                    "batch_count": len(training_batches),
-                    "collected_batch_count": epoch_collected_count,
-                    "skipped_batch_count": epoch_skipped_count,
-                }
-            elif not batch_revision_inputs:
-                epoch_acceptance = {
-                    "accepted": False,
-                    "acceptance_mode": "epoch_planner",
-                    "rejection_reasons": ["no_batch_revision_plans"],
-                    "batch_count": len(training_batches),
-                    "collected_batch_count": epoch_collected_count,
-                    "skipped_batch_count": epoch_skipped_count,
-                }
-            else:
-                print(f"[iteration {iteration}] planning epoch revision from {len(batch_revision_inputs)} batch plan(s)")
-                epoch_edit_budget = make_edit_budget(
-                    has_accepted_update=has_accepted_update,
-                    args=args,
-                    agent="epoch_planner",
-                )
-                epoch_revision_plan = plan_epoch_revision(
-                    current_prompt=prompt,
-                    batch_revision_inputs=batch_revision_inputs,
-                    edit_budget=epoch_edit_budget,
-                    args=args,
-                    llm_client=llm_client,
-                    output_input_path=epoch_paths["epoch_planner_input"],
-                    output_path=epoch_paths["epoch_planner_output"],
-                    state_dir=run_dir,
-                    iteration=iteration,
-                )
-                if epoch_revision_plan is None:
-                    epoch_skipped_count += 1
-                    epoch_acceptance = {
-                        "accepted": False,
-                        "acceptance_mode": "epoch_planner",
+        if args.no_evolve:
+            epoch_acceptance["rejection_reasons"] = ["no_evolve"]
+        elif not batch_revision_inputs:
+            epoch_acceptance["rejection_reasons"] = ["no_batch_revision_plans"]
+        else:
+            print(f"[iteration {iteration}] planning epoch revision from {len(batch_revision_inputs)} batch plan(s)")
+            epoch_edit_budget = make_edit_budget(
+                has_accepted_update=has_accepted_update,
+                args=args,
+                agent="epoch_planner",
+            )
+            epoch_revision_plan = plan_epoch_revision(
+                current_prompt=prompt,
+                batch_revision_inputs=batch_revision_inputs,
+                edit_budget=epoch_edit_budget,
+                args=args,
+                llm_client=llm_client,
+                output_input_path=epoch_paths["epoch_planner_input"],
+                output_path=epoch_paths["epoch_planner_output"],
+                state_dir=run_dir,
+                iteration=iteration,
+            )
+            if epoch_revision_plan is None:
+                epoch_skipped_count += 1
+                epoch_acceptance.update(
+                    {
                         "rejection_reasons": ["epoch_planner_invalid"],
                         "batch_count": len(training_batches),
                         "collected_batch_count": epoch_collected_count,
                         "skipped_batch_count": epoch_skipped_count,
                     }
-                    record_stage(
-                        epoch_manifest,
-                        "epoch_planner",
-                        status="invalid",
-                        inputs={"batch_revision_inputs": rel_to_iter(iter_dir, epoch_paths["epoch_planner_input"])},
-                        outputs={"output": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
-                    )
-                else:
-                    record_stage(
-                        epoch_manifest,
-                        "epoch_planner",
-                        status="success",
-                        inputs={"batch_revision_inputs": rel_to_iter(iter_dir, epoch_paths["epoch_planner_input"])},
-                        outputs={"revision_plan": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
-                    )
-                    allow_bootstrap = not has_accepted_update
-                    candidate_constraints = candidate_prompt_constraints(
-                        current_prompt=prompt,
-                        args=args,
-                        allow_bootstrap=allow_bootstrap,
-                    )
-                    epoch_candidate_prompt = rewrite_prompt(
-                        current_prompt=prompt,
-                        revision_plan=epoch_revision_plan,
-                        candidate_constraints=candidate_constraints,
-                        args=args,
-                        llm_client=llm_client,
-                        output_input_path=epoch_paths["prompt_rewriter_input"],
-                        output_path=epoch_paths["prompt_rewriter_output"],
-                        state_dir=run_dir,
-                        iteration=iteration,
-                    )
-                    if epoch_candidate_prompt is None:
-                        epoch_skipped_count += 1
-                        epoch_acceptance = {
-                            "accepted": False,
-                            "acceptance_mode": "epoch_planner",
+                )
+                record_stage(
+                    epoch_manifest,
+                    "epoch_planner",
+                    status="invalid",
+                    inputs={"batch_revision_inputs": rel_to_iter(iter_dir, epoch_paths["epoch_planner_input"])},
+                    outputs={"output": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
+                )
+            else:
+                record_stage(
+                    epoch_manifest,
+                    "epoch_planner",
+                    status="success",
+                    inputs={"batch_revision_inputs": rel_to_iter(iter_dir, epoch_paths["epoch_planner_input"])},
+                    outputs={"revision_plan": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
+                )
+                allow_bootstrap = not has_accepted_update
+                epoch_candidate_prompt = rewrite_prompt(
+                    current_prompt=prompt,
+                    revision_plan=epoch_revision_plan,
+                    args=args,
+                    llm_client=llm_client,
+                    output_input_path=epoch_paths["prompt_rewriter_input"],
+                    output_path=epoch_paths["prompt_rewriter_output"],
+                    state_dir=run_dir,
+                    iteration=iteration,
+                )
+                if epoch_candidate_prompt is None:
+                    epoch_skipped_count += 1
+                    epoch_acceptance.update(
+                        {
                             "rejection_reasons": ["prompt_rewriter_invalid"],
                             "batch_count": len(training_batches),
                             "collected_batch_count": epoch_collected_count,
                             "skipped_batch_count": epoch_skipped_count,
                         }
-                        record_stage(
-                            epoch_manifest,
-                            "prompt_rewriter",
-                            status="invalid",
-                            inputs={"revision_plan": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
-                            outputs={"output": rel_to_iter(iter_dir, epoch_paths["prompt_rewriter_output"])},
+                    )
+                    record_stage(
+                        epoch_manifest,
+                        "prompt_rewriter",
+                        status="invalid",
+                        inputs={"revision_plan": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
+                        outputs={"output": rel_to_iter(iter_dir, epoch_paths["prompt_rewriter_output"])},
+                    )
+                else:
+                    write_text(epoch_paths["prompt_candidate"], epoch_candidate_prompt)
+                    record_stage(
+                        epoch_manifest,
+                        "prompt_rewriter",
+                        status="success",
+                        inputs={"revision_plan": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
+                        outputs={
+                            "input": rel_to_iter(iter_dir, epoch_paths["prompt_rewriter_input"]),
+                            "output": rel_to_iter(iter_dir, epoch_paths["prompt_rewriter_output"]),
+                            "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                        },
+                    )
+                    if validation_cases:
+                        print(f"[iteration {iteration}] evaluating epoch candidate on fixed validation gate")
+                        (
+                            _validation_baseline_records,
+                            _validation_candidate_records,
+                            epoch_baseline_gate_summary,
+                            epoch_candidate_summary,
+                            epoch_acceptance,
+                        ) = evaluate_validation_gate(
+                            baseline_prompt=prompt,
+                            candidate_prompt=epoch_candidate_prompt,
+                            validation_cases=validation_cases,
+                            args=args,
+                            llm_client=llm_client,
+                            run_dir=run_dir,
+                            iter_dir=iter_dir,
+                            paths=epoch_paths,
+                            iteration=iteration,
+                            allow_bootstrap=allow_bootstrap,
+                            phase_prefix=f"iteration_{iteration:03d}:epoch",
                         )
-                    else:
-                        write_text(epoch_paths["prompt_candidate"], epoch_candidate_prompt)
-                        record_stage(
-                            epoch_manifest,
-                            "prompt_rewriter",
-                            status="success",
-                            inputs={"revision_plan": rel_to_iter(iter_dir, epoch_paths["epoch_planner_output"])},
-                            outputs={
-                                "input": rel_to_iter(iter_dir, epoch_paths["prompt_rewriter_input"]),
-                                "output": rel_to_iter(iter_dir, epoch_paths["prompt_rewriter_output"]),
-                                "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
-                            },
-                        )
-                        if validation_cases:
-                            print(f"[iteration {iteration}] evaluating epoch candidate on fixed validation gate")
-                            (
-                                _validation_baseline_records,
-                                _validation_candidate_records,
-                                epoch_baseline_gate_summary,
-                                epoch_candidate_summary,
-                                epoch_acceptance,
-                            ) = evaluate_validation_gate(
-                                baseline_prompt=prompt,
-                                candidate_prompt=epoch_candidate_prompt,
-                                validation_cases=validation_cases,
-                                args=args,
-                                llm_client=llm_client,
-                                run_dir=run_dir,
-                                iter_dir=iter_dir,
-                                paths=epoch_paths,
-                                iteration=iteration,
-                                allow_bootstrap=allow_bootstrap,
-                                phase_prefix=f"iteration_{iteration:03d}:epoch",
-                            )
-                            write_text(epoch_paths["acceptance"], json.dumps(epoch_acceptance, ensure_ascii=False, indent=2))
-                            if epoch_acceptance["accepted"]:
-                                epoch_accepted_count = 1
-                                has_accepted_update = True
-                                prompt = epoch_candidate_prompt
-                                write_text(work_prompt_path, prompt)
-                                write_text(run_dir / "prompt_best.md", prompt)
-                                record_stage(
-                                    epoch_manifest,
-                                    "validation_gate",
-                                    status="accepted",
-                                    inputs={
-                                        "baseline_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_before"]),
-                                        "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
-                                        "cases": rel_to_iter(iter_dir, epoch_paths["validation_cases"]),
-                                    },
-                                    outputs={
-                                        "baseline_summary": rel_to_iter(iter_dir, epoch_paths["validation_baseline_summary"]),
-                                        "candidate_summary": rel_to_iter(iter_dir, epoch_paths["validation_candidate_summary"]),
-                                        "decision": rel_to_iter(iter_dir, epoch_paths["acceptance"]),
-                                    },
-                                )
-                                print(f"[iteration {iteration}] epoch candidate accepted by validation gate: {work_prompt_path}")
-                            else:
-                                epoch_rejected_count = 1
-                                write_text(epoch_paths["rejected_by_gate"], json.dumps(epoch_acceptance, ensure_ascii=False, indent=2))
-                                record_stage(
-                                    epoch_manifest,
-                                    "validation_gate",
-                                    status="rejected",
-                                    inputs={
-                                        "baseline_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_before"]),
-                                        "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
-                                        "cases": rel_to_iter(iter_dir, epoch_paths["validation_cases"]),
-                                    },
-                                    outputs={
-                                        "baseline_summary": rel_to_iter(iter_dir, epoch_paths["validation_baseline_summary"]),
-                                        "candidate_summary": rel_to_iter(iter_dir, epoch_paths["validation_candidate_summary"]),
-                                        "decision": rel_to_iter(iter_dir, epoch_paths["acceptance"]),
-                                        "rejection_copy": rel_to_iter(iter_dir, epoch_paths["rejected_by_gate"]),
-                                    },
-                                )
-                                print(
-                                    f"[iteration {iteration}] epoch candidate rejected by validation gate "
-                                    f"(reasons={', '.join(epoch_acceptance['rejection_reasons'])}); prompt unchanged"
-                                )
-                        else:
+                        write_text(epoch_paths["acceptance"], json.dumps(epoch_acceptance, ensure_ascii=False, indent=2))
+                        if epoch_acceptance["accepted"]:
                             epoch_accepted_count = 1
                             has_accepted_update = True
                             prompt = epoch_candidate_prompt
                             write_text(work_prompt_path, prompt)
                             write_text(run_dir / "prompt_best.md", prompt)
-                            epoch_acceptance = {
-                                "accepted": True,
-                                "acceptance_mode": "epoch_direct_update",
-                                "gate_evaluated": False,
-                                "rejection_reasons": [],
-                                "training_update_mode": "epoch_planner",
-                                "batch_count": len(training_batches),
-                                "collected_batch_count": epoch_collected_count,
-                                "skipped_batch_count": epoch_skipped_count,
-                                "note": "Validation gate is disabled; epoch candidate prompt applied directly.",
-                            }
                             record_stage(
                                 epoch_manifest,
-                                "acceptance",
+                                "validation_gate",
                                 status="accepted",
                                 inputs={
+                                    "baseline_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_before"]),
                                     "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                                    "cases": rel_to_iter(iter_dir, epoch_paths["validation_cases"]),
                                 },
-                                outputs={"decision": rel_to_iter(iter_dir, epoch_paths["acceptance"])},
-                                note="validation gate disabled; candidate prompt applied directly",
+                                outputs={
+                                    "baseline_summary": rel_to_iter(iter_dir, epoch_paths["validation_baseline_summary"]),
+                                    "candidate_summary": rel_to_iter(iter_dir, epoch_paths["validation_candidate_summary"]),
+                                    "decision": rel_to_iter(iter_dir, epoch_paths["acceptance"]),
+                                },
                             )
-                            print(f"[iteration {iteration}] epoch candidate applied directly: {work_prompt_path}")
-
-        if epoch_acceptance is None:
-            epoch_acceptance = {
-                "accepted": epoch_accepted_count > 0,
-                "acceptance_mode": "online_batch_updates",
-                "rejection_reasons": [] if epoch_accepted_count > 0 else ["no_batch_candidate_accepted"],
-                "batch_count": len(training_batches),
-                "accepted_batch_count": epoch_accepted_count,
-                "rejected_batch_count": epoch_rejected_count,
-                "skipped_batch_count": epoch_skipped_count,
-            }
+                            print(f"[iteration {iteration}] epoch candidate accepted by validation gate: {work_prompt_path}")
+                        else:
+                            epoch_rejected_count = 1
+                            write_text(epoch_paths["rejected_by_gate"], json.dumps(epoch_acceptance, ensure_ascii=False, indent=2))
+                            record_stage(
+                                epoch_manifest,
+                                "validation_gate",
+                                status="rejected",
+                                inputs={
+                                    "baseline_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_before"]),
+                                    "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                                    "cases": rel_to_iter(iter_dir, epoch_paths["validation_cases"]),
+                                },
+                                outputs={
+                                    "baseline_summary": rel_to_iter(iter_dir, epoch_paths["validation_baseline_summary"]),
+                                    "candidate_summary": rel_to_iter(iter_dir, epoch_paths["validation_candidate_summary"]),
+                                    "decision": rel_to_iter(iter_dir, epoch_paths["acceptance"]),
+                                    "rejection_copy": rel_to_iter(iter_dir, epoch_paths["rejected_by_gate"]),
+                                },
+                            )
+                            print(
+                                f"[iteration {iteration}] epoch candidate rejected by validation gate "
+                                f"(reasons={', '.join(epoch_acceptance['rejection_reasons'])}); prompt unchanged"
+                            )
+                    else:
+                        epoch_accepted_count = 1
+                        has_accepted_update = True
+                        prompt = epoch_candidate_prompt
+                        write_text(work_prompt_path, prompt)
+                        write_text(run_dir / "prompt_best.md", prompt)
+                        epoch_acceptance = {
+                            "accepted": True,
+                            "acceptance_mode": "epoch_planner",
+                            "gate_evaluated": False,
+                            "rejection_reasons": [],
+                            "batch_count": len(training_batches),
+                            "collected_batch_count": epoch_collected_count,
+                            "skipped_batch_count": epoch_skipped_count,
+                            "note": "Validation gate is disabled; epoch candidate prompt applied directly.",
+                        }
+                        record_stage(
+                            epoch_manifest,
+                            "acceptance",
+                            status="accepted",
+                            inputs={
+                                "candidate_prompt": rel_to_iter(iter_dir, epoch_paths["prompt_candidate"]),
+                            },
+                            outputs={"decision": rel_to_iter(iter_dir, epoch_paths["acceptance"])},
+                            note="validation gate disabled; candidate prompt applied directly",
+                        )
+                        print(f"[iteration {iteration}] epoch candidate applied directly: {work_prompt_path}")
         write_text(epoch_paths["prompt_after"], prompt)
         write_evaluation_records(epoch_paths["analysis_records"], epoch_records)
         write_text(epoch_paths["analysis_summary"], json.dumps(epoch_summary, ensure_ascii=False, indent=2))
@@ -1861,12 +1538,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Evaluate the original seed prompt as iteration_000/test before training",
     )
     parser.add_argument("--analysis-batch-size", type=int, default=10, help="Training batch size used for generation and failure analysis")
-    parser.add_argument("--gate-batch-size", type=int, default=10, help="Training batch size used to accept or reject edited prompts")
-    parser.add_argument("--training-update-mode", choices=["epoch", "online"], default="epoch", help="epoch collects batch-local revision plans and applies one epoch-level update; online updates after each accepted batch")
     parser.add_argument("--training-batch-strategy", choices=["stratified", "chunked"], default="stratified", help="How to split training cases into analysis batches")
     parser.add_argument("--sample-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to select limited training cases")
     parser.add_argument("--test-sample-strategy", choices=["stratified", "random", "prefix"], default="prefix", help="How to select limited held-out test cases")
-    parser.add_argument("--candidate-sample-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to select candidate gate cases")
     parser.add_argument("--validation-gate", action=argparse.BooleanOptionalAction, default=True, help="Reserve a fixed validation gate split from the training pool; use --no-validation-gate to disable")
     parser.add_argument("--validation-gate-size", type=int, default=30, help="Maximum number of training-pool cases reserved for validation gate; capped at about one third of the sampled training pool, 0 disables the split")
     parser.add_argument("--validation-gate-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to choose fixed validation gate cases from the sampled training pool")

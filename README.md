@@ -126,10 +126,8 @@ current prompt
 By default, the sampled training pool is split into optimization cases and a
 fixed validation gate (`--validation-gate-size 30`, capped at about one third
 of the sampled training pool for small runs). Validation cases are not used by
-failure analysis or prompt evolution agents. In `epoch` mode the epoch candidate
-must pass this fixed gate before `work.md` is updated. In `online` mode each
-batch candidate uses the same fixed gate; when `--no-validation-gate` is set,
-online mode falls back to the old sampled training gate.
+failure analysis or prompt evolution agents. The epoch candidate must pass
+this fixed gate before `work.md` is updated.
 
 The prompt editor does not rewrite arbitrary files. It returns JSON edits for
 the fixed markdown sections in `tst.md`:
@@ -143,7 +141,8 @@ the fixed markdown sections in `tst.md`:
 ## rule
 ```
 
-By default, at most three sections may be planned before the first accepted
+The epoch planner applies the section-count budget for the final merged
+revision plan: at most three sections may be planned before the first accepted
 update (`--initial-max-sections-per-edit 3`), and at most one section after
 that (`--max-sections-per-edit 1`).
 
@@ -230,7 +229,6 @@ Runs are written under `prompt_runs/`. Important files include:
 - `iteration_NNN/validation_gate/baseline_records.jsonl`, `iteration_NNN/validation_gate/baseline_summary.json`: current-prompt validation baseline.
 - `iteration_NNN/validation_gate/candidate_records.jsonl`, `iteration_NNN/validation_gate/candidate_summary.json`: candidate-prompt validation result.
 - `iteration_NNN/decision/acceptance.json`: prompt update decision with `accepted: true/false` and rejection reasons.
-- `iteration_NNN/train_batches/batch_NNN/batches/gate_cases.json`: sampled training gate cases, only used when validation gate is disabled in online mode.
 - `iteration_000/test/summary.json`, `iteration_000/test/analysis.md`: optional original-prompt held-out test results when `--eval-initial-test` is used.
 - `iteration_NNN/test/summary.json`, `iteration_NNN/test/analysis.md`: per-iteration held-out test results.
 - `prompt_final.md`: final current prompt produced by training.

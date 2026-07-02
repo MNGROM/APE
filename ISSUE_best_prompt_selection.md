@@ -8,7 +8,7 @@ One observed case was `prompt_runs/2026-06-19__22-26-11__test-us`, where the fin
 
 ## Resolution
 
-The training workflow now uses the final current prompt produced by accepted online batch updates:
+The training workflow now uses the final current prompt produced by accepted epoch-level updates:
 
 - `candidate_prompt`: one batch-local rewrite proposal.
 - `current prompt`: the active training prompt, updated only when a candidate passes the gate.

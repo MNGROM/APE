@@ -60,7 +60,7 @@ def propose_prompt_revision(
         return None
     parsed = normalize_prompt_revision_plan(parsed)
     write_text(output_path, json.dumps(parsed, ensure_ascii=False, indent=2))
-    ok, errors = validate_prompt_revision_plan(parsed, max_sections=edit_budget.get("max_revision_items"))
+    ok, errors = validate_prompt_revision_plan(parsed, max_sections=None)
     if not ok:
         write_text(output_path.with_suffix(".rejected.txt"), "\n".join(errors) + "\n")
         print(f"[evolve] Rejected prompt revision plan: {'; '.join(errors)}", flush=True)

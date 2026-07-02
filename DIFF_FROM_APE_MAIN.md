@@ -18,27 +18,15 @@ ape: epoch-batch-online-training / 5027f5d Archive epoch training workflow state
 粗略差异：
 
 ```text
-21 个已跟踪文件变化
-约 +2540 / -711 行
-另有当前未跟踪测试文件：
-- tests/test_prompt_editor.py
-- tests/test_prompt_ops.py
+12 个文件变化
+约 +226 / -615 行
 ```
 
 ## 主流程变化
 
 ### 1. 训练更新模式
 
-`run.py` 新增两种训练更新模式：
-
-```text
---training-update-mode epoch
---training-update-mode online
-```
-
-默认是 `epoch`。
-
-`epoch` 模式流程：
+当前工作流只保留 `epoch` 路径：
 
 ```text
 训练集分 batch
@@ -49,8 +37,6 @@ ape: epoch-batch-online-training / 5027f5d Archive epoch training workflow state
 -> fixed validation gate 接收或拒绝
 -> 每轮 held-out test
 ```
-
-`online` 模式仍保留 batch 级即时更新，但默认也会使用 fixed validation gate。
 
 ### 2. Fixed validation gate
 
@@ -125,25 +111,10 @@ prompt_workspace/epoch_planner.md
 
 职责：把多个 batch-local revision plan 合并成一个保守的 epoch-level revision plan。
 
-### 2. Prompt editor 输入新增 edit_budget
+### 2. Prompt editor / epoch planner 输入的 edit_budget
 
-`prompt_editor` 和 `epoch_planner` 的输入 payload 现在包含：
-
-```json
-"edit_budget": {
-  "max_revision_items": 1,
-  "guidance": [
-    "..."
-  ]
-}
-```
-
-预算由程序决定并用于校验：
-
-```text
-首次 accepted update 前：--initial-max-sections-per-edit 3
-首次 accepted update 后：--max-sections-per-edit 1
-```
+`prompt_editor` 现在只接收 `edit_budget.guidance`。
+`epoch_planner` 继续接收 `edit_budget.max_revision_items` 和 `guidance`，用于约束最终 epoch-level revision plan。
 
 对应修改：
 
@@ -188,9 +159,10 @@ replace_existing / qualify_existing / merge_existing 必须提供非空 text_to_
 暂时不检查 text_to_modify 是否 exact match 当前 prompt 原文。
 ```
 
-### 4. Prompt rewriter length constraints
+### 4. Prompt rewriter 输入简化
 
-`prompt_rewriter` 输入现在可包含 `candidate_constraints`，用于告诉 rewriter 候选 prompt 的字符预算。
+`prompt_rewriter` 现在只接收 `current_prompt` 和 `revision_plan`。
+字符预算不再作为 rewriter 输入，候选 prompt 的长度仅在后续 acceptance gate 中检查。
 
 相关文件：
 
@@ -314,7 +286,7 @@ tests/test_training_batches.py
 
 - acceptance gate 的 deterministic benefit、LLM guard、precision regression、bootstrap。
 - epoch planner payload 和默认 epoch 模式。
-- edit_budget 输入与超预算拒绝。
+- epoch_planner 的 edit_budget 输入与超预算拒绝（prompt_editor 仅保留 guidance）。
 - revision_plan operation / text_to_modify schema。
 - fixed validation split。
 - stratified training batches。
