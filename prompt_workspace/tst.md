@@ -12,12 +12,13 @@ Output PlantUML code only.
 
 ## workflow
 
-(None)
+1. Extract only explicitly stated actions, explicit states or outcomes, and explicit control-flow cues from the requirement.
+2. Generate a PlantUML activity diagram using only those extracted elements, preserving the stated sequence and avoiding hidden implementation sub-steps.
 
 ## knowledge
 
-(None)
+1. Use PlantUML activity syntax `if (...) then (...) ... else (...) ... endif`, `while (...) ... endwhile`, `repeat ... repeat while (...)`, and `fork ... fork again ... end fork` only when the requirement explicitly states condition/alternative paths, pre-condition loops, repeated or until-style execution, or parallel execution.
 
 ## rule
 
-(None)
+1. Do not invent validation checks, UI interactions, error-handling paths, success/failure branches, retries, notifications, database operations, or implementation details unless they are explicitly stated in the requirement.

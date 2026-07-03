@@ -9,6 +9,13 @@ from typing import Any
 from config import REQUIRED_PROMPT_HEADINGS, SECTION_HEADING_BY_NAME, SECTION_NAMES
 from prediction import strip_code_fence
 
+REVISION_OPERATIONS = {
+    "append_new",
+    "replace_existing",
+    "qualify_existing",
+    "merge_existing",
+}
+
 
 def strip_markdown_fence(text: str) -> str:
     match = re.search(r"```(?:markdown|md)?\s*(.*?)```", text, flags=re.DOTALL | re.IGNORECASE)
@@ -126,12 +133,17 @@ def normalize_prompt_revision_plan(payload: dict[str, Any]) -> dict[str, Any]:
 
         intent = item.get("intent")
         change_instruction = item.get("change_instruction")
+        operation = str(item.get("operation") or "append_new").strip().lower()
+        text_to_modify = item.get("text_to_modify")
         intent_text = str(intent).strip() if isinstance(intent, str) else ""
         instruction_text = str(change_instruction).strip() if isinstance(change_instruction, str) else ""
 
         if section not in section_to_item:
             merged_item = dict(item)
             merged_item["section"] = section
+            merged_item["operation"] = operation
+            if isinstance(text_to_modify, str):
+                merged_item["text_to_modify"] = text_to_modify.strip()
             section_to_item[section] = merged_item
             normalized_plan.append(merged_item)
             continue
@@ -147,6 +159,15 @@ def normalize_prompt_revision_plan(payload: dict[str, Any]) -> dict[str, Any]:
                 existing_instruction,
                 instruction_text,
                 label="Combine these requested changes into one coherent section revision",
+            )
+        if operation != "append_new":
+            merged_item["operation"] = operation
+        if isinstance(text_to_modify, str) and text_to_modify.strip():
+            existing_text = str(merged_item.get("text_to_modify") or "").strip()
+            merged_item["text_to_modify"] = _merge_revision_texts(
+                existing_text,
+                text_to_modify.strip(),
+                label="Text to modify",
             )
 
     normalized_payload = dict(payload)
@@ -179,10 +200,16 @@ def validate_prompt_revision_plan(payload: dict[str, Any], *, max_sections: int 
             errors.append(f"Revision plan item {idx} must be an object")
             continue
         section = str(item.get("section") or "").strip().lower()
+        operation = str(item.get("operation") or "append_new").strip().lower()
+        text_to_modify = item.get("text_to_modify")
         intent = item.get("intent")
         change_instruction = item.get("change_instruction")
         if section not in SECTION_NAMES:
             errors.append(f"Revision plan item {idx} has invalid section: {section!r}")
+        if operation not in REVISION_OPERATIONS:
+            errors.append(f"Revision plan item {idx} has invalid operation: {operation!r}")
+        if operation != "append_new" and (not isinstance(text_to_modify, str) or not text_to_modify.strip()):
+            errors.append(f"Revision plan item {idx} must provide non-empty string text_to_modify for operation {operation!r}")
         if section in planned_sections:
             errors.append(f"Section {section!r} is planned more than once")
         planned_sections.add(section)

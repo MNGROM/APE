@@ -1,36 +1,21 @@
-# Issue: best prompt selection is only batch-local
+# Resolved: best prompt selection was batch-local
 
-## Problem
+## Historical Problem
 
-`prompt_best.md` is selected from iteration analysis summaries, not from a stable held-out or validation set. This means the prompt marked as "best" can be the best prompt for one sampled training batch while not being the best prompt for the final target distribution.
+Older runs wrote `prompt_best.md` from sampled training-batch summaries. That meant a prompt could be marked as "best" because it performed well on one local batch, even when it was not the best prompt for the final target distribution.
 
-## Evidence
+One observed case was `prompt_runs/2026-06-19__22-26-11__test-us`, where the final held-out test used `prompt_best.md` because `use_best_prompt_for_test=True`.
 
-In run `prompt_runs/2026-06-19__22-26-11__test-us`, the final held-out test used `prompt_best.md` because `use_best_prompt_for_test=True`.
+## Resolution
 
-The selected best prompt was recorded as:
+The training workflow now uses the final current prompt produced by accepted epoch-level updates:
 
-- `iteration`: 7
-- `phase`: `train_before_evolve`
-- `selection_policy`: `relation_f1, then node_f1, then plantuml_compilation_pass_rate, with infrastructure_error_rate as a hard priority`
-- selected on the iteration analysis batch, not on held-out US
+- `candidate_prompt`: one batch-local rewrite proposal.
+- `current prompt`: the active training prompt, updated only when a candidate passes the gate.
+- `prompt_final.md`: the final current prompt after all training iterations.
 
-The selected prompt had strong analysis-batch metrics, but its held-out US metrics were lower than the earlier US run:
+The batch-local `prompt_best.md` selection path has been removed from new runs.
 
-- old US run: `llm_node_f1=0.8053`, `llm_relation_f1=0.5734`
-- new US run: `llm_node_f1=0.7563`, `llm_relation_f1=0.5426`
+## Future Direction
 
-This shows that current "best" means "best on one sampled analysis batch under deterministic priority", not necessarily "best semantic prompt for held-out evaluation".
-
-## Risk
-
-- A prompt can be selected because it improves deterministic `relation_f1` on a small batch while degrading LLM judge semantic quality.
-- Later accepted prompts may be ignored if they do not become the batch-local best before the next iteration.
-- Reported final test results can depend heavily on batch sampling rather than true prompt quality.
-
-## Possible Future Direction
-
-- Add a stable validation batch separate from analysis and gate batches.
-- Select `prompt_best.md` using validation metrics rather than iteration analysis metrics.
-- Consider a selectable best-prompt policy, such as deterministic, LLM judge, or hybrid.
-- Report both `last_accepted_prompt` and `best_validation_prompt` to make this distinction explicit.
+If model selection is needed later, add a train-side validation split. The held-out test set must remain evaluation-only and must not drive prompt rewriting, gate decisions, early stopping, or final prompt selection.

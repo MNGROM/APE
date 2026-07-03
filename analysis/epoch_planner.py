@@ -1,4 +1,4 @@
-"""Prompt edit agent."""
+"""Epoch-level revision planner agent."""
 
 from __future__ import annotations
 
@@ -11,11 +11,10 @@ from prompt_ops import extract_json_object, normalize_prompt_revision_plan, pars
 from utils.io import read_prompt_file, write_text
 
 
-def propose_prompt_revision(
+def plan_epoch_revision(
     *,
     current_prompt: str,
-    failure_analysis: dict[str, Any],
-    error_localization: dict[str, Any],
+    batch_revision_inputs: list[dict[str, Any]],
     edit_budget: dict[str, Any],
     args: Any,
     llm_client: LLMClient,
@@ -24,20 +23,16 @@ def propose_prompt_revision(
     state_dir: Path | None,
     iteration: int,
 ) -> dict[str, Any] | None:
-    if args.no_evolve:
-        return None
-
     payload = {
         "current_prompt_sections": parse_prompt_sections(current_prompt),
-        "failure_analysis": failure_analysis,
-        "error_localization": error_localization,
+        "batch_revision_inputs": batch_revision_inputs,
         "edit_budget": edit_budget,
     }
     write_text(output_input_path, json.dumps(payload, ensure_ascii=False, indent=2))
     messages = [
         {
             "role": "system",
-            "content": read_prompt_file(args.prompt_editor_prompt_path, label="prompt editor"),
+            "content": read_prompt_file(args.epoch_planner_prompt_path, label="epoch planner"),
         },
         {
             "role": "user",
@@ -46,23 +41,23 @@ def propose_prompt_revision(
     ]
     raw = llm_client.chat(
         messages,
-        temperature=args.editor_temperature,
-        max_tokens=args.editor_max_tokens,
-        thinking=args.editor_thinking,
+        temperature=args.epoch_planner_temperature,
+        max_tokens=args.epoch_planner_max_tokens,
+        thinking=args.epoch_planner_thinking,
         state_dir=state_dir,
-        retry_phase="prompt_edit",
+        retry_phase="epoch_planner",
         retry_context={"iteration": iteration, "output_path": str(output_path)},
     )
     write_text(output_path, raw)
     parsed = extract_json_object(raw)
     if parsed is None:
-        write_text(output_path.with_suffix(".rejected.txt"), "Prompt editor did not return a JSON object.\n")
+        write_text(output_path.with_suffix(".rejected.txt"), "Epoch planner did not return a JSON object.\n")
         return None
     parsed = normalize_prompt_revision_plan(parsed)
     write_text(output_path, json.dumps(parsed, ensure_ascii=False, indent=2))
-    ok, errors = validate_prompt_revision_plan(parsed, max_sections=None)
+    ok, errors = validate_prompt_revision_plan(parsed, max_sections=edit_budget.get("max_revision_items"))
     if not ok:
         write_text(output_path.with_suffix(".rejected.txt"), "\n".join(errors) + "\n")
-        print(f"[evolve] Rejected prompt revision plan: {'; '.join(errors)}", flush=True)
+        print(f"[evolve] Rejected epoch revision plan: {'; '.join(errors)}", flush=True)
         return None
     return parsed

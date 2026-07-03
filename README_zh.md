@@ -87,6 +87,14 @@ python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 
 python run.py --test-dataset fsd --iterations 3
 ```
 
+如果需要在训练前用原始种子 prompt 得到 held-out 基线指标：
+
+```powershell
+python run.py --test-dataset fsd --eval-initial-test
+```
+
+该基线会写入 `iteration_000/test`。
+
 六个数据集全部做 leave-one-dataset-out：
 
 ```powershell
@@ -108,10 +116,16 @@ python run.py --test-dataset all --iterations 3
 -> batch 失败分析模型
 -> 错误原因定位模型把失败映射到 prompt section
 -> prompt editor 模型输出结构化 section edits
--> 程序应用合法 edits
--> gate batch 评估候选 prompt
--> 接受或拒绝候选 prompt
+-> epoch planner 合并 batch revision plans
+-> prompt rewriter 输出下一版 prompt
+-> 固定 validation gate 评估并接收/拒绝 candidate
+-> held-out test 评估
 ```
+
+默认会先从采样后的训练池中固定留出 validation gate（`--validation-gate-size 30`，
+小样本 run 会限制在采样训练池的大约三分之一以内）。这些样例不会进入
+failure analysis 或 prompt evolution agents。epoch candidate 必须先通过这组
+固定 validation gate，才会更新 `work.md`。
 
 prompt editor 不能任意重写文件。它只能返回针对 `tst.md` 固定 section 的
 JSON edits：
@@ -125,10 +139,11 @@ JSON edits：
 ## rule
 ```
 
-默认每轮最多修改两个 section：
+epoch planner 会应用最终合并 revision plan 的 section 数量预算：
 
 ```text
---max-sections-per-edit 2
+--initial-max-sections-per-edit 3
+--max-sections-per-edit 1
 ```
 
 ## 评估
@@ -150,15 +165,19 @@ JSON edits：
 python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-候选接收不再使用加权总分，而是使用多指标门控。
+候选接收不再使用加权总分，而是在 validation gate 汇总指标上直接做
+accept/reject 决策。
 
 Safety Gate 全部通过后，才会进入 Benefit Gate：
 
 ```text
-plantuml_compile_delta >= -0.05
-node_f1_delta >= -0.02
+syntax_pass_rate_delta >= -0.01
+plantuml_compile_delta >= -0.01
+node_f1_delta >= -0.01
 relation_f1_delta >= -0.01
-N-F1 和 R-F1 不能同时下降
+node_precision_delta >= -0.02
+relation_precision_delta >= -0.02
+如果 LLM node/relation F1 可用，不能超过语义回退 guard
 infrastructure_error_delta <= 0
 prompt_size_ok
 ```
@@ -166,46 +185,51 @@ prompt_size_ok
 Benefit Gate 至少满足一项才接收：
 
 ```text
-relation_f1_delta >= 0.01
+relation_f1_delta >= 0.02
 或 node_f1_delta >= 0.02
-或 plantuml_compile_delta >= 0.05 且 N-F1/R-F1 都不下降
+或 plantuml_compile_delta >= 0.05 且 node/relation F1 都不下降
 ```
 
 这样编译率提升不能单独抵消节点和关系质量的回退。
 
 第 1 轮有 bootstrap 例外：如果 `N-F1` 和 `R-F1` 都达到明显提升
-（默认分别为 `+0.02` 和 `+0.01`），且没有新增基础设施错误、prompt 未超长，
-则可以接收。后续轮次使用上面的标准门控。
-最终 held-out 测试默认使用训练中表现最好的 prompt。
+（默认都是 `+0.05`），syntax/compile pass rate 仍在放宽容忍范围内
+（默认 `-0.10`），没有新增基础设施错误、可用的 LLM 指标不回退、
+prompt 未超过绝对字符数上限 `--max-prompt-chars`，则可以接收。后续轮次使用上面的标准门控。
+held-out 测试写入 `iteration_NNN/test`；全部训练结束后不再额外重复运行一次
+root-level held-out test。
 
 ## 输出
 
 运行结果在 `prompt_runs/` 下。重点文件：
 
 - `run_args.json`：脱敏后的运行配置。
-- `train_cases.json`、`test_cases.json`：实际采样 case。
+- `train_pool_cases.json`：validation split 前的采样训练池。
+- `train_cases.json`：真正进入 prompt evolution agents 的训练 case。
+- `validation_gate_cases.json`：从训练池中固定留出的 validation gate case。
+- `test_cases.json`：held-out test case。
 - `prompt_evolution.md`：本次 run 的 prompt 演化总览，集中查看初始 prompt、每轮变更入口、best/final prompt。
-- `metrics_overview.md`：本次 run 的指标总览，集中查看每轮 analysis/gate/candidate 以及 held-out test 指标。
-- `iteration_NNN/analysis_batch_cases.json`：失败分析 batch。
-- `iteration_NNN/predictions.jsonl`：analysis batch 的生成结果和指标。
-- `iteration_NNN/evaluation_summary.json`：analysis batch 汇总指标。
-- `iteration_NNN/prompt_change.md`：单轮 prompt 变化报告，包含 before/after diff、candidate 是否接受和拒绝原因。
-- `iteration_NNN/metrics_report.md`：单轮指标报告，包含 analysis、baseline gate、candidate gate 和 delta。
-- `iteration_NNN/analysis/overview.md`：人工可读失败报告。
-- `iteration_NNN/failure_analysis_input.json`：发送给失败分析模型的输入。
-- `iteration_NNN/failure_analysis_output.json`：结构化失败分析输出。
-- `iteration_NNN/error_localization_input.json`：发送给错误原因定位模型的输入。
-- `iteration_NNN/error_localization_output.json`：section 级错误定位输出。
-- `iteration_NNN/prompt_edit_input.json`：发送给 prompt editor 的输入，包含失败分析和错误定位。
-- `iteration_NNN/prompt_edit_output.json`：结构化 prompt edit 输出。
-- `iteration_NNN/candidate_prompt.md`：应用 edits 后的候选 prompt。
-- `iteration_NNN/gate_cases.json`：gate batch 样例。
-- `iteration_NNN/gate_predictions.jsonl`：candidate gate 生成结果和指标。
-- `iteration_NNN/gate_summary.json`：candidate gate 汇总。
-- `iteration_NNN/prompt_acceptance.json`：接收/拒绝决策，包含 `safety_gate`、`benefit_gate` 和 `rejection_reasons`。
-- `prompt_best.md`：训练中表现最好的 prompt。
-- `prompt_final.md`：最终测试使用的 prompt。
-- `test_summary.json`、`test_analysis.md`：held-out 测试结果。
+- `metrics_overview.md`：本次 run 的指标总览，集中查看 `iteration_NNN/test` held-out 指标。
+- `iteration_NNN/batches/analysis_cases.json`：本轮实际评估的 optimization cases。
+- `iteration_NNN/evaluation/analysis_records.jsonl`：optimization cases 的生成结果和指标。
+- `iteration_NNN/evaluation/analysis_summary.json`：optimization cases 汇总指标。
+- `iteration_NNN/reports/prompt_change.md`：单轮 prompt 变化报告，包含 before/after diff、candidate 是否接受和拒绝原因。
+- `iteration_NNN/reports/metrics_report.md`：单轮指标报告，包含 analysis、validation/gate baseline、candidate 和 delta。
+- `iteration_NNN/evaluation/analysis_overview.md`：人工可读失败报告。
+- `iteration_NNN/agents/failure_analysis.input.json`：发送给失败分析模型的输入。
+- `iteration_NNN/agents/failure_analysis.output.json`：结构化失败分析输出。
+- `iteration_NNN/agents/error_localization.input.json`：发送给错误原因定位模型的输入。
+- `iteration_NNN/agents/error_localization.output.json`：section 级错误定位输出。
+- `iteration_NNN/agents/prompt_editor.input.json`：发送给 prompt editor 的输入，包含失败分析和错误定位。
+- `iteration_NNN/agents/prompt_editor.output.json`：结构化 prompt edit 输出。
+- `iteration_NNN/prompts/candidate.md`：prompt rewriter 输出的候选 prompt。
+- `iteration_NNN/validation_gate/cases.json`：本轮 candidate acceptance 使用的固定 validation case。
+- `iteration_NNN/validation_gate/baseline_records.jsonl`、`iteration_NNN/validation_gate/baseline_summary.json`：当前 prompt 的 validation baseline。
+- `iteration_NNN/validation_gate/candidate_records.jsonl`、`iteration_NNN/validation_gate/candidate_summary.json`：candidate prompt 的 validation 结果。
+- `iteration_NNN/decision/acceptance.json`：prompt 更新决策，核心字段是 `accepted: true/false` 和拒绝原因。
+- `iteration_000/test/summary.json`、`iteration_000/test/analysis.md`：使用 `--eval-initial-test` 时生成的原始 prompt held-out 基线结果。
+- `iteration_NNN/test/summary.json`、`iteration_NNN/test/analysis.md`：每轮 held-out 测试结果。
+- `prompt_final.md`：训练结束后的 current prompt。
 - `run_state.json`、`rate_limit_events.jsonl`：provider 重试状态和事件流。
 
 已完成的历史 run 可以用下面的命令补生成这几个人类可读报告：
