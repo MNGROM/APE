@@ -20,7 +20,7 @@ edits only the run-local `work.md`; the seed prompt is not overwritten.
 - `ape_datasets/lato.py`: LATO dataset loading and sampling.
 - `llm.py`: OpenAI-compatible `LLMClient`.
 - `prediction.py`: UML agent prediction helpers.
-- `metrics.py`: deterministic syntax, node, relation, and scoring metrics.
+- `metrics.py`: syntax, auxiliary embedding, and LLM-judge summary metrics.
 - `evaluation.py`: batch evaluation workflow.
 - `analysis/`: failure analysis, error localization, and prompt editing agents.
 - `prompt_ops.py`: prompt section parsing and edit application.
@@ -30,7 +30,7 @@ edits only the run-local `work.md`; the seed prompt is not overwritten.
 - `prompt_workspace/error_localization.md`: system prompt for section-level error localization.
 - `prompt_workspace/prompt_editor.md`: system prompt for structured prompt edits.
 - `prompt_datasets/lato/`: six JSONL datasets: `bp`, `fsd`, `lmc`, `pure`, `rac`, `us`.
-- `llm_element_metrics.py`: PlantUML compilation check and optional LLM semantic element judge.
+- `llm_element_metrics.py`: PlantUML compilation check and default LLM semantic element judge.
 - `utils/rate_limit.py`: shared provider retry and rate-limit state logging.
 - `tools/plantuml/plantuml-1.2025.4.jar`: bundled PlantUML syntax validator.
 
@@ -60,12 +60,12 @@ $env:ZHIPU_LLM_MODEL="glm-5.1"
 options can override it:
 
 ```powershell
-python run.py --test-dataset fsd --thinking disabled --generation-thinking disabled --analysis-thinking enabled --localization-thinking enabled --editor-thinking disabled --judge-thinking disabled --no-llm-element-metrics
+python run.py --test-dataset fsd --thinking disabled --generation-thinking disabled --analysis-thinking enabled --localization-thinking enabled --editor-thinking disabled --judge-thinking disabled
 ```
 
 Agent-specific options support `inherit`, `enabled`, and `disabled`. A useful
-starting point is to keep PlantUML generation, prompt editing, and LLM judging
-disabled while enabling failure analysis and error localization.
+starting point is to keep PlantUML generation, prompt editing, and LLM-judge
+thinking disabled while enabling failure analysis and error localization.
 
 Do not write API keys into Python files, docs, logs, or committed examples.
 
@@ -153,16 +153,17 @@ that (`--max-sections-per-edit 1`).
 
 ## Evaluation
 
-The primary deterministic metrics are:
-
-- `node_f1` (`N-F1`): normalized activity/condition node matching.
-- `relation_f1` (`R-F1`): normalized control-flow relation matching.
-- `plantuml_compilation_pass_rate`: local PlantUML syntax compilation pass rate.
-
-Optional LLM semantic metrics are:
+The primary training and acceptance metrics are LLM-judge semantic metrics:
 
 - `llm_node_f1` (`LLM-N-F1`)
 - `llm_relation_f1` (`LLM-R-F1`)
+- `plantuml_compilation_pass_rate`: local PlantUML syntax compilation pass rate.
+
+Auxiliary embedding/difflib metrics are disabled by default and can be enabled
+only for diagnostics with `--embedding-element-metrics`:
+
+- `node_f1` (`N-F1`): normalized activity/condition node matching.
+- `relation_f1` (`R-F1`): normalized control-flow relation matching.
 
 Disable the LLM semantic judge for cheap local checks:
 
@@ -182,10 +183,12 @@ node_f1_delta >= -0.01
 relation_f1_delta >= -0.01
 node_precision_delta >= -0.02
 relation_precision_delta >= -0.02
-LLM node/relation F1 must not regress beyond the guard when available
 infrastructure_error_delta <= 0
 prompt_size_ok
 ```
+
+Here `node_*` and `relation_*` deltas refer to LLM-judge metrics, not
+auxiliary embedding metrics.
 
 At least one Benefit Gate signal must pass:
 
@@ -202,8 +205,7 @@ longer runs a second duplicate held-out test after all training completes.
 Iteration 1 has a bootstrap exception: if both `N-F1` and `R-F1` clearly
 improve (`+0.05` and `+0.05` by default), syntax/compile pass rates stay within
 the relaxed tolerance (`-0.10` by default), no new infrastructure errors appear,
-LLM metrics do not regress when available, and the prompt stays within the
-absolute `--max-prompt-chars` limit, the candidate can be accepted. Later
+and the prompt stays within the absolute `--max-prompt-chars` limit, the candidate can be accepted. Later
 iterations use the standard gates above.
 
 ## Outputs

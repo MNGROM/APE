@@ -52,10 +52,10 @@ from versioning import initialize_run_prompt, make_run_dir, write_run_args
 
 
 ITERATION_TEST_METRIC_KEYS = (
-    "node_f1",
-    "relation_f1",
     "llm_node_f1",
     "llm_relation_f1",
+    "node_f1",
+    "relation_f1",
     "plantuml_compilation_pass_rate",
 )
 
@@ -110,9 +110,11 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--element-extraction-max-retries must be positive")
     if args.bootstrap_node_accept_delta < 0 or args.bootstrap_relation_accept_delta < 0:
         raise ValueError("--bootstrap-node-accept-delta and --bootstrap-relation-accept-delta must be non-negative")
+    if not args.llm_element_metrics and not args.no_evolve:
+        raise ValueError("--no-llm-element-metrics is only supported with --no-evolve because training and validation gate use LLM judge metrics")
     if args.llm_element_metrics and not args.api_key:
         raise ValueError("LLM semantic element metrics require the main API key via ZHIPU_LLM_API_KEY or --api-key")
-    if args.element_extractor == "llm" and not args.api_key:
+    if args.embedding_element_metrics and args.element_extractor == "llm" and not args.api_key:
         raise ValueError("LLM element extraction requires the main API key via ZHIPU_LLM_API_KEY or --api-key")
 
 
@@ -183,29 +185,30 @@ def acceptance_decision(
 ) -> tuple[bool, dict[str, Any]]:
     syntax_delta = candidate_summary.get("syntax_pass_rate", 0.0) - baseline_summary.get("syntax_pass_rate", 0.0)
     compile_delta = candidate_summary.get("plantuml_compilation_pass_rate", 0.0) - baseline_summary.get("plantuml_compilation_pass_rate", 0.0)
-    node_precision_delta = candidate_summary.get("node_precision", 0.0) - baseline_summary.get("node_precision", 0.0)
-    relation_precision_delta = candidate_summary.get("relation_precision", 0.0) - baseline_summary.get("relation_precision", 0.0)
-    node_delta = candidate_summary.get("node_f1", 0.0) - baseline_summary.get("node_f1", 0.0)
-    relation_delta = candidate_summary.get("relation_f1", 0.0) - baseline_summary.get("relation_f1", 0.0)
+    node_precision_delta = candidate_summary.get("llm_node_precision", 0.0) - baseline_summary.get("llm_node_precision", 0.0)
+    relation_precision_delta = candidate_summary.get("llm_relation_precision", 0.0) - baseline_summary.get("llm_relation_precision", 0.0)
+    node_delta = candidate_summary.get("llm_node_f1", 0.0) - baseline_summary.get("llm_node_f1", 0.0)
+    relation_delta = candidate_summary.get("llm_relation_f1", 0.0) - baseline_summary.get("llm_relation_f1", 0.0)
+    embedding_node_delta = candidate_summary.get("node_f1", 0.0) - baseline_summary.get("node_f1", 0.0)
+    embedding_relation_delta = candidate_summary.get("relation_f1", 0.0) - baseline_summary.get("relation_f1", 0.0)
+    embedding_node_precision_delta = candidate_summary.get("node_precision", 0.0) - baseline_summary.get("node_precision", 0.0)
+    embedding_relation_precision_delta = candidate_summary.get("relation_precision", 0.0) - baseline_summary.get("relation_precision", 0.0)
     llm_node_delta = candidate_summary.get("llm_node_f1", 0.0) - baseline_summary.get("llm_node_f1", 0.0)
     llm_relation_delta = candidate_summary.get("llm_relation_f1", 0.0) - baseline_summary.get("llm_relation_f1", 0.0)
+    llm_failed_delta = candidate_summary.get("llm_element_failed", 0.0) - baseline_summary.get("llm_element_failed", 0.0)
     infrastructure_delta = candidate_summary.get("infrastructure_error_rate", 0.0) - baseline_summary.get("infrastructure_error_rate", 0.0)
     prompt_size_ok = len(candidate_prompt) <= max_prompt_chars
     llm_metrics_available = candidate_summary.get("llm_element_evaluated", 0.0) > 0 and baseline_summary.get("llm_element_evaluated", 0.0) > 0
-    llm_semantic_guard_ok = True
-    bootstrap_llm_guard_ok = True
-    if llm_metrics_available:
-        llm_semantic_guard_ok = llm_node_delta >= -0.01 and llm_relation_delta >= -0.015
-        bootstrap_llm_guard_ok = llm_node_delta >= 0.0 and llm_relation_delta >= 0.0
 
     safety_gate = {
+        "llm_judge_metrics_available": llm_metrics_available,
         "syntax_not_significantly_worse": syntax_delta >= min_syntax_delta,
         "compile_not_significantly_worse": compile_delta >= min_compile_delta,
         "node_not_significantly_worse": node_delta >= min_node_delta,
         "relation_not_significantly_worse": relation_delta >= min_relation_delta,
         "node_precision_not_significantly_worse": node_precision_delta >= min_node_precision_delta,
         "relation_precision_not_significantly_worse": relation_precision_delta >= min_relation_precision_delta,
-        "llm_semantic_guard_ok": llm_semantic_guard_ok,
+        "llm_judge_failures_not_increased": llm_failed_delta <= 0,
         "infrastructure_delta_ok": infrastructure_delta <= 0,
         "prompt_size_ok": prompt_size_ok,
     }
@@ -216,11 +219,12 @@ def acceptance_decision(
     }
     bootstrap_gate = {
         "bootstrap_allowed": allow_bootstrap,
+        "llm_judge_metrics_available": llm_metrics_available,
         "syntax_within_bootstrap_tolerance": syntax_delta >= bootstrap_min_syntax_delta,
         "compile_within_bootstrap_tolerance": compile_delta >= bootstrap_min_compile_delta,
         "node_improved": node_delta >= bootstrap_node_accept_delta,
         "relation_improved": relation_delta >= bootstrap_relation_accept_delta,
-        "llm_semantic_guard_ok": bootstrap_llm_guard_ok,
+        "llm_judge_failures_not_increased": llm_failed_delta <= 0,
         "infrastructure_delta_ok": infrastructure_delta <= 0,
         "prompt_size_ok": prompt_size_ok,
     }
@@ -246,12 +250,17 @@ def acceptance_decision(
         "metric_deltas": {
             "syntax_pass_rate": syntax_delta,
             "plantuml_compilation_pass_rate": compile_delta,
-            "node_precision": node_precision_delta,
-            "relation_precision": relation_precision_delta,
-            "node_f1": node_delta,
-            "relation_f1": relation_delta,
+            "primary_node_precision": node_precision_delta,
+            "primary_relation_precision": relation_precision_delta,
+            "primary_node_f1": node_delta,
+            "primary_relation_f1": relation_delta,
             "llm_node_f1": llm_node_delta,
             "llm_relation_f1": llm_relation_delta,
+            "llm_element_failed": llm_failed_delta,
+            "embedding_node_precision": embedding_node_precision_delta,
+            "embedding_relation_precision": embedding_relation_precision_delta,
+            "embedding_node_f1": embedding_node_delta,
+            "embedding_relation_f1": embedding_relation_delta,
             "infrastructure_error_rate": infrastructure_delta,
         },
         "prompt_growth": {
@@ -267,10 +276,13 @@ def acceptance_decision(
         "relation_delta": relation_delta,
         "node_precision_delta": node_precision_delta,
         "relation_precision_delta": relation_precision_delta,
-        "deterministic_node_delta": node_delta,
-        "deterministic_relation_delta": relation_delta,
+        "embedding_node_delta": embedding_node_delta,
+        "embedding_relation_delta": embedding_relation_delta,
+        "embedding_node_precision_delta": embedding_node_precision_delta,
+        "embedding_relation_precision_delta": embedding_relation_precision_delta,
         "llm_node_delta": llm_node_delta,
         "llm_relation_delta": llm_relation_delta,
+        "llm_failed_delta": llm_failed_delta,
         "infrastructure_delta": infrastructure_delta,
         "min_syntax_delta": min_syntax_delta,
         "min_compile_delta": min_compile_delta,
@@ -293,7 +305,8 @@ def acceptance_decision(
         "bootstrap_accept": bootstrap_accept,
         "acceptance_mode": "standard" if standard_accept else "bootstrap" if bootstrap_accept else "rejected",
         "rejection_reasons": rejection_reasons,
-        "acceptance_policy": "standard: accept when every non-regression check passes and at least one deterministic node/relation/compile benefit gate passes; bootstrap before first accepted update: tolerate limited syntax/compile regression only when deterministic node and relation F1 both improve strongly, LLM metrics do not regress when available, infrastructure is not worse, and prompt size is ok",
+        "primary_metric_source": "llm_judge",
+        "acceptance_policy": "standard: accept when every non-regression check passes on LLM-judge node/relation metrics, LLM-judge failures do not increase, and at least one LLM-judge node/relation or compile benefit gate passes; bootstrap before first accepted update: tolerate limited syntax/compile regression only when LLM-judge node and relation F1 both improve strongly, infrastructure is not worse, and prompt size is ok",
         "prompt_chars_before": len(baseline_prompt),
         "prompt_chars_candidate": len(candidate_prompt),
         "max_prompt_chars": max_prompt_chars,
@@ -1683,7 +1696,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--localization-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_LOCALIZATION_THINKING_TYPE", "inherit"), help="Thinking mode for error-localization calls")
     parser.add_argument("--editor-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_EDITOR_THINKING_TYPE", "inherit"), help="Thinking mode for prompt-editor calls")
     parser.add_argument("--epoch-planner-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_EPOCH_PLANNER_THINKING_TYPE", "inherit"), help="Thinking mode for epoch-planner calls")
-    parser.add_argument("--judge-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_JUDGE_THINKING_TYPE", "inherit"), help="Thinking mode for optional LLM semantic judge calls")
+    parser.add_argument("--judge-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_JUDGE_THINKING_TYPE", "inherit"), help="Thinking mode for LLM semantic judge calls")
     parser.add_argument("--do-sample", type=optional_bool, default=None, help="GLM do_sample, or 'omit' to use provider default")
     parser.add_argument("--llm-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
     parser.add_argument("--llm-max-retries", type=int, default=20, help="Retries for provider 429/5xx/transient errors before failing")
@@ -1692,8 +1705,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--node-match-threshold", type=float, default=0.85, help="LATO-style node semantic similarity threshold")
     parser.add_argument("--relation-match-threshold", type=float, default=0.85, help="LATO-style relation semantic similarity threshold")
     parser.add_argument("--semantic-embedding-model", default=DEFAULT_EMBEDDING_MODEL, help="Sentence-transformers model used for LATO-style semantic element matching")
-    parser.add_argument("--metric-matcher", choices=["embedding", "difflib"], default="embedding", help="Element matcher for deterministic metrics; embedding follows the LATO paper, difflib is only a cheap fallback")
-    parser.add_argument("--element-extractor", choices=["rule", "llm", "auto"], default=os.environ.get("APE_ELEMENT_EXTRACTOR", "llm"), help="Backend for PlantUML-to-node/relation extraction used before metric matching")
+    parser.add_argument("--embedding-element-metrics", action=argparse.BooleanOptionalAction, default=False, help="Run auxiliary embedding/difflib element metrics for diagnostics; these metrics do not drive training or acceptance")
+    parser.add_argument("--metric-matcher", choices=["embedding", "difflib"], default="embedding", help="Element matcher for auxiliary embedding metrics; only used with --embedding-element-metrics")
+    parser.add_argument("--element-extractor", choices=["rule", "llm", "auto"], default=os.environ.get("APE_ELEMENT_EXTRACTOR", "llm"), help="Backend for auxiliary PlantUML-to-node/relation extraction; only used with --embedding-element-metrics")
     parser.add_argument("--element-extraction-temperature", type=float, default=0.0, help="Temperature for LLM element extraction")
     parser.add_argument("--element-extraction-max-tokens", type=int, default=4096, help="Max tokens for LLM element extraction")
     parser.add_argument("--element-extraction-max-retries", type=int, default=3, help="JSON/schema retries for LLM element extraction")
@@ -1725,7 +1739,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--max-prompt-chars", type=int, default=4000, help="Reject candidate prompts longer than this many characters")
     parser.add_argument("--plantuml-compile-timeout", type=int, default=30, help="Timeout in seconds for PlantUML compilation checks")
-    parser.add_argument("--llm-element-metrics", action=argparse.BooleanOptionalAction, default=True, help="Run LLM semantic node/relation P/R/F1 metrics; use --no-llm-element-metrics for cheap local smoke tests")
+    parser.add_argument("--llm-element-metrics", action=argparse.BooleanOptionalAction, default=True, help="Run LLM judge node/relation P/R/F1 metrics used by training and validation gate; use --no-llm-element-metrics only for cheap local smoke tests")
     parser.add_argument("--llm-judge-temperature", type=float, default=0.0)
     parser.add_argument("--llm-judge-max-tokens", type=int, default=4096)
     parser.add_argument("--llm-judge-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from llm import LLMClient
-from metrics import EvaluationRecord
+from metrics import EvaluationRecord, relation_text
 from prompt_ops import extract_json_object
 from utils.io import read_prompt_file, write_text
 
@@ -23,7 +23,7 @@ FAILURE_TYPE_GUIDE: dict[str, str] = {
     "wrong_loop": "The prediction likely mishandles repeated, periodic, retry, or loop behavior.",
     "generation_error": "The generation call failed before a usable prediction was produced.",
     "infrastructure_error": "The failure is caused by provider, network, timeout, Java, or other infrastructure issues rather than the prompt.",
-    "llm_element_judge_error": "The optional LLM element metric failed; this is a diagnostic-metric issue rather than direct PlantUML generation behavior.",
+    "llm_element_judge_error": "The LLM-judge element metric failed; this means the primary training signal is unavailable for this case.",
 }
 
 
@@ -37,8 +37,8 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
         failed_records,
         key=lambda r: (
             1 if r.syntax.passed else 0,
-            r.node_metrics.f1,
-            r.relation_metrics.f1,
+            r.llm_element_metrics.node_metrics.f1 if r.llm_element_metrics.status == "success" else 0.0,
+            r.llm_element_metrics.relation_metrics.f1 if r.llm_element_metrics.status == "success" else 0.0,
         ),
     )[:representative_limit]
 
@@ -81,8 +81,6 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
         lines.append(f"- plantuml_compiles: {record.plantuml_compilation.passed}")
         if record.plantuml_compilation.errors:
             lines.append(f"- plantuml_compile_errors: {' | '.join(record.plantuml_compilation.errors[:5])}")
-        lines.append(f"- node_f1: {record.node_metrics.f1:.4f}")
-        lines.append(f"- relation_f1: {record.relation_metrics.f1:.4f}")
         if record.llm_element_metrics.enabled:
             lines.append(f"- llm_element_status: {record.llm_element_metrics.status}")
             if record.llm_element_metrics.status == "success":
@@ -90,18 +88,33 @@ def build_analysis(records: list[EvaluationRecord], summary: dict[str, float], m
                 lines.append(f"- llm_relation_f1: {record.llm_element_metrics.relation_metrics.f1:.4f}")
             elif record.llm_element_metrics.error:
                 lines.append(f"- llm_element_error: {record.llm_element_metrics.error[:300]}")
-        if record.node_metrics.missing:
-            lines.append("- missing_nodes:")
-            for item in record.node_metrics.missing[:8]:
+        else:
+            lines.append("- llm_element_status: disabled")
+        node_matching = record.llm_element_metrics.matching.get("nodes", {}) if isinstance(record.llm_element_metrics.matching.get("nodes"), dict) else {}
+        relation_matching = record.llm_element_metrics.matching.get("relations", {}) if isinstance(record.llm_element_metrics.matching.get("relations"), dict) else {}
+        missing_nodes = node_matching.get("fn") or []
+        extra_nodes = node_matching.get("fp") or []
+        missing_relations = relation_matching.get("fn") or []
+        extra_relations = relation_matching.get("fp") or []
+        if missing_nodes:
+            lines.append("- llm_missing_nodes:")
+            for item in missing_nodes[:8]:
                 lines.append(f"  - {item}")
-        if record.node_metrics.extra:
-            lines.append("- extra_nodes:")
-            for item in record.node_metrics.extra[:8]:
+        if extra_nodes:
+            lines.append("- llm_extra_nodes:")
+            for item in extra_nodes[:8]:
                 lines.append(f"  - {item}")
-        if record.relation_metrics.missing:
-            lines.append("- missing_relations:")
-            for item in record.relation_metrics.missing[:8]:
-                lines.append(f"  - {item}")
+        if missing_relations:
+            lines.append("- llm_missing_relations:")
+            for item in missing_relations[:8]:
+                lines.append(f"  - {relation_text(item)}")
+        if extra_relations:
+            lines.append("- llm_extra_relations:")
+            for item in extra_relations[:8]:
+                lines.append(f"  - {relation_text(item)}")
+        if record.node_metrics.matcher != "disabled":
+            lines.append(f"- embedding_node_f1: {record.node_metrics.f1:.4f}")
+            lines.append(f"- embedding_relation_f1: {record.relation_metrics.f1:.4f}")
         lines.append("- input_excerpt:")
         lines.append("  " + record.input_requirement[:700].replace("\n", " "))
         lines.append("- generated_excerpt:")
@@ -125,11 +138,37 @@ def failure_analysis_payload(records: list[EvaluationRecord], summary: dict[str,
         failed_records,
         key=lambda r: (
             1 if r.syntax.passed else 0,
-            r.node_metrics.f1,
-            r.relation_metrics.f1,
+            r.llm_element_metrics.node_metrics.f1 if r.llm_element_metrics.status == "success" else 0.0,
+            r.llm_element_metrics.relation_metrics.f1 if r.llm_element_metrics.status == "success" else 0.0,
         ),
     )[:limit]
+    case_evidence = []
+    for record in representative:
+        node_matching = record.llm_element_metrics.matching.get("nodes", {}) if isinstance(record.llm_element_metrics.matching.get("nodes"), dict) else {}
+        relation_matching = record.llm_element_metrics.matching.get("relations", {}) if isinstance(record.llm_element_metrics.matching.get("relations"), dict) else {}
+        case_evidence.append(
+            {
+                "dataset": record.dataset,
+                "case_id": record.case_id,
+                "failure_types": record.failure_types,
+                "syntax_passed": record.syntax.passed,
+                "plantuml_compiles": record.plantuml_compilation.passed,
+                "llm_element_status": record.llm_element_metrics.status,
+                "llm_node_f1": record.llm_element_metrics.node_metrics.f1,
+                "llm_relation_f1": record.llm_element_metrics.relation_metrics.f1,
+                "llm_counts": record.llm_element_metrics.counts,
+                "llm_missing_nodes": (node_matching.get("fn") or [])[:12],
+                "llm_extra_nodes": (node_matching.get("fp") or [])[:12],
+                "llm_missing_relations": [relation_text(item) for item in (relation_matching.get("fn") or [])[:12]],
+                "llm_extra_relations": [relation_text(item) for item in (relation_matching.get("fp") or [])[:12]],
+                "requirement": record.input_requirement,
+                "prediction": record.generated_plantuml,
+                "ground_truth": record.gold_plantuml,
+            }
+        )
     return {
+        "metric_source": "llm_judge",
+        "summary": summary,
         "requirements": [r.input_requirement for r in representative],
         "predictions": [r.generated_plantuml for r in representative],
         "ground_truths": [r.gold_plantuml for r in representative],
@@ -137,6 +176,7 @@ def failure_analysis_payload(records: list[EvaluationRecord], summary: dict[str,
             "guide": FAILURE_TYPE_GUIDE,
             "by_case": [r.failure_types for r in representative],
         },
+        "case_evidence": case_evidence,
     }
 
 
