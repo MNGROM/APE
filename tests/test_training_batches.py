@@ -22,8 +22,20 @@ class TrainingBatchTest(unittest.TestCase):
         args = build_parser().parse_args([])
 
         self.assertEqual(args.training_batch_strategy, "stratified")
+        self.assertEqual(args.epoch_batch_concurrency, 1)
+        self.assertEqual(args.heldout_test_concurrency, 1)
         self.assertTrue(args.validation_gate)
         self.assertEqual(args.validation_gate_strategy, "stratified")
+
+    def test_parser_accepts_epoch_batch_concurrency(self) -> None:
+        args = build_parser().parse_args(["--epoch-batch-concurrency", "3"])
+
+        self.assertEqual(args.epoch_batch_concurrency, 3)
+
+    def test_parser_accepts_heldout_test_concurrency(self) -> None:
+        args = build_parser().parse_args(["--heldout-test-concurrency", "2"])
+
+        self.assertEqual(args.heldout_test_concurrency, 2)
 
     def test_chunked_training_batches_preserve_old_contiguous_split(self) -> None:
         cases = make_cases("a", 5) + make_cases("b", 5)

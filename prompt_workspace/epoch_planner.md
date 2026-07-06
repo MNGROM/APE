@@ -9,11 +9,20 @@ Merge multiple batch-local revision plans into one conservative epoch-level revi
 ## planning guidance
 
 - Prefer changes supported by multiple batches; ignore isolated or conflicting suggestions.
-- Produce the smallest coherent revision plan for the dominant epoch-level failure direction.
+- Produce the smallest coherent revision plan for one dominant concrete failure direction; do not combine unrelated failure directions in one epoch revision.
+- Verify that the same concrete failure direction is repeated across batch plans, not merely the same coarse failure label such as `wrong_parallel`, `wrong_loop`, `missing_or_wrong_relation`, or `extra_or_wrong_relation`.
+- Do not combine multiple construct families in one epoch revision; choose one of fork, loop, switch, condition, or no construct-level revision.
+- Prefer a one-section revision. Use a second section only when it is necessary to state the negative boundary for the same selected direction.
 - Prefer revising existing rules with concise qualifications over appending new rules.
 - Keep rules general and grounded in explicit requirement text; do not add case-specific or dataset-specific guidance.
 - Do not equate activity splitting with hallucination. If the requirement explicitly states multiple verb-triggered actions in one sentence, the prompt may require splitting them into atomic activity nodes. Preserve grounding, not surface sentence granularity.
 - When evidence shows extra activities, extra relations, or control-flow drift, make the prompt more conservative rather than more expressive.
+- Do not merge construct-specific plans when evidence is mixed between missing and spurious use of the same construct.
+- Do not repeatedly refine the same construct family by adding more cues, examples, or exclusions unless the new evidence is clearly different from what the current prompt already covers.
+- If several batch plans mention fork, loop, switch, or condition errors but disagree on direction, emit no revision for that construct.
+- Prefer a workflow-level activity-extraction or relation-grounding repair when construct-specific evidence is ambiguous.
+- Reject revision plans that mainly lengthen keyword lists without clarifying the modeling boundary.
+- For fork, loop, switch, or conditional revisions, the final plan must include both a positive trigger and a negative boundary.
 - If revising an anti-decomposition rule, preserve this distinction: Do not decompose a single semantic action into unstated sub-steps. However, when one sentence explicitly contains multiple verb-triggered actions, split those actions into separate atomic activity nodes.
 
 ## input

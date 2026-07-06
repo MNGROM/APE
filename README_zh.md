@@ -127,6 +127,10 @@ python run.py --test-dataset all --iterations 3
 failure analysis 或 prompt evolution agents。epoch candidate 必须先通过这组
 固定 validation gate，才会更新 `work.md`。
 
+一个 epoch 内的 training batches 可以用 `--epoch-batch-concurrency N` 并发处理；
+默认 `N=1` 保持串行行为。所有 batch 都使用同一个 epoch 起始 prompt，完成后再由
+epoch planner 统一合并 revision plans。
+
 prompt editor 不能任意重写文件。它只能返回针对 `tst.md` 固定 section 的
 JSON edits：
 

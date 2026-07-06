@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import difflib
 import re
+import threading
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,7 @@ Tail = tuple[str, str | None]
 
 _EMBEDDING_MODELS: dict[str, Any] = {}
 _EMBEDDING_CACHE: dict[tuple[str, str], list[float]] = {}
+_EMBEDDING_LOCK = threading.RLock()
 
 
 @dataclasses.dataclass
@@ -563,28 +565,30 @@ def extract_relations(uml_code: str) -> list[str]:
 
 
 def _load_embedding_model(model_name: str) -> Any:
-    if model_name in _EMBEDDING_MODELS:
-        return _EMBEDDING_MODELS[model_name]
-    try:
-        from sentence_transformers import SentenceTransformer
-    except ImportError as exc:
-        raise RuntimeError(
-            "LATO-style embedding metrics require sentence-transformers. "
-            "Install the project dependencies or run with --metric-matcher difflib for a cheap smoke test."
-        ) from exc
-    model = SentenceTransformer(model_name)
-    _EMBEDDING_MODELS[model_name] = model
-    return model
+    with _EMBEDDING_LOCK:
+        if model_name in _EMBEDDING_MODELS:
+            return _EMBEDDING_MODELS[model_name]
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as exc:
+            raise RuntimeError(
+                "LATO-style embedding metrics require sentence-transformers. "
+                "Install the project dependencies or run with --metric-matcher difflib for a cheap smoke test."
+            ) from exc
+        model = SentenceTransformer(model_name)
+        _EMBEDDING_MODELS[model_name] = model
+        return model
 
 
 def _embedding_vectors(texts: list[str], model_name: str) -> list[list[float]]:
-    missing = [text for text in dict.fromkeys(texts) if (model_name, text) not in _EMBEDDING_CACHE]
-    if missing:
-        model = _load_embedding_model(model_name)
-        embeddings = model.encode(missing, normalize_embeddings=True, show_progress_bar=False)
-        for text, embedding in zip(missing, embeddings):
-            _EMBEDDING_CACHE[(model_name, text)] = [float(value) for value in embedding]
-    return [_EMBEDDING_CACHE[(model_name, text)] for text in texts]
+    with _EMBEDDING_LOCK:
+        missing = [text for text in dict.fromkeys(texts) if (model_name, text) not in _EMBEDDING_CACHE]
+        if missing:
+            model = _load_embedding_model(model_name)
+            embeddings = model.encode(missing, normalize_embeddings=True, show_progress_bar=False)
+            for text, embedding in zip(missing, embeddings):
+                _EMBEDDING_CACHE[(model_name, text)] = [float(value) for value in embedding]
+        return [_EMBEDDING_CACHE[(model_name, text)] for text in texts]
 
 
 def _dot(left: list[float], right: list[float]) -> float:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +49,7 @@ PlantUML:
 """
 
 _CACHE_BY_PATH: dict[Path, dict[str, dict[str, Any]]] = {}
+_CACHE_LOCK = threading.Lock()
 
 
 def _cache_path(state_dir: Path | None) -> Path | None:
@@ -57,34 +59,39 @@ def _cache_path(state_dir: Path | None) -> Path | None:
 
 
 def _load_cache(path: Path) -> dict[str, dict[str, Any]]:
-    cached = _CACHE_BY_PATH.get(path)
-    if cached is not None:
-        return cached
-    values: dict[str, dict[str, Any]] = {}
-    if path.exists():
-        with path.open(encoding="utf-8") as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                try:
-                    payload = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                key = payload.get("key")
-                graph = payload.get("graph")
-                if isinstance(key, str) and isinstance(graph, dict):
-                    values[key] = graph
-    _CACHE_BY_PATH[path] = values
-    return values
+    with _CACHE_LOCK:
+        cached = _CACHE_BY_PATH.get(path)
+        if cached is not None:
+            return cached
+        values: dict[str, dict[str, Any]] = {}
+        if path.exists():
+            with path.open(encoding="utf-8") as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    try:
+                        payload = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    key = payload.get("key")
+                    graph = payload.get("graph")
+                    if isinstance(key, str) and isinstance(graph, dict):
+                        values[key] = graph
+        _CACHE_BY_PATH[path] = values
+        return values
 
 
 def _write_cache(path: Path, key: str, graph: ActivityGraph) -> None:
-    cache = _load_cache(path)
     payload = {"nodes": graph.nodes, "relations": graph.relations}
-    cache[key] = payload
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"key": key, "graph": payload}, ensure_ascii=False) + "\n")
+    with _CACHE_LOCK:
+        cache = _CACHE_BY_PATH.get(path)
+        if cache is None:
+            cache = {}
+            _CACHE_BY_PATH[path] = cache
+        cache[key] = payload
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"key": key, "graph": payload}, ensure_ascii=False) + "\n")
 
 
 def _cache_key(

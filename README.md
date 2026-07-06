@@ -129,6 +129,11 @@ of the sampled training pool for small runs). Validation cases are not used by
 failure analysis or prompt evolution agents. The epoch candidate must pass
 this fixed gate before `work.md` is updated.
 
+Training batches inside one epoch can run concurrently with
+`--epoch-batch-concurrency N`; the default `N=1` preserves the serial behavior.
+All batches use the same epoch-start prompt, then the epoch planner merges the
+completed batch revision plans once.
+
 The prompt editor does not rewrite arbitrary files. It returns JSON edits for
 the fixed markdown sections in `tst.md`:
 
