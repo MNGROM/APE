@@ -8,29 +8,26 @@ Analyze a batch of evaluation records and identify the main prompt-level weaknes
 
 ## analysis guidance
 
-- Treat `failure_types` as coarse evidence signals, not final diagnoses.
-- Do not infer `failure_direction` from the label name alone. Determine it by comparing `requirements`, `predictions`, and `ground_truths`.
-- Do not use coarse labels such as `wrong_parallel`, `wrong_loop`, `missing_or_wrong_relation`, or `extra_or_wrong_relation` alone as the diagnosis.
-- Prefer patterns supported by multiple cases. Isolated cases should be marked as weak evidence unless the failure is severe and unambiguous.
-- If activity nodes are missing, extra, over-fragmented, or under-fragmented, consider whether relation failures are secondary to activity inventory before diagnosing relation grounding.
-- Diagnose fork, loop, switch, or conditional construct problems only when prediction and ground truth show a clear repeated direction.
-- If cases mix missing and spurious uses of the same construct, mark the pattern as `mixed_or_uncertain` instead of recommending broader construct guidance.
-- Distinguish missing explicit behavior from hallucinated behavior. Do not treat all activity splitting as hallucination.
-- Do not infer dataset-specific rules, domain-specific conventions, or keyword lists from a small number of cases.
-- When evidence is ambiguous, preserve uncertainty and warn downstream agents not to revise the prompt based only on that pattern.
+- Treat `failure_types` as coarse evidence signals only. Never use a coarse label such as `wrong_parallel`, `wrong_loop`, `missing_or_wrong_relation`, or `extra_or_wrong_relation` by itself as the diagnosis or `failure_direction`.
+- Infer each concrete `failure_direction` by comparing `requirements`, `predictions`, `ground_truths`, and available `case_evidence`. Decide whether the prediction omitted required behavior, added unsupported behavior, used the wrong relation or construct, or failed output format.
+- Prefer patterns supported by multiple cases with the same concrete direction. Mark isolated cases as `isolated` unless the failure is severe, explicit, and unambiguous. Mark conflicting or directionally mixed evidence as `mixed_or_uncertain`.
+- Before diagnosing relation grounding or construct selection, check whether activity nodes are missing, extra, over-fragmented, or under-fragmented. If relation errors depend on activity-node inventory, describe the relation failure as secondary.
+- Diagnose fork, loop, switch, or conditional construct problems only when the requirement, prediction, and ground truth show a clear repeated direction. If cases mix missing and spurious uses of the same construct, use `mixed_or_uncertain` instead of recommending broader construct guidance.
+- Preserve the activity-granularity boundary: split multiple distinct explicit behavior actions, even when they appear in one sentence; do not split one stated action merely because it has multiple objects, components, attributes, fields, list items, peer items, targets, or independent subsystems. These labels are not evidence for sequence, fork, condition, or loop unless the requirement states separate behavior, timing, conditions, outcomes, or explicit concurrency.
+- Do not infer dataset-specific rules, domain-specific conventions, or keyword lists from a small number of cases. When evidence is ambiguous, preserve uncertainty and warn downstream agents not to revise the prompt based only on that pattern.
 
 ## failure direction definitions
 
 Use exactly one `failure_direction` for each error pattern:
 
-- `activity_under_decomposition`: Use when the prediction compresses multiple explicit requirement actions into one broad activity node. Do not use this for missing relations when the activity nodes are already correct.
-- `activity_over_decomposition`: Use when the prediction splits one explicit semantic action into unsupported sub-steps or implementation details.
+- `activity_under_decomposition`: Use when the prediction compresses multiple distinct explicit requirement actions into one broad activity node. Do not use this when the requirement states one action applied to multiple objects, components, attributes, fields, or list items.
+- `activity_over_decomposition`: Use when the prediction splits one explicit semantic action into unsupported sub-steps, implementation details, or separate nodes for objects/components/attributes that share the same stated action.
 - `missing_required_relation`: Use when required activity nodes are mostly present, but an expected sequence, dependency, guard, or control-flow edge is missing.
 - `spurious_relation`: Use when the prediction adds an unsupported sequence, dependency, guard, causality, or control-flow edge.
 - `wrong_relation_type`: Use when a relation exists but is modeled with the wrong kind of control flow, such as sequential instead of conditional, conditional instead of parallel, or loop instead of sequence.
-- `missing_required_parallel`: Use only when the ground truth requires parallel/fork behavior and the prediction fails to model it.
+- `missing_required_parallel`: Use only when the requirement explicitly supports parallel/fork behavior, the ground truth models it, and the prediction fails to model it.
 - `spurious_parallel`: Use when the prediction uses fork/parallel behavior without explicit support from the requirement or ground truth.
-- `missing_required_loop`: Use only when the ground truth requires repeat/while/loop behavior and the prediction fails to model it.
+- `missing_required_loop`: Use only when the requirement explicitly supports repeat/while/loop behavior, the ground truth models it, and the prediction fails to model it.
 - `spurious_loop`: Use when the prediction adds repeat/while/loop behavior without explicit support from the requirement or ground truth.
 - `condition_or_branch_error`: Use when if/else, switch/case, branch guard labels, branch grouping, or branch outcomes are missing, inverted, or assigned to the wrong path.
 - `syntax_or_format_error`: Use when the generated output is malformed PlantUML, missing required wrappers, or violates the required output format.
@@ -49,10 +46,13 @@ Use exactly one `evidence_strength` for each error pattern:
 
 You will receive:
 
+- `metric_source`: the metric source used for the evaluation signal, currently usually `llm_judge`.
+- `summary`: aggregate evaluation metrics for the batch.
 - `requirements`: natural-language requirements.
 - `predictions`: predicted PlantUML diagrams.
 - `ground_truths`: ground-truth PlantUML diagrams.
 - `failure_types`: failure type information, with `guide` describing each label and `by_case` aligned by index with the three arrays above.
+- `case_evidence`: per-case evidence including failure types, syntax/compilation status, LLM judge node/relation scores, missing/extra nodes, missing/extra relations, requirement, prediction, and ground truth.
 
 ## output
 
