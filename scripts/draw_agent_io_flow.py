@@ -3,7 +3,7 @@
 This script is documentation-only. It does not call the LLM, read run logs, or
 modify prompts. Run it from the repository root:
 
-    python draw_agent_io_flow.py
+    python scripts/draw_agent_io_flow.py
 """
 
 from __future__ import annotations
@@ -13,7 +13,8 @@ from pathlib import Path
 import textwrap
 
 
-OUT = Path(__file__).with_name("agent_io_flow.svg")
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "docs" / "assets" / "agent_io_flow.svg"
 WIDTH = 1800
 HEIGHT = 980
 
