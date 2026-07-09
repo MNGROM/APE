@@ -20,7 +20,7 @@ prompt_workspace/tst.md
 - `ape_datasets/lato.py`：LATO 数据集加载和采样。
 - `llm.py`：OpenAI-compatible `LLMClient`。
 - `prediction.py`：UML agent 预测辅助逻辑。
-- `metrics.py`：确定性语法、节点、关系和分数指标。
+- `metrics.py`：语法、辅助 embedding 和 LLM judge 汇总指标。
 - `evaluation.py`：batch 评估流程。
 - `analysis/`：失败分析、错误定位和 prompt 编辑 agent。
 - `prompt_ops.py`：prompt section 解析和 edit 应用。
@@ -30,7 +30,7 @@ prompt_workspace/tst.md
 - `prompt_workspace/error_localization.md`：错误原因定位模型的 system prompt。
 - `prompt_workspace/prompt_editor.md`：结构化 prompt 编辑模型的 system prompt。
 - `prompt_datasets/lato/`：六个 JSONL 数据集：`bp`、`fsd`、`lmc`、`pure`、`rac`、`us`。
-- `llm_element_metrics.py`：PlantUML 编译检查和可选 LLM 语义元素 judge。
+- `llm_element_metrics.py`：PlantUML 编译检查和默认 LLM 语义元素 judge。
 - `utils/rate_limit.py`：共享 provider 重试与限流状态记录。
 - `tools/plantuml/plantuml-1.2025.4.jar`：本地 PlantUML 语法校验工具。
 
@@ -59,11 +59,11 @@ $env:ZHIPU_LLM_MODEL="glm-5.1"
 `--thinking` 是所有模型调用的默认 thinking 模式。也可以按 agent 细分覆盖：
 
 ```powershell
-python run.py --test-dataset fsd --thinking disabled --generation-thinking disabled --analysis-thinking enabled --localization-thinking enabled --editor-thinking disabled --judge-thinking disabled --no-llm-element-metrics
+python run.py --test-dataset fsd --thinking disabled --generation-thinking disabled --analysis-thinking enabled --localization-thinking enabled --editor-thinking disabled --judge-thinking disabled
 ```
 
 细分参数支持 `inherit`、`enabled`、`disabled`。推荐先让 PlantUML 生成、prompt editor
-和 LLM judge 保持 `disabled`，只尝试给 failure analysis 和 error localization 开启。
+和 LLM judge 的 thinking 保持 `disabled`，只尝试给 failure analysis 和 error localization 开启。
 
 不要把 API key 写进代码、文档、日志或提交记录。
 
@@ -127,6 +127,10 @@ python run.py --test-dataset all --iterations 3
 failure analysis 或 prompt evolution agents。epoch candidate 必须先通过这组
 固定 validation gate，才会更新 `work.md`。
 
+一个 epoch 内的 training batches 可以用 `--epoch-batch-concurrency N` 并发处理；
+默认 `N=1` 保持串行行为。所有 batch 都使用同一个 epoch 起始 prompt，完成后再由
+epoch planner 统一合并 revision plans。
+
 prompt editor 不能任意重写文件。它只能返回针对 `tst.md` 固定 section 的
 JSON edits：
 
@@ -148,16 +152,17 @@ epoch planner 会应用最终合并 revision plan 的 section 数量预算：
 
 ## 评估
 
-主要确定性指标：
-
-- `node_f1` (`N-F1`)：活动/条件节点匹配。
-- `relation_f1` (`R-F1`)：控制流关系匹配。
-- `plantuml_compilation_pass_rate`：本地 PlantUML 编译通过率。
-
-可选 LLM 语义指标：
+训练和 candidate acceptance 的主指标是 LLM judge 语义指标：
 
 - `llm_node_f1` (`LLM-N-F1`)
 - `llm_relation_f1` (`LLM-R-F1`)
+- `plantuml_compilation_pass_rate`：本地 PlantUML 编译通过率。
+
+embedding/difflib 指标默认关闭，只能通过 `--embedding-element-metrics`
+作为辅助诊断开启：
+
+- `node_f1` (`N-F1`)：活动/条件节点匹配。
+- `relation_f1` (`R-F1`)：控制流关系匹配。
 
 便宜本地测试可关闭 LLM judge：
 
@@ -177,10 +182,12 @@ node_f1_delta >= -0.01
 relation_f1_delta >= -0.01
 node_precision_delta >= -0.02
 relation_precision_delta >= -0.02
-如果 LLM node/relation F1 可用，不能超过语义回退 guard
 infrastructure_error_delta <= 0
 prompt_size_ok
 ```
+
+这里的 `node_*` 和 `relation_*` delta 指 LLM judge 指标，不是辅助
+embedding 指标。
 
 Benefit Gate 至少满足一项才接收：
 
@@ -194,8 +201,8 @@ relation_f1_delta >= 0.02
 
 第 1 轮有 bootstrap 例外：如果 `N-F1` 和 `R-F1` 都达到明显提升
 （默认都是 `+0.05`），syntax/compile pass rate 仍在放宽容忍范围内
-（默认 `-0.10`），没有新增基础设施错误、可用的 LLM 指标不回退、
-prompt 未超过绝对字符数上限 `--max-prompt-chars`，则可以接收。后续轮次使用上面的标准门控。
+（默认 `-0.10`），没有新增基础设施错误，prompt 未超过绝对字符数上限
+`--max-prompt-chars`，则可以接收。后续轮次使用上面的标准门控。
 held-out 测试写入 `iteration_NNN/test`；全部训练结束后不再额外重复运行一次
 root-level held-out test。
 

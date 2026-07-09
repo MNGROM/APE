@@ -93,20 +93,18 @@
 - judge 可能偏宽松，导致与 LATO embedding 指标不可比。
 - acceptance gate 如果依赖 LLM，运行波动会变大。
 
-### 方案 C：混合架构
+### 方案 C：LLM judge 主指标 + embedding 辅助诊断
 
-建议优先考虑混合架构：
+当前实验设计已经改为：
 
-- deterministic parser 继续作为主指标和 gate 默认路径。
-- LLM extraction 作为 fallback 或诊断指标。
-- 当 deterministic parser 检测到 unsupported syntax、styled arrow、fork shorthand 等风险语法时，额外运行 LLM extraction。
-- 报告中同时保留 deterministic metrics 和 LLM metrics，明确分开解释。
+- LLM judge 作为训练、failure analysis 和 validation gate 的主指标来源。
+- embedding/difflib metrics 默认关闭，只通过 `--embedding-element-metrics` 作为辅助诊断运行。
+- 报告中同时保留 LLM metrics 和可选 embedding metrics，但二者明确分开解释。
 
-推荐方向：
+后续仍需注意：
 
-- 短期先修补 parser 的明确 bug。
-- 中期增加 parser confidence / unsupported syntax warning。
-- 长期可引入 LLM extraction fallback，但不直接替代 LATO-style embedding 主指标，除非实验设计明确改变。
+- LLM judge 成本更高，且运行波动可能影响 gate。
+- embedding 指标可以帮助诊断分歧，但不应再驱动 prompt 修改或 acceptance。
 
 ## 5. LLM judge 与 embedding metrics 的关系
 
@@ -124,8 +122,8 @@
 当前处理建议：
 
 - 保持二者分开。
-- acceptance gate 使用 deterministic `node_f1` / `relation_f1` 做 accept/reject 的收益和非回退判断。
-- LLM judge 用作辅助诊断；当 LLM metrics 可用时，也作为语义回退 guard。
+- acceptance gate 使用 LLM judge 的 `llm_node_f1` / `llm_relation_f1` 做 accept/reject 的收益和非回退判断。
+- embedding metrics 只作为辅助诊断数据，默认不运行，也不驱动训练。
 
 ## 6. acceptance gate 采样波动（已处理）
 

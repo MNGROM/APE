@@ -13,12 +13,6 @@ from utils.io import read_text, write_text
 METRIC_KEYS = (
     "plantuml_compilation_pass_rate",
     "syntax_pass_rate",
-    "node_f1",
-    "relation_f1",
-    "node_precision",
-    "node_recall",
-    "relation_precision",
-    "relation_recall",
     "llm_node_f1",
     "llm_relation_f1",
     "llm_node_precision",
@@ -27,6 +21,13 @@ METRIC_KEYS = (
     "llm_relation_recall",
     "llm_element_evaluated",
     "llm_element_failed",
+    "node_f1",
+    "relation_f1",
+    "node_precision",
+    "node_recall",
+    "relation_precision",
+    "relation_recall",
+    "embedding_element_evaluated",
     "infrastructure_error_rate",
 )
 

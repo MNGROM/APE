@@ -32,17 +32,27 @@ def decision(
 
 
 class AcceptanceGateTest(unittest.TestCase):
-    def test_acceptance_uses_deterministic_node_relation_benefits(self) -> None:
+    def test_acceptance_uses_llm_judge_node_relation_benefits(self) -> None:
         payload = decision(
             {
                 "node_f1": 0.50,
                 "relation_f1": 0.40,
+                "llm_node_f1": 0.80,
+                "llm_relation_f1": 0.70,
+                "llm_node_precision": 0.90,
+                "llm_relation_precision": 0.90,
+                "llm_element_evaluated": 10.0,
                 "plantuml_compilation_pass_rate": 1.0,
                 "infrastructure_error_rate": 0.0,
             },
             {
                 "node_f1": 0.50,
                 "relation_f1": 0.44,
+                "llm_node_f1": 0.80,
+                "llm_relation_f1": 0.74,
+                "llm_node_precision": 0.90,
+                "llm_relation_precision": 0.90,
+                "llm_element_evaluated": 10.0,
                 "plantuml_compilation_pass_rate": 1.0,
                 "infrastructure_error_rate": 0.0,
             },
@@ -51,22 +61,26 @@ class AcceptanceGateTest(unittest.TestCase):
         self.assertTrue(payload["accepted"])
         self.assertTrue(payload["benefit_gate"]["relation_improved"])
 
-    def test_llm_metrics_do_not_create_acceptance_benefit(self) -> None:
+    def test_embedding_metrics_do_not_create_acceptance_benefit(self) -> None:
         payload = decision(
             {
                 "node_f1": 0.50,
                 "relation_f1": 0.40,
                 "llm_node_f1": 0.80,
                 "llm_relation_f1": 0.70,
+                "llm_node_precision": 0.90,
+                "llm_relation_precision": 0.90,
                 "plantuml_compilation_pass_rate": 1.0,
                 "infrastructure_error_rate": 0.0,
                 "llm_element_evaluated": 10.0,
             },
             {
-                "node_f1": 0.50,
-                "relation_f1": 0.40,
-                "llm_node_f1": 0.85,
-                "llm_relation_f1": 0.76,
+                "node_f1": 0.56,
+                "relation_f1": 0.46,
+                "llm_node_f1": 0.80,
+                "llm_relation_f1": 0.70,
+                "llm_node_precision": 0.90,
+                "llm_relation_precision": 0.90,
                 "plantuml_compilation_pass_rate": 1.0,
                 "infrastructure_error_rate": 0.0,
                 "llm_element_evaluated": 10.0,
@@ -84,6 +98,8 @@ class AcceptanceGateTest(unittest.TestCase):
                 "relation_f1": 0.40,
                 "llm_node_f1": 0.80,
                 "llm_relation_f1": 0.70,
+                "llm_node_precision": 0.90,
+                "llm_relation_precision": 0.90,
                 "plantuml_compilation_pass_rate": 1.0,
                 "infrastructure_error_rate": 0.0,
                 "llm_element_evaluated": 10.0,
@@ -93,6 +109,8 @@ class AcceptanceGateTest(unittest.TestCase):
                 "relation_f1": 0.46,
                 "llm_node_f1": 0.79,
                 "llm_relation_f1": 0.56,
+                "llm_node_precision": 0.90,
+                "llm_relation_precision": 0.90,
                 "plantuml_compilation_pass_rate": 1.0,
                 "infrastructure_error_rate": 0.0,
                 "llm_element_evaluated": 10.0,
@@ -100,18 +118,55 @@ class AcceptanceGateTest(unittest.TestCase):
         )
 
         self.assertFalse(payload["accepted"])
-        self.assertFalse(payload["safety_gate"]["llm_semantic_guard_ok"])
+        self.assertFalse(payload["safety_gate"]["relation_not_significantly_worse"])
+
+    def test_llm_judge_failures_block_acceptance(self) -> None:
+        payload = decision(
+            {
+                "llm_node_f1": 0.80,
+                "llm_relation_f1": 0.70,
+                "llm_node_precision": 0.90,
+                "llm_relation_precision": 0.90,
+                "llm_element_evaluated": 10.0,
+                "llm_element_failed": 0.0,
+                "plantuml_compilation_pass_rate": 1.0,
+                "infrastructure_error_rate": 0.0,
+            },
+            {
+                "llm_node_f1": 0.83,
+                "llm_relation_f1": 0.73,
+                "llm_node_precision": 0.90,
+                "llm_relation_precision": 0.90,
+                "llm_element_evaluated": 9.0,
+                "llm_element_failed": 1.0,
+                "plantuml_compilation_pass_rate": 1.0,
+                "infrastructure_error_rate": 0.0,
+            },
+        )
+
+        self.assertFalse(payload["accepted"])
+        self.assertFalse(payload["safety_gate"]["llm_judge_failures_not_increased"])
 
     def test_prompt_size_uses_absolute_char_limit_only(self) -> None:
         baseline = {
             "node_f1": 0.50,
             "relation_f1": 0.40,
+            "llm_node_f1": 0.50,
+            "llm_relation_f1": 0.40,
+            "llm_node_precision": 0.80,
+            "llm_relation_precision": 0.80,
+            "llm_element_evaluated": 10.0,
             "plantuml_compilation_pass_rate": 1.0,
             "infrastructure_error_rate": 0.0,
         }
         candidate = {
             "node_f1": 0.56,
             "relation_f1": 0.46,
+            "llm_node_f1": 0.56,
+            "llm_relation_f1": 0.46,
+            "llm_node_precision": 0.80,
+            "llm_relation_precision": 0.80,
+            "llm_element_evaluated": 10.0,
             "plantuml_compilation_pass_rate": 1.0,
             "infrastructure_error_rate": 0.0,
         }
@@ -149,6 +204,11 @@ class AcceptanceGateTest(unittest.TestCase):
                 "relation_f1": 0.40,
                 "node_precision": 0.80,
                 "relation_precision": 0.80,
+                "llm_node_f1": 0.50,
+                "llm_relation_f1": 0.40,
+                "llm_node_precision": 0.80,
+                "llm_relation_precision": 0.80,
+                "llm_element_evaluated": 10.0,
                 "plantuml_compilation_pass_rate": 1.0,
                 "syntax_pass_rate": 1.0,
                 "infrastructure_error_rate": 0.0,
@@ -158,6 +218,11 @@ class AcceptanceGateTest(unittest.TestCase):
                 "relation_f1": 0.43,
                 "node_precision": 0.75,
                 "relation_precision": 0.80,
+                "llm_node_f1": 0.50,
+                "llm_relation_f1": 0.43,
+                "llm_node_precision": 0.75,
+                "llm_relation_precision": 0.80,
+                "llm_element_evaluated": 10.0,
                 "plantuml_compilation_pass_rate": 1.0,
                 "syntax_pass_rate": 1.0,
                 "infrastructure_error_rate": 0.0,
@@ -172,6 +237,11 @@ class AcceptanceGateTest(unittest.TestCase):
             {
                 "node_f1": 0.50,
                 "relation_f1": 0.40,
+                "llm_node_f1": 0.50,
+                "llm_relation_f1": 0.40,
+                "llm_node_precision": 0.80,
+                "llm_relation_precision": 0.80,
+                "llm_element_evaluated": 10.0,
                 "plantuml_compilation_pass_rate": 1.0,
                 "syntax_pass_rate": 1.0,
                 "infrastructure_error_rate": 0.0,
@@ -179,6 +249,11 @@ class AcceptanceGateTest(unittest.TestCase):
             {
                 "node_f1": 0.56,
                 "relation_f1": 0.46,
+                "llm_node_f1": 0.56,
+                "llm_relation_f1": 0.46,
+                "llm_node_precision": 0.80,
+                "llm_relation_precision": 0.80,
+                "llm_element_evaluated": 10.0,
                 "plantuml_compilation_pass_rate": 0.92,
                 "syntax_pass_rate": 0.92,
                 "infrastructure_error_rate": 0.0,

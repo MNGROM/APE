@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import difflib
 import re
+import threading
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,7 @@ Tail = tuple[str, str | None]
 
 _EMBEDDING_MODELS: dict[str, Any] = {}
 _EMBEDDING_CACHE: dict[tuple[str, str], list[float]] = {}
+_EMBEDDING_LOCK = threading.RLock()
 
 
 @dataclasses.dataclass
@@ -37,6 +39,21 @@ class MetricBundle:
     pred_count: int = 0
     matches: list[dict[str, Any]] = dataclasses.field(default_factory=list)
     matcher: str = "embedding"
+
+
+def empty_metric_bundle(*, matcher: str = "disabled") -> MetricBundle:
+    return MetricBundle(
+        precision=0.0,
+        recall=0.0,
+        f1=0.0,
+        missing=[],
+        extra=[],
+        correct=0,
+        gold_count=0,
+        pred_count=0,
+        matches=[],
+        matcher=matcher,
+    )
 
 
 @dataclasses.dataclass
@@ -563,28 +580,30 @@ def extract_relations(uml_code: str) -> list[str]:
 
 
 def _load_embedding_model(model_name: str) -> Any:
-    if model_name in _EMBEDDING_MODELS:
-        return _EMBEDDING_MODELS[model_name]
-    try:
-        from sentence_transformers import SentenceTransformer
-    except ImportError as exc:
-        raise RuntimeError(
-            "LATO-style embedding metrics require sentence-transformers. "
-            "Install the project dependencies or run with --metric-matcher difflib for a cheap smoke test."
-        ) from exc
-    model = SentenceTransformer(model_name)
-    _EMBEDDING_MODELS[model_name] = model
-    return model
+    with _EMBEDDING_LOCK:
+        if model_name in _EMBEDDING_MODELS:
+            return _EMBEDDING_MODELS[model_name]
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as exc:
+            raise RuntimeError(
+                "LATO-style embedding metrics require sentence-transformers. "
+                "Install the project dependencies or run with --metric-matcher difflib for a cheap smoke test."
+            ) from exc
+        model = SentenceTransformer(model_name)
+        _EMBEDDING_MODELS[model_name] = model
+        return model
 
 
 def _embedding_vectors(texts: list[str], model_name: str) -> list[list[float]]:
-    missing = [text for text in dict.fromkeys(texts) if (model_name, text) not in _EMBEDDING_CACHE]
-    if missing:
-        model = _load_embedding_model(model_name)
-        embeddings = model.encode(missing, normalize_embeddings=True, show_progress_bar=False)
-        for text, embedding in zip(missing, embeddings):
-            _EMBEDDING_CACHE[(model_name, text)] = [float(value) for value in embedding]
-    return [_EMBEDDING_CACHE[(model_name, text)] for text in texts]
+    with _EMBEDDING_LOCK:
+        missing = [text for text in dict.fromkeys(texts) if (model_name, text) not in _EMBEDDING_CACHE]
+        if missing:
+            model = _load_embedding_model(model_name)
+            embeddings = model.encode(missing, normalize_embeddings=True, show_progress_bar=False)
+            for text, embedding in zip(missing, embeddings):
+                _EMBEDDING_CACHE[(model_name, text)] = [float(value) for value in embedding]
+        return [_EMBEDDING_CACHE[(model_name, text)] for text in texts]
 
 
 def _dot(left: list[float], right: list[float]) -> float:
@@ -798,6 +817,53 @@ def classify_failures(syntax: SyntaxResult, node_metrics: MetricBundle, relation
     return failures
 
 
+def relation_text(relation: Any) -> str:
+    if isinstance(relation, dict):
+        source = str(relation.get("from", "") or "")
+        target = str(relation.get("to", "") or "")
+        kind = str(relation.get("type", "") or "")
+        condition = relation.get("condition")
+        suffix = f" [{condition}]" if condition else ""
+        return f"{source} -> {target} ({kind}){suffix}".strip()
+    return str(relation)
+
+
+def classify_llm_failures(syntax: SyntaxResult, llm_element_metrics: LLMElementMetrics) -> list[str]:
+    failures: list[str] = []
+    if not syntax.passed:
+        failures.append("syntax_error")
+    if not llm_element_metrics.enabled:
+        failures.append("llm_element_judge_error")
+        return failures
+    if llm_element_metrics.status != "success":
+        failures.append("llm_element_judge_error")
+        return failures
+
+    matching = llm_element_metrics.matching or {}
+    node_matching = matching.get("nodes", {}) if isinstance(matching.get("nodes"), dict) else {}
+    relation_matching = matching.get("relations", {}) if isinstance(matching.get("relations"), dict) else {}
+    node_fn = node_matching.get("fn") or []
+    node_fp = node_matching.get("fp") or []
+    relation_fn = relation_matching.get("fn") or []
+    relation_fp = relation_matching.get("fp") or []
+
+    if node_fn:
+        failures.append("missing_activity")
+    if node_fp:
+        failures.append("extra_activity")
+    if relation_fn:
+        failures.append("missing_or_wrong_relation")
+    if relation_fp:
+        failures.append("extra_or_wrong_relation")
+
+    relation_blob = " ".join(relation_text(item).lower() for item in [*relation_fn, *relation_fp])
+    if any(word in relation_blob for word in ("fork", "parallel", "concurrent", "simultaneous")):
+        failures.append("wrong_parallel")
+    if any(word in relation_blob for word in ("repeat", "while", "until", "loop", "periodic")):
+        failures.append("wrong_loop")
+    return failures
+
+
 def avg(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
@@ -813,10 +879,12 @@ def summarize_records(records: list[EvaluationRecord]) -> dict[str, float]:
     node_recall = avg([r.node_metrics.recall for r in records])
     relation_precision = avg([r.relation_metrics.precision for r in records])
     relation_recall = avg([r.relation_metrics.recall for r in records])
-    return {
+    embedding_evaluated = sum(1 for r in records if r.node_metrics.matcher != "disabled" or r.relation_metrics.matcher != "disabled")
+    summary = {
         "count": float(len(records)),
         "syntax_pass_rate": avg([1.0 if r.syntax.passed else 0.0 for r in records]),
         "infrastructure_error_rate": avg([1.0 if "infrastructure_error" in r.failure_types else 0.0 for r in records]),
+        "embedding_element_evaluated": float(embedding_evaluated),
         "node_precision": node_precision,
         "node_recall": node_recall,
         "node_f1": harmonic_f1(node_precision, node_recall),
@@ -833,19 +901,29 @@ def summarize_records(records: list[EvaluationRecord]) -> dict[str, float]:
         "llm_relation_recall": avg([m.relation_metrics.recall for m in llm_success]),
         "llm_relation_f1": avg([m.relation_metrics.f1 for m in llm_success]),
     }
+    summary["primary_node_precision"] = summary["llm_node_precision"]
+    summary["primary_node_recall"] = summary["llm_node_recall"]
+    summary["primary_node_f1"] = summary["llm_node_f1"]
+    summary["primary_relation_precision"] = summary["llm_relation_precision"]
+    summary["primary_relation_recall"] = summary["llm_relation_recall"]
+    summary["primary_relation_f1"] = summary["llm_relation_f1"]
+    return summary
 
 
 def format_summary(summary: dict[str, float]) -> str:
     text = (
         f"count={int(summary['count'])}, "
         f"syntax={summary['syntax_pass_rate']:.1%}, "
-        f"plantuml_compile={summary['plantuml_compilation_pass_rate']:.1%}, "
-        f"N-F1={summary['node_f1']:.3f}, "
-        f"R-F1={summary['relation_f1']:.3f}"
+        f"plantuml_compile={summary['plantuml_compilation_pass_rate']:.1%}"
     )
     if summary.get("llm_element_evaluated", 0.0) > 0:
         text += (
             f", LLM-N-F1={summary['llm_node_f1']:.3f}, "
             f"LLM-R-F1={summary['llm_relation_f1']:.3f}"
+        )
+    if summary.get("embedding_element_evaluated", 0.0) > 0:
+        text += (
+            f", EMB-N-F1={summary['node_f1']:.3f}, "
+            f"EMB-R-F1={summary['relation_f1']:.3f}"
         )
     return text

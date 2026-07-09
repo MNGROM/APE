@@ -69,8 +69,8 @@ validation cases 不参与 failure analysis、error localization、prompt editor
 当前版本改成：
 
 ```text
-deterministic node_f1 / relation_f1 是主收益指标
-LLM metrics 只作为可选语义回退 guard
+LLM judge 的 llm_node_f1 / llm_relation_f1 是主收益指标
+embedding/difflib node_f1 / relation_f1 默认关闭，只作为辅助诊断数据
 syntax / compile / precision / infrastructure 进入 safety gate
 ```
 
@@ -83,10 +83,11 @@ node_f1 不显著下降
 relation_f1 不显著下降
 node_precision 不显著下降
 relation_precision 不显著下降
-LLM semantic guard 通过（如果 LLM metrics 可用）
 infrastructure_error_rate 不增加
 prompt size 通过
 ```
+
+这里的 node/relation 指标指 LLM judge 指标，不是辅助 embedding 指标。
 
 Benefit gate 至少满足一个：
 
@@ -96,7 +97,7 @@ node_f1 提升
 compile 提升且 node/relation F1 不回退
 ```
 
-另有 bootstrap 例外：首次 accepted update 前，如果 deterministic node/relation F1 都强提升，可以容忍较小 syntax/compile 回退。
+另有 bootstrap 例外：首次 accepted update 前，如果 LLM judge node/relation F1 都强提升，可以容忍较小 syntax/compile 回退。
 
 ## Agent 和 Prompt 变化
 

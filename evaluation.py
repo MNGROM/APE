@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import dataclasses
 from pathlib import Path
 from typing import Any
@@ -14,8 +15,10 @@ from metrics import (
     ActivityGraph,
     EvaluationRecord,
     SyntaxResult,
+    classify_llm_failures,
     classify_failures,
     compute_metric,
+    empty_metric_bundle,
     extract_activity_graph,
     summarize_records,
     validate_plantuml,
@@ -45,6 +48,139 @@ def is_infrastructure_error(message: str) -> bool:
     )
 
 
+def evaluate_one_case(
+    *,
+    prompt: str,
+    case: Case,
+    idx: int,
+    total: int,
+    args: Any,
+    llm_client: LLMClient,
+    state_dir: Path | None = None,
+    phase: str = "eval",
+) -> EvaluationRecord:
+    print(f"[eval] {idx}/{total} {case.case_id}", flush=True)
+    generation_error = False
+    generation_infrastructure_error = False
+    try:
+        generated = generated_from_args(
+            prompt=prompt,
+            case=case,
+            args=args,
+            llm_client=llm_client,
+            state_dir=state_dir,
+            retry_phase=phase,
+        )
+    except Exception as exc:
+        generation_error = True
+        generation_infrastructure_error = is_infrastructure_error(str(exc))
+        generated = ""
+        syntax = SyntaxResult(False, [f"LLM generation failed: {exc}"])
+    else:
+        syntax = validate_plantuml(generated, args.plantuml_jar)
+
+    generated_plantuml = extract_plantuml(generated, wrap_if_needed=False)
+    plantuml_compilation = check_plantuml_compilation(
+        generated_plantuml,
+        args.plantuml_jar,
+        timeout=args.plantuml_compile_timeout,
+    )
+    llm_element_metrics = evaluate_llm_elements(
+        ground_truth=case.gold_plantuml,
+        prediction=generated_plantuml,
+        enabled=args.llm_element_metrics,
+        model=args.llm_judge_model,
+        api_key=args.llm_judge_api_key,
+        base_url=args.llm_judge_base_url,
+        temperature=args.llm_judge_temperature,
+        max_tokens=args.llm_judge_max_tokens,
+        timeout=args.llm_judge_timeout,
+        thinking=args.llm_judge_thinking,
+        max_retries=args.llm_judge_max_retries,
+        state_dir=state_dir,
+        retry_phase=f"{phase}:llm_judge",
+        retry_context={"dataset": case.dataset, "case_id": case.case_id},
+        provider_max_retries=args.llm_max_retries,
+        retry_initial_wait=args.llm_rate_limit_initial_wait,
+        retry_max_wait=args.llm_rate_limit_max_wait,
+    )
+
+    node_metrics = empty_metric_bundle()
+    relation_metrics = empty_metric_bundle()
+    if getattr(args, "embedding_element_metrics", False):
+        try:
+            gold_graph = extract_graph_for_metrics(
+                case.gold_plantuml,
+                args=args,
+                llm_client=llm_client,
+                state_dir=state_dir,
+                phase=phase,
+                role="gold",
+                retry_context={"dataset": case.dataset, "case_id": case.case_id},
+            )
+            pred_graph = (
+                ActivityGraph(nodes=[], relations=[])
+                if generation_error
+                else extract_graph_for_metrics(
+                    generated_plantuml,
+                    args=args,
+                    llm_client=llm_client,
+                    state_dir=state_dir,
+                    phase=phase,
+                    role="prediction",
+                    retry_context={"dataset": case.dataset, "case_id": case.case_id},
+                )
+            )
+        except Exception as extract_exc:
+            gold_graph = extract_activity_graph(case.gold_plantuml)
+            pred_graph = ActivityGraph(nodes=[], relations=[])
+            print(f"[eval] auxiliary embedding extraction failed for {case.case_id}: {extract_exc}", flush=True)
+        node_metrics = compute_metric(
+            gold_graph.nodes,
+            pred_graph.nodes,
+            threshold=args.node_match_threshold,
+            matcher=args.metric_matcher,
+            embedding_model=args.semantic_embedding_model,
+        )
+        relation_metrics = compute_metric(
+            gold_graph.relations,
+            pred_graph.relations,
+            threshold=args.relation_match_threshold,
+            matcher=args.metric_matcher,
+            embedding_model=args.semantic_embedding_model,
+            item_type="relation",
+        )
+
+    failure_types: list[str] = []
+    if generation_error:
+        failure_types.append("generation_error")
+        if generation_infrastructure_error:
+            failure_types.append("infrastructure_error")
+    if args.llm_element_metrics:
+        failure_types.extend(classify_llm_failures(syntax, llm_element_metrics))
+        if llm_element_metrics.status == "error" and llm_element_metrics.error and is_infrastructure_error(llm_element_metrics.error):
+            failure_types.append("infrastructure_error")
+    elif getattr(args, "embedding_element_metrics", False):
+        failure_types.extend(classify_failures(syntax, node_metrics, relation_metrics))
+    elif not syntax.passed and "syntax_error" not in failure_types:
+        failure_types.append("syntax_error")
+    failure_types = list(dict.fromkeys(failure_types))
+
+    return EvaluationRecord(
+        dataset=case.dataset,
+        case_id=case.case_id,
+        input_requirement=case.content,
+        gold_plantuml=case.gold_plantuml,
+        generated_plantuml=generated_plantuml,
+        syntax=syntax,
+        node_metrics=node_metrics,
+        relation_metrics=relation_metrics,
+        plantuml_compilation=plantuml_compilation,
+        llm_element_metrics=llm_element_metrics,
+        failure_types=failure_types,
+    )
+
+
 def evaluate_cases(
     *,
     prompt: str,
@@ -54,148 +190,51 @@ def evaluate_cases(
     output_path: Path,
     state_dir: Path | None = None,
     phase: str = "eval",
+    case_concurrency: int = 1,
 ) -> tuple[list[EvaluationRecord], dict[str, float]]:
     write_text(output_path, "")
+    total = len(cases)
 
     records: list[EvaluationRecord] = []
-    for idx, case in enumerate(cases, start=1):
-        print(f"[eval] {idx}/{len(cases)} {case.case_id}", flush=True)
-        metric_failure_types: list[str] = []
-        try:
-            generated = generated_from_args(
-                prompt=prompt,
-                case=case,
-                args=args,
-                llm_client=llm_client,
-                state_dir=state_dir,
-                retry_phase=phase,
-            )
-        except Exception as exc:
-            generated = ""
-            syntax = SyntaxResult(False, [f"LLM generation failed: {exc}"])
-            try:
-                gold_graph = extract_graph_for_metrics(
-                    case.gold_plantuml,
-                    args=args,
-                    llm_client=llm_client,
-                    state_dir=state_dir,
-                    phase=phase,
-                    role="gold",
-                    retry_context={"dataset": case.dataset, "case_id": case.case_id},
-                )
-            except Exception as extract_exc:
-                gold_graph = extract_activity_graph(case.gold_plantuml)
-                metric_failure_types.append("element_extraction_error")
-                if is_infrastructure_error(str(extract_exc)):
-                    metric_failure_types.append("infrastructure_error")
-            node_metrics = compute_metric(
-                gold_graph.nodes,
-                [],
-                threshold=args.node_match_threshold,
-                matcher=args.metric_matcher,
-                embedding_model=args.semantic_embedding_model,
-            )
-            relation_metrics = compute_metric(
-                gold_graph.relations,
-                [],
-                threshold=args.relation_match_threshold,
-                matcher=args.metric_matcher,
-                embedding_model=args.semantic_embedding_model,
-                item_type="relation",
-            )
-            failure_types = ["generation_error"]
-            if is_infrastructure_error(str(exc)):
-                failure_types.append("infrastructure_error")
-            else:
-                failure_types.extend(["syntax_error", "missing_activity", "missing_or_wrong_relation"])
-        else:
-            syntax = validate_plantuml(generated, args.plantuml_jar)
-            generated_plantuml = extract_plantuml(generated, wrap_if_needed=False)
-            try:
-                gold_graph = extract_graph_for_metrics(
-                    case.gold_plantuml,
-                    args=args,
-                    llm_client=llm_client,
-                    state_dir=state_dir,
-                    phase=phase,
-                    role="gold",
-                    retry_context={"dataset": case.dataset, "case_id": case.case_id},
-                )
-                pred_graph = extract_graph_for_metrics(
-                    generated_plantuml,
-                    args=args,
-                    llm_client=llm_client,
-                    state_dir=state_dir,
-                    phase=phase,
-                    role="prediction",
-                    retry_context={"dataset": case.dataset, "case_id": case.case_id},
-                )
-            except Exception as extract_exc:
-                gold_graph = extract_activity_graph(case.gold_plantuml)
-                pred_graph = ActivityGraph(nodes=[], relations=[])
-                metric_failure_types.append("element_extraction_error")
-                if is_infrastructure_error(str(extract_exc)):
-                    metric_failure_types.append("infrastructure_error")
-            node_metrics = compute_metric(
-                gold_graph.nodes,
-                pred_graph.nodes,
-                threshold=args.node_match_threshold,
-                matcher=args.metric_matcher,
-                embedding_model=args.semantic_embedding_model,
-            )
-            relation_metrics = compute_metric(
-                gold_graph.relations,
-                pred_graph.relations,
-                threshold=args.relation_match_threshold,
-                matcher=args.metric_matcher,
-                embedding_model=args.semantic_embedding_model,
-                item_type="relation",
-            )
-            failure_types = classify_failures(syntax, node_metrics, relation_metrics)
 
-        generated_plantuml = extract_plantuml(generated, wrap_if_needed=False)
-        plantuml_compilation = check_plantuml_compilation(
-            generated_plantuml,
-            args.plantuml_jar,
-            timeout=args.plantuml_compile_timeout,
-        )
-        llm_element_metrics = evaluate_llm_elements(
-            ground_truth=case.gold_plantuml,
-            prediction=generated_plantuml,
-            enabled=args.llm_element_metrics,
-            model=args.llm_judge_model,
-            api_key=args.llm_judge_api_key,
-            base_url=args.llm_judge_base_url,
-            temperature=args.llm_judge_temperature,
-            max_tokens=args.llm_judge_max_tokens,
-            timeout=args.llm_judge_timeout,
-            thinking=args.llm_judge_thinking,
-            max_retries=args.llm_judge_max_retries,
-            state_dir=state_dir,
-            retry_phase=f"{phase}:llm_judge",
-            retry_context={"dataset": case.dataset, "case_id": case.case_id},
-            provider_max_retries=args.llm_max_retries,
-            retry_initial_wait=args.llm_rate_limit_initial_wait,
-            retry_max_wait=args.llm_rate_limit_max_wait,
-        )
-        if llm_element_metrics.status == "error":
-            failure_types.append("llm_element_judge_error")
-        failure_types.extend(item for item in metric_failure_types if item not in failure_types)
+    if case_concurrency <= 1 or total <= 1:
+        for idx, case in enumerate(cases, start=1):
+            records.append(
+                evaluate_one_case(
+                    prompt=prompt,
+                    case=case,
+                    idx=idx,
+                    total=total,
+                    args=args,
+                    llm_client=llm_client,
+                    state_dir=state_dir,
+                    phase=phase,
+                )
+            )
+    else:
+        worker_count = min(case_concurrency, total)
+        print(f"[eval] running {total} cases with concurrency={worker_count}", flush=True)
+        indexed_records: list[tuple[int, EvaluationRecord]] = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = {
+                executor.submit(
+                    evaluate_one_case,
+                    prompt=prompt,
+                    case=case,
+                    idx=idx,
+                    total=total,
+                    args=args,
+                    llm_client=llm_client,
+                    state_dir=state_dir,
+                    phase=phase,
+                ): idx
+                for idx, case in enumerate(cases, start=1)
+            }
+            for future in concurrent.futures.as_completed(futures):
+                indexed_records.append((futures[future], future.result()))
+        records = [record for _, record in sorted(indexed_records)]
 
-        record = EvaluationRecord(
-            dataset=case.dataset,
-            case_id=case.case_id,
-            input_requirement=case.content,
-            gold_plantuml=case.gold_plantuml,
-            generated_plantuml=generated_plantuml,
-            syntax=syntax,
-            node_metrics=node_metrics,
-            relation_metrics=relation_metrics,
-            plantuml_compilation=plantuml_compilation,
-            llm_element_metrics=llm_element_metrics,
-            failure_types=failure_types,
-        )
-        records.append(record)
+    for record in records:
         append_jsonl(output_path, dataclasses.asdict(record))
 
     summary = summarize_records(records)

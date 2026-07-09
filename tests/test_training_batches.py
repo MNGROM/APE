@@ -2,7 +2,7 @@ import unittest
 from collections import Counter
 
 from ape_datasets.lato import Case
-from run import build_parser, split_training_batches, split_validation_gate_cases
+from run import build_parser, split_training_batches, split_validation_gate_cases, validate_glm_args
 
 
 def make_cases(dataset: str, count: int) -> list[Case]:
@@ -17,13 +17,57 @@ def make_cases(dataset: str, count: int) -> list[Case]:
     ]
 
 
+def resolve_thinking_defaults(args) -> None:
+    args.generation_thinking = "disabled"
+    args.analysis_thinking = "disabled"
+    args.localization_thinking = "disabled"
+    args.editor_thinking = "disabled"
+    args.epoch_planner_thinking = "disabled"
+    args.judge_thinking = "disabled"
+    args.element_extraction_thinking = "disabled"
+
+
 class TrainingBatchTest(unittest.TestCase):
     def test_parser_defaults_to_stratified_training_batches(self) -> None:
         args = build_parser().parse_args([])
 
         self.assertEqual(args.training_batch_strategy, "stratified")
+        self.assertEqual(args.epoch_batch_concurrency, 1)
+        self.assertEqual(args.heldout_test_concurrency, 1)
         self.assertTrue(args.validation_gate)
         self.assertEqual(args.validation_gate_strategy, "stratified")
+        self.assertTrue(args.llm_element_metrics)
+        self.assertFalse(args.embedding_element_metrics)
+
+    def test_parser_accepts_epoch_batch_concurrency(self) -> None:
+        args = build_parser().parse_args(["--epoch-batch-concurrency", "3"])
+
+        self.assertEqual(args.epoch_batch_concurrency, 3)
+
+    def test_parser_accepts_heldout_test_concurrency(self) -> None:
+        args = build_parser().parse_args(["--heldout-test-concurrency", "2"])
+
+        self.assertEqual(args.heldout_test_concurrency, 2)
+
+    def test_parser_accepts_embedding_element_metrics(self) -> None:
+        args = build_parser().parse_args(["--embedding-element-metrics"])
+
+        self.assertTrue(args.embedding_element_metrics)
+
+    def test_training_requires_llm_element_metrics(self) -> None:
+        args = build_parser().parse_args(["--no-llm-element-metrics"])
+        resolve_thinking_defaults(args)
+        args.api_key = "dummy"
+        args.llm_judge_api_key = "dummy"
+
+        with self.assertRaisesRegex(ValueError, "--no-llm-element-metrics"):
+            validate_glm_args(args)
+
+        args = build_parser().parse_args(["--no-llm-element-metrics", "--no-evolve"])
+        resolve_thinking_defaults(args)
+        args.api_key = "dummy"
+        args.llm_judge_api_key = "dummy"
+        validate_glm_args(args)
 
     def test_chunked_training_batches_preserve_old_contiguous_split(self) -> None:
         cases = make_cases("a", 5) + make_cases("b", 5)

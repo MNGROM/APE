@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import random
+import threading
 import time
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
@@ -14,6 +15,7 @@ from typing import Any, Callable
 RATE_LIMIT_STATUS_CODES = {429}
 RATE_LIMIT_ERROR_CODES = {"1302"}
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+_STATE_LOCK = threading.Lock()
 
 
 class ProviderHTTPError(RuntimeError):
@@ -120,8 +122,9 @@ def save_retry_state(
 ) -> None:
     if state_dir is None:
         return
-    write_text(state_dir / "run_state.json", json.dumps(event, ensure_ascii=False, indent=2))
-    append_jsonl(state_dir / "rate_limit_events.jsonl", event)
+    with _STATE_LOCK:
+        write_text(state_dir / "run_state.json", json.dumps(event, ensure_ascii=False, indent=2))
+        append_jsonl(state_dir / "rate_limit_events.jsonl", event)
 
 
 def call_with_provider_retries(

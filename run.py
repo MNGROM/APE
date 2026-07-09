@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import csv
 import dataclasses
 import json
@@ -51,10 +52,10 @@ from versioning import initialize_run_prompt, make_run_dir, write_run_args
 
 
 ITERATION_TEST_METRIC_KEYS = (
-    "node_f1",
-    "relation_f1",
     "llm_node_f1",
     "llm_relation_f1",
+    "node_f1",
+    "relation_f1",
     "plantuml_compilation_pass_rate",
 )
 
@@ -85,6 +86,10 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--llm-max-retries must be non-negative")
     if args.analysis_batch_size < 1:
         raise ValueError("--analysis-batch-size must be positive")
+    if args.epoch_batch_concurrency < 1:
+        raise ValueError("--epoch-batch-concurrency must be positive")
+    if args.heldout_test_concurrency < 1:
+        raise ValueError("--heldout-test-concurrency must be positive")
     if args.validation_gate_size < 0:
         raise ValueError("--validation-gate-size must be non-negative")
     if args.validation_gate_seed < 0:
@@ -105,9 +110,11 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--element-extraction-max-retries must be positive")
     if args.bootstrap_node_accept_delta < 0 or args.bootstrap_relation_accept_delta < 0:
         raise ValueError("--bootstrap-node-accept-delta and --bootstrap-relation-accept-delta must be non-negative")
+    if not args.llm_element_metrics and not args.no_evolve:
+        raise ValueError("--no-llm-element-metrics is only supported with --no-evolve because training and validation gate use LLM judge metrics")
     if args.llm_element_metrics and not args.api_key:
         raise ValueError("LLM semantic element metrics require the main API key via ZHIPU_LLM_API_KEY or --api-key")
-    if args.element_extractor == "llm" and not args.api_key:
+    if args.embedding_element_metrics and args.element_extractor == "llm" and not args.api_key:
         raise ValueError("LLM element extraction requires the main API key via ZHIPU_LLM_API_KEY or --api-key")
 
 
@@ -178,29 +185,30 @@ def acceptance_decision(
 ) -> tuple[bool, dict[str, Any]]:
     syntax_delta = candidate_summary.get("syntax_pass_rate", 0.0) - baseline_summary.get("syntax_pass_rate", 0.0)
     compile_delta = candidate_summary.get("plantuml_compilation_pass_rate", 0.0) - baseline_summary.get("plantuml_compilation_pass_rate", 0.0)
-    node_precision_delta = candidate_summary.get("node_precision", 0.0) - baseline_summary.get("node_precision", 0.0)
-    relation_precision_delta = candidate_summary.get("relation_precision", 0.0) - baseline_summary.get("relation_precision", 0.0)
-    node_delta = candidate_summary.get("node_f1", 0.0) - baseline_summary.get("node_f1", 0.0)
-    relation_delta = candidate_summary.get("relation_f1", 0.0) - baseline_summary.get("relation_f1", 0.0)
+    node_precision_delta = candidate_summary.get("llm_node_precision", 0.0) - baseline_summary.get("llm_node_precision", 0.0)
+    relation_precision_delta = candidate_summary.get("llm_relation_precision", 0.0) - baseline_summary.get("llm_relation_precision", 0.0)
+    node_delta = candidate_summary.get("llm_node_f1", 0.0) - baseline_summary.get("llm_node_f1", 0.0)
+    relation_delta = candidate_summary.get("llm_relation_f1", 0.0) - baseline_summary.get("llm_relation_f1", 0.0)
+    embedding_node_delta = candidate_summary.get("node_f1", 0.0) - baseline_summary.get("node_f1", 0.0)
+    embedding_relation_delta = candidate_summary.get("relation_f1", 0.0) - baseline_summary.get("relation_f1", 0.0)
+    embedding_node_precision_delta = candidate_summary.get("node_precision", 0.0) - baseline_summary.get("node_precision", 0.0)
+    embedding_relation_precision_delta = candidate_summary.get("relation_precision", 0.0) - baseline_summary.get("relation_precision", 0.0)
     llm_node_delta = candidate_summary.get("llm_node_f1", 0.0) - baseline_summary.get("llm_node_f1", 0.0)
     llm_relation_delta = candidate_summary.get("llm_relation_f1", 0.0) - baseline_summary.get("llm_relation_f1", 0.0)
+    llm_failed_delta = candidate_summary.get("llm_element_failed", 0.0) - baseline_summary.get("llm_element_failed", 0.0)
     infrastructure_delta = candidate_summary.get("infrastructure_error_rate", 0.0) - baseline_summary.get("infrastructure_error_rate", 0.0)
     prompt_size_ok = len(candidate_prompt) <= max_prompt_chars
     llm_metrics_available = candidate_summary.get("llm_element_evaluated", 0.0) > 0 and baseline_summary.get("llm_element_evaluated", 0.0) > 0
-    llm_semantic_guard_ok = True
-    bootstrap_llm_guard_ok = True
-    if llm_metrics_available:
-        llm_semantic_guard_ok = llm_node_delta >= -0.01 and llm_relation_delta >= -0.015
-        bootstrap_llm_guard_ok = llm_node_delta >= 0.0 and llm_relation_delta >= 0.0
 
     safety_gate = {
+        "llm_judge_metrics_available": llm_metrics_available,
         "syntax_not_significantly_worse": syntax_delta >= min_syntax_delta,
         "compile_not_significantly_worse": compile_delta >= min_compile_delta,
         "node_not_significantly_worse": node_delta >= min_node_delta,
         "relation_not_significantly_worse": relation_delta >= min_relation_delta,
         "node_precision_not_significantly_worse": node_precision_delta >= min_node_precision_delta,
         "relation_precision_not_significantly_worse": relation_precision_delta >= min_relation_precision_delta,
-        "llm_semantic_guard_ok": llm_semantic_guard_ok,
+        "llm_judge_failures_not_increased": llm_failed_delta <= 0,
         "infrastructure_delta_ok": infrastructure_delta <= 0,
         "prompt_size_ok": prompt_size_ok,
     }
@@ -211,11 +219,12 @@ def acceptance_decision(
     }
     bootstrap_gate = {
         "bootstrap_allowed": allow_bootstrap,
+        "llm_judge_metrics_available": llm_metrics_available,
         "syntax_within_bootstrap_tolerance": syntax_delta >= bootstrap_min_syntax_delta,
         "compile_within_bootstrap_tolerance": compile_delta >= bootstrap_min_compile_delta,
         "node_improved": node_delta >= bootstrap_node_accept_delta,
         "relation_improved": relation_delta >= bootstrap_relation_accept_delta,
-        "llm_semantic_guard_ok": bootstrap_llm_guard_ok,
+        "llm_judge_failures_not_increased": llm_failed_delta <= 0,
         "infrastructure_delta_ok": infrastructure_delta <= 0,
         "prompt_size_ok": prompt_size_ok,
     }
@@ -241,12 +250,17 @@ def acceptance_decision(
         "metric_deltas": {
             "syntax_pass_rate": syntax_delta,
             "plantuml_compilation_pass_rate": compile_delta,
-            "node_precision": node_precision_delta,
-            "relation_precision": relation_precision_delta,
-            "node_f1": node_delta,
-            "relation_f1": relation_delta,
+            "primary_node_precision": node_precision_delta,
+            "primary_relation_precision": relation_precision_delta,
+            "primary_node_f1": node_delta,
+            "primary_relation_f1": relation_delta,
             "llm_node_f1": llm_node_delta,
             "llm_relation_f1": llm_relation_delta,
+            "llm_element_failed": llm_failed_delta,
+            "embedding_node_precision": embedding_node_precision_delta,
+            "embedding_relation_precision": embedding_relation_precision_delta,
+            "embedding_node_f1": embedding_node_delta,
+            "embedding_relation_f1": embedding_relation_delta,
             "infrastructure_error_rate": infrastructure_delta,
         },
         "prompt_growth": {
@@ -262,10 +276,13 @@ def acceptance_decision(
         "relation_delta": relation_delta,
         "node_precision_delta": node_precision_delta,
         "relation_precision_delta": relation_precision_delta,
-        "deterministic_node_delta": node_delta,
-        "deterministic_relation_delta": relation_delta,
+        "embedding_node_delta": embedding_node_delta,
+        "embedding_relation_delta": embedding_relation_delta,
+        "embedding_node_precision_delta": embedding_node_precision_delta,
+        "embedding_relation_precision_delta": embedding_relation_precision_delta,
         "llm_node_delta": llm_node_delta,
         "llm_relation_delta": llm_relation_delta,
+        "llm_failed_delta": llm_failed_delta,
         "infrastructure_delta": infrastructure_delta,
         "min_syntax_delta": min_syntax_delta,
         "min_compile_delta": min_compile_delta,
@@ -288,7 +305,8 @@ def acceptance_decision(
         "bootstrap_accept": bootstrap_accept,
         "acceptance_mode": "standard" if standard_accept else "bootstrap" if bootstrap_accept else "rejected",
         "rejection_reasons": rejection_reasons,
-        "acceptance_policy": "standard: accept when every non-regression check passes and at least one deterministic node/relation/compile benefit gate passes; bootstrap before first accepted update: tolerate limited syntax/compile regression only when deterministic node and relation F1 both improve strongly, LLM metrics do not regress when available, infrastructure is not worse, and prompt size is ok",
+        "primary_metric_source": "llm_judge",
+        "acceptance_policy": "standard: accept when every non-regression check passes on LLM-judge node/relation metrics, LLM-judge failures do not increase, and at least one LLM-judge node/relation or compile benefit gate passes; bootstrap before first accepted update: tolerate limited syntax/compile regression only when LLM-judge node and relation F1 both improve strongly, infrastructure is not worse, and prompt size is ok",
         "prompt_chars_before": len(baseline_prompt),
         "prompt_chars_candidate": len(candidate_prompt),
         "max_prompt_chars": max_prompt_chars,
@@ -430,6 +448,7 @@ def finalize_iteration_reports(
     baseline_gate_summary: dict[str, float] | None = None,
     candidate_summary: dict[str, float] | None = None,
     acceptance: dict[str, Any] | None = None,
+    refresh_reports: bool = True,
 ) -> None:
     write_iteration_reports(
         iter_dir=iter_dir,
@@ -442,7 +461,8 @@ def finalize_iteration_reports(
         candidate_summary=candidate_summary,
         acceptance=acceptance,
     )
-    refresh_run_reports(run_dir)
+    if refresh_reports:
+        refresh_run_reports(run_dir)
 
 
 def split_training_batches(train_cases: list[Case], batch_size: int, *, strategy: str = "stratified") -> list[list[Case]]:
@@ -526,6 +546,364 @@ def make_edit_budget(*, has_accepted_update: bool, args: argparse.Namespace, age
     }
 
 
+@dataclasses.dataclass
+class EpochBatchResult:
+    batch_index: int
+    global_update_step: int
+    records: list[Any]
+    summary: dict[str, float]
+    batch_summary: dict[str, Any]
+    revision_input: dict[str, Any] | None
+    collected_count: int = 0
+    skipped_count: int = 0
+
+
+def process_epoch_batch(
+    *,
+    args: argparse.Namespace,
+    llm_client: LLMClient,
+    run_dir: Path,
+    iter_dir: Path,
+    iteration: int,
+    batch_index: int,
+    batch_count: int,
+    global_update_step: int,
+    prompt: str,
+    analysis_cases: list[Case],
+    has_accepted_update: bool,
+) -> EpochBatchResult:
+    batch_dir = iter_dir / "train_batches" / f"batch_{batch_index:03d}"
+    paths = iteration_paths(batch_dir)
+    manifest = make_iteration_manifest(batch_dir, global_update_step, paths)
+    manifest["epoch_iteration"] = iteration
+    manifest["batch_index"] = batch_index
+    manifest["global_update_step"] = global_update_step
+    prompt_before = prompt
+    phase_prefix = f"iteration_{iteration:03d}:batch_{batch_index:03d}"
+    log_prefix = f"[iteration {iteration} batch {batch_index}/{batch_count}]"
+
+    def skipped_result(records: list[Any], summary: dict[str, float]) -> EpochBatchResult:
+        return EpochBatchResult(
+            batch_index=batch_index,
+            global_update_step=global_update_step,
+            records=records,
+            summary=summary,
+            batch_summary={
+                "batch_index": batch_index,
+                "global_update_step": global_update_step,
+                "case_count": len(analysis_cases),
+                "summary": summary,
+            },
+            revision_input=None,
+            skipped_count=1,
+        )
+
+    write_text(paths["prompt_before"], prompt)
+    write_case_manifest(paths["analysis_cases"], analysis_cases)
+    record_stage(
+        manifest,
+        "analysis_batch_sampling",
+        status="success",
+        outputs={"cases": rel_to_iter(batch_dir, paths["analysis_cases"])},
+    )
+    write_iteration_manifest(batch_dir, manifest)
+
+    print(f"{log_prefix} evaluating analysis batch")
+    print(f"{log_prefix} analysis batch distribution: {describe_case_distribution(analysis_cases)}")
+    records, summary = evaluate_cases(
+        prompt=prompt,
+        cases=analysis_cases,
+        args=args,
+        llm_client=llm_client,
+        output_path=paths["analysis_records"],
+        state_dir=run_dir,
+        phase=f"{phase_prefix}:analysis_batch",
+    )
+    write_text(paths["analysis_summary"], json.dumps(summary, ensure_ascii=False, indent=2))
+    record_stage(
+        manifest,
+        "analysis_evaluation",
+        status="success",
+        inputs={
+            "prompt": rel_to_iter(batch_dir, paths["prompt_before"]),
+            "cases": rel_to_iter(batch_dir, paths["analysis_cases"]),
+        },
+        outputs={
+            "records": rel_to_iter(batch_dir, paths["analysis_records"]),
+            "summary": rel_to_iter(batch_dir, paths["analysis_summary"]),
+        },
+    )
+    write_iteration_manifest(batch_dir, manifest)
+
+    analysis = build_analysis(records, summary)
+    write_text(paths["analysis_overview"], analysis)
+    print(f"{log_prefix} train {format_summary(summary)}")
+
+    if args.no_evolve:
+        write_text(paths["prompt_after"], prompt)
+        record_stage(
+            manifest,
+            "evolution",
+            status="skipped",
+            note="--no-evolve was set; prompt unchanged",
+            outputs={"prompt_after": rel_to_iter(batch_dir, paths["prompt_after"])},
+        )
+        write_iteration_manifest(batch_dir, manifest)
+        finalize_iteration_reports(
+            run_dir=run_dir,
+            iter_dir=batch_dir,
+            iteration=global_update_step,
+            prompt_before=prompt_before,
+            prompt_after=prompt,
+            candidate_prompt=None,
+            analysis_summary=summary,
+            refresh_reports=False,
+        )
+        print(f"{log_prefix} prompt unchanged")
+        return skipped_result(records, summary)
+
+    if has_only_infrastructure_errors(records):
+        write_text(
+            paths["update_skipped"],
+            "Skipped prompt update because every evaluated case failed before a model output was available.\n",
+        )
+        write_text(paths["prompt_after"], prompt)
+        record_stage(
+            manifest,
+            "evolution",
+            status="skipped",
+            note="all analysis records were infrastructure errors",
+            outputs={
+                "skip_note": rel_to_iter(batch_dir, paths["update_skipped"]),
+                "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
+            },
+        )
+        write_iteration_manifest(batch_dir, manifest)
+        finalize_iteration_reports(
+            run_dir=run_dir,
+            iter_dir=batch_dir,
+            iteration=global_update_step,
+            prompt_before=prompt_before,
+            prompt_after=prompt,
+            candidate_prompt=None,
+            analysis_summary=summary,
+            refresh_reports=False,
+        )
+        print(f"{log_prefix} infrastructure-only failures; prompt unchanged")
+        return skipped_result(records, summary)
+
+    failure_analysis = analyze_failures(
+        current_prompt=prompt,
+        records=records,
+        summary=summary,
+        args=args,
+        llm_client=llm_client,
+        output_input_path=paths["failure_analysis_input"],
+        output_path=paths["failure_analysis_output"],
+        state_dir=run_dir,
+        iteration=global_update_step,
+    )
+    if failure_analysis is None:
+        write_text(paths["prompt_after"], prompt)
+        record_stage(
+            manifest,
+            "failure_analysis",
+            status="invalid",
+            inputs={"records": rel_to_iter(batch_dir, paths["analysis_records"])},
+            outputs={
+                "input": rel_to_iter(batch_dir, paths["failure_analysis_input"]),
+                "output": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
+                "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
+            },
+        )
+        write_iteration_manifest(batch_dir, manifest)
+        finalize_iteration_reports(
+            run_dir=run_dir,
+            iter_dir=batch_dir,
+            iteration=global_update_step,
+            prompt_before=prompt_before,
+            prompt_after=prompt,
+            candidate_prompt=None,
+            analysis_summary=summary,
+            refresh_reports=False,
+        )
+        print(f"{log_prefix} failure analysis invalid; prompt unchanged")
+        return skipped_result(records, summary)
+    record_stage(
+        manifest,
+        "failure_analysis",
+        status="success",
+        inputs={"records": rel_to_iter(batch_dir, paths["analysis_records"])},
+        outputs={
+            "input": rel_to_iter(batch_dir, paths["failure_analysis_input"]),
+            "output": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
+        },
+    )
+    write_iteration_manifest(batch_dir, manifest)
+
+    error_localization = localize_errors(
+        current_prompt=prompt,
+        failure_analysis=failure_analysis,
+        args=args,
+        llm_client=llm_client,
+        output_input_path=paths["error_localization_input"],
+        output_path=paths["error_localization_output"],
+        state_dir=run_dir,
+        iteration=global_update_step,
+    )
+    if error_localization is None:
+        write_text(paths["prompt_after"], prompt)
+        record_stage(
+            manifest,
+            "error_localization",
+            status="invalid",
+            inputs={
+                "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
+                "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
+            },
+            outputs={
+                "input": rel_to_iter(batch_dir, paths["error_localization_input"]),
+                "output": rel_to_iter(batch_dir, paths["error_localization_output"]),
+                "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
+            },
+        )
+        write_iteration_manifest(batch_dir, manifest)
+        finalize_iteration_reports(
+            run_dir=run_dir,
+            iter_dir=batch_dir,
+            iteration=global_update_step,
+            prompt_before=prompt_before,
+            prompt_after=prompt,
+            candidate_prompt=None,
+            analysis_summary=summary,
+            refresh_reports=False,
+        )
+        print(f"{log_prefix} error localization invalid; prompt unchanged")
+        return skipped_result(records, summary)
+    record_stage(
+        manifest,
+        "error_localization",
+        status="success",
+        inputs={
+            "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
+            "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
+        },
+        outputs={
+            "input": rel_to_iter(batch_dir, paths["error_localization_input"]),
+            "output": rel_to_iter(batch_dir, paths["error_localization_output"]),
+        },
+    )
+    write_iteration_manifest(batch_dir, manifest)
+
+    editor_edit_budget = make_edit_budget(
+        has_accepted_update=has_accepted_update,
+        args=args,
+        agent="prompt_editor",
+    )
+    revision_plan = propose_prompt_revision(
+        current_prompt=prompt,
+        failure_analysis=failure_analysis,
+        error_localization=error_localization,
+        edit_budget=editor_edit_budget,
+        args=args,
+        llm_client=llm_client,
+        output_input_path=paths["prompt_editor_input"],
+        output_path=paths["prompt_editor_output"],
+        state_dir=run_dir,
+        iteration=global_update_step,
+    )
+    if revision_plan is None:
+        write_text(paths["prompt_after"], prompt)
+        record_stage(
+            manifest,
+            "prompt_editor",
+            status="invalid",
+            inputs={
+                "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
+                "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
+                "error_localization": rel_to_iter(batch_dir, paths["error_localization_output"]),
+            },
+            outputs={
+                "input": rel_to_iter(batch_dir, paths["prompt_editor_input"]),
+                "output": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
+                "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
+            },
+        )
+        write_iteration_manifest(batch_dir, manifest)
+        finalize_iteration_reports(
+            run_dir=run_dir,
+            iter_dir=batch_dir,
+            iteration=global_update_step,
+            prompt_before=prompt_before,
+            prompt_after=prompt,
+            candidate_prompt=None,
+            analysis_summary=summary,
+            refresh_reports=False,
+        )
+        print(f"{log_prefix} prompt revision plan invalid; prompt unchanged")
+        return skipped_result(records, summary)
+    record_stage(
+        manifest,
+        "prompt_editor",
+        status="success",
+        inputs={
+            "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
+            "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
+            "error_localization": rel_to_iter(batch_dir, paths["error_localization_output"]),
+        },
+        outputs={
+            "input": rel_to_iter(batch_dir, paths["prompt_editor_input"]),
+            "output": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
+        },
+    )
+    write_iteration_manifest(batch_dir, manifest)
+
+    revision_input = {
+        "analysis_summary": summary,
+        "failure_analysis": failure_analysis,
+        "error_localization": error_localization,
+        "revision_plan": revision_plan.get("revision_plan", []),
+    }
+    write_text(paths["prompt_after"], prompt)
+    record_stage(
+        manifest,
+        "epoch_revision_collection",
+        status="success",
+        inputs={
+            "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
+            "revision_plan": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
+        },
+        outputs={"prompt_after": rel_to_iter(batch_dir, paths["prompt_after"])},
+        note="batch-local revision plan collected for epoch planner; prompt unchanged",
+    )
+    write_iteration_manifest(batch_dir, manifest)
+    finalize_iteration_reports(
+        run_dir=run_dir,
+        iter_dir=batch_dir,
+        iteration=global_update_step,
+        prompt_before=prompt_before,
+        prompt_after=prompt,
+        candidate_prompt=None,
+        analysis_summary=summary,
+        refresh_reports=False,
+    )
+    print(f"{log_prefix} revision plan collected for epoch planner")
+    return EpochBatchResult(
+        batch_index=batch_index,
+        global_update_step=global_update_step,
+        records=records,
+        summary=summary,
+        batch_summary={
+            "batch_index": batch_index,
+            "global_update_step": global_update_step,
+            "case_count": len(analysis_cases),
+            "summary": summary,
+        },
+        revision_input=revision_input,
+        collected_count=1,
+    )
+
+
 def evaluate_iteration_test(
     *,
     prompt: str,
@@ -563,6 +941,7 @@ def evaluate_iteration_test(
         output_path=records_path,
         state_dir=run_dir,
         phase=f"iteration_{iteration:03d}:held_out_test",
+        case_concurrency=args.heldout_test_concurrency,
     )
     write_text(summary_path, json.dumps(summary, ensure_ascii=False, indent=2))
     write_text(analysis_path, build_analysis(records, summary))
@@ -812,320 +1191,69 @@ def run_training_iterations(
         batch_revision_inputs: list[dict[str, Any]] = []
         print(f"\n[iteration {iteration}] training epoch with {len(training_batches)} batch(es)")
 
-        for batch_index, analysis_cases in enumerate(training_batches, start=1):
-            global_update_step += 1
-            batch_dir = iter_dir / "train_batches" / f"batch_{batch_index:03d}"
-            paths = iteration_paths(batch_dir)
-            manifest = make_iteration_manifest(batch_dir, global_update_step, paths)
-            manifest["epoch_iteration"] = iteration
-            manifest["batch_index"] = batch_index
-            manifest["global_update_step"] = global_update_step
-            prompt_before = prompt
-            phase_prefix = f"iteration_{iteration:03d}:batch_{batch_index:03d}"
-            log_prefix = f"[iteration {iteration} batch {batch_index}/{len(training_batches)}]"
+        step_base = global_update_step
+        batch_jobs = [
+            {
+                "batch_index": batch_index,
+                "analysis_cases": analysis_cases,
+                "global_update_step": step_base + batch_index,
+            }
+            for batch_index, analysis_cases in enumerate(training_batches, start=1)
+        ]
+        batch_results: list[EpochBatchResult] = []
+        batch_concurrency = min(args.epoch_batch_concurrency, len(batch_jobs)) if batch_jobs else 1
+        epoch_manifest["epoch_batch_concurrency"] = batch_concurrency
 
-            write_text(paths["prompt_before"], prompt)
-            write_case_manifest(paths["analysis_cases"], analysis_cases)
-            record_stage(
-                manifest,
-                "analysis_batch_sampling",
-                status="success",
-                outputs={"cases": rel_to_iter(batch_dir, paths["analysis_cases"])},
-            )
-            write_iteration_manifest(batch_dir, manifest)
+        if batch_concurrency <= 1:
+            for job in batch_jobs:
+                batch_results.append(
+                    process_epoch_batch(
+                        args=args,
+                        llm_client=llm_client,
+                        run_dir=run_dir,
+                        iter_dir=iter_dir,
+                        iteration=iteration,
+                        batch_index=job["batch_index"],
+                        batch_count=len(training_batches),
+                        global_update_step=job["global_update_step"],
+                        prompt=prompt,
+                        analysis_cases=job["analysis_cases"],
+                        has_accepted_update=has_accepted_update,
+                    )
+                )
+        else:
+            print(f"[iteration {iteration}] running {len(training_batches)} training batch(es) with concurrency={batch_concurrency}")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=batch_concurrency) as executor:
+                futures = [
+                    executor.submit(
+                        process_epoch_batch,
+                        args=args,
+                        llm_client=llm_client,
+                        run_dir=run_dir,
+                        iter_dir=iter_dir,
+                        iteration=iteration,
+                        batch_index=job["batch_index"],
+                        batch_count=len(training_batches),
+                        global_update_step=job["global_update_step"],
+                        prompt=prompt,
+                        analysis_cases=job["analysis_cases"],
+                        has_accepted_update=has_accepted_update,
+                    )
+                    for job in batch_jobs
+                ]
+                for future in concurrent.futures.as_completed(futures):
+                    batch_results.append(future.result())
 
-            print(f"{log_prefix} evaluating analysis batch")
-            print(f"{log_prefix} analysis batch distribution: {describe_case_distribution(analysis_cases)}")
-            records, summary = evaluate_cases(
-                prompt=prompt,
-                cases=analysis_cases,
-                args=args,
-                llm_client=llm_client,
-                output_path=paths["analysis_records"],
-                state_dir=run_dir,
-                phase=f"{phase_prefix}:analysis_batch",
-            )
-            last_summary = summary
-            epoch_records.extend(records)
-            batch_summaries.append(
-                {
-                    "batch_index": batch_index,
-                    "global_update_step": global_update_step,
-                    "case_count": len(analysis_cases),
-                    "summary": summary,
-                }
-            )
-            write_text(paths["analysis_summary"], json.dumps(summary, ensure_ascii=False, indent=2))
-            record_stage(
-                manifest,
-                "analysis_evaluation",
-                status="success",
-                inputs={
-                    "prompt": rel_to_iter(batch_dir, paths["prompt_before"]),
-                    "cases": rel_to_iter(batch_dir, paths["analysis_cases"]),
-                },
-                outputs={
-                    "records": rel_to_iter(batch_dir, paths["analysis_records"]),
-                    "summary": rel_to_iter(batch_dir, paths["analysis_summary"]),
-                },
-            )
-            write_iteration_manifest(batch_dir, manifest)
-
-            analysis = build_analysis(records, summary)
-            write_text(paths["analysis_overview"], analysis)
-            print(f"{log_prefix} train {format_summary(summary)}")
-
-            if args.no_evolve:
-                epoch_skipped_count += 1
-                write_text(paths["prompt_after"], prompt)
-                record_stage(
-                    manifest,
-                    "evolution",
-                    status="skipped",
-                    note="--no-evolve was set; prompt unchanged",
-                    outputs={"prompt_after": rel_to_iter(batch_dir, paths["prompt_after"])},
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                finalize_iteration_reports(
-                    run_dir=run_dir,
-                    iter_dir=batch_dir,
-                    iteration=global_update_step,
-                    prompt_before=prompt_before,
-                    prompt_after=prompt,
-                    candidate_prompt=None,
-                    analysis_summary=summary,
-                )
-                print(f"{log_prefix} prompt unchanged")
-                continue
-
-            if has_only_infrastructure_errors(records):
-                epoch_skipped_count += 1
-                write_text(
-                    paths["update_skipped"],
-                    "Skipped prompt update because every evaluated case failed before a model output was available.\n",
-                )
-                write_text(paths["prompt_after"], prompt)
-                record_stage(
-                    manifest,
-                    "evolution",
-                    status="skipped",
-                    note="all analysis records were infrastructure errors",
-                    outputs={
-                        "skip_note": rel_to_iter(batch_dir, paths["update_skipped"]),
-                        "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
-                    },
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                finalize_iteration_reports(
-                    run_dir=run_dir,
-                    iter_dir=batch_dir,
-                    iteration=global_update_step,
-                    prompt_before=prompt_before,
-                    prompt_after=prompt,
-                    candidate_prompt=None,
-                    analysis_summary=summary,
-                )
-                print(f"{log_prefix} infrastructure-only failures; prompt unchanged")
-                continue
-
-            failure_analysis = analyze_failures(
-                current_prompt=prompt,
-                records=records,
-                summary=summary,
-                args=args,
-                llm_client=llm_client,
-                output_input_path=paths["failure_analysis_input"],
-                output_path=paths["failure_analysis_output"],
-                state_dir=run_dir,
-                iteration=global_update_step,
-            )
-            if failure_analysis is None:
-                epoch_skipped_count += 1
-                write_text(paths["prompt_after"], prompt)
-                record_stage(
-                    manifest,
-                    "failure_analysis",
-                    status="invalid",
-                    inputs={"records": rel_to_iter(batch_dir, paths["analysis_records"])},
-                    outputs={
-                        "input": rel_to_iter(batch_dir, paths["failure_analysis_input"]),
-                        "output": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-                        "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
-                    },
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                finalize_iteration_reports(
-                    run_dir=run_dir,
-                    iter_dir=batch_dir,
-                    iteration=global_update_step,
-                    prompt_before=prompt_before,
-                    prompt_after=prompt,
-                    candidate_prompt=None,
-                    analysis_summary=summary,
-                )
-                print(f"{log_prefix} failure analysis invalid; prompt unchanged")
-                continue
-            record_stage(
-                manifest,
-                "failure_analysis",
-                status="success",
-                inputs={"records": rel_to_iter(batch_dir, paths["analysis_records"])},
-                outputs={
-                    "input": rel_to_iter(batch_dir, paths["failure_analysis_input"]),
-                    "output": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-                },
-            )
-            write_iteration_manifest(batch_dir, manifest)
-
-            error_localization = localize_errors(
-                current_prompt=prompt,
-                failure_analysis=failure_analysis,
-                args=args,
-                llm_client=llm_client,
-                output_input_path=paths["error_localization_input"],
-                output_path=paths["error_localization_output"],
-                state_dir=run_dir,
-                iteration=global_update_step,
-            )
-            if error_localization is None:
-                epoch_skipped_count += 1
-                write_text(paths["prompt_after"], prompt)
-                record_stage(
-                    manifest,
-                    "error_localization",
-                    status="invalid",
-                    inputs={
-                        "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                        "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-                    },
-                    outputs={
-                        "input": rel_to_iter(batch_dir, paths["error_localization_input"]),
-                        "output": rel_to_iter(batch_dir, paths["error_localization_output"]),
-                        "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
-                    },
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                finalize_iteration_reports(
-                    run_dir=run_dir,
-                    iter_dir=batch_dir,
-                    iteration=global_update_step,
-                    prompt_before=prompt_before,
-                    prompt_after=prompt,
-                    candidate_prompt=None,
-                    analysis_summary=summary,
-                )
-                print(f"{log_prefix} error localization invalid; prompt unchanged")
-                continue
-            record_stage(
-                manifest,
-                "error_localization",
-                status="success",
-                inputs={
-                    "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                    "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-                },
-                outputs={
-                    "input": rel_to_iter(batch_dir, paths["error_localization_input"]),
-                    "output": rel_to_iter(batch_dir, paths["error_localization_output"]),
-                },
-            )
-            write_iteration_manifest(batch_dir, manifest)
-
-            editor_edit_budget = make_edit_budget(
-                has_accepted_update=has_accepted_update,
-                args=args,
-                agent="prompt_editor",
-            )
-            revision_plan = propose_prompt_revision(
-                current_prompt=prompt,
-                failure_analysis=failure_analysis,
-                error_localization=error_localization,
-                edit_budget=editor_edit_budget,
-                args=args,
-                llm_client=llm_client,
-                output_input_path=paths["prompt_editor_input"],
-                output_path=paths["prompt_editor_output"],
-                state_dir=run_dir,
-                iteration=global_update_step,
-            )
-            if revision_plan is None:
-                epoch_skipped_count += 1
-                write_text(paths["prompt_after"], prompt)
-                record_stage(
-                    manifest,
-                    "prompt_editor",
-                    status="invalid",
-                    inputs={
-                        "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                        "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-                        "error_localization": rel_to_iter(batch_dir, paths["error_localization_output"]),
-                    },
-                    outputs={
-                        "input": rel_to_iter(batch_dir, paths["prompt_editor_input"]),
-                        "output": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
-                        "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
-                    },
-                )
-                write_iteration_manifest(batch_dir, manifest)
-                finalize_iteration_reports(
-                    run_dir=run_dir,
-                    iter_dir=batch_dir,
-                    iteration=global_update_step,
-                    prompt_before=prompt_before,
-                    prompt_after=prompt,
-                    candidate_prompt=None,
-                    analysis_summary=summary,
-                )
-                print(f"{log_prefix} prompt revision plan invalid; prompt unchanged")
-                continue
-            record_stage(
-                manifest,
-                "prompt_editor",
-                status="success",
-                inputs={
-                    "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                    "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-                    "error_localization": rel_to_iter(batch_dir, paths["error_localization_output"]),
-                },
-                outputs={
-                    "input": rel_to_iter(batch_dir, paths["prompt_editor_input"]),
-                    "output": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
-                },
-            )
-            write_iteration_manifest(batch_dir, manifest)
-
-            batch_revision_inputs.append(
-                {
-                    "analysis_summary": summary,
-                    "failure_analysis": failure_analysis,
-                    "error_localization": error_localization,
-                    "revision_plan": revision_plan.get("revision_plan", []),
-                }
-            )
-            epoch_collected_count += 1
-            write_text(paths["prompt_after"], prompt)
-            record_stage(
-                manifest,
-                "epoch_revision_collection",
-                status="success",
-                inputs={
-                    "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                    "revision_plan": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
-                },
-                outputs={"prompt_after": rel_to_iter(batch_dir, paths["prompt_after"])},
-                note="batch-local revision plan collected for epoch planner; prompt unchanged",
-            )
-            write_iteration_manifest(batch_dir, manifest)
-            finalize_iteration_reports(
-                run_dir=run_dir,
-                iter_dir=batch_dir,
-                iteration=global_update_step,
-                prompt_before=prompt_before,
-                prompt_after=prompt,
-                candidate_prompt=None,
-                analysis_summary=summary,
-            )
-            print(f"{log_prefix} revision plan collected for epoch planner")
+        global_update_step += len(training_batches)
+        batch_results.sort(key=lambda result: result.batch_index)
+        for result in batch_results:
+            last_summary = result.summary
+            epoch_records.extend(result.records)
+            batch_summaries.append(result.batch_summary)
+            epoch_skipped_count += result.skipped_count
+            epoch_collected_count += result.collected_count
+            if result.revision_input is not None:
+                batch_revision_inputs.append(result.revision_input)
 
         epoch_summary = summarize_records(epoch_records)
         epoch_candidate_prompt: str | None = None
@@ -1539,6 +1667,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--analysis-batch-size", type=int, default=10, help="Training batch size used for generation and failure analysis")
     parser.add_argument("--training-batch-strategy", choices=["stratified", "chunked"], default="stratified", help="How to split training cases into analysis batches")
+    parser.add_argument("--epoch-batch-concurrency", type=int, default=1, help="Number of training batches to process concurrently within each epoch")
+    parser.add_argument("--heldout-test-concurrency", type=int, default=1, help="Number of held-out test cases to evaluate concurrently; 1 keeps serial behavior")
     parser.add_argument("--sample-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to select limited training cases")
     parser.add_argument("--test-sample-strategy", choices=["stratified", "random", "prefix"], default="prefix", help="How to select limited held-out test cases")
     parser.add_argument("--validation-gate", action=argparse.BooleanOptionalAction, default=True, help="Reserve a fixed validation gate split from the training pool; use --no-validation-gate to disable")
@@ -1566,7 +1696,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--localization-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_LOCALIZATION_THINKING_TYPE", "inherit"), help="Thinking mode for error-localization calls")
     parser.add_argument("--editor-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_EDITOR_THINKING_TYPE", "inherit"), help="Thinking mode for prompt-editor calls")
     parser.add_argument("--epoch-planner-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_EPOCH_PLANNER_THINKING_TYPE", "inherit"), help="Thinking mode for epoch-planner calls")
-    parser.add_argument("--judge-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_JUDGE_THINKING_TYPE", "inherit"), help="Thinking mode for optional LLM semantic judge calls")
+    parser.add_argument("--judge-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_JUDGE_THINKING_TYPE", "inherit"), help="Thinking mode for LLM semantic judge calls")
     parser.add_argument("--do-sample", type=optional_bool, default=None, help="GLM do_sample, or 'omit' to use provider default")
     parser.add_argument("--llm-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
     parser.add_argument("--llm-max-retries", type=int, default=20, help="Retries for provider 429/5xx/transient errors before failing")
@@ -1575,8 +1705,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--node-match-threshold", type=float, default=0.85, help="LATO-style node semantic similarity threshold")
     parser.add_argument("--relation-match-threshold", type=float, default=0.85, help="LATO-style relation semantic similarity threshold")
     parser.add_argument("--semantic-embedding-model", default=DEFAULT_EMBEDDING_MODEL, help="Sentence-transformers model used for LATO-style semantic element matching")
-    parser.add_argument("--metric-matcher", choices=["embedding", "difflib"], default="embedding", help="Element matcher for deterministic metrics; embedding follows the LATO paper, difflib is only a cheap fallback")
-    parser.add_argument("--element-extractor", choices=["rule", "llm", "auto"], default=os.environ.get("APE_ELEMENT_EXTRACTOR", "llm"), help="Backend for PlantUML-to-node/relation extraction used before metric matching")
+    parser.add_argument("--embedding-element-metrics", action=argparse.BooleanOptionalAction, default=False, help="Run auxiliary embedding/difflib element metrics for diagnostics; these metrics do not drive training or acceptance")
+    parser.add_argument("--metric-matcher", choices=["embedding", "difflib"], default="embedding", help="Element matcher for auxiliary embedding metrics; only used with --embedding-element-metrics")
+    parser.add_argument("--element-extractor", choices=["rule", "llm", "auto"], default=os.environ.get("APE_ELEMENT_EXTRACTOR", "llm"), help="Backend for auxiliary PlantUML-to-node/relation extraction; only used with --embedding-element-metrics")
     parser.add_argument("--element-extraction-temperature", type=float, default=0.0, help="Temperature for LLM element extraction")
     parser.add_argument("--element-extraction-max-tokens", type=int, default=4096, help="Max tokens for LLM element extraction")
     parser.add_argument("--element-extraction-max-retries", type=int, default=3, help="JSON/schema retries for LLM element extraction")
@@ -1608,7 +1739,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--max-prompt-chars", type=int, default=4000, help="Reject candidate prompts longer than this many characters")
     parser.add_argument("--plantuml-compile-timeout", type=int, default=30, help="Timeout in seconds for PlantUML compilation checks")
-    parser.add_argument("--llm-element-metrics", action=argparse.BooleanOptionalAction, default=True, help="Run LLM semantic node/relation P/R/F1 metrics; use --no-llm-element-metrics for cheap local smoke tests")
+    parser.add_argument("--llm-element-metrics", action=argparse.BooleanOptionalAction, default=True, help="Run LLM judge node/relation P/R/F1 metrics used by training and validation gate; use --no-llm-element-metrics only for cheap local smoke tests")
     parser.add_argument("--llm-judge-temperature", type=float, default=0.0)
     parser.add_argument("--llm-judge-max-tokens", type=int, default=4096)
     parser.add_argument("--llm-judge-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)

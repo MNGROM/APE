@@ -8,4 +8,9 @@ __pycache__/
 uv.lock
 prompt_runs/
 seed_prompt_runs/
+prompt_runs_by_dataset/
+baseline_predictions/
+prompt_workspace/backups/
+.pytest_cache/
 .codex_test_deps/
+*.log
