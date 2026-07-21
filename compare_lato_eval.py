@@ -200,6 +200,7 @@ def evaluate_generated(
             max_tokens=args.llm_judge_max_tokens,
             timeout=args.llm_judge_timeout,
             thinking=args.llm_judge_thinking,
+            do_sample=args.do_sample,
             max_retries=args.llm_judge_max_retries,
             state_dir=method_dir,
             retry_phase=f"{method}:llm_judge",
@@ -367,7 +368,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base-url", default=os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL))
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--top-p", type=float, default=None)
-    parser.add_argument("--do-sample", type=optional_bool, default=None)
+    parser.add_argument("--do-sample", type=optional_bool, default=False)
     parser.add_argument("--max-tokens", type=int, default=12000)
     parser.add_argument("--thinking", choices=["enabled", "disabled"], default=os.environ.get("ZHIPU_THINKING_TYPE", DEFAULT_THINKING_TYPE))
     parser.add_argument("--generation-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_GENERATION_THINKING_TYPE", "inherit"))

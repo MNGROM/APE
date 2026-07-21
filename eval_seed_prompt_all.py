@@ -26,7 +26,7 @@ from analysis.failure_analysis import build_analysis
 from evaluation import evaluate_cases
 from metrics import DEFAULT_EMBEDDING_MODEL, format_summary
 from reporting import refresh_run_reports
-from run import make_llm_client, resolve_agent_thinking
+from run import make_llm_client, resolve_agent_thinking, resolve_model_roles
 from utils.io import read_prompt_file, write_text
 from versioning import make_run_dir, write_run_args
 
@@ -79,7 +79,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--test-sample-strategy", choices=["stratified", "random", "prefix"], default="prefix")
     parser.add_argument("--sample-seed", type=int, default=13)
 
-    parser.add_argument("--model", default=os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL))
+    parser.add_argument("--model", default=os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL), help="Legacy fallback model for all roles")
+    parser.add_argument("--generation-model", default=os.environ.get("ZHIPU_LLM_GENERATION_MODEL"), help="Model used for PlantUML prediction; defaults to --model")
+    parser.add_argument("--agent-model", default=os.environ.get("ZHIPU_LLM_AGENT_MODEL"), help="Compatibility role for the shared APE client; defaults to --model")
+    parser.add_argument("--judge-model", default=os.environ.get("ZHIPU_LLM_JUDGE_MODEL"), help="Model used for semantic judging; defaults to --model")
     parser.add_argument("--api-key", default=os.environ.get("ZHIPU_LLM_API_KEY", ""))
     parser.add_argument("--base-url", default=os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL))
     parser.add_argument("--temperature", type=float, default=0.2)
@@ -89,7 +92,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--generation-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_GENERATION_THINKING_TYPE", "inherit"))
     parser.add_argument("--judge-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_JUDGE_THINKING_TYPE", "inherit"))
     parser.add_argument("--element-extraction-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_ELEMENT_EXTRACTION_THINKING_TYPE", "inherit"))
-    parser.add_argument("--do-sample", type=optional_bool, default=None, help="GLM do_sample, or 'omit' to use provider default")
+    parser.add_argument(
+        "--do-sample",
+        type=optional_bool,
+        default=False,
+        help="GLM sampling mode; defaults to false, true enables sampling, and 'omit' uses the provider default",
+    )
     parser.add_argument("--llm-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
     parser.add_argument("--llm-max-retries", type=int, default=20)
     parser.add_argument("--llm-rate-limit-initial-wait", type=int, default=30)
@@ -147,7 +155,7 @@ def prepare_args(args: argparse.Namespace) -> None:
     args.generation_thinking = resolve_agent_thinking(args.generation_thinking, args.thinking)
     args.judge_thinking = resolve_agent_thinking(args.judge_thinking, args.thinking)
     args.element_extraction_thinking = resolve_agent_thinking(args.element_extraction_thinking, args.thinking)
-    args.llm_judge_model = args.model
+    resolve_model_roles(args)
     args.llm_judge_api_key = args.api_key
     args.llm_judge_base_url = args.base_url
     args.llm_judge_thinking = args.judge_thinking

@@ -64,10 +64,13 @@ def generated_from_args(
     state_dir: Path | None,
     retry_phase: str,
 ) -> str:
+    prediction_client = llm_client.for_model(
+        getattr(args, "generation_model", llm_client.model),
+    )
     return generate_plantuml_for_case(
         prompt=prompt,
         case=case,
-        llm_client=llm_client,
+        llm_client=prediction_client,
         mock_with_gold=args.mock_with_gold,
         thinking=args.generation_thinking,
         state_dir=state_dir,

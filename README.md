@@ -26,9 +26,7 @@ edits only the run-local `work.md`; the seed prompt is not overwritten.
 - `prompt_ops.py`: prompt section parsing and edit application.
 - `versioning.py`: run directory and prompt version files.
 - `prompt_workspace/tst.md`: canonical initial UML generation prompt.
-- `prompt_workspace/failure_analysis.md`: system prompt for batch failure analysis.
-- `prompt_workspace/error_localization.md`: system prompt for section-level error localization.
-- `prompt_workspace/prompt_editor.md`: system prompt for structured prompt edits.
+- `prompt_workspace/*_v3.md`: default atomic attribution, localization, editing, planning, and fragment-rewrite prompts; unversioned prompts remain for legacy reproduction.
 - `prompt_datasets/lato/`: six JSONL datasets: `bp`, `fsd`, `lmc`, `pure`, `rac`, `us`.
 - `llm_element_metrics.py`: PlantUML compilation check and default LLM semantic element judge.
 - `utils/rate_limit.py`: shared provider retry and rate-limit state logging.
@@ -55,6 +53,11 @@ $env:ZHIPU_LLM_API_KEY="your-api-key"
 $env:ZHIPU_LLM_BASE_URL="https://open.bigmodel.cn/api/paas/v4/"
 $env:ZHIPU_LLM_MODEL="glm-5.1"
 ```
+
+Sampling is disabled by default for PlantUML generation, evolution agents, and
+the semantic judge: APE sends `do_sample=false` and uses greedy decoding.
+Use `--do-sample true` only for an explicitly sampled experiment; `--do-sample omit`
+restores the provider default for legacy reproduction.
 
 `--thinking` is the default thinking mode for all model calls. Agent-specific
 options can override it:
@@ -115,10 +118,11 @@ current prompt
 -> analysis batch PlantUML generation
 -> deterministic evaluation
 -> batch failure-analysis model
--> error-localization model maps failures to prompt sections
--> prompt-editor model emits structured section edits
--> epoch-planner model merges batch revision plans
--> prompt-rewriter model emits the next prompt
+-> Python validates each attribution and builds taxonomy evidence observations
+-> Python clusters across batches and selects one mechanism
+-> localization and prompt editing run only for supporting batches
+-> epoch planner merges only plans for the selected mechanism
+-> prompt-rewriter model emits one rule fragment and Python assembles the next prompt
 -> fixed validation-gate evaluation accepts or rejects the candidate
 -> held-out test evaluation
 ```
@@ -131,8 +135,21 @@ this fixed gate before `work.md` is updated.
 
 Training batches inside one epoch can run concurrently with
 `--epoch-batch-concurrency N`; the default `N=1` preserves the serial behavior.
-All batches use the same epoch-start prompt, then the epoch planner merges the
-completed batch revision plans once.
+All batches use the same epoch-start prompt. Python clusters validated observations
+with the default `prompt_workspace/mechanism_taxonomy_v3.json` using exact atomic
+signatures before localization or editing; taxonomy v1/v2 remain available for legacy
+reproduction. Only supporting batches invoke those agents. Their localization results
+must agree by strict majority on the complete prompt-gap scope before the epoch planner runs. The epoch
+planner never declares support counts or selects a mechanism.
+
+Failure-analysis v3 attributions are validated independently. Each attribution binds
+one case to one exact evaluator anchor. Invalid attributions are audited while unrelated
+valid attributions continue. Only primary, trigger-grounded attributions from bijective
+judge matching count toward support; secondary or multi-signature conflicts remain diagnostic. Python derives attribution/evidence IDs and
+injects canonical mechanism metadata plus frozen positive/negative boundaries.
+To bound structured output, Python admits at most 12 anchors per v3 batch. It ranks
+compiler/syntax and direct-node evidence before dependent relations within each case,
+then allocates the budget across cases. This does not change promotion thresholds.
 
 The prompt editor does not rewrite arbitrary files. It returns JSON edits for
 the fixed markdown sections in `tst.md`:
@@ -146,10 +163,9 @@ the fixed markdown sections in `tst.md`:
 ## rule
 ```
 
-The epoch planner applies the section-count budget for the final merged
-revision plan: at most three sections may be planned before the first accepted
-update (`--initial-max-sections-per-edit 3`), and at most one section after
-that (`--max-sections-per-edit 1`).
+The prompt editor, epoch planner, and rewriter are limited to one mechanism,
+one revision item, and one section. The rewriter returns only `rule_text`; Python
+applies it to one unique contiguous target span or appends it to the target section.
 
 ## Evaluation
 
@@ -171,48 +187,48 @@ Disable the LLM semantic judge for cheap local checks:
 python run.py --train-only --train-dataset fsd --iterations 1 --max-train-cases 2 --mock-with-gold --no-evolve --no-llm-element-metrics
 ```
 
-Candidate acceptance no longer uses a weighted aggregate score. It is a direct
-accept/reject decision over the validation gate summaries.
-
-All Safety Gate checks must pass before the Benefit Gate is considered:
+The default gate is repeated, disjunctive `any-improvement` acceptance:
 
 ```text
-syntax_pass_rate_delta >= -0.01
-plantuml_compile_delta >= -0.01
-node_f1_delta >= -0.01
-relation_f1_delta >= -0.01
-node_precision_delta >= -0.02
-relation_precision_delta >= -0.02
-infrastructure_error_delta <= 0
-prompt_size_ok
+mean(Node F1 delta) > configured minimum with at least 2/3 repeat wins
+OR mean(Relation F1 delta) > configured minimum with at least 2/3 repeat wins
 ```
 
-Here `node_*` and `relation_*` deltas refer to LLM-judge metrics, not
-auxiliary embedding metrics.
-
-At least one Benefit Gate signal must pass:
+Compilation and other performance changes are reported but cannot accept or veto
+the candidate.
+Prompt length, infrastructure failures, and incomplete winning-metric repeats
+remain measurement-validity checks. Defaults are:
 
 ```text
-relation_f1_delta >= 0.02
-or node_f1_delta >= 0.02
-or plantuml_compile_delta >= 0.05 with no node/relation F1 regression
+--acceptance-policy any-improvement
+--validation-repeats 3
+--acceptance-min-wins 2
 ```
 
-This prevents compilation improvements from compensating for semantic quality
-regressions. Held-out testing runs as `iteration_NNN/test`; the workflow no
-longer runs a second duplicate held-out test after all training completes.
+The previous Safety/Benefit/Bootstrap gate remains available as
+`--acceptance-policy legacy`. Baseline repeats are reused only inside one epoch
+and are regenerated in the next epoch even if the prompt did not change.
 
-Iteration 1 has a bootstrap exception: if both `N-F1` and `R-F1` clearly
-improve (`+0.05` and `+0.05` by default), syntax/compile pass rates stay within
-the relaxed tolerance (`-0.10` by default), no new infrastructure errors appear,
-and the prompt stays within the absolute `--max-prompt-chars` limit, the candidate can be accepted. Later
-iterations use the standard gates above.
+Calibrate natural variation before a formal run:
+
+```powershell
+python run.py --test-dataset us --calibrate-validation-only --validation-calibration-repeats 5
+```
+
+Calibration evaluates only the fixed validation split with the seed prompt;
+it does not train or run held-out evaluation. Recommended thresholds are
+reported but never applied automatically. Node/Relation recommendations drive
+formal acceptance; Compile calibration is diagnostic only. `data_split_summary.json` and the
+calibration report include the actual validation size and split fingerprint.
+Held-out behavior is unchanged in
+this phase.
 
 ## Outputs
 
 Runs are written under `prompt_runs/`. Important files include:
 
 - `run_args.json`: sanitized run configuration.
+- `data_split_summary.json`: actual split sizes, dataset counts, and validation fingerprint.
 - `train_pool_cases.json`: sampled training pool before the validation split.
 - `train_cases.json`: optimization cases used by the prompt-evolution agents.
 - `validation_gate_cases.json`: fixed validation cases reserved from the training pool.
@@ -231,15 +247,34 @@ Runs are written under `prompt_runs/`. Important files include:
 - `iteration_NNN/agents/error_localization.output.json`: section-level localization result.
 - `iteration_NNN/agents/prompt_editor.input.json`: input sent to the prompt-editor model, including failure analysis and localization.
 - `iteration_NNN/agents/prompt_editor.output.json`: structured prompt edit result.
+- `iteration_NNN/train_batches/batch_NNN/agents/failure_analysis.output.raw.txt`: raw failure-analysis output.
+- `iteration_NNN/train_batches/batch_NNN/agents/failure_analysis.rejected_patterns.json`: compatibility filename; v3 stores per-attribution rejection audit.
+- `iteration_NNN/train_batches/batch_NNN/mechanisms/evidence.json`: validated batch observations.
+- `iteration_NNN/mechanisms/evidence_inventory.json`: complete epoch evidence inventory.
+- `iteration_NNN/mechanisms/clusters.json`, `selected.json`: deterministic clustering and the one selected mechanism.
+- `iteration_NNN/mechanisms/attribution_lineage.json`: attribution lineage through local plans, final fragment, and acceptance.
+- `iteration_NNN/mechanisms/prompt_gap_consensus.json`: supporting-batch localization/editor votes, strict-majority threshold, selected section, and abstention reason.
 - `iteration_NNN/prompts/candidate.md`: candidate prompt emitted by the prompt rewriter.
 - `iteration_NNN/validation_gate/cases.json`: fixed validation cases used for candidate acceptance.
 - `iteration_NNN/validation_gate/baseline_records.jsonl`, `iteration_NNN/validation_gate/baseline_summary.json`: current-prompt validation baseline.
 - `iteration_NNN/validation_gate/candidate_records.jsonl`, `iteration_NNN/validation_gate/candidate_summary.json`: candidate-prompt validation result.
+- `iteration_NNN/validation_gate/repeat_NNN/`, `aggregate_summary.json`: paired repeats and stable-improvement statistics.
+- `iteration_NNN/validation_gate/impact_summary.json`, `impact_report.md`: diagnostic repeat/case/dataset Node/Relation P/R/F1 deltas.
 - `iteration_NNN/decision/acceptance.json`: prompt update decision with `accepted: true/false` and rejection reasons.
 - `iteration_000/test/summary.json`, `iteration_000/test/analysis.md`: optional original-prompt held-out test results when `--eval-initial-test` is used.
 - `iteration_NNN/test/summary.json`, `iteration_NNN/test/analysis.md`: per-iteration held-out test results.
 - `prompt_final.md`: final current prompt produced by training.
 - `run_state.json`, `rate_limit_events.jsonl`: provider retry state and event log.
+
+Export legacy batch-local `supporting_cases` into a separate audit run without
+modifying the source run:
+
+```powershell
+py scripts\export_mechanism_evidence.py prompt_runs\<source-run>
+```
+
+The audit run contains traceable JSONL evidence, a manual-audit CSV, invalid
+reference logs, and a summary report.
 
 Existing historical runs can be refreshed without rerunning model calls:
 

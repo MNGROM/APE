@@ -9,6 +9,8 @@ Rewrite the current prompt into the next candidate prompt by applying the revisi
 ## rewrite guidance
 
 - Apply the revision plan with the smallest coherent prompt-level change.
+- Modify only the single target section named by the revision item. Preserve every other section exactly, including wording and order.
+- Express both the revision item's `positive_trigger` and `negative_boundary` in the same target-section rule.
 - Prefer replacing, compressing, or merging existing guidance over appending another clause.
 - If a rule is already long, rewrite the full rule into a shorter and clearer rule instead of extending it.
 - Do not add examples, keyword lists, quoted training phrases, dataset-specific object names, domain-specific nouns, or case-specific exceptions. If the `revision_plan` contains such material, abstract it into a general prompt rule or omit that part.

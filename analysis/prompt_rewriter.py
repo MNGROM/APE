@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from llm import LLMClient
-from prompt_ops import extract_json_object, validate_prompt_candidate
+from prompt_ops import apply_prompt_revision_fragment, extract_json_object
 from utils.io import read_prompt_file, write_text
 
 
@@ -51,13 +51,23 @@ def rewrite_prompt(
     if parsed is None:
         write_text(output_path.with_suffix(".rejected.txt"), "Prompt rewriter did not return a JSON object.\n")
         return None
-    candidate = parsed.get("candidate_prompt")
-    if not isinstance(candidate, str) or not candidate.strip():
-        write_text(output_path.with_suffix(".rejected.txt"), "Prompt rewriter output must contain a non-empty candidate_prompt string.\n")
+    unexpected = sorted(set(parsed) - {"rule_text"})
+    if unexpected:
+        message = "Prompt rewriter output may contain only rule_text: " + ", ".join(unexpected)
+        write_text(output_path.with_suffix(".rejected.txt"), message + "\n")
         return None
-    ok, errors = validate_prompt_candidate(candidate)
-    if not ok:
+    rule_text = parsed.get("rule_text")
+    if not isinstance(rule_text, str) or not rule_text.strip():
+        write_text(output_path.with_suffix(".rejected.txt"), "Prompt rewriter output must contain a non-empty rule_text string.\n")
+        return None
+    candidate, errors = apply_prompt_revision_fragment(
+        current_prompt,
+        revision_plan,
+        rule_text,
+    )
+    if candidate is None:
         write_text(output_path.with_suffix(".rejected.txt"), "\n".join(errors) + "\n")
         print(f"[evolve] Rejected prompt rewrite: {'; '.join(errors)}", flush=True)
         return None
+    write_text(output_path, json.dumps({"rule_text": rule_text.strip()}, ensure_ascii=False, indent=2))
     return candidate.strip() + "\n"

@@ -96,6 +96,7 @@ def evaluate_one_case(
         max_tokens=args.llm_judge_max_tokens,
         timeout=args.llm_judge_timeout,
         thinking=args.llm_judge_thinking,
+        do_sample=getattr(args, "do_sample", False),
         max_retries=args.llm_judge_max_retries,
         state_dir=state_dir,
         retry_phase=f"{phase}:llm_judge",
@@ -108,11 +109,14 @@ def evaluate_one_case(
     node_metrics = empty_metric_bundle()
     relation_metrics = empty_metric_bundle()
     if getattr(args, "embedding_element_metrics", False):
+        judge_client = llm_client.for_model(
+            getattr(args, "llm_judge_model", llm_client.model),
+        )
         try:
             gold_graph = extract_graph_for_metrics(
                 case.gold_plantuml,
                 args=args,
-                llm_client=llm_client,
+                llm_client=judge_client,
                 state_dir=state_dir,
                 phase=phase,
                 role="gold",
@@ -124,7 +128,7 @@ def evaluate_one_case(
                 else extract_graph_for_metrics(
                     generated_plantuml,
                     args=args,
-                    llm_client=llm_client,
+                    llm_client=judge_client,
                     state_dir=state_dir,
                     phase=phase,
                     role="prediction",

@@ -64,6 +64,8 @@ class EpochPlannerTest(unittest.TestCase):
                 "revision_plan": [
                     {
                         "section": "Knowledge",
+                        "operation": "qualify_existing",
+                        "text_to_modify": "Use fork only for explicit parallel work.",
                         "intent": "Constrain fork usage.",
                         "change_instruction": "Use forks only when requirements explicitly describe parallel execution.",
                     }
@@ -84,6 +86,21 @@ class EpochPlannerTest(unittest.TestCase):
                 ],
             }
         ]
+        selected_mechanism = {
+            "mechanism_id": "explicit_concurrency_not_mapped",
+            "mechanism_signature": {
+                "failure_direction": "missing_required_parallel",
+                "construct_family": "fork",
+                "requirement_trigger": "explicit_concurrency",
+                "gold_state": "present",
+                "prediction_state": "absent",
+                "node_inventory_status": "sufficient",
+            },
+            "supporting_evidence_ids": ["e1", "e2", "e3"],
+            "supporting_batch_count": 2,
+            "positive_trigger": "Use fork for explicit concurrency.",
+            "negative_boundary": "Do not use fork for ordinary lists.",
+        }
 
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -106,6 +123,7 @@ class EpochPlannerTest(unittest.TestCase):
             result = plan_epoch_revision(
                 current_prompt=PROMPT,
                 batch_revision_inputs=batch_inputs,
+                selected_mechanism=selected_mechanism,
                 edit_budget=edit_budget,
                 args=args,
                 llm_client=llm_client,
@@ -118,8 +136,10 @@ class EpochPlannerTest(unittest.TestCase):
             self.assertIsNotNone(result)
             assert result is not None
             self.assertEqual(result["revision_plan"][0]["section"], "knowledge")
+            self.assertEqual(result["supporting_evidence_ids"], ["e1", "e2", "e3"])
             payload = json.loads(input_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["batch_revision_inputs"], batch_inputs)
+            self.assertEqual(payload["selected_mechanism"]["mechanism_id"], "explicit_concurrency_not_mapped")
             self.assertEqual(payload["edit_budget"], edit_budget)
             self.assertNotIn("planning_constraints", payload)
             self.assertEqual(json.loads(output_path.read_text(encoding="utf-8")), result)
@@ -142,8 +162,119 @@ class EpochPlannerTest(unittest.TestCase):
         planner_refinement_budget = make_edit_budget(has_accepted_update=True, args=args, agent="epoch_planner")
 
         self.assertNotIn("max_revision_items", editor_budget)
-        self.assertEqual(planner_initial_budget["max_revision_items"], 3)
+        self.assertEqual(planner_initial_budget["max_revision_items"], 1)
         self.assertEqual(planner_refinement_budget["max_revision_items"], 1)
+
+    def test_epoch_planner_cannot_change_the_majority_section(self) -> None:
+        response = json.dumps(
+            {
+                "revision_plan": [
+                    {
+                        "section": "workflow",
+                        "operation": "qualify_existing",
+                        "text_to_modify": "Generate the diagram directly.",
+                        "intent": "Change another section.",
+                        "change_instruction": "Revise workflow instead.",
+                    }
+                ]
+            }
+        )
+        batch_inputs = [
+            {
+                "batch_id": 1,
+                "revision_plan": [
+                    {
+                        "section": "knowledge",
+                        "intent": "Tighten fork usage.",
+                        "change_instruction": "Constrain explicit concurrency.",
+                    }
+                ],
+            }
+        ]
+        selected = {
+            "mechanism_id": "explicit_concurrency_not_mapped",
+            "mechanism_signature": {},
+            "supporting_evidence_ids": ["e1"],
+            "positive_trigger": "Use fork for concurrency.",
+            "negative_boundary": "Do not use fork for lists.",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            prompt_path = root / "planner.md"
+            output_path = root / "output.json"
+            prompt_path.write_text("Planner", encoding="utf-8")
+            args = SimpleNamespace(
+                epoch_planner_prompt_path=prompt_path,
+                epoch_planner_temperature=0.0,
+                epoch_planner_max_tokens=1000,
+                epoch_planner_thinking="disabled",
+            )
+            result = plan_epoch_revision(
+                current_prompt=PROMPT,
+                batch_revision_inputs=batch_inputs,
+                selected_mechanism=selected,
+                edit_budget={"max_revision_items": 1},
+                args=args,
+                llm_client=FakeLLMClient(response),
+                output_input_path=root / "input.json",
+                output_path=output_path,
+                state_dir=root,
+                iteration=1,
+            )
+            rejection = output_path.with_suffix(".rejected.txt").read_text(encoding="utf-8")
+        self.assertIsNone(result)
+        self.assertIn("strict-majority section", rejection)
+
+    def test_epoch_planner_rejects_mixed_atomic_revision_scopes(self) -> None:
+        selected = {
+            "mechanism_id": "explicit_concurrency_not_mapped",
+            "mechanism_signature": {
+                "failure_direction": "missing_required_parallel",
+                "construct_family": "fork",
+                "requirement_trigger": "explicit_concurrency",
+                "gold_state": "present",
+                "prediction_state": "absent",
+                "node_inventory_status": "sufficient",
+            },
+            "supporting_attribution_ids": ["attr-1"],
+        }
+        scope = {
+            "mechanism_id": selected["mechanism_id"],
+            "mechanism_signature": selected["mechanism_signature"],
+            "supporting_attribution_ids": ["attr-1"],
+            "prompt_gap": "missing",
+            "section": "knowledge",
+            "repair_type": "construct_selection",
+            "existing_prompt_quote": "",
+        }
+        other_scope = {**scope, "repair_type": "relation_grounding"}
+        batch_inputs = [
+            {"batch_id": 1, "revision_plan": [{"section": "knowledge", "revision_scope": scope}]},
+            {"batch_id": 2, "revision_plan": [{"section": "knowledge", "revision_scope": other_scope}]},
+        ]
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            output_path = root / "output.json"
+            result = plan_epoch_revision(
+                current_prompt=PROMPT,
+                batch_revision_inputs=batch_inputs,
+                selected_mechanism=selected,
+                edit_budget={"max_revision_items": 1},
+                args=SimpleNamespace(
+                    epoch_planner_prompt_path=root / "planner.md",
+                    epoch_planner_temperature=0.0,
+                    epoch_planner_max_tokens=1000,
+                    epoch_planner_thinking="disabled",
+                ),
+                llm_client=FakeLLMClient("{}"),
+                output_input_path=root / "input.json",
+                output_path=output_path,
+                state_dir=root,
+                iteration=1,
+            )
+            rejection = output_path.with_suffix(".rejected.txt").read_text(encoding="utf-8")
+        self.assertIsNone(result)
+        self.assertIn("one identical atomic revision scope", rejection)
 
 
 if __name__ == "__main__":

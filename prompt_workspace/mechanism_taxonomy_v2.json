@@ -1,0 +1,193 @@
+{
+  "version": "v2",
+  "promotion_requirements": {
+    "minimum_unique_cases": 3,
+    "minimum_training_datasets": 2,
+    "minimum_valid_ratio": 0.8,
+    "heldout_evidence_allowed": false
+  },
+  "mechanisms": [
+    {
+      "mechanism_id": "explicit_actions_merged",
+      "candidate_eligible": true,
+      "positive_trigger": "Split distinct explicitly stated behavior actions into separate activity nodes, even when they occur in one sentence.",
+      "negative_boundary": "Do not split one stated action merely because it has multiple objects, attributes, fields, list items, or targets.",
+      "match": {
+        "failure_direction": "activity_under_decomposition",
+        "construct_family": "activity",
+        "requirement_trigger": "multiple_explicit_actions",
+        "gold_state": "multiple",
+        "prediction_state": "merged",
+        "node_inventory_status": "not_applicable",
+        "evidence_basis": ["requirement_and_gold", "requirement_only"]
+      }
+    },
+    {
+      "mechanism_id": "context_clause_as_activity",
+      "candidate_eligible": true,
+      "positive_trigger": "Treat an introductory precondition, initial state, timing clause, or context-only clause as control context rather than a separate activity when it does not state an independently performed behavior.",
+      "negative_boundary": "Do not remove an explicitly stated action, state transition, or outcome merely because it appears in an introductory, temporal, or conditional clause.",
+      "match": {
+        "failure_direction": "activity_over_decomposition",
+        "construct_family": "activity",
+        "requirement_trigger": "context_clause",
+        "gold_state": "none",
+        "prediction_state": "single",
+        "node_inventory_status": "not_applicable",
+        "evidence_basis": "requirement_and_gold"
+      }
+    },
+    {
+      "mechanism_id": "single_action_split_into_unsupported_substeps",
+      "candidate_eligible": true,
+      "positive_trigger": "Keep one explicitly stated behavior as one activity when extra input, processing, output, or implementation substeps are not stated.",
+      "negative_boundary": "Do not merge distinct explicitly stated behavior actions, states, or outcomes.",
+      "match": {
+        "failure_direction": "activity_over_decomposition",
+        "construct_family": "activity",
+        "requirement_trigger": "unstated_implementation_substeps",
+        "gold_state": "single",
+        "prediction_state": "multiple",
+        "node_inventory_status": "not_applicable",
+        "evidence_basis": ["requirement_and_gold", "requirement_only"]
+      }
+    },
+    {
+      "mechanism_id": "heading_or_label_as_activity",
+      "candidate_eligible": true,
+      "positive_trigger": "Treat pure headings, labels, section names, and context-only descriptors as non-activities.",
+      "negative_boundary": "Do not remove a phrase that explicitly states an action, state, or outcome merely because it appears in a heading-like position.",
+      "match": {
+        "failure_direction": "activity_over_decomposition",
+        "construct_family": "activity",
+        "requirement_trigger": "heading_or_label",
+        "gold_state": "non_activity",
+        "prediction_state": "single",
+        "node_inventory_status": "not_applicable",
+        "evidence_basis": ["requirement_and_gold", "requirement_only"]
+      }
+    },
+    {
+      "mechanism_id": "explicit_concurrency_not_mapped",
+      "candidate_eligible": true,
+      "positive_trigger": "Use fork when the requirement explicitly states concurrent, parallel, simultaneous, or otherwise unambiguously overlapping execution.",
+      "negative_boundary": "Do not infer fork from ordinary enumerations, multiple objects of one action, alternatives, attributes, options, or sequential steps.",
+      "match": {
+        "failure_direction": "missing_required_parallel",
+        "construct_family": "fork",
+        "requirement_trigger": "explicit_concurrency",
+        "gold_state": "present",
+        "prediction_state": "absent",
+        "node_inventory_status": "sufficient",
+        "evidence_basis": ["requirement_and_gold", "requirement_only"]
+      }
+    },
+    {
+      "mechanism_id": "unsupported_fork",
+      "candidate_eligible": true,
+      "positive_trigger": "Avoid fork when items are only an ordinary enumeration, attributes, options, alternatives, or sequential steps.",
+      "negative_boundary": "Do not suppress fork when the requirement explicitly states concurrent, parallel, simultaneous, or overlapping execution.",
+      "match": {
+        "failure_direction": "spurious_parallel",
+        "construct_family": "fork",
+        "requirement_trigger": [
+          "ordinary_enumeration",
+          "multiple_objects_same_action",
+          "alternatives_or_sequence"
+        ],
+        "gold_state": "absent",
+        "prediction_state": "present",
+        "node_inventory_status": "sufficient",
+        "evidence_basis": ["requirement_and_gold", "requirement_only"]
+      }
+    },
+    {
+      "mechanism_id": "explicit_iteration_not_mapped",
+      "candidate_eligible": true,
+      "positive_trigger": "Use a loop when the requirement explicitly states repeated behavior together with an exit or continuation condition.",
+      "negative_boundary": "Do not infer a loop from state residence, duration, or a descriptor without a repeated body and continuation or exit condition.",
+      "match": {
+        "failure_direction": "missing_required_loop",
+        "construct_family": "loop",
+        "requirement_trigger": "explicit_iteration_with_exit",
+        "gold_state": "present",
+        "prediction_state": "absent",
+        "node_inventory_status": "sufficient",
+        "evidence_basis": ["requirement_and_gold", "requirement_only"]
+      }
+    },
+    {
+      "mechanism_id": "descriptor_overtriggered_loop",
+      "candidate_eligible": true,
+      "positive_trigger": "Avoid a loop when the text provides only state context or a descriptor without a repeated body and continuation condition.",
+      "negative_boundary": "Do not suppress explicit retry, repeat, until, or while behavior with a repeated body and continuation or exit condition.",
+      "match": {
+        "failure_direction": "spurious_loop",
+        "construct_family": "loop",
+        "requirement_trigger": "periodic_descriptor_only",
+        "gold_state": "absent",
+        "prediction_state": "present",
+        "node_inventory_status": "sufficient",
+        "evidence_basis": ["requirement_and_gold", "requirement_only"]
+      }
+    },
+    {
+      "mechanism_id": "explicit_early_exit_omitted",
+      "candidate_eligible": true,
+      "positive_trigger": "Generate an early exit when the requirement explicitly terminates the current process or path.",
+      "negative_boundary": "Do not generate stop for an intermediate state transition, outcome, or failure mention that does not terminate the process.",
+      "match": {
+        "failure_direction": "condition_or_branch_error",
+        "construct_family": "early_exit",
+        "requirement_trigger": "explicit_early_exit",
+        "gold_state": "present",
+        "prediction_state": "absent",
+        "node_inventory_status": "sufficient",
+        "evidence_basis": ["requirement_and_gold", "requirement_only"]
+      }
+    },
+    {
+      "mechanism_id": "construct_syntax_invalid",
+      "candidate_eligible": true,
+      "positive_trigger": "Correct only the compiler-confirmed PlantUML syntax form identified by the supporting evidence.",
+      "negative_boundary": "Do not change activity inventory or control-flow semantics while repairing syntax.",
+      "match": {
+        "failure_direction": "syntax_or_format_error",
+        "construct_family": "syntax",
+        "requirement_trigger": "compiler_confirmed",
+        "gold_state": "valid",
+        "prediction_state": "invalid",
+        "node_inventory_status": "not_applicable",
+        "evidence_basis": "compiler"
+      }
+    },
+    {
+      "mechanism_id": "legacy_single_explicit_action_over_decomposition",
+      "candidate_eligible": false,
+      "classification": "record_only",
+      "match": {
+        "failure_direction": "activity_over_decomposition",
+        "construct_family": "activity",
+        "requirement_trigger": "single_explicit_action",
+        "gold_state": "single",
+        "prediction_state": "multiple",
+        "node_inventory_status": "not_applicable",
+        "evidence_basis": ["requirement_and_gold", "requirement_only"]
+      }
+    },
+    {
+      "mechanism_id": "peer_item_gold_parallelism_not_reproduced",
+      "candidate_eligible": false,
+      "classification": "dataset_convention",
+      "match": {
+        "failure_direction": "missing_required_parallel",
+        "construct_family": "fork",
+        "requirement_trigger": "ordinary_enumeration",
+        "gold_state": "present",
+        "prediction_state": "absent",
+        "node_inventory_status": "sufficient",
+        "evidence_basis": "gold_only"
+      }
+    }
+  ]
+}

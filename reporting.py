@@ -31,6 +31,17 @@ METRIC_KEYS = (
     "infrastructure_error_rate",
 )
 
+IMPACT_METRIC_KEYS = (
+    "llm_node_precision",
+    "llm_node_recall",
+    "llm_node_f1",
+    "llm_relation_precision",
+    "llm_relation_recall",
+    "llm_relation_f1",
+    "syntax_pass",
+    "plantuml_compilation_pass",
+)
+
 
 def fmt(value: Any) -> str:
     if isinstance(value, float):
@@ -68,6 +79,200 @@ def metric_deltas(before: dict[str, float] | None, after: dict[str, float] | Non
         if isinstance(before_value, (int, float)) and isinstance(after_value, (int, float)):
             deltas[key] = float(after_value) - float(before_value)
     return deltas
+
+
+def _impact_case_key(record: Any) -> tuple[str, str]:
+    return str(record.dataset), str(record.case_id)
+
+
+def _record_groups(records: list[Any]) -> dict[tuple[str, str], list[Any]]:
+    groups: dict[tuple[str, str], list[Any]] = {}
+    for record in records:
+        groups.setdefault(_impact_case_key(record), []).append(record)
+    return groups
+
+
+def _semantic_impact_values(record: Any) -> dict[str, float] | None:
+    metrics = getattr(record, "llm_element_metrics", None)
+    if metrics is None or getattr(metrics, "status", None) != "success":
+        return None
+    return {
+        "llm_node_precision": float(metrics.node_metrics.precision),
+        "llm_node_recall": float(metrics.node_metrics.recall),
+        "llm_node_f1": float(metrics.node_metrics.f1),
+        "llm_relation_precision": float(metrics.relation_metrics.precision),
+        "llm_relation_recall": float(metrics.relation_metrics.recall),
+        "llm_relation_f1": float(metrics.relation_metrics.f1),
+    }
+
+
+def _paired_case_impact(*, repeat: int, key: tuple[str, str], baseline: Any, candidate: Any) -> dict[str, Any]:
+    baseline_semantic = _semantic_impact_values(baseline)
+    candidate_semantic = _semantic_impact_values(candidate)
+    semantic_valid = baseline_semantic is not None and candidate_semantic is not None
+    deltas: dict[str, float | None] = {
+        metric: (
+            candidate_semantic[metric] - baseline_semantic[metric]
+            if semantic_valid and baseline_semantic is not None and candidate_semantic is not None
+            else None
+        )
+        for metric in IMPACT_METRIC_KEYS[:6]
+    }
+    deltas["syntax_pass"] = float(bool(candidate.syntax.passed)) - float(bool(baseline.syntax.passed))
+    deltas["plantuml_compilation_pass"] = float(bool(candidate.plantuml_compilation.passed)) - float(
+        bool(baseline.plantuml_compilation.passed)
+    )
+    return {
+        "repeat": repeat,
+        "dataset": key[0],
+        "case_id": key[1],
+        "pairing_status": "paired",
+        "semantic_metric_valid": semantic_valid,
+        "baseline_llm_status": getattr(baseline.llm_element_metrics, "status", "missing"),
+        "candidate_llm_status": getattr(candidate.llm_element_metrics, "status", "missing"),
+        "deltas": deltas,
+    }
+
+
+def _aggregate_impact_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    aggregate: dict[str, Any] = {
+        "case_count": len(rows),
+        "paired_case_count": sum(row.get("pairing_status") == "paired" for row in rows),
+        "semantic_valid_case_count": sum(bool(row.get("semantic_metric_valid")) for row in rows),
+        "metrics": {},
+    }
+    for metric in IMPACT_METRIC_KEYS:
+        values = [
+            float(row["deltas"][metric])
+            for row in rows
+            if isinstance(row.get("deltas"), dict)
+            and isinstance(row["deltas"].get(metric), (int, float))
+        ]
+        aggregate["metrics"][metric] = {
+            "mean_delta": sum(values) / len(values) if values else None,
+            "improved_count": sum(value > 0.0 for value in values),
+            "unchanged_count": sum(value == 0.0 for value in values),
+            "regressed_count": sum(value < 0.0 for value in values),
+            "evaluated_count": len(values),
+        }
+    return aggregate
+
+
+def build_validation_impact_summary(
+    repeat_pairs: list[tuple[int, list[Any], list[Any]]],
+) -> dict[str, Any]:
+    """Build paired validation diagnostics without influencing acceptance."""
+
+    case_rows: list[dict[str, Any]] = []
+    repeat_rows: list[dict[str, Any]] = []
+    for repeat, baseline_records, candidate_records in repeat_pairs:
+        baseline_groups = _record_groups(baseline_records)
+        candidate_groups = _record_groups(candidate_records)
+        current_rows: list[dict[str, Any]] = []
+        for key in sorted(set(baseline_groups) | set(candidate_groups)):
+            baseline_matches = baseline_groups.get(key, [])
+            candidate_matches = candidate_groups.get(key, [])
+            if len(baseline_matches) == 1 and len(candidate_matches) == 1:
+                row = _paired_case_impact(
+                    repeat=repeat,
+                    key=key,
+                    baseline=baseline_matches[0],
+                    candidate=candidate_matches[0],
+                )
+            else:
+                if not baseline_matches:
+                    status = "missing_baseline"
+                elif not candidate_matches:
+                    status = "missing_candidate"
+                else:
+                    status = "duplicate_case_key"
+                row = {
+                    "repeat": repeat,
+                    "dataset": key[0],
+                    "case_id": key[1],
+                    "pairing_status": status,
+                    "semantic_metric_valid": False,
+                    "deltas": {metric: None for metric in IMPACT_METRIC_KEYS},
+                }
+            current_rows.append(row)
+            case_rows.append(row)
+        repeat_rows.append({"repeat": repeat, **_aggregate_impact_rows(current_rows)})
+
+    dataset_rows = []
+    for dataset in sorted({str(row["dataset"]) for row in case_rows}):
+        rows = [row for row in case_rows if row["dataset"] == dataset]
+        dataset_rows.append({"dataset": dataset, **_aggregate_impact_rows(rows)})
+    return {
+        "diagnostic_only": True,
+        "acceptance_effect": "none",
+        "repeat_count": len(repeat_pairs),
+        "repeats": repeat_rows,
+        "datasets": dataset_rows,
+        "cases": case_rows,
+    }
+
+
+def write_validation_impact_report(*, summary: dict[str, Any], json_path: Path, report_path: Path) -> None:
+    write_text(json_path, json.dumps(summary, ensure_ascii=False, indent=2))
+    lines = [
+        "# Validation Impact Report",
+        "",
+        "This report is diagnostic only and does not participate in acceptance.",
+        "",
+        "## Dataset Summary",
+        "",
+        "| dataset | cases | semantic valid | node P | node R | node F1 | relation P | relation R | relation F1 |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for dataset in summary.get("datasets", []):
+        metrics = dataset.get("metrics", {})
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(dataset.get("dataset", "")),
+                    str(dataset.get("case_count", 0)),
+                    str(dataset.get("semantic_valid_case_count", 0)),
+                    fmt(metrics.get("llm_node_precision", {}).get("mean_delta")),
+                    fmt(metrics.get("llm_node_recall", {}).get("mean_delta")),
+                    fmt(metrics.get("llm_node_f1", {}).get("mean_delta")),
+                    fmt(metrics.get("llm_relation_precision", {}).get("mean_delta")),
+                    fmt(metrics.get("llm_relation_recall", {}).get("mean_delta")),
+                    fmt(metrics.get("llm_relation_f1", {}).get("mean_delta")),
+                ]
+            )
+            + " |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Case Deltas",
+            "",
+            "| repeat | dataset | case | status | node P | node R | node F1 | relation P | relation R | relation F1 |",
+            "| ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for row in summary.get("cases", []):
+        deltas = row.get("deltas", {})
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(row.get("repeat", "")),
+                    str(row.get("dataset", "")),
+                    str(row.get("case_id", "")),
+                    str(row.get("pairing_status", "")),
+                    fmt(deltas.get("llm_node_precision")),
+                    fmt(deltas.get("llm_node_recall")),
+                    fmt(deltas.get("llm_node_f1")),
+                    fmt(deltas.get("llm_relation_precision")),
+                    fmt(deltas.get("llm_relation_recall")),
+                    fmt(deltas.get("llm_relation_f1")),
+                ]
+            )
+            + " |"
+        )
+    write_text(report_path, "\n".join(lines).rstrip() + "\n")
 
 
 def metrics_table_header() -> list[str]:
@@ -193,6 +398,10 @@ def write_iteration_reports(
         f"- chars_before: {len(prompt_before)}",
         f"- chars_after: {len(prompt_after)}",
     ]
+    if acceptance and acceptance.get("selected_mechanism_id"):
+        prompt_lines.append(f"- selected_mechanism_id: {acceptance['selected_mechanism_id']}")
+    if acceptance and acceptance.get("winning_metrics"):
+        prompt_lines.append(f"- winning_metrics: {', '.join(acceptance['winning_metrics'])}")
     if candidate_prompt is not None:
         prompt_lines.append(f"- chars_candidate: {len(candidate_prompt)}")
     prompt_lines.extend(["", "## Applied Change", ""])
@@ -223,24 +432,21 @@ def write_iteration_reports(
     if acceptance:
         metric_lines.extend(["", "## Deltas", "", *metrics_table_header()])
         metric_lines.append(metric_delta_row("candidate_minus_baseline", metric_deltas(baseline_gate_summary, candidate_summary)))
-        metric_lines.extend(
-            [
-                "",
-                "## Gates",
-                "",
-                "```json",
-                json.dumps(
-                    {
-                        "safety_gate": acceptance.get("safety_gate"),
-                        "benefit_gate": acceptance.get("benefit_gate"),
-                        "bootstrap_gate": acceptance.get("bootstrap_gate"),
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-                "```",
-            ]
+        gate_payload = (
+            {
+                "acceptance_policy": acceptance.get("acceptance_policy"),
+                "evaluation_valid": acceptance.get("evaluation_valid"),
+                "winning_metrics": acceptance.get("winning_metrics", []),
+                "metric_results": acceptance.get("metric_results", {}),
+            }
+            if acceptance.get("acceptance_policy") == "any-improvement"
+            else {
+                "safety_gate": acceptance.get("safety_gate"),
+                "benefit_gate": acceptance.get("benefit_gate"),
+                "bootstrap_gate": acceptance.get("bootstrap_gate"),
+            }
         )
+        metric_lines.extend(["", "## Gates", "", "```json", json.dumps(gate_payload, ensure_ascii=False, indent=2), "```"])
     write_text(iter_dir / "reports" / "metrics_report.md", "\n".join(metric_lines).rstrip() + "\n")
 
 

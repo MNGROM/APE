@@ -7,14 +7,33 @@ import argparse
 import concurrent.futures
 import csv
 import dataclasses
+import hashlib
 import json
 import os
+import statistics
 from pathlib import Path
 from typing import Any
 
 from analysis.error_localization import localize_errors
 from analysis.epoch_planner import plan_epoch_revision
 from analysis.failure_analysis import analyze_failures, build_analysis
+from analysis.mechanism_clustering import (
+    build_mechanism_observations,
+    calibration_statistics,
+    failure_analysis_item_count,
+    load_mechanism_taxonomy,
+    make_revision_scope,
+    revision_scope_key,
+    sanitize_selected_failure_analysis,
+    select_epoch_mechanism,
+)
+from analysis.mechanism_memory import (
+    load_memory,
+    mark_hypothesis_status,
+    prompt_fingerprint,
+    record_observations,
+    save_memory,
+)
 from analysis.prompt_editor import propose_prompt_revision
 from analysis.prompt_rewriter import rewrite_prompt
 from config import (
@@ -24,6 +43,7 @@ from config import (
     DEFAULT_ERROR_LOCALIZATION_PROMPT_PATH,
     DEFAULT_FAILURE_ANALYSIS_PROMPT_PATH,
     DEFAULT_LLM_TIMEOUT,
+    DEFAULT_MECHANISM_TAXONOMY_PATH,
     DEFAULT_MODEL,
     DEFAULT_PLANTUML_JAR,
     DEFAULT_PROMPT_EDITOR_PROMPT_PATH,
@@ -46,7 +66,12 @@ from ape_datasets.lato import (
 from evaluation import evaluate_cases, has_only_infrastructure_errors
 from llm import LLMClient
 from metrics import DEFAULT_EMBEDDING_MODEL, format_summary, summarize_records
-from reporting import refresh_run_reports, write_iteration_reports
+from reporting import (
+    build_validation_impact_summary,
+    refresh_run_reports,
+    write_iteration_reports,
+    write_validation_impact_report,
+)
 from utils.io import read_prompt_file, read_text, write_text
 from versioning import initialize_run_prompt, make_run_dir, write_run_args
 
@@ -90,10 +115,30 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--epoch-batch-concurrency must be positive")
     if args.heldout_test_concurrency < 1:
         raise ValueError("--heldout-test-concurrency must be positive")
+    if args.validation_gate_concurrency < 1:
+        raise ValueError("--validation-gate-concurrency must be positive")
     if args.validation_gate_size < 0:
         raise ValueError("--validation-gate-size must be non-negative")
     if args.validation_gate_seed < 0:
         raise ValueError("--validation-gate-seed must be non-negative")
+    if args.validation_repeats < 1:
+        raise ValueError("--validation-repeats must be positive")
+    if args.acceptance_policy == "any-improvement" and not (1 <= args.acceptance_min_wins <= args.validation_repeats):
+        raise ValueError("--acceptance-min-wins must be between 1 and --validation-repeats")
+    if args.validation_calibration_repeats < 2:
+        raise ValueError("--validation-calibration-repeats must be at least 2")
+    semantic_min_deltas = (
+        args.any_improvement_node_min_delta,
+        args.any_improvement_relation_min_delta,
+    )
+    if any(value < 0 for value in (*semantic_min_deltas, args.any_improvement_compile_min_delta)):
+        raise ValueError("any-improvement minimum deltas must be non-negative")
+    if args.acceptance_policy == "any-improvement" and not args.calibrate_validation_only and any(value == 0 for value in semantic_min_deltas):
+        print(
+            "[config] Warning: one or more semantic any-improvement min deltas are zero; "
+            "calibrate and freeze non-zero Node/Relation thresholds for formal experiments.",
+            flush=True,
+        )
     if args.initial_max_sections_per_edit < 0 or args.initial_max_sections_per_edit > len(SECTION_NAMES):
         raise ValueError("--initial-max-sections-per-edit must be 0 (unlimited) or between 1 and the number of fixed prompt sections")
     if args.max_sections_per_edit < 0 or args.max_sections_per_edit > len(SECTION_NAMES):
@@ -120,7 +165,7 @@ def validate_glm_args(args: argparse.Namespace) -> None:
 
 def make_llm_client(args: argparse.Namespace) -> LLMClient:
     return LLMClient(
-        model=args.model,
+        model=getattr(args, "agent_model", args.model),
         api_key=args.api_key,
         base_url=args.base_url,
         temperature=args.temperature,
@@ -133,6 +178,17 @@ def make_llm_client(args: argparse.Namespace) -> LLMClient:
         retry_initial_wait=args.llm_rate_limit_initial_wait,
         retry_max_wait=args.llm_rate_limit_max_wait,
     )
+
+
+def resolve_model_roles(args: argparse.Namespace) -> argparse.Namespace:
+    """Resolve role-specific model IDs with legacy --model fallback."""
+    for field in ("generation_model", "agent_model", "judge_model"):
+        value = str(getattr(args, field, "") or args.model).strip()
+        if not value:
+            raise ValueError(f"--{field.replace('_', '-')} must resolve to a non-empty model ID")
+        setattr(args, field, value)
+    args.llm_judge_model = args.judge_model
+    return args
 
 
 def resolve_agent_thinking(value: str | None, fallback: str) -> str:
@@ -328,18 +384,29 @@ def iteration_paths(iter_dir: Path) -> dict[str, Path]:
         "validation_baseline_summary": iter_dir / "validation_gate" / "baseline_summary.json",
         "validation_candidate_records": iter_dir / "validation_gate" / "candidate_records.jsonl",
         "validation_candidate_summary": iter_dir / "validation_gate" / "candidate_summary.json",
+        "validation_aggregate_summary": iter_dir / "validation_gate" / "aggregate_summary.json",
         "validation_analysis": iter_dir / "validation_gate" / "analysis.md",
+        "validation_impact_summary": iter_dir / "validation_gate" / "impact_summary.json",
+        "validation_impact_report": iter_dir / "validation_gate" / "impact_report.md",
         "analysis_records": iter_dir / "evaluation" / "analysis_records.jsonl",
         "analysis_summary": iter_dir / "evaluation" / "analysis_summary.json",
         "analysis_overview": iter_dir / "evaluation" / "analysis_overview.md",
         "failure_analysis_input": iter_dir / "agents" / "failure_analysis.input.json",
         "failure_analysis_output": iter_dir / "agents" / "failure_analysis.output.json",
+        "failure_analysis_raw_output": iter_dir / "agents" / "failure_analysis.output.raw.txt",
+        "failure_analysis_rejected_patterns": iter_dir / "agents" / "failure_analysis.rejected_patterns.json",
         "error_localization_input": iter_dir / "agents" / "error_localization.input.json",
         "error_localization_output": iter_dir / "agents" / "error_localization.output.json",
         "prompt_editor_input": iter_dir / "agents" / "prompt_editor.input.json",
         "prompt_editor_output": iter_dir / "agents" / "prompt_editor.output.json",
         "epoch_planner_input": iter_dir / "agents" / "epoch_planner.input.json",
         "epoch_planner_output": iter_dir / "agents" / "epoch_planner.output.json",
+        "mechanism_clusters": iter_dir / "mechanisms" / "clusters.json",
+        "mechanism_selected": iter_dir / "mechanisms" / "selected.json",
+        "mechanism_evidence": iter_dir / "mechanisms" / "evidence.json",
+        "mechanism_evidence_inventory": iter_dir / "mechanisms" / "evidence_inventory.json",
+        "mechanism_lineage": iter_dir / "mechanisms" / "attribution_lineage.json",
+        "prompt_gap_consensus": iter_dir / "mechanisms" / "prompt_gap_consensus.json",
         "prompt_rewriter_input": iter_dir / "agents" / "prompt_rewriter.input.json",
         "prompt_rewriter_output": iter_dir / "agents" / "prompt_rewriter.output.json",
         "acceptance": iter_dir / "decision" / "acceptance.json",
@@ -370,7 +437,10 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
                 "baseline_summary": rel_to_iter(iter_dir, paths["validation_baseline_summary"]),
                 "candidate_records": rel_to_iter(iter_dir, paths["validation_candidate_records"]),
                 "candidate_summary": rel_to_iter(iter_dir, paths["validation_candidate_summary"]),
+                "aggregate_summary": rel_to_iter(iter_dir, paths["validation_aggregate_summary"]),
                 "analysis": rel_to_iter(iter_dir, paths["validation_analysis"]),
+                "impact_summary": rel_to_iter(iter_dir, paths["validation_impact_summary"]),
+                "impact_report": rel_to_iter(iter_dir, paths["validation_impact_report"]),
             },
             "evaluation": {
                 "analysis_records": rel_to_iter(iter_dir, paths["analysis_records"]),
@@ -381,6 +451,8 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
                 "failure_analysis": {
                     "input": rel_to_iter(iter_dir, paths["failure_analysis_input"]),
                     "output": rel_to_iter(iter_dir, paths["failure_analysis_output"]),
+                    "raw_output": rel_to_iter(iter_dir, paths["failure_analysis_raw_output"]),
+                    "rejected_patterns": rel_to_iter(iter_dir, paths["failure_analysis_rejected_patterns"]),
                 },
                 "error_localization": {
                     "input": rel_to_iter(iter_dir, paths["error_localization_input"]),
@@ -398,6 +470,14 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
                     "input": rel_to_iter(iter_dir, paths["prompt_rewriter_input"]),
                     "output": rel_to_iter(iter_dir, paths["prompt_rewriter_output"]),
                 },
+            },
+            "mechanisms": {
+                "evidence": rel_to_iter(iter_dir, paths["mechanism_evidence"]),
+                "evidence_inventory": rel_to_iter(iter_dir, paths["mechanism_evidence_inventory"]),
+                "clusters": rel_to_iter(iter_dir, paths["mechanism_clusters"]),
+                "selected": rel_to_iter(iter_dir, paths["mechanism_selected"]),
+                "attribution_lineage": rel_to_iter(iter_dir, paths["mechanism_lineage"]),
+                "prompt_gap_consensus": rel_to_iter(iter_dir, paths["prompt_gap_consensus"]),
             },
             "decision": {
                 "acceptance": rel_to_iter(iter_dir, paths["acceptance"]),
@@ -514,29 +594,167 @@ def split_validation_gate_cases(cases: list[Case], args: argparse.Namespace) -> 
     return optimize_cases, validation_cases
 
 
+def case_split_fingerprint(cases: list[Case]) -> str:
+    canonical = "".join(
+        f"{case.dataset}\t{case.case_id}\n"
+        for case in sorted(cases, key=lambda item: (item.dataset, item.case_id))
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def write_data_split_summary(
+    *,
+    run_dir: Path,
+    args: argparse.Namespace,
+    train_pool_cases: list[Case],
+    train_cases: list[Case],
+    validation_cases: list[Case],
+    test_cases: list[Case] | None = None,
+) -> dict[str, Any]:
+    def counts(cases: list[Case]) -> dict[str, int]:
+        return {dataset: len(items) for dataset, items in sorted(grouped_cases(cases).items())}
+
+    summary = {
+        "train_pool_count": len(train_pool_cases),
+        "train_count": len(train_cases),
+        "requested_validation_count": args.validation_gate_size,
+        "actual_validation_count": len(validation_cases),
+        "test_count": len(test_cases or []),
+        "train_dataset_counts": counts(train_cases),
+        "validation_dataset_counts": counts(validation_cases),
+        "test_dataset_counts": counts(test_cases or []),
+        "validation_split_fingerprint": case_split_fingerprint(validation_cases),
+    }
+    write_text(run_dir / "data_split_summary.json", json.dumps(summary, ensure_ascii=False, indent=2))
+    if args.validation_gate and len(validation_cases) != args.validation_gate_size:
+        print(
+            f"[split] requested validation cases={args.validation_gate_size}, "
+            f"actual={len(validation_cases)} after the one-third training-pool cap",
+            flush=True,
+        )
+    return summary
+
+
 def write_evaluation_records(path: Path, records: list[Any]) -> None:
     lines = [json.dumps(dataclasses.asdict(record), ensure_ascii=False) for record in records]
     write_text(path, ("\n".join(lines) + "\n") if lines else "")
 
 
+def write_attribution_lineage(
+    *,
+    path: Path,
+    selected_mechanism: dict[str, Any] | None,
+    batch_edit_results: list[dict[str, Any]],
+    prompt_gap_audit: dict[str, Any] | None,
+    epoch_revision_plan: dict[str, Any] | None,
+    prompt_rewriter_output_path: Path,
+    acceptance: dict[str, Any],
+) -> None:
+    """Persist the Python-owned attribution lineage for offline audit."""
+
+    selected = selected_mechanism or {}
+    attribution_ids = sorted(
+        set(str(value) for value in selected.get("supporting_attribution_ids", []) if str(value))
+    )
+    local_by_attribution: dict[str, list[dict[str, Any]]] = {
+        attribution_id: [] for attribution_id in attribution_ids
+    }
+    for result in batch_edit_results:
+        revision_input = result.get("revision_input")
+        if not isinstance(revision_input, dict):
+            continue
+        for attribution_id in revision_input.get("supporting_attribution_ids", []):
+            attribution_id = str(attribution_id)
+            if attribution_id in local_by_attribution:
+                local_by_attribution[attribution_id].append(
+                    {
+                        "batch_id": result.get("batch_id"),
+                        "prompt_gap": result.get("prompt_gap"),
+                        "target_section": result.get("target_section"),
+                        "editor_status": result.get("editor_status"),
+                        "revision_scope": revision_input.get("revision_scope"),
+                    }
+                )
+
+    rule_text: str | None = None
+    if prompt_rewriter_output_path.exists():
+        try:
+            payload = json.loads(read_text(prompt_rewriter_output_path))
+        except (json.JSONDecodeError, OSError):
+            payload = None
+        if isinstance(payload, dict) and isinstance(payload.get("rule_text"), str):
+            rule_text = payload["rule_text"]
+    final_scope = epoch_revision_plan.get("revision_scope") if isinstance(epoch_revision_plan, dict) else None
+    lineage = {
+        "schema_version": "atomic-lineage-v1",
+        "selected_mechanism": {
+            "mechanism_id": selected.get("mechanism_id"),
+            "hypothesis_id": selected.get("hypothesis_id"),
+            "parent_key": selected.get("parent_key", []),
+            "child_key": selected.get("child_key", []),
+            "mechanism_signature": selected.get("mechanism_signature"),
+            "conflict_status": selected.get("conflict_status", "clear"),
+            "supporting_attribution_ids": attribution_ids,
+            "supporting_evidence_ids": sorted(
+                set(str(value) for value in selected.get("supporting_evidence_ids", []) if str(value))
+            ),
+        },
+        "attributions": [
+            {
+                "attribution_id": attribution_id,
+                "cluster_mechanism_id": selected.get("mechanism_id"),
+                "hypothesis_id": selected.get("hypothesis_id"),
+                "parent_key": selected.get("parent_key", []),
+                "child_key": selected.get("child_key", []),
+                "evidence_id": next(
+                    (
+                        str(item.get("evidence_id") or "")
+                        for item in selected.get("supporting_attributions", [])
+                        if isinstance(item, dict)
+                        and str(item.get("attribution_id") or "") == attribution_id
+                    ),
+                    None,
+                ),
+                "anchor_kind": next(
+                    (
+                        str(item.get("anchor_kind") or "")
+                        for item in selected.get("supporting_attributions", [])
+                        if isinstance(item, dict)
+                        and str(item.get("attribution_id") or "") == attribution_id
+                    ),
+                    None,
+                ),
+                "local_plans": local_by_attribution[attribution_id],
+                "final_revision_scope": final_scope,
+                "final_fragment": {
+                    "present": rule_text is not None,
+                    "rule_text": rule_text,
+                },
+                "acceptance": {
+                    "accepted": bool(acceptance.get("accepted")),
+                    "rejection_reasons": acceptance.get("rejection_reasons", []),
+                },
+            }
+            for attribution_id in attribution_ids
+        ],
+        "prompt_gap_consensus": prompt_gap_audit,
+        "epoch_revision_scope": final_scope,
+    }
+    write_text(path, json.dumps(lineage, ensure_ascii=False, indent=2))
+
+
 def make_edit_budget(*, has_accepted_update: bool, args: argparse.Namespace, agent: str) -> dict[str, Any]:
     if agent == "epoch_planner":
-        max_revision_items = args.max_sections_per_edit if has_accepted_update else args.initial_max_sections_per_edit
+        max_revision_items = 1
         guidance = [
-            "Merge batch-local plans into the smallest revision supported by the strongest repeated evidence.",
+            "Merge only the plans for Python's selected mechanism into one section revision.",
             "Prefer modifying or tightening existing guidance over adding independent new rules.",
         ]
     else:
-        if has_accepted_update:
-            guidance = [
-                "Revise only the single highest-impact section.",
-                "Prefer modifying or tightening existing guidance over adding independent new rules.",
-            ]
-        else:
-            guidance = [
-                "A small multi-section revision is allowed only when the current prompt lacks core generation guidance.",
-                "Revise only sections directly supported by failure analysis and error localization.",
-            ]
+        guidance = [
+            "Revise only the Python-selected mechanism and its single highest-impact section.",
+            "Prefer modifying or tightening existing guidance over adding independent new rules.",
+        ]
         return {
             "guidance": guidance,
         }
@@ -553,8 +771,10 @@ class EpochBatchResult:
     records: list[Any]
     summary: dict[str, float]
     batch_summary: dict[str, Any]
-    revision_input: dict[str, Any] | None
-    collected_count: int = 0
+    failure_analysis: dict[str, Any] | None = None
+    mechanism_observations: list[dict[str, Any]] = dataclasses.field(default_factory=list)
+    valid_pattern_count: int = 0
+    rejected_pattern_count: int = 0
     skipped_count: int = 0
 
 
@@ -582,7 +802,12 @@ def process_epoch_batch(
     phase_prefix = f"iteration_{iteration:03d}:batch_{batch_index:03d}"
     log_prefix = f"[iteration {iteration} batch {batch_index}/{batch_count}]"
 
-    def skipped_result(records: list[Any], summary: dict[str, float]) -> EpochBatchResult:
+    def skipped_result(
+        records: list[Any],
+        summary: dict[str, float],
+        *,
+        rejected_pattern_count: int = 0,
+    ) -> EpochBatchResult:
         return EpochBatchResult(
             batch_index=batch_index,
             global_update_step=global_update_step,
@@ -594,7 +819,7 @@ def process_epoch_batch(
                 "case_count": len(analysis_cases),
                 "summary": summary,
             },
-            revision_input=None,
+            rejected_pattern_count=rejected_pattern_count,
             skipped_count=1,
         )
 
@@ -692,7 +917,7 @@ def process_epoch_batch(
         print(f"{log_prefix} infrastructure-only failures; prompt unchanged")
         return skipped_result(records, summary)
 
-    failure_analysis = analyze_failures(
+    failure_result = analyze_failures(
         current_prompt=prompt,
         records=records,
         summary=summary,
@@ -700,9 +925,14 @@ def process_epoch_batch(
         llm_client=llm_client,
         output_input_path=paths["failure_analysis_input"],
         output_path=paths["failure_analysis_output"],
+        raw_output_path=paths["failure_analysis_raw_output"],
+        rejected_patterns_path=paths["failure_analysis_rejected_patterns"],
         state_dir=run_dir,
-        iteration=global_update_step,
+        iteration=iteration,
+        batch_id=batch_index,
+        generation_run=run_dir.name,
     )
+    failure_analysis = failure_result.normalized_payload
     if failure_analysis is None:
         write_text(paths["prompt_after"], prompt)
         record_stage(
@@ -713,8 +943,11 @@ def process_epoch_batch(
             outputs={
                 "input": rel_to_iter(batch_dir, paths["failure_analysis_input"]),
                 "output": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
+                "raw_output": rel_to_iter(batch_dir, paths["failure_analysis_raw_output"]),
+                "rejected_patterns": rel_to_iter(batch_dir, paths["failure_analysis_rejected_patterns"]),
                 "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
             },
+            note="; ".join(failure_result.fatal_errors),
         )
         write_iteration_manifest(batch_dir, manifest)
         finalize_iteration_reports(
@@ -728,7 +961,11 @@ def process_epoch_batch(
             refresh_reports=False,
         )
         print(f"{log_prefix} failure analysis invalid; prompt unchanged")
-        return skipped_result(records, summary)
+        return skipped_result(
+            records,
+            summary,
+            rejected_pattern_count=len(failure_result.rejected_patterns),
+        )
     record_stage(
         manifest,
         "failure_analysis",
@@ -737,145 +974,46 @@ def process_epoch_batch(
         outputs={
             "input": rel_to_iter(batch_dir, paths["failure_analysis_input"]),
             "output": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
+            "raw_output": rel_to_iter(batch_dir, paths["failure_analysis_raw_output"]),
+            "rejected_patterns": rel_to_iter(batch_dir, paths["failure_analysis_rejected_patterns"]),
         },
+        note=(
+            f"valid_attributions={failure_analysis_item_count(failure_analysis)}, "
+            f"rejected_patterns={len(failure_result.rejected_patterns)}"
+        ),
     )
     write_iteration_manifest(batch_dir, manifest)
 
-    error_localization = localize_errors(
-        current_prompt=prompt,
-        failure_analysis=failure_analysis,
-        args=args,
-        llm_client=llm_client,
-        output_input_path=paths["error_localization_input"],
-        output_path=paths["error_localization_output"],
-        state_dir=run_dir,
-        iteration=global_update_step,
+    taxonomy = load_mechanism_taxonomy(args.mechanism_taxonomy_path)
+    observations = build_mechanism_observations(
+        failure_analysis,
+        taxonomy,
+        batch_id=batch_index,
+        analysis_summary=summary,
     )
-    if error_localization is None:
-        write_text(paths["prompt_after"], prompt)
-        record_stage(
-            manifest,
-            "error_localization",
-            status="invalid",
-            inputs={
-                "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-            },
-            outputs={
-                "input": rel_to_iter(batch_dir, paths["error_localization_input"]),
-                "output": rel_to_iter(batch_dir, paths["error_localization_output"]),
-                "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
-            },
-        )
-        write_iteration_manifest(batch_dir, manifest)
-        finalize_iteration_reports(
-            run_dir=run_dir,
-            iter_dir=batch_dir,
-            iteration=global_update_step,
-            prompt_before=prompt_before,
-            prompt_after=prompt,
-            candidate_prompt=None,
-            analysis_summary=summary,
-            refresh_reports=False,
-        )
-        print(f"{log_prefix} error localization invalid; prompt unchanged")
-        return skipped_result(records, summary)
-    record_stage(
-        manifest,
-        "error_localization",
-        status="success",
-        inputs={
-            "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-            "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-        },
-        outputs={
-            "input": rel_to_iter(batch_dir, paths["error_localization_input"]),
-            "output": rel_to_iter(batch_dir, paths["error_localization_output"]),
-        },
-    )
-    write_iteration_manifest(batch_dir, manifest)
-
-    editor_edit_budget = make_edit_budget(
-        has_accepted_update=has_accepted_update,
-        args=args,
-        agent="prompt_editor",
-    )
-    revision_plan = propose_prompt_revision(
-        current_prompt=prompt,
-        failure_analysis=failure_analysis,
-        error_localization=error_localization,
-        edit_budget=editor_edit_budget,
-        args=args,
-        llm_client=llm_client,
-        output_input_path=paths["prompt_editor_input"],
-        output_path=paths["prompt_editor_output"],
-        state_dir=run_dir,
-        iteration=global_update_step,
-    )
-    if revision_plan is None:
-        write_text(paths["prompt_after"], prompt)
-        record_stage(
-            manifest,
-            "prompt_editor",
-            status="invalid",
-            inputs={
-                "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-                "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-                "error_localization": rel_to_iter(batch_dir, paths["error_localization_output"]),
-            },
-            outputs={
-                "input": rel_to_iter(batch_dir, paths["prompt_editor_input"]),
-                "output": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
-                "prompt_after": rel_to_iter(batch_dir, paths["prompt_after"]),
-            },
-        )
-        write_iteration_manifest(batch_dir, manifest)
-        finalize_iteration_reports(
-            run_dir=run_dir,
-            iter_dir=batch_dir,
-            iteration=global_update_step,
-            prompt_before=prompt_before,
-            prompt_after=prompt,
-            candidate_prompt=None,
-            analysis_summary=summary,
-            refresh_reports=False,
-        )
-        print(f"{log_prefix} prompt revision plan invalid; prompt unchanged")
-        return skipped_result(records, summary)
-    record_stage(
-        manifest,
-        "prompt_editor",
-        status="success",
-        inputs={
-            "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-            "failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"]),
-            "error_localization": rel_to_iter(batch_dir, paths["error_localization_output"]),
-        },
-        outputs={
-            "input": rel_to_iter(batch_dir, paths["prompt_editor_input"]),
-            "output": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
-        },
-    )
-    write_iteration_manifest(batch_dir, manifest)
-
-    revision_input = {
-        "analysis_summary": summary,
-        "failure_analysis": failure_analysis,
-        "error_localization": error_localization,
-        "revision_plan": revision_plan.get("revision_plan", []),
+    evidence_for_log = [
+        {key: value for key, value in observation.items() if key != "patterns"}
+        for observation in observations
+    ]
+    write_text(paths["mechanism_evidence"], json.dumps(evidence_for_log, ensure_ascii=False, indent=2))
+    classification_counts = {
+        classification: sum(1 for item in observations if item["classification"] == classification)
+        for classification in ("candidate", "dataset_convention", "record_only")
     }
-    write_text(paths["prompt_after"], prompt)
+    candidate_count = classification_counts["candidate"]
     record_stage(
         manifest,
-        "epoch_revision_collection",
-        status="success",
-        inputs={
-            "prompt_before": rel_to_iter(batch_dir, paths["prompt_before"]),
-            "revision_plan": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
-        },
-        outputs={"prompt_after": rel_to_iter(batch_dir, paths["prompt_after"])},
-        note="batch-local revision plan collected for epoch planner; prompt unchanged",
+        "mechanism_filter",
+        status="success" if candidate_count else "skipped",
+        inputs={"failure_analysis": rel_to_iter(batch_dir, paths["failure_analysis_output"])},
+        outputs={"evidence": rel_to_iter(batch_dir, paths["mechanism_evidence"])},
+        note=(
+            f"candidate={classification_counts['candidate']}, "
+            f"dataset_convention={classification_counts['dataset_convention']}, "
+            f"record_only={classification_counts['record_only']}"
+        ),
     )
+    write_text(paths["prompt_after"], prompt)
     write_iteration_manifest(batch_dir, manifest)
     finalize_iteration_reports(
         run_dir=run_dir,
@@ -887,7 +1025,7 @@ def process_epoch_batch(
         analysis_summary=summary,
         refresh_reports=False,
     )
-    print(f"{log_prefix} revision plan collected for epoch planner")
+    print(f"{log_prefix} collected {candidate_count} candidate mechanism observation(s)")
     return EpochBatchResult(
         batch_index=batch_index,
         global_update_step=global_update_step,
@@ -899,9 +1037,572 @@ def process_epoch_batch(
             "case_count": len(analysis_cases),
             "summary": summary,
         },
-        revision_input=revision_input,
-        collected_count=1,
+        failure_analysis=failure_analysis,
+        mechanism_observations=observations,
+        valid_pattern_count=failure_analysis_item_count(failure_analysis),
+        rejected_pattern_count=len(failure_result.rejected_patterns),
+        skipped_count=0 if candidate_count else 1,
     )
+
+
+def record_unselected_batch(
+    *, iter_dir: Path, batch_index: int, selected_mechanism_id: str
+) -> None:
+    batch_dir = iter_dir / "train_batches" / f"batch_{batch_index:03d}"
+    manifest = json.loads(read_text(batch_dir / "manifest.json"))
+    record_stage(
+        manifest,
+        "selected_mechanism_editing",
+        status="skipped",
+        note=f"not_selected_by_epoch_cluster:{selected_mechanism_id}",
+    )
+    write_iteration_manifest(batch_dir, manifest)
+
+
+def create_selected_batch_revision(
+    *,
+    args: argparse.Namespace,
+    llm_client: LLMClient,
+    run_dir: Path,
+    iter_dir: Path,
+    prompt: str,
+    selected_observation: dict[str, Any],
+    has_accepted_update: bool,
+    iteration: int,
+) -> dict[str, Any]:
+    batch_index = int(selected_observation["batch_id"])
+    batch_dir = iter_dir / "train_batches" / f"batch_{batch_index:03d}"
+    paths = iteration_paths(batch_dir)
+    manifest = json.loads(read_text(batch_dir / "manifest.json"))
+    supporting_ids = sorted(set(selected_observation["supporting_evidence_ids"]))
+    filtered_failure_analysis = sanitize_selected_failure_analysis(selected_observation)
+    if failure_analysis_item_count(filtered_failure_analysis) == 0:
+        record_stage(
+            manifest,
+            "selected_mechanism_editing",
+            status="invalid",
+            note="selected_evidence_empty_after_sanitization",
+        )
+        write_iteration_manifest(batch_dir, manifest)
+        return {
+            "batch_id": batch_index,
+            "prompt_gap": "invalid",
+            "target_section": None,
+            "localization_status": "not_run",
+            "editor_status": "not_run",
+            "revision_input": None,
+        }
+
+    error_localization = localize_errors(
+        current_prompt=prompt,
+        failure_analysis=filtered_failure_analysis,
+        selected_mechanism=selected_observation,
+        args=args,
+        llm_client=llm_client,
+        output_input_path=paths["error_localization_input"],
+        output_path=paths["error_localization_output"],
+        state_dir=run_dir,
+        iteration=iteration,
+    )
+    if error_localization is None:
+        record_stage(
+            manifest,
+            "selected_mechanism_editing",
+            status="invalid",
+            outputs={"error_localization": rel_to_iter(batch_dir, paths["error_localization_output"])},
+            note="error_localization_invalid",
+        )
+        write_iteration_manifest(batch_dir, manifest)
+        return {
+            "batch_id": batch_index,
+            "prompt_gap": "invalid",
+            "target_section": None,
+            "localization_status": "invalid",
+            "editor_status": "not_run",
+            "revision_input": None,
+        }
+
+    prompt_gap = str(error_localization["prompt_gap"])
+    diagnoses = error_localization["section_diagnoses"]
+    target_section = (
+        str(diagnoses[0]["section"]).strip().lower()
+        if diagnoses
+        else None
+    )
+    repair_type = (
+        str(diagnoses[0].get("repair_type") or "")
+        if diagnoses and isinstance(diagnoses[0], dict)
+        else ""
+    )
+    revision_scope = (
+        make_revision_scope(
+            selected_mechanism=selected_observation,
+            prompt_gap=prompt_gap,
+            section=target_section or "",
+            repair_type=repair_type,
+            existing_prompt_quote=str(
+                error_localization.get("existing_prompt_quote") or ""
+            ),
+        )
+        if prompt_gap in {"missing", "ambiguous"}
+        else None
+    )
+    if prompt_gap == "already_covered":
+        record_stage(
+            manifest,
+            "selected_mechanism_editing",
+            status="skipped",
+            outputs={"error_localization": rel_to_iter(batch_dir, paths["error_localization_output"])},
+            note="prompt_gap_already_covered",
+        )
+        write_iteration_manifest(batch_dir, manifest)
+        return {
+            "batch_id": batch_index,
+            "prompt_gap": prompt_gap,
+            "target_section": None,
+            "localization_status": "success",
+            "editor_status": "skipped",
+            "revision_input": None,
+            "revision_scope": None,
+        }
+
+    editor_edit_budget = make_edit_budget(
+        has_accepted_update=has_accepted_update,
+        args=args,
+        agent="prompt_editor",
+    )
+    revision_plan = propose_prompt_revision(
+        current_prompt=prompt,
+        failure_analysis=filtered_failure_analysis,
+        error_localization=error_localization,
+        selected_mechanism=selected_observation,
+        edit_budget=editor_edit_budget,
+        args=args,
+        llm_client=llm_client,
+        output_input_path=paths["prompt_editor_input"],
+        output_path=paths["prompt_editor_output"],
+        state_dir=run_dir,
+        iteration=iteration,
+    )
+    if revision_plan is None:
+        record_stage(
+            manifest,
+            "selected_mechanism_editing",
+            status="invalid",
+            outputs={
+                "error_localization": rel_to_iter(batch_dir, paths["error_localization_output"]),
+                "prompt_editor": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
+            },
+            note="prompt_editor_invalid",
+        )
+        write_iteration_manifest(batch_dir, manifest)
+        return {
+            "batch_id": batch_index,
+            "prompt_gap": prompt_gap,
+            "target_section": target_section,
+            "localization_status": "success",
+            "editor_status": "invalid",
+            "revision_input": None,
+            "revision_scope": revision_scope,
+        }
+
+    record_stage(
+        manifest,
+        "selected_mechanism_editing",
+        status="success",
+        outputs={
+            "error_localization": rel_to_iter(batch_dir, paths["error_localization_output"]),
+            "prompt_editor": rel_to_iter(batch_dir, paths["prompt_editor_output"]),
+        },
+        note=f"selected_mechanism={selected_observation['mechanism_id']}",
+    )
+    write_iteration_manifest(batch_dir, manifest)
+    revision_input = {
+        "batch_id": batch_index,
+        "mechanism_id": selected_observation["mechanism_id"],
+        "selected_mechanism_signature": selected_observation["mechanism_signature"],
+        "supporting_evidence_ids": supporting_ids,
+        "supporting_attribution_ids": sorted(
+            set(selected_observation.get("supporting_attribution_ids", []))
+        ),
+        "supporting_evidence": selected_observation.get("supporting_evidence", []),
+        "analysis_summary": selected_observation.get("analysis_summary", {}),
+        "failure_analysis": filtered_failure_analysis,
+        "error_localization": error_localization,
+        "revision_plan": revision_plan["revision_plan"],
+        "revision_scope": revision_scope,
+    }
+    return {
+        "batch_id": batch_index,
+        "prompt_gap": prompt_gap,
+        "target_section": target_section,
+        "localization_status": "success",
+        "editor_status": "success",
+        "revision_input": revision_input,
+        "revision_scope": revision_scope,
+    }
+
+
+def collect_selected_batch_revisions(
+    *,
+    args: argparse.Namespace,
+    llm_client: LLMClient,
+    run_dir: Path,
+    iter_dir: Path,
+    prompt: str,
+    batch_results: list[EpochBatchResult],
+    selected_mechanism: dict[str, Any],
+    has_accepted_update: bool,
+    iteration: int,
+) -> list[dict[str, Any]]:
+    selected_observations = selected_mechanism["supporting_batch_observations"]
+    selected_batch_ids = {int(item["batch_id"]) for item in selected_observations}
+    shared_attributions = [
+        dict(item)
+        for item in selected_mechanism.get("supporting_attributions", [])
+        if isinstance(item, dict)
+    ]
+    shared_evidence = [
+        dict(item)
+        for item in selected_mechanism.get("supporting_evidence", [])
+        if isinstance(item, dict)
+    ]
+    shared_attribution_ids = sorted(
+        set(str(item) for item in selected_mechanism.get("supporting_attribution_ids", []) if str(item))
+    )
+    shared_evidence_ids = sorted(
+        set(str(item) for item in selected_mechanism.get("supporting_evidence_ids", []) if str(item))
+    )
+    for result in batch_results:
+        if result.batch_index not in selected_batch_ids:
+            record_unselected_batch(
+                iter_dir=iter_dir,
+                batch_index=result.batch_index,
+                selected_mechanism_id=selected_mechanism["mechanism_id"],
+            )
+
+    def create(observation: dict[str, Any]) -> dict[str, Any]:
+        scoped_observation = dict(observation)
+        scoped_observation["attributions"] = shared_attributions
+        scoped_observation["supporting_attribution_ids"] = shared_attribution_ids
+        scoped_observation["supporting_evidence_ids"] = shared_evidence_ids
+        scoped_observation["supporting_evidence"] = shared_evidence
+        scoped_observation["evidence_catalog"] = shared_evidence
+        scoped_observation["hypothesis_id"] = selected_mechanism.get("hypothesis_id")
+        scoped_observation["parent_key"] = selected_mechanism.get("parent_key", [])
+        scoped_observation["child_key"] = selected_mechanism.get("child_key", [])
+        result = create_selected_batch_revision(
+            args=args,
+            llm_client=llm_client,
+            run_dir=run_dir,
+            iter_dir=iter_dir,
+            prompt=prompt,
+            selected_observation=scoped_observation,
+            has_accepted_update=has_accepted_update,
+            iteration=iteration,
+        )
+        if result is not None:
+            return result
+        return {
+            "batch_id": int(observation["batch_id"]),
+            "prompt_gap": "invalid",
+            "target_section": None,
+            "localization_status": "invalid",
+            "editor_status": "not_run",
+            "revision_input": None,
+        }
+
+    results: list[dict[str, Any]] = []
+    concurrency = min(args.epoch_batch_concurrency, len(selected_observations))
+    if concurrency <= 1:
+        results = [create(item) for item in selected_observations]
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
+            futures = [executor.submit(create, item) for item in selected_observations]
+            results = [future.result() for future in concurrent.futures.as_completed(futures)]
+    return sorted(results, key=lambda item: int(item["batch_id"]))
+
+
+def build_prompt_gap_consensus(
+    *,
+    selected_mechanism: dict[str, Any],
+    batch_edit_results: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any], str | None]:
+    supporting_batch_count = int(selected_mechanism["supporting_batch_count"])
+    required_votes = supporting_batch_count // 2 + 1
+    by_batch = {
+        int(item["batch_id"]): item
+        for item in batch_edit_results
+    }
+    expected_batches = sorted(int(item) for item in selected_mechanism["supporting_batches"])
+    normalized_results = [
+        by_batch.get(
+            batch_id,
+            {
+                "batch_id": batch_id,
+                "prompt_gap": "invalid",
+                "target_section": None,
+                "localization_status": "missing",
+                "editor_status": "not_run",
+                "revision_input": None,
+            },
+        )
+        for batch_id in expected_batches
+    ]
+
+    def item_scope(item: dict[str, Any]) -> dict[str, Any] | None:
+        scope = item.get("revision_scope")
+        if isinstance(scope, dict):
+            return scope
+        section = item.get("target_section")
+        if section not in SECTION_NAMES or item.get("prompt_gap") not in {"missing", "ambiguous"}:
+            return None
+        return make_revision_scope(
+            selected_mechanism=selected_mechanism,
+            prompt_gap=str(item.get("prompt_gap") or ""),
+            section=str(section),
+            repair_type=str(item.get("repair_type") or ""),
+            existing_prompt_quote=str(item.get("existing_prompt_quote") or ""),
+        )
+
+    localization_votes: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+    plan_votes: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+    for item in normalized_results:
+        scope = item_scope(item)
+        if (
+            item.get("localization_status") == "success"
+            and item.get("prompt_gap") in {"missing", "ambiguous"}
+            and scope is not None
+        ):
+            localization_votes.setdefault(revision_scope_key(scope), []).append(item)
+        if (
+            item.get("editor_status") == "success"
+            and isinstance(item.get("revision_input"), dict)
+            and scope is not None
+        ):
+            plan_scope = item["revision_input"].get("revision_scope")
+            if not isinstance(plan_scope, dict):
+                plan_scope = scope
+            if isinstance(plan_scope, dict) and revision_scope_key(plan_scope) == revision_scope_key(scope):
+                plan_votes.setdefault(revision_scope_key(scope), []).append(item)
+
+    consensus_keys = sorted(
+        (
+            key
+            for key, items in localization_votes.items()
+            if len(items) >= required_votes
+        ),
+        key=lambda key: (-len(localization_votes[key]), key),
+    )
+    consensus_key = consensus_keys[0] if consensus_keys else None
+    consensus_scope = (
+        item_scope(localization_votes[consensus_key][0])
+        if consensus_key is not None
+        else None
+    )
+    localization_consensus_section = (
+        str(consensus_scope.get("section") or "") if consensus_scope else None
+    )
+    actionable_items = (
+        plan_votes.get(consensus_key, [])
+        if consensus_key is not None
+        else []
+    )
+
+    all_already_covered = bool(normalized_results) and all(
+        item.get("localization_status") == "success"
+        and item.get("prompt_gap") == "already_covered"
+        for item in normalized_results
+    )
+    if all_already_covered:
+        decision = "already_covered"
+        rejection_reason = "selected_mechanism_already_covered"
+        actionable_section = None
+        revisions: list[dict[str, Any]] = []
+    elif consensus_key is None:
+        decision = "insufficient_consensus"
+        rejection_reason = "insufficient_prompt_gap_consensus"
+        actionable_section = None
+        revisions = []
+    elif len(actionable_items) < required_votes:
+        decision = "insufficient_consensus"
+        rejection_reason = "no_valid_selected_mechanism_plans"
+        actionable_section = None
+        revisions = []
+    else:
+        decision = "proceed"
+        rejection_reason = None
+        actionable_section = localization_consensus_section
+        revisions = sorted(
+            (item["revision_input"] for item in actionable_items),
+            key=lambda item: int(item["batch_id"]),
+        )
+
+    audit_results = []
+    for item in normalized_results:
+        valid_plan_vote = (
+            item.get("editor_status") == "success"
+            and isinstance(item.get("revision_input"), dict)
+            and consensus_key is not None
+            and item_scope(item) is not None
+            and revision_scope_key(item_scope(item) or {}) == consensus_key
+        )
+        audit_results.append(
+            {
+                "batch_id": int(item["batch_id"]),
+                "prompt_gap": item.get("prompt_gap"),
+                "target_section": item.get("target_section"),
+                "localization_status": item.get("localization_status"),
+                "editor_status": item.get("editor_status"),
+                "counted_vote": valid_plan_vote,
+                "revision_scope": item_scope(item),
+            }
+        )
+    audit = {
+        "selected_mechanism_id": selected_mechanism["mechanism_id"],
+        "selected_mechanism_signature": selected_mechanism.get("mechanism_signature", {}),
+        "supporting_batch_count": supporting_batch_count,
+        "required_votes": required_votes,
+        "batch_results": audit_results,
+        "localization_consensus_section": localization_consensus_section,
+        "consensus_scope": consensus_scope,
+        "localization_vote_count": (
+            len(localization_votes.get(consensus_key, []))
+            if consensus_key is not None
+            else 0
+        ),
+        "actionable_section": actionable_section,
+        "actionable_plan_count": len(actionable_items),
+        "decision": decision,
+        "rejection_reason": rejection_reason,
+    }
+    return revisions, audit, rejection_reason
+
+
+SEMANTIC_ACCEPTANCE_METRICS = (
+    "llm_node_f1",
+    "llm_relation_f1",
+)
+
+VALIDATION_CALIBRATION_METRICS = (
+    *SEMANTIC_ACCEPTANCE_METRICS,
+    "plantuml_compilation_pass_rate",
+)
+
+
+def aggregate_repeat_summaries(summaries: list[dict[str, float]]) -> dict[str, float]:
+    if not summaries:
+        return {}
+    keys = sorted(set().union(*(summary.keys() for summary in summaries)))
+    return {
+        key: statistics.fmean(float(summary.get(key, 0.0)) for summary in summaries)
+        for key in keys
+    }
+
+
+def any_improvement_decision(
+    *,
+    baseline_summaries: list[dict[str, float]],
+    candidate_summaries: list[dict[str, float]],
+    validation_case_count: int,
+    candidate_prompt: str,
+    baseline_prompt: str,
+    max_prompt_chars: int,
+    min_wins: int,
+    min_deltas: dict[str, float],
+) -> tuple[bool, dict[str, Any]]:
+    repeat_count = len(baseline_summaries)
+    invalid_reasons: list[str] = []
+    if repeat_count == 0 or repeat_count != len(candidate_summaries):
+        invalid_reasons.append("repeat_count_mismatch")
+    prompt_size_ok = len(candidate_prompt) <= max_prompt_chars
+    if not prompt_size_ok:
+        invalid_reasons.append("prompt_too_long")
+    if any(
+        float(summary.get("infrastructure_error_rate", 0.0)) > 0
+        for summary in [*baseline_summaries, *candidate_summaries]
+    ):
+        invalid_reasons.append("infrastructure_error")
+
+    metric_results: dict[str, dict[str, Any]] = {}
+    for metric in SEMANTIC_ACCEPTANCE_METRICS:
+        available = all(
+            int(float(summary.get("llm_element_evaluated", -1))) == validation_case_count
+            and int(float(summary.get("llm_element_failed", -1))) == 0
+            for summary in [*baseline_summaries, *candidate_summaries]
+        )
+        deltas = [
+            float(candidate.get(metric, 0.0)) - float(baseline.get(metric, 0.0))
+            for baseline, candidate in zip(baseline_summaries, candidate_summaries)
+        ]
+        mean_delta = statistics.fmean(deltas) if deltas else 0.0
+        median_delta = statistics.median(deltas) if deltas else 0.0
+        wins = sum(1 for delta in deltas if delta > 0.0)
+        min_delta = float(min_deltas.get(metric, 0.0))
+        stable = available and mean_delta > min_delta and wins >= min_wins
+        metric_results[metric] = {
+            "available": available,
+            "repeat_deltas": deltas,
+            "mean_delta": mean_delta,
+            "median_delta": median_delta,
+            "wins": wins,
+            "repeat_count": repeat_count,
+            "min_wins": min_wins,
+            "min_delta": min_delta,
+            "stable_improvement": stable,
+        }
+
+    if not any(result["available"] for result in metric_results.values()):
+        invalid_reasons.append("no_complete_acceptance_metric")
+    winning_metrics = [
+        metric
+        for metric, result in metric_results.items()
+        if result["stable_improvement"]
+    ]
+    evaluation_valid = not invalid_reasons
+    accepted = evaluation_valid and bool(winning_metrics)
+
+    diagnostic_metrics = (
+        "plantuml_compilation_pass_rate",
+        "syntax_pass_rate",
+        "llm_node_precision",
+        "llm_node_recall",
+        "llm_relation_precision",
+        "llm_relation_recall",
+        "llm_element_failed",
+        "infrastructure_error_rate",
+    )
+    diagnostic_deltas = {
+        metric: [
+            float(candidate.get(metric, 0.0)) - float(baseline.get(metric, 0.0))
+            for baseline, candidate in zip(baseline_summaries, candidate_summaries)
+        ]
+        for metric in diagnostic_metrics
+    }
+    rejection_reasons = invalid_reasons if invalid_reasons else ([] if accepted else ["no_stable_improvement"])
+    return accepted, {
+        "accepted": accepted,
+        "acceptance_mode": "any_improvement" if accepted else "rejected",
+        "acceptance_policy": "any-improvement",
+        "evaluation_valid": evaluation_valid,
+        "invalid_reasons": invalid_reasons,
+        "rejection_reasons": rejection_reasons,
+        "winning_metrics": winning_metrics,
+        "metric_results": metric_results,
+        "diagnostic_repeat_deltas": diagnostic_deltas,
+        "validation_repeats": repeat_count,
+        "validation_case_count": validation_case_count,
+        "prompt_growth": {
+            "baseline_chars": len(baseline_prompt),
+            "candidate_chars": len(candidate_prompt),
+            "max_prompt_chars": max_prompt_chars,
+            "prompt_size_ok": prompt_size_ok,
+        },
+        "baseline_summary": aggregate_repeat_summaries(baseline_summaries),
+        "candidate_summary": aggregate_repeat_summaries(candidate_summaries),
+        "baseline_repeat_summaries": baseline_summaries,
+        "candidate_repeat_summaries": candidate_summaries,
+    }
 
 
 def evaluate_iteration_test(
@@ -1025,61 +1726,159 @@ def evaluate_validation_gate(
     phase_prefix: str,
 ) -> tuple[list[Any], list[Any], dict[str, float], dict[str, float], dict[str, Any]]:
     write_case_manifest(paths["validation_cases"], validation_cases)
-    baseline_records, baseline_summary = evaluate_cases(
-        prompt=baseline_prompt,
-        cases=validation_cases,
-        args=args,
-        llm_client=llm_client,
-        output_path=paths["validation_baseline_records"],
-        state_dir=run_dir,
-        phase=f"{phase_prefix}:validation_baseline",
-    )
-    candidate_records, candidate_summary = evaluate_cases(
-        prompt=candidate_prompt,
-        cases=validation_cases,
-        args=args,
-        llm_client=llm_client,
-        output_path=paths["validation_candidate_records"],
-        state_dir=run_dir,
-        phase=f"{phase_prefix}:validation_candidate",
-    )
+    if args.acceptance_policy == "legacy":
+        baseline_records, baseline_summary = evaluate_cases(
+            prompt=baseline_prompt,
+            cases=validation_cases,
+            args=args,
+            llm_client=llm_client,
+            output_path=paths["validation_baseline_records"],
+            state_dir=run_dir,
+            phase=f"{phase_prefix}:validation_baseline",
+            case_concurrency=args.validation_gate_concurrency,
+        )
+        candidate_records, candidate_summary = evaluate_cases(
+            prompt=candidate_prompt,
+            cases=validation_cases,
+            args=args,
+            llm_client=llm_client,
+            output_path=paths["validation_candidate_records"],
+            state_dir=run_dir,
+            phase=f"{phase_prefix}:validation_candidate",
+            case_concurrency=args.validation_gate_concurrency,
+        )
+        write_text(paths["validation_baseline_summary"], json.dumps(baseline_summary, ensure_ascii=False, indent=2))
+        write_text(paths["validation_candidate_summary"], json.dumps(candidate_summary, ensure_ascii=False, indent=2))
+        write_text(
+            paths["validation_analysis"],
+            "# Validation Gate Analysis\n\n"
+            "## Baseline\n\n"
+            + build_analysis(baseline_records, baseline_summary).strip()
+            + "\n\n## Candidate\n\n"
+            + build_analysis(candidate_records, candidate_summary).strip()
+            + "\n",
+        )
+        impact_summary = build_validation_impact_summary(
+            [(1, baseline_records, candidate_records)]
+        )
+        write_validation_impact_report(
+            summary=impact_summary,
+            json_path=paths["validation_impact_summary"],
+            report_path=paths["validation_impact_report"],
+        )
+        accepted, decision = acceptance_decision(
+            iteration=iteration,
+            allow_bootstrap=allow_bootstrap,
+            baseline_summary=baseline_summary,
+            candidate_summary=candidate_summary,
+            candidate_prompt=candidate_prompt,
+            baseline_prompt=baseline_prompt,
+            max_prompt_chars=args.max_prompt_chars,
+            min_relation_delta=args.acceptance_min_relation_delta,
+            min_node_delta=args.acceptance_min_node_delta,
+            min_compile_delta=args.acceptance_min_compile_delta,
+            relation_accept_delta=args.relation_accept_delta,
+            node_accept_delta=args.node_accept_delta,
+            compile_accept_delta=args.compile_accept_delta,
+            min_syntax_delta=args.acceptance_min_syntax_delta,
+            min_node_precision_delta=args.acceptance_min_node_precision_delta,
+            min_relation_precision_delta=args.acceptance_min_relation_precision_delta,
+            bootstrap_min_compile_delta=args.bootstrap_min_compile_delta,
+            bootstrap_min_syntax_delta=args.bootstrap_min_syntax_delta,
+            bootstrap_node_accept_delta=args.bootstrap_node_accept_delta,
+            bootstrap_relation_accept_delta=args.bootstrap_relation_accept_delta,
+        )
+        decision["accepted"] = accepted
+        decision["evaluation_source"] = "validation_gate"
+        decision["validation_case_count"] = len(validation_cases)
+        decision["validation_split_fingerprint"] = case_split_fingerprint(validation_cases)
+        return baseline_records, candidate_records, baseline_summary, candidate_summary, decision
+
+    baseline_repeat_summaries: list[dict[str, float]] = []
+    candidate_repeat_summaries: list[dict[str, float]] = []
+    first_baseline_records: list[Any] = []
+    first_candidate_records: list[Any] = []
+    repeat_pairs: list[tuple[int, list[Any], list[Any]]] = []
+
+    def evaluate_repeat(prompt: str, *, repeat: int, role: str) -> tuple[list[Any], dict[str, float]]:
+        role_dir = iter_dir / "validation_gate" / f"repeat_{repeat:03d}" / role
+        records, summary = evaluate_cases(
+            prompt=prompt,
+            cases=validation_cases,
+            args=args,
+            llm_client=llm_client,
+            output_path=role_dir / "records.jsonl",
+            state_dir=run_dir,
+            phase=f"{phase_prefix}:validation_repeat_{repeat:03d}:{role}",
+            case_concurrency=args.validation_gate_concurrency,
+        )
+        write_text(role_dir / "summary.json", json.dumps(summary, ensure_ascii=False, indent=2))
+        return records, summary
+
+    for repeat in range(1, args.validation_repeats + 1):
+        if repeat % 2 == 1:
+            baseline_records, baseline_summary = evaluate_repeat(baseline_prompt, repeat=repeat, role="baseline")
+            candidate_records, candidate_summary = evaluate_repeat(candidate_prompt, repeat=repeat, role="candidate")
+        else:
+            candidate_records, candidate_summary = evaluate_repeat(candidate_prompt, repeat=repeat, role="candidate")
+            baseline_records, baseline_summary = evaluate_repeat(baseline_prompt, repeat=repeat, role="baseline")
+        if repeat == 1:
+            first_baseline_records = baseline_records
+            first_candidate_records = candidate_records
+        repeat_pairs.append((repeat, baseline_records, candidate_records))
+        baseline_repeat_summaries.append(baseline_summary)
+        candidate_repeat_summaries.append(candidate_summary)
+
+    baseline_summary = aggregate_repeat_summaries(baseline_repeat_summaries)
+    candidate_summary = aggregate_repeat_summaries(candidate_repeat_summaries)
     write_text(paths["validation_baseline_summary"], json.dumps(baseline_summary, ensure_ascii=False, indent=2))
     write_text(paths["validation_candidate_summary"], json.dumps(candidate_summary, ensure_ascii=False, indent=2))
-    write_text(
-        paths["validation_analysis"],
-        "# Validation Gate Analysis\n\n"
-        "## Baseline\n\n"
-        + build_analysis(baseline_records, baseline_summary).strip()
-        + "\n\n## Candidate\n\n"
-        + build_analysis(candidate_records, candidate_summary).strip()
-        + "\n",
-    )
-    accepted, decision = acceptance_decision(
-        iteration=iteration,
-        allow_bootstrap=allow_bootstrap,
-        baseline_summary=baseline_summary,
-        candidate_summary=candidate_summary,
+    write_evaluation_records(paths["validation_baseline_records"], first_baseline_records)
+    write_evaluation_records(paths["validation_candidate_records"], first_candidate_records)
+    accepted, decision = any_improvement_decision(
+        baseline_summaries=baseline_repeat_summaries,
+        candidate_summaries=candidate_repeat_summaries,
+        validation_case_count=len(validation_cases),
         candidate_prompt=candidate_prompt,
         baseline_prompt=baseline_prompt,
         max_prompt_chars=args.max_prompt_chars,
-        min_relation_delta=args.acceptance_min_relation_delta,
-        min_node_delta=args.acceptance_min_node_delta,
-        min_compile_delta=args.acceptance_min_compile_delta,
-        relation_accept_delta=args.relation_accept_delta,
-        node_accept_delta=args.node_accept_delta,
-        compile_accept_delta=args.compile_accept_delta,
-        min_syntax_delta=args.acceptance_min_syntax_delta,
-        min_node_precision_delta=args.acceptance_min_node_precision_delta,
-        min_relation_precision_delta=args.acceptance_min_relation_precision_delta,
-        bootstrap_min_compile_delta=args.bootstrap_min_compile_delta,
-        bootstrap_min_syntax_delta=args.bootstrap_min_syntax_delta,
-        bootstrap_node_accept_delta=args.bootstrap_node_accept_delta,
-        bootstrap_relation_accept_delta=args.bootstrap_relation_accept_delta,
+        min_wins=args.acceptance_min_wins,
+        min_deltas={
+            "llm_node_f1": args.any_improvement_node_min_delta,
+            "llm_relation_f1": args.any_improvement_relation_min_delta,
+        },
+    )
+    aggregate_payload = {
+        "baseline_summary": baseline_summary,
+        "candidate_summary": candidate_summary,
+        "baseline_repeat_summaries": baseline_repeat_summaries,
+        "candidate_repeat_summaries": candidate_repeat_summaries,
+        "metric_results": decision["metric_results"],
+        "diagnostic_repeat_deltas": decision["diagnostic_repeat_deltas"],
+        "winning_metrics": decision["winning_metrics"],
+        "validation_case_count": len(validation_cases),
+        "validation_split_fingerprint": case_split_fingerprint(validation_cases),
+    }
+    write_text(paths["validation_aggregate_summary"], json.dumps(aggregate_payload, ensure_ascii=False, indent=2))
+    write_text(
+        paths["validation_analysis"],
+        "# Repeated Validation Gate\n\n"
+        f"- repeats: {args.validation_repeats}\n"
+        f"- winning metrics: {', '.join(decision['winning_metrics']) or 'none'}\n"
+        f"- accepted: {str(accepted).lower()}\n\n"
+        "See `aggregate_summary.json` for paired repeat deltas and diagnostic metrics.\n",
+    )
+    impact_summary = build_validation_impact_summary(repeat_pairs)
+    write_validation_impact_report(
+        summary=impact_summary,
+        json_path=paths["validation_impact_summary"],
+        report_path=paths["validation_impact_report"],
     )
     decision["accepted"] = accepted
     decision["evaluation_source"] = "validation_gate"
     decision["validation_case_count"] = len(validation_cases)
-    return baseline_records, candidate_records, baseline_summary, candidate_summary, decision
+    decision["validation_split_fingerprint"] = case_split_fingerprint(validation_cases)
+    return first_baseline_records, first_candidate_records, baseline_summary, candidate_summary, decision
 
 
 def write_iteration_test_metric_plot(run_dir: Path) -> None:
@@ -1155,13 +1954,25 @@ def run_training_iterations(
     last_test_summary: dict[str, float] | None = None
     global_update_step = 0
     has_accepted_update = False
+    taxonomy = load_mechanism_taxonomy(args.mechanism_taxonomy_path)
+    taxonomy_version = str(taxonomy["version"])
+    taxonomy_policy_revision = str(taxonomy.get("policy_revision") or "legacy")
+    mechanism_memory_path = run_dir / "mechanism_memory.json"
+    mechanism_memory = load_memory(mechanism_memory_path)
 
     for iteration in range(1, args.iterations + 1):
         iter_dir = run_dir / f"iteration_{iteration:03d}"
         epoch_paths = iteration_paths(iter_dir)
         epoch_manifest = make_iteration_manifest(iter_dir, iteration, epoch_paths)
         epoch_manifest["mode"] = "epoch_planner_updates"
+        epoch_manifest["mechanism_memory"] = "../mechanism_memory.json"
+        epoch_manifest["validation_split"] = {
+            "requested_case_count": args.validation_gate_size,
+            "actual_case_count": len(validation_cases),
+            "fingerprint": case_split_fingerprint(validation_cases),
+        }
         epoch_prompt_before = prompt
+        epoch_prompt_hash = prompt_fingerprint(prompt)
         write_text(epoch_paths["prompt_before"], prompt)
         write_case_manifest(epoch_paths["analysis_cases"], train_cases)
         if validation_cases:
@@ -1186,9 +1997,11 @@ def run_training_iterations(
         epoch_rejected_count = 0
         epoch_skipped_count = 0
         epoch_collected_count = 0
+        epoch_valid_pattern_count = 0
+        epoch_rejected_pattern_count = 0
         epoch_records = []
         batch_summaries: list[dict[str, Any]] = []
-        batch_revision_inputs: list[dict[str, Any]] = []
+        mechanism_observations: list[dict[str, Any]] = []
         print(f"\n[iteration {iteration}] training epoch with {len(training_batches)} batch(es)")
 
         step_base = global_update_step
@@ -1251,9 +2064,9 @@ def run_training_iterations(
             epoch_records.extend(result.records)
             batch_summaries.append(result.batch_summary)
             epoch_skipped_count += result.skipped_count
-            epoch_collected_count += result.collected_count
-            if result.revision_input is not None:
-                batch_revision_inputs.append(result.revision_input)
+            epoch_valid_pattern_count += result.valid_pattern_count
+            epoch_rejected_pattern_count += result.rejected_pattern_count
+            mechanism_observations.extend(result.mechanism_observations)
 
         epoch_summary = summarize_records(epoch_records)
         epoch_candidate_prompt: str | None = None
@@ -1266,14 +2079,149 @@ def run_training_iterations(
             "batch_count": len(training_batches),
             "collected_batch_count": epoch_collected_count,
             "skipped_batch_count": epoch_skipped_count,
+            "valid_pattern_count": epoch_valid_pattern_count,
+            "rejected_pattern_count": epoch_rejected_pattern_count,
+            "mechanism_taxonomy_version": taxonomy_version,
+            "mechanism_taxonomy_policy_revision": taxonomy_policy_revision,
+            "mechanism_memory": "../mechanism_memory.json",
         }
+
+        selected_mechanism = None
+        selected_hypothesis_status: str | None = None
+        selected_hypothesis_reasons: list[str] = []
+        mechanism_report = {"eligible_candidates": [], "rejected_clusters": [], "selected_mechanism_id": None}
+        batch_edit_results: list[dict[str, Any]] = []
+        epoch_revision_plan: dict[str, Any] | None = None
+        inventory_for_log = [
+            {key: value for key, value in observation.items() if key != "patterns"}
+            for observation in mechanism_observations
+        ]
+        write_text(
+            epoch_paths["mechanism_evidence_inventory"],
+            json.dumps(inventory_for_log, ensure_ascii=False, indent=2),
+        )
+        candidate_observation_count = sum(
+            1 for observation in mechanism_observations if observation.get("candidate_eligible")
+        )
+        mechanism_memory = record_observations(
+            mechanism_memory,
+            mechanism_observations,
+            prompt_hash=epoch_prompt_hash,
+            taxonomy_version=taxonomy_version,
+            iteration=iteration,
+        )
+        save_memory(mechanism_memory_path, mechanism_memory)
+        if candidate_observation_count:
+            selected_mechanism, mechanism_report = select_epoch_mechanism(
+                mechanism_observations,
+                evidence_memory=mechanism_memory.get("entries", []),
+                prompt_hash=epoch_prompt_hash,
+                current_iteration=iteration,
+            )
+        write_text(epoch_paths["mechanism_clusters"], json.dumps(mechanism_report, ensure_ascii=False, indent=2))
+        record_stage(
+            epoch_manifest,
+            "mechanism_clustering",
+            status="success" if selected_mechanism is not None else "skipped",
+            outputs={
+                "evidence_inventory": rel_to_iter(iter_dir, epoch_paths["mechanism_evidence_inventory"]),
+                "clusters": rel_to_iter(iter_dir, epoch_paths["mechanism_clusters"]),
+            },
+            note=(
+                f"valid_patterns={epoch_valid_pattern_count}, "
+                f"rejected_patterns={epoch_rejected_pattern_count}, "
+                f"candidate_observations={candidate_observation_count}"
+            ),
+        )
+        if selected_mechanism is not None:
+            selected_for_log = {
+                key: value
+                for key, value in selected_mechanism.items()
+                if key != "supporting_batch_observations"
+            }
+            write_text(epoch_paths["mechanism_selected"], json.dumps(selected_for_log, ensure_ascii=False, indent=2))
+            epoch_acceptance["selected_mechanism_id"] = selected_mechanism["mechanism_id"]
+            epoch_acceptance["selected_hypothesis_id"] = selected_mechanism.get("hypothesis_id")
+
+        batch_revision_inputs: list[dict[str, Any]] = []
+        prompt_gap_audit: dict[str, Any] | None = None
+        prompt_gap_rejection_reason: str | None = None
+        if selected_mechanism is not None and not args.no_evolve:
+            batch_edit_results = collect_selected_batch_revisions(
+                args=args,
+                llm_client=llm_client,
+                run_dir=run_dir,
+                iter_dir=iter_dir,
+                prompt=prompt,
+                batch_results=batch_results,
+                selected_mechanism=selected_mechanism,
+                has_accepted_update=has_accepted_update,
+                iteration=iteration,
+            )
+            (
+                batch_revision_inputs,
+                prompt_gap_audit,
+                prompt_gap_rejection_reason,
+            ) = build_prompt_gap_consensus(
+                selected_mechanism=selected_mechanism,
+                batch_edit_results=batch_edit_results,
+            )
+            write_text(
+                epoch_paths["prompt_gap_consensus"],
+                json.dumps(prompt_gap_audit, ensure_ascii=False, indent=2),
+            )
+            record_stage(
+                epoch_manifest,
+                "prompt_gap_consensus",
+                status="success" if prompt_gap_audit["decision"] == "proceed" else "skipped",
+                outputs={
+                    "audit": rel_to_iter(iter_dir, epoch_paths["prompt_gap_consensus"]),
+                },
+                note=(
+                    f"decision={prompt_gap_audit['decision']}, "
+                    f"required_votes={prompt_gap_audit['required_votes']}, "
+                    f"actionable_plans={prompt_gap_audit['actionable_plan_count']}"
+                ),
+            )
+            epoch_collected_count = len(batch_revision_inputs)
+            epoch_skipped_count += selected_mechanism["supporting_batch_count"] - epoch_collected_count
+            epoch_acceptance.update(
+                {
+                    "collected_batch_count": epoch_collected_count,
+                    "skipped_batch_count": epoch_skipped_count,
+                    "prompt_gap_consensus": {
+                        key: prompt_gap_audit[key]
+                        for key in (
+                            "required_votes",
+                            "selected_mechanism_signature",
+                            "consensus_scope",
+                            "localization_consensus_section",
+                            "localization_vote_count",
+                            "actionable_section",
+                            "actionable_plan_count",
+                            "decision",
+                        )
+                    },
+                }
+            )
 
         if args.no_evolve:
             epoch_acceptance["rejection_reasons"] = ["no_evolve"]
+        elif epoch_valid_pattern_count == 0:
+            epoch_acceptance["rejection_reasons"] = ["no_valid_failure_patterns"]
+        elif candidate_observation_count == 0:
+            epoch_acceptance["rejection_reasons"] = ["no_candidate_eligible_patterns"]
+        elif selected_mechanism is None:
+            epoch_acceptance["rejection_reasons"] = ["no_eligible_mechanism_cluster"]
         elif not batch_revision_inputs:
-            epoch_acceptance["rejection_reasons"] = ["no_batch_revision_plans"]
+            epoch_acceptance["rejection_reasons"] = [
+                prompt_gap_rejection_reason or "no_valid_selected_mechanism_plans"
+            ]
         else:
-            print(f"[iteration {iteration}] planning epoch revision from {len(batch_revision_inputs)} batch plan(s)")
+            print(
+                f"[iteration {iteration}] planning one revision for mechanism "
+                f"{selected_mechanism['mechanism_id']} from {len(batch_revision_inputs)} batch plan(s)"
+            )
             epoch_edit_budget = make_edit_budget(
                 has_accepted_update=has_accepted_update,
                 args=args,
@@ -1282,6 +2230,7 @@ def run_training_iterations(
             epoch_revision_plan = plan_epoch_revision(
                 current_prompt=prompt,
                 batch_revision_inputs=batch_revision_inputs,
+                selected_mechanism=selected_mechanism,
                 edit_budget=epoch_edit_budget,
                 args=args,
                 llm_client=llm_client,
@@ -1377,8 +2326,37 @@ def run_training_iterations(
                             allow_bootstrap=allow_bootstrap,
                             phase_prefix=f"iteration_{iteration:03d}:epoch",
                         )
+                        epoch_acceptance["selected_mechanism_id"] = selected_mechanism["mechanism_id"]
+                        epoch_acceptance["mechanism_taxonomy_version"] = taxonomy_version
+                        epoch_acceptance["mechanism_taxonomy_policy_revision"] = taxonomy_policy_revision
+                        if prompt_gap_audit is not None:
+                            epoch_acceptance["prompt_gap_consensus"] = {
+                                key: prompt_gap_audit[key]
+                                for key in (
+                                    "required_votes",
+                                    "selected_mechanism_signature",
+                                    "consensus_scope",
+                                    "localization_consensus_section",
+                                    "localization_vote_count",
+                                    "actionable_section",
+                                    "actionable_plan_count",
+                                    "decision",
+                                )
+                            }
+                        epoch_acceptance.update(
+                            {
+                                "batch_count": len(training_batches),
+                                "collected_batch_count": epoch_collected_count,
+                                "skipped_batch_count": epoch_skipped_count,
+                                "valid_pattern_count": epoch_valid_pattern_count,
+                                "rejected_pattern_count": epoch_rejected_pattern_count,
+                            }
+                        )
+                        if not epoch_acceptance["accepted"]:
+                            epoch_acceptance["pipeline_rejection_reason"] = "validation_rejected"
                         write_text(epoch_paths["acceptance"], json.dumps(epoch_acceptance, ensure_ascii=False, indent=2))
                         if epoch_acceptance["accepted"]:
+                            selected_hypothesis_status = "accepted"
                             epoch_accepted_count = 1
                             has_accepted_update = True
                             prompt = epoch_candidate_prompt
@@ -1401,6 +2379,11 @@ def run_training_iterations(
                             )
                             print(f"[iteration {iteration}] epoch candidate accepted by validation gate: {work_prompt_path}")
                         else:
+                            selected_hypothesis_status = "rejected"
+                            selected_hypothesis_reasons = [
+                                str(reason)
+                                for reason in epoch_acceptance.get("rejection_reasons", [])
+                            ]
                             epoch_rejected_count = 1
                             write_text(epoch_paths["rejected_by_gate"], json.dumps(epoch_acceptance, ensure_ascii=False, indent=2))
                             record_stage(
@@ -1424,6 +2407,7 @@ def run_training_iterations(
                                 f"(reasons={', '.join(epoch_acceptance['rejection_reasons'])}); prompt unchanged"
                             )
                     else:
+                        selected_hypothesis_status = "accepted"
                         epoch_accepted_count = 1
                         has_accepted_update = True
                         prompt = epoch_candidate_prompt
@@ -1437,6 +2421,28 @@ def run_training_iterations(
                             "batch_count": len(training_batches),
                             "collected_batch_count": epoch_collected_count,
                             "skipped_batch_count": epoch_skipped_count,
+                            "valid_pattern_count": epoch_valid_pattern_count,
+                            "rejected_pattern_count": epoch_rejected_pattern_count,
+                            "selected_mechanism_id": selected_mechanism["mechanism_id"],
+                            "mechanism_taxonomy_version": taxonomy_version,
+                            "mechanism_taxonomy_policy_revision": taxonomy_policy_revision,
+                            "selected_hypothesis_id": selected_mechanism.get("hypothesis_id"),
+                            "mechanism_memory": "../mechanism_memory.json",
+                            "prompt_gap_consensus": {
+                                key: prompt_gap_audit[key]
+                                for key in (
+                                    "required_votes",
+                                    "selected_mechanism_signature",
+                                    "consensus_scope",
+                                    "localization_consensus_section",
+                                    "localization_vote_count",
+                                    "actionable_section",
+                                    "actionable_plan_count",
+                                    "decision",
+                                )
+                            }
+                            if prompt_gap_audit is not None
+                            else None,
                             "note": "Validation gate is disabled; epoch candidate prompt applied directly.",
                         }
                         record_stage(
@@ -1451,11 +2457,29 @@ def run_training_iterations(
                         )
                         print(f"[iteration {iteration}] epoch candidate applied directly: {work_prompt_path}")
         write_text(epoch_paths["prompt_after"], prompt)
+        if selected_mechanism is not None and selected_hypothesis_status is not None:
+            mechanism_memory = mark_hypothesis_status(
+                mechanism_memory,
+                prompt_hash=epoch_prompt_hash,
+                hypothesis_id=str(selected_mechanism.get("hypothesis_id") or ""),
+                status=selected_hypothesis_status,
+                rejection_reasons=selected_hypothesis_reasons,
+            )
+            save_memory(mechanism_memory_path, mechanism_memory)
         write_evaluation_records(epoch_paths["analysis_records"], epoch_records)
         write_text(epoch_paths["analysis_summary"], json.dumps(epoch_summary, ensure_ascii=False, indent=2))
         write_text(epoch_paths["analysis_overview"], build_analysis(epoch_records, epoch_summary))
         write_text(iter_dir / "evaluation" / "batch_summaries.json", json.dumps(batch_summaries, ensure_ascii=False, indent=2))
         write_text(epoch_paths["acceptance"], json.dumps(epoch_acceptance, ensure_ascii=False, indent=2))
+        write_attribution_lineage(
+            path=epoch_paths["mechanism_lineage"],
+            selected_mechanism=selected_mechanism,
+            batch_edit_results=batch_edit_results,
+            prompt_gap_audit=prompt_gap_audit,
+            epoch_revision_plan=epoch_revision_plan,
+            prompt_rewriter_output_path=epoch_paths["prompt_rewriter_output"],
+            acceptance=epoch_acceptance,
+        )
         record_stage(
             epoch_manifest,
             "epoch_training",
@@ -1514,6 +2538,71 @@ def run_training_iterations(
     return final_prompt, last_test_summary or last_summary
 
 
+def run_validation_calibration(
+    *,
+    prompt: str,
+    validation_cases: list[Case],
+    args: argparse.Namespace,
+    llm_client: LLMClient,
+    run_dir: Path,
+) -> dict[str, float]:
+    if not validation_cases:
+        raise ValueError("Validation calibration requires a non-empty fixed validation split")
+    root = run_dir / "validation_calibration"
+    summaries: list[dict[str, float]] = []
+    for repeat in range(1, args.validation_calibration_repeats + 1):
+        repeat_dir = root / f"repeat_{repeat:03d}"
+        _, summary = evaluate_cases(
+            prompt=prompt,
+            cases=validation_cases,
+            args=args,
+            llm_client=llm_client,
+            output_path=repeat_dir / "records.jsonl",
+            state_dir=run_dir,
+            phase=f"validation_calibration:repeat_{repeat:03d}",
+            case_concurrency=args.validation_gate_concurrency,
+        )
+        summaries.append(summary)
+        write_text(repeat_dir / "summary.json", json.dumps(summary, ensure_ascii=False, indent=2))
+
+    aggregate = aggregate_repeat_summaries(summaries)
+    metric_stats = {
+        metric: calibration_statistics(
+            [summary.get(metric, 0.0) for summary in summaries],
+            validation_repeats=args.validation_repeats,
+            metric_resolution=(1 / len(validation_cases) if metric == "plantuml_compilation_pass_rate" else 0.0),
+        )
+        for metric in VALIDATION_CALIBRATION_METRICS
+    }
+    report = {
+        "calibration_repeats": args.validation_calibration_repeats,
+        "target_validation_repeats": args.validation_repeats,
+        "validation_case_count": len(validation_cases),
+        "validation_split_fingerprint": case_split_fingerprint(validation_cases),
+        "repeat_summaries": summaries,
+        "aggregate_summary": aggregate,
+        "metric_statistics": metric_stats,
+        "threshold_policy": "1.645 * sqrt(2 / target_validation_repeats) * sample_std; compile is diagnostic and floored at 1 / validation_case_count",
+        "note": "Node/Relation recommendations are never applied automatically. Compile calibration is diagnostic only.",
+    }
+    write_text(root / "aggregate_summary.json", json.dumps(report, ensure_ascii=False, indent=2))
+    write_text(
+        root / "report.md",
+        "# Validation Baseline Calibration\n\n"
+        f"- repeats: {args.validation_calibration_repeats}\n"
+        f"- validation cases: {len(validation_cases)}\n"
+        f"- validation split fingerprint: `{case_split_fingerprint(validation_cases)}`\n\n"
+        + "\n".join(
+            f"- {metric}: mean={stats['mean']:.6f}, std={stats['sample_std']:.6f}, "
+            f"range={stats['range']:.6f}, suggested_min_delta={stats['suggested_min_delta']:.6f}"
+            for metric, stats in metric_stats.items()
+        )
+        + "\n",
+    )
+    print(f"[calibration] completed {args.validation_calibration_repeats} repeats: {root}")
+    return aggregate
+
+
 def run_train_only(args: argparse.Namespace, datasets: dict[str, list[Case]], llm_client: LLMClient, train_dataset: str) -> dict[str, float]:
     train_dataset = train_dataset.lower()
     if train_dataset not in datasets:
@@ -1531,7 +2620,22 @@ def run_train_only(args: argparse.Namespace, datasets: dict[str, list[Case]], ll
     write_case_manifest(run_dir / "train_cases.json", train_cases)
     if validation_cases:
         write_case_manifest(run_dir / "validation_gate_cases.json", validation_cases)
+    write_data_split_summary(
+        run_dir=run_dir,
+        args=args,
+        train_pool_cases=train_pool_cases,
+        train_cases=train_cases,
+        validation_cases=validation_cases,
+    )
     work_prompt_path = initialize_run_prompt(args.prompt_path, run_dir)
+    if args.calibrate_validation_only:
+        return run_validation_calibration(
+            prompt=read_text(work_prompt_path),
+            validation_cases=validation_cases,
+            args=args,
+            llm_client=llm_client,
+            run_dir=run_dir,
+        )
     _, summary = run_training_iterations(
         args=args,
         llm_client=llm_client,
@@ -1572,6 +2676,14 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
     if validation_cases:
         write_case_manifest(run_dir / "validation_gate_cases.json", validation_cases)
     write_case_manifest(run_dir / "test_cases.json", test_cases)
+    write_data_split_summary(
+        run_dir=run_dir,
+        args=args,
+        train_pool_cases=train_pool_cases,
+        train_cases=train_cases,
+        validation_cases=validation_cases,
+        test_cases=test_cases,
+    )
     work_prompt_path = initialize_run_prompt(args.prompt_path, run_dir)
     print(
         f"[run] test={test_dataset}, train_pool_cases={len(train_pool_cases)}, "
@@ -1579,6 +2691,14 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
         f"test_cases={len(test_cases)}"
     )
     print(f"[run] test distribution: {describe_case_distribution(test_cases)}")
+    if args.calibrate_validation_only:
+        return run_validation_calibration(
+            prompt=read_text(work_prompt_path),
+            validation_cases=validation_cases,
+            args=args,
+            llm_client=llm_client,
+            run_dir=run_dir,
+        )
     initial_summary: dict[str, float] | None = None
     if args.eval_initial_test:
         print(f"\n[iteration 0] evaluating original prompt on held-out dataset {test_dataset}")
@@ -1655,6 +2775,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--prompt-editor-prompt-path", type=Path, default=DEFAULT_PROMPT_EDITOR_PROMPT_PATH, help="System prompt markdown for the prompt-edit model")
     parser.add_argument("--epoch-planner-prompt-path", type=Path, default=DEFAULT_EPOCH_PLANNER_PROMPT_PATH, help="System prompt markdown for the epoch-level revision planner model")
     parser.add_argument("--prompt-rewriter-prompt-path", type=Path, default=DEFAULT_PROMPT_REWRITER_PROMPT_PATH, help="System prompt markdown for the prompt-rewrite model")
+    parser.add_argument("--mechanism-taxonomy-path", type=Path, default=DEFAULT_MECHANISM_TAXONOMY_PATH, help="Versioned mechanism taxonomy JSON; defaults to atomic v3")
     parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
     parser.add_argument("--plantuml-jar", type=Path, default=DEFAULT_PLANTUML_JAR)
     parser.add_argument("--iterations", type=int, default=3)
@@ -1669,14 +2790,26 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--training-batch-strategy", choices=["stratified", "chunked"], default="stratified", help="How to split training cases into analysis batches")
     parser.add_argument("--epoch-batch-concurrency", type=int, default=1, help="Number of training batches to process concurrently within each epoch")
     parser.add_argument("--heldout-test-concurrency", type=int, default=1, help="Number of held-out test cases to evaluate concurrently; 1 keeps serial behavior")
+    parser.add_argument("--validation-gate-concurrency", type=int, default=1, help="Number of validation cases to evaluate concurrently; 1 keeps serial behavior")
     parser.add_argument("--sample-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to select limited training cases")
     parser.add_argument("--test-sample-strategy", choices=["stratified", "random", "prefix"], default="prefix", help="How to select limited held-out test cases")
     parser.add_argument("--validation-gate", action=argparse.BooleanOptionalAction, default=True, help="Reserve a fixed validation gate split from the training pool; use --no-validation-gate to disable")
     parser.add_argument("--validation-gate-size", type=int, default=30, help="Maximum number of training-pool cases reserved for validation gate; capped at about one third of the sampled training pool, 0 disables the split")
     parser.add_argument("--validation-gate-strategy", choices=["stratified", "random", "prefix"], default="stratified", help="How to choose fixed validation gate cases from the sampled training pool")
     parser.add_argument("--validation-gate-seed", type=int, default=20260629, help="Seed used only for selecting fixed validation gate cases")
+    parser.add_argument("--validation-repeats", type=int, default=3, help="Paired baseline/candidate repeats for any-improvement validation")
+    parser.add_argument("--acceptance-min-wins", type=int, default=2, help="Strictly positive repeat deltas required for a winning metric")
+    parser.add_argument("--acceptance-policy", choices=["any-improvement", "legacy"], default="any-improvement", help="Candidate acceptance rule; legacy reproduces the previous single-run gate")
+    parser.add_argument("--any-improvement-node-min-delta", type=float, default=0.0, help="Mean LLM node F1 delta required by any-improvement")
+    parser.add_argument("--any-improvement-relation-min-delta", type=float, default=0.0, help="Mean LLM relation F1 delta required by any-improvement")
+    parser.add_argument("--any-improvement-compile-min-delta", type=float, default=0.0, help="Deprecated compatibility option; compilation is diagnostic and cannot accept a candidate")
+    parser.add_argument("--calibrate-validation-only", action="store_true", help="Run repeated seed-prompt validation calibration and exit without training or held-out evaluation")
+    parser.add_argument("--validation-calibration-repeats", type=int, default=5, help="Seed-prompt repeats used by --calibrate-validation-only")
     parser.add_argument("--sample-seed", type=int, default=13)
-    parser.add_argument("--model", default=os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL))
+    parser.add_argument("--model", default=os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL), help="Legacy fallback model for all roles")
+    parser.add_argument("--generation-model", default=os.environ.get("ZHIPU_LLM_GENERATION_MODEL"), help="Model used for PlantUML prediction; defaults to --model")
+    parser.add_argument("--agent-model", default=os.environ.get("ZHIPU_LLM_AGENT_MODEL"), help="Model used by prompt-evolution agents; defaults to --model")
+    parser.add_argument("--judge-model", default=os.environ.get("ZHIPU_LLM_JUDGE_MODEL"), help="Model used for semantic judging and auxiliary extraction; defaults to --model")
     parser.add_argument("--api-key", default=os.environ.get("ZHIPU_LLM_API_KEY", ""))
     parser.add_argument("--base-url", default=os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL))
     parser.add_argument("--temperature", type=float, default=0.2)
@@ -1697,7 +2830,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--editor-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_EDITOR_THINKING_TYPE", "inherit"), help="Thinking mode for prompt-editor calls")
     parser.add_argument("--epoch-planner-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_EPOCH_PLANNER_THINKING_TYPE", "inherit"), help="Thinking mode for epoch-planner calls")
     parser.add_argument("--judge-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_JUDGE_THINKING_TYPE", "inherit"), help="Thinking mode for LLM semantic judge calls")
-    parser.add_argument("--do-sample", type=optional_bool, default=None, help="GLM do_sample, or 'omit' to use provider default")
+    parser.add_argument(
+        "--do-sample",
+        type=optional_bool,
+        default=False,
+        help="GLM sampling mode; defaults to false (greedy decoding), true enables sampling, and 'omit' uses the provider default",
+    )
     parser.add_argument("--llm-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
     parser.add_argument("--llm-max-retries", type=int, default=20, help="Retries for provider 429/5xx/transient errors before failing")
     parser.add_argument("--llm-rate-limit-initial-wait", type=int, default=30, help="Initial wait seconds for provider rate-limit retries")
@@ -1767,6 +2905,7 @@ def main() -> None:
     args.prompt_editor_prompt_path = args.prompt_editor_prompt_path.resolve()
     args.epoch_planner_prompt_path = args.epoch_planner_prompt_path.resolve()
     args.prompt_rewriter_prompt_path = args.prompt_rewriter_prompt_path.resolve()
+    args.mechanism_taxonomy_path = args.mechanism_taxonomy_path.resolve()
     args.runs_dir = args.runs_dir.resolve()
     args.plantuml_jar = args.plantuml_jar.resolve()
 
@@ -1781,7 +2920,7 @@ def main() -> None:
     args.epoch_planner_thinking = resolve_agent_thinking(args.epoch_planner_thinking, args.thinking)
     args.judge_thinking = resolve_agent_thinking(args.judge_thinking, args.thinking)
     args.element_extraction_thinking = resolve_agent_thinking(args.element_extraction_thinking, args.thinking)
-    args.llm_judge_model = args.model
+    resolve_model_roles(args)
     args.llm_judge_api_key = args.api_key
     args.llm_judge_base_url = args.base_url
     args.llm_judge_thinking = args.judge_thinking
@@ -1795,6 +2934,7 @@ def main() -> None:
     read_prompt_file(args.prompt_editor_prompt_path, label="prompt editor")
     read_prompt_file(args.epoch_planner_prompt_path, label="epoch planner")
     read_prompt_file(args.prompt_rewriter_prompt_path, label="prompt rewriter")
+    load_mechanism_taxonomy(args.mechanism_taxonomy_path)
 
     llm_client = make_llm_client(args)
 

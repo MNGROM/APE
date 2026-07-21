@@ -54,11 +54,18 @@ class LLMClient:
     top_p: float | None = None
     max_tokens: int = 12000
     thinking: str = DEFAULT_THINKING_TYPE
-    do_sample: bool | None = None
+    do_sample: bool | None = False
     timeout: int = DEFAULT_LLM_TIMEOUT
     max_retries: int = 20
     retry_initial_wait: int = 30
     retry_max_wait: int = 600
+
+    def for_model(self, model: str) -> "LLMClient":
+        """Return an equivalent client routed to a different model role."""
+        resolved = str(model or "").strip()
+        if not resolved:
+            raise ValueError("model must be a non-empty string")
+        return dataclasses.replace(self, model=resolved)
 
     def chat(
         self,

@@ -2,11 +2,30 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
-from reporting import refresh_run_reports
+from reporting import (
+    build_validation_impact_summary,
+    refresh_run_reports,
+    write_validation_impact_report,
+)
 
 
 class ReportingTest(unittest.TestCase):
+    @staticmethod
+    def impact_record(*, dataset: str, case_id: str, node: float, relation: float, status: str = "success"):
+        return SimpleNamespace(
+            dataset=dataset,
+            case_id=case_id,
+            syntax=SimpleNamespace(passed=True),
+            plantuml_compilation=SimpleNamespace(passed=True),
+            llm_element_metrics=SimpleNamespace(
+                status=status,
+                node_metrics=SimpleNamespace(precision=node, recall=node, f1=node),
+                relation_metrics=SimpleNamespace(precision=relation, recall=relation, f1=relation),
+            ),
+        )
+
     def test_metrics_overview_uses_iteration_test_metrics(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             run_dir = Path(temp_dir)
@@ -84,6 +103,31 @@ class ReportingTest(unittest.TestCase):
             self.assertIn("validation_baseline", report)
             self.assertIn("validation_candidate", report)
             self.assertIn("0.6000", report)
+
+    def test_validation_impact_reports_repeat_case_and_dataset_deltas(self) -> None:
+        baseline = [self.impact_record(dataset="a", case_id="a-1", node=0.5, relation=0.8)]
+        candidate = [self.impact_record(dataset="a", case_id="a-1", node=0.7, relation=0.6)]
+        summary = build_validation_impact_summary([(1, baseline, candidate)])
+        self.assertTrue(summary["diagnostic_only"])
+        self.assertEqual(summary["repeat_count"], 1)
+        self.assertAlmostEqual(summary["cases"][0]["deltas"]["llm_node_f1"], 0.2)
+        self.assertAlmostEqual(summary["cases"][0]["deltas"]["llm_relation_f1"], -0.2)
+        self.assertEqual(summary["datasets"][0]["semantic_valid_case_count"], 1)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            json_path = root / "impact_summary.json"
+            report_path = root / "impact_report.md"
+            write_validation_impact_report(
+                summary=summary,
+                json_path=json_path,
+                report_path=report_path,
+            )
+            saved = json.loads(json_path.read_text(encoding="utf-8"))
+            report = report_path.read_text(encoding="utf-8")
+        self.assertEqual(saved["acceptance_effect"], "none")
+        self.assertIn("diagnostic only", report)
+        self.assertIn("a-1", report)
 
 
 if __name__ == "__main__":

@@ -206,7 +206,7 @@ def _clean_optional_body_fields(body: dict[str, Any], error: BaseException) -> d
     lowered = str(error).lower()
     cleaned = dict(body)
     changed = False
-    for field in ("thinking", "do_sample", "max_tokens"):
+    for field in ("thinking", "max_tokens"):
         if field in cleaned and field in lowered:
             cleaned.pop(field, None)
             changed = True
@@ -247,6 +247,7 @@ def judge_chat(
     max_tokens: int,
     timeout: int,
     thinking: str,
+    do_sample: bool | None = False,
     state_dir: Path | None = None,
     retry_phase: str = "llm_element_judge",
     retry_context: dict[str, Any] | None = None,
@@ -266,6 +267,8 @@ def judge_chat(
         "max_tokens": max_tokens,
         "stream": False,
     }
+    if do_sample is not None:
+        body["do_sample"] = do_sample
     if thinking:
         body["thinking"] = {"type": thinking}
 
@@ -309,6 +312,7 @@ def extract_elements(
     max_tokens: int,
     timeout: int,
     thinking: str,
+    do_sample: bool | None,
     max_retries: int,
     state_dir: Path | None,
     retry_phase: str,
@@ -331,6 +335,7 @@ def extract_elements(
             max_tokens=max_tokens,
             timeout=timeout,
             thinking=thinking,
+            do_sample=do_sample,
             state_dir=state_dir,
             retry_phase=f"{retry_phase}:extract",
             retry_context={**retry_context, "json_retry_attempt": attempt},
@@ -355,6 +360,7 @@ def match_elements(
     max_tokens: int,
     timeout: int,
     thinking: str,
+    do_sample: bool | None,
     max_retries: int,
     state_dir: Path | None,
     retry_phase: str,
@@ -387,6 +393,7 @@ def match_elements(
             max_tokens=max_tokens,
             timeout=timeout,
             thinking=thinking,
+            do_sample=do_sample,
             state_dir=state_dir,
             retry_phase=f"{retry_phase}:match",
             retry_context={**retry_context, "json_retry_attempt": attempt},
@@ -448,6 +455,7 @@ def evaluate_llm_elements(
     max_tokens: int = 4096,
     timeout: int = 300,
     thinking: str = "disabled",
+    do_sample: bool | None = False,
     max_retries: int = 3,
     state_dir: Path | None = None,
     retry_phase: str = "llm_element_judge",
@@ -472,6 +480,7 @@ def evaluate_llm_elements(
             max_tokens=max_tokens,
             timeout=timeout,
             thinking=thinking,
+            do_sample=do_sample,
             max_retries=max_retries,
             state_dir=state_dir,
             retry_phase=retry_phase,
@@ -489,6 +498,7 @@ def evaluate_llm_elements(
             max_tokens=max_tokens,
             timeout=timeout,
             thinking=thinking,
+            do_sample=do_sample,
             max_retries=max_retries,
             state_dir=state_dir,
             retry_phase=retry_phase,
@@ -507,6 +517,7 @@ def evaluate_llm_elements(
             max_tokens=max_tokens,
             timeout=timeout,
             thinking=thinking,
+            do_sample=do_sample,
             max_retries=max_retries,
             state_dir=state_dir,
             retry_phase=retry_phase,
