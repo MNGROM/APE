@@ -1,219 +1,160 @@
-# APE 后续修改目标与执行边界
+# APE 修改目标与执行边界
 
-本文档记录 `ape_pre/APE` 后续 goal 的共同约定。其作用是约束接下来的设计、代码修改、验证和实验行为；除非用户明确修改约定，否则后续工作必须遵守本文档。
+本文档约束当前 APE selector-v4 实现。过时 handoff、旧 implementation 文档和 Git
+历史只用于理解既有实验，不定义当前行为。
 
 ## 1. 最终目标
 
-后续修改的最终目的不是让训练流程形式上跑通，而是：
+在不使用 heldout 选择候选或调参的前提下，提高 APE 接受的 Prompt 更新在 heldout
+Node F1 或 Relation F1 上获得稳定泛化收益的概率。
+
+稳定收益应通过固定 validation split 上的 paired repeats、win count、平均 delta 和波动
+范围解释，不能主要依赖单次 generation 或 judge 波动。
+
+## 2. 唯一支持的工作流
 
 ```text
-在不使用 heldout 选择候选或调参的前提下，
-提高 APE 接受的 Prompt 更新在 heldout Node F1 或 Relation F1 上
-获得大致稳定泛化收益的概率。
-```
-
-这里的“大致稳定”不是保证每次运行都上升，而是要求收益能够通过配对重复评估体现，不能主要来自单次生成或 judge 波动。
-
-当前 acceptance 语义固定为：
-
-```text
-Node F1 稳定上升
-OR Relation F1 稳定上升
-=> 接受候选
-```
-
-Compile、Syntax、Precision 和其他诊断指标继续完整记录，但 Compile 不能成为 winning metric，也不因其他诊断指标下降而自动否决候选。Prompt 超长、基础设施错误和收益指标评估不完整仍属于无效测量。
-
-## 2. 基本判断原则
-
-所有修改应从当前失败证据出发，优先选择复杂度最低、可验证且可解释的方案。
-
-- 区分“强模型发现了错误”和“该错误能被一条 Prompt 规则稳定修复”。
-- 区分系统性主因、次要伴随错误、dataset convention 和随机生成波动。
-- Python 负责 ID 校验、计数、去重、聚合、排序和最终确定性决策。
-- Agent 负责语义判断和修改内容生成，不得自行声明 support 数量或覆盖 canonical metadata。
-- 新机制必须能够记录中间证据、进行离线回放，并可通过消融或对照解释其作用。
-- 不为了使用论文中的方法而引入方法；只有它直接解决已观察到的问题时才采用。
-
-## 3. 允许自主修改的范围
-
-在已确认的 goal 内，可以自主修改：
-
-- 现有阶段内部的 Python 实现细节、校验器、聚合和确定性排序逻辑。
-- 轻量、可验证的 agent 输入输出 schema。
-- 现有 agent prompt 中的职责、枚举、输出约束和错误边界。
-- 当前产物中的审计字段、拒绝原因和诊断报告。
-- 单元测试、流程测试、fixture 和基于历史日志的离线回放工具。
-- 必要且向后兼容的 CLI 参数，但不得借此改变实验 split 或 heldout 边界。
-
-允许在现有数据上采用常见研究机制，例如：
-
-- 基于现有 batch observations 的多数投票或共识过滤。
-- self-consistency 统计和一致性阈值。
-- case-level confidence filtering。
-- paired comparison、稳定胜出次数和噪声阈值。
-- 冲突证据隔离、反向证据检查和确定性 tie-break。
-- 在不接触 heldout 的前提下进行消融、离线回放和错误归因审计。
-
-当前 selected-mechanism editing 采用 Prompt-gap 资格过滤：
-
-- supporting batch 的 localization 必须区分 `missing`、`ambiguous` 和 `already_covered`。
-- generation model 违反现有明确规则，不自动构成新的 Prompt gap。
-- Python 只复用当前 supporting batches 已产生的一次 localization/editor 结果做严格多数表决，不增加 agent 调用。
-- 只有完整 revision scope 相同的有效 local plans 达到 `floor(N/2) + 1`，才允许进入 epoch planner；`N=1` 时一份有效计划即可继续。
-- `already_covered` 是有效 abstention，不是 agent 或基础设施失败。
-
-后续最小归因实现使用新的 `mechanism_taxonomy_v3.json`。v1、v2 taxonomy 和对应的旧版 agent prompt 保持不变，用于复现既有实验；新 run 默认使用 v3，并在产物中记录实际 taxonomy 和 agent prompt 路径。
-
-这些机制必须满足：最终计数和选择由 Python 完成；输入证据可追溯；结果可复现；不把启发式分数伪装成真实 validation 收益。
-
-## 4. Schema 复杂度边界
-
-Schema 可以调整，但必须保持紧凑。
-
-- 只新增后续 validator、聚合器或审计产物实际消费的字段。
-- 每个新增必填字段必须有明确语义、校验代码和测试。
-- 不同时保存可以直接推导出的多份重复信息。
-- 优先使用扁平字段和短列表，避免不必要的多层嵌套。
-- evidence ID、case ID、mechanism ID 和 signature 必须有唯一 canonical 来源。
-- Agent 不得返回可由 Python 计算的 batch count、case count、dataset count、consistency 或排名。
-- 若一个 schema 需要长篇说明才能避免歧义，应优先缩小状态空间，而不是继续增加字段。
-
-case-level 证据可以包含精确引用，例如 requirement span、预测元素、gold 元素和 primary/secondary 角色；但只有确实用于验证机制归因的最小字段才能进入正式 schema。
-
-### 4.1 原子归因契约
-
-v3 failure analysis 不再让 Agent 预先把多个 case 或多个 evaluator 错误聚合为一个 pattern。正式输入单元为 atomic attribution：
-
-- 一个 attribution 只能引用一个真实 `evidence_id` 和一个 exact evaluator anchor。
-- Python 根据 anchor 来源生成 canonical `anchor_kind` 和稳定 `attribution_id`，Agent 不得提供或覆盖。
-- 同一 case 的不同 anchor 可以支持不同机制；同一 attribution 若被分配到多个 signature，只隔离该 attribution。
-- 依赖错误 activity inventory 的 relation/construct 错误只能作为 secondary attribution，不能提供 candidate support。
-- LLM judge 的 TP matching 若不是一一对应，该 case 不得提供 primary attribution，但仍保留为 ambiguous/secondary 审计证据。
-- Agent 只负责逐 attribution 的语义判断；Python 负责归一化、去重、聚类、计数和候选选择。
-
-为避免复杂 case 的大量下游 anchor 使结构化输出截断，v3 在调用 Agent 前由 Python 执行 evidence admission：
-
-- 每个 batch 最多提供 12 个 atomic anchor；该预算只限制 analysis 输入规模，不改变 candidate promotion threshold。
-- Python 根据 compiler/syntax failure 以及 Node/Relation precision/recall deficit 对各 case 内 anchor 排序；存在 node 错误时，direct node anchor 必须排在依赖该 inventory 的 relation anchor 之前。随后跨 case 轮询分配预算，不能让单个 case 占满输入。
-- v3 输入为每个入选 anchor 提供 canonical `anchor_kind`、允许的 primary failure directions 和 matching 是否允许 primary；Agent 只能复制这些 anchor，且同一 anchor 最多输出一次。
-- direct missing/extra node attribution 不得仅因存在下游 relation 错误而降为 secondary；只有依赖错误 node inventory 的 relation/construct attribution使用 secondary。
-- activity 和 syntax attribution 的 `node_inventory_status` 固定为 `not_applicable`；非 compiler quote 必须是长度不超过 300 的 exact requirement substring。
-
-v1/v2 的 `error_patterns` 继续只读兼容。v3 新 run 使用 `error_attributions`，不得同时输出两种 schema。
-
-### 4.2 开放分层假设契约
-
-v3 的候选发现不再要求一个归因先在多个 batch、case 或 dataset 上证明通用性。一个当前 epoch 的合格 primary attribution 即可形成待验证 child hypothesis；通用性和净收益由 validation gate 判断。
-
-- parent key 使用除 `requirement_trigger` 外的五个 signature 字段，只用于证据汇总、排序和冲突审计，不得直接生成 Prompt 修改。
-- child key 使用完整六字段 atomic signature，只有 child hypothesis 可以成为 candidate。
-- taxonomy 是受控词汇、trigger/boundary 模板和已知 mechanism 的集合，不再是 candidate whitelist。
-- 未命中已知 mechanism 的 schema-valid attribution 由 Python 生成稳定 `hypothesis_id`；若存在安全的窄规则模板，可以参与候选选择。
-- 无安全模板的 hypothesis 记录 `no_safe_rule_template`；不得使用宽泛 fallback 规则。
-- 同一 `construct_family + requirement_trigger` 出现方向相反的 primary evidence 时，相关 child hypotheses 标记 `scope_conflict` 并暂停候选，直到 trigger 或边界进一步拆分。
-- 每个 epoch 仍只选择一个 candidate；不引入 exploratory candidate、Top-K 或额外 agent 调用。
-
-候选最小资格固定为：当前 epoch 至少一个合法 primary attribution、matching 允许 primary、quote/anchor/trigger grounding 有效、evidence basis 非 `gold_only`/`ambiguous`、不存在未解决 scope conflict，且同一 Prompt hash 下未被明确拒绝。旧的 batch、case、dataset 和 consistency promotion hard gate 不再适用于开放假设策略。
-
-### 4.3 Current-run evidence memory
-
-新 run 在 run 根目录维护 `mechanism_memory.json`，仅在该 run 的 epoch 间复用，不跨 run 自动导入。
-
-- Python 使用 `prompt_hash + dataset + case_id + anchor_kind + canonical anchor locator + exact requirement quote` 生成 evidence fingerprint 并去重。
-- Prompt hash 相同的历史证据可以补充 child hypothesis 的支持、冲突和排序，但 candidate 必须有当前 epoch attribution 激活。
-- 同一 Prompt hash 下已 rejected 的 hypothesis 不重复尝试。
-- Prompt 接受并变化后，旧 Prompt hash 下的 evidence 保留为 `historical`，不再提供 active support。
-- memory 只保存可追溯的 attribution/evidence 快照和 candidate outcome，不把启发式统计伪装成 validation 收益。
-
-## 5. Agent Prompt 膨胀边界
-
-Prompt 修改遵循“替换和收紧优先，追加次之”。
-
-- 优先改写已有职责或规则，不重复增加语义相同的段落。
-- 正向触发条件和负向边界应紧邻表达。
-- 不在多个 agent prompt 中复制同一套完整 taxonomy；由 Python 注入必要子集。
-- 不要求 Agent 完成 Python 可以确定性完成的计数、排序和 ID 推导。
-- 示例只在枚举或边界无法简洁表达时加入，并限制为最小正反例。
-- 每次修改后检查 prompt 长度、重复规则和职责冲突。
-
-v3 prompt rewriter 保留现有阶段和单次调用，但只返回目标规则片段。Python 根据经过校验的 operation 和 exact `text_to_modify` 确定性组装完整 Prompt；模型不得返回或改写完整 Prompt。
-
-## 6. Workflow 红线
-
-默认保持当前主流程及阶段顺序：
-
-```text
-batch evaluation
+generation + syntax/compiler + LLM element judge
+-> Python numeric findings
 -> batch failure analysis
--> Python pattern validation / taxonomy mapping / epoch clustering
--> selected-mechanism localization and editor
--> epoch planner
--> prompt rewriter
--> repeated validation
+-> Python exact validation
+-> taxonomy-blind error selector
+-> ordered bounded candidate attempts on one frozen base Prompt
+-> taxonomy-free Prompt-gap localization
+-> Prompt editor
+-> Prompt rewriter
+-> deterministic single-section candidate assembly
+-> paired repeated validation
+-> application policy
+-> heldout only when the applied Prompt hash changes
 ```
 
-以下行为视为大幅修改 workflow，不能自主实施：
+`taxonomy-v3` 是保留的 CLI policy 名称，当前链路不加载 taxonomy 或 repair catalog。
+以下流程和资产不再受支持：
 
-- 新增、删除、合并或重排 agent 阶段。
-- 从单候选改为 Top-K、多候选并发或候选串行叠加。
-- 新增 critic、reviewer、judge-of-judge 等 agent 角色。
-- 对同一阶段增加多次真实模型调用以做 self-consistency、debate 或 agent voting。
-- 改变 validation、heldout 的调用时机、数据边界或候选选择职责。
-- 显著改变每个 epoch 的 API 调用数量、并发结构或成本模型。
+- `simple-v1`；
+- `taxonomy-v3-legacy`；
+- atomic attribution 和 mechanism clustering/memory；
+- taxonomy mapping、repair catalog eligibility 和 taxonomy ID；
+- supporting-batch localization voting 和 epoch planner；
+- legacy single-run Safety/Benefit/Bootstrap acceptance gate。
 
-如果实现目标确实需要上述修改，必须停止当前工作，说明：需要改变什么、为什么现有 workflow 无法解决、预期收益、额外成本和更保守的替代方案；获得用户同意后才能继续。
+## 3. 当前数据契约
 
-利用当前已经产生的多个 batch observations 做 Python 多数投票，不属于 workflow 大改。为了投票额外重复调用模型，则属于 workflow 大改。
+### Failure Analysis
 
-开放假设策略允许原有下游阶段在单个 supporting batch 上运行。这不新增阶段或单阶段调用次数，只取消候选发现和 Prompt-gap 共识中的人为双 batch 下限。
+输入是 Python 生成的 numeric findings。Agent 输出 `failure-errors-v2`，每项只引用一个
+现有 `finding_id`，并返回 status、exact requirement quote、error summary 和 causal
+rationale。Python 校验 ID、quote、anchor/matching quality、secondary linkage、重复分类和
+generic diagnostics。
 
-## 7. Heldout 与实验边界
+### Error Selector
 
-Heldout 是最终泛化审计，不是训练信号。
+Selector 接收当前 epoch 全部 validated actionable primary errors，不接收 Prompt、taxonomy
+或 validation metrics。它必须完整且不重复地划分所有 finding，并按 candidate 尝试优先级
+返回 groups；`selected_group_id` 指向第一组。Python 推导 canonical group ID 和支持统计。
 
-- heldout 不参与 taxonomy、机制聚类、候选排序、Prompt 修改、threshold 校准或 acceptance gate。
-- validation 仍是候选接受的唯一数据 split。
-- 不能因为看到 heldout 个别 case 的结果而直接为其增加 Prompt 规则。
-- 若后续根据多轮 heldout 反馈继续调整设计，必须明确记录测试集反馈风险，必要时更换新的 untouched heldout。
-- heldout 的单次上升不等于稳定改善；应结合配对重复、胜出次数、平均增量和噪声范围解释。
+### Candidate attempts
 
-可以自主执行的验证仅包括：
+同一 epoch 按 Selector 顺序最多尝试 `max_candidate_attempts_per_epoch` 个 group。所有
+candidate 相对同一个 base Prompt 独立生成。遇到 ineligible、`no_prompt_gap`、
+`already_covered`、无效或重复 candidate、validation rejection 时继续下一组；第一个满足
+application policy 的 candidate 结束本 epoch。
 
-- 单元测试和流程测试。
-- `compileall`、静态检查和 `git diff --check`。
-- 不调用外部模型的 mock/smoke test。
-- 只读历史 run 的离线回放和统计分析。
+Candidate registry 记录每个实际尝试 group 的精确 finding-key signature 和终止结果。只有
+相同 base Prompt、相同 finding keys 且此前已确认 `no_prompt_gap` 的 group 可以在 attempt
+截断前过滤；不得用 summary 文本、embedding 或模糊语义匹配跳过新证据。重复
+`already_covered` 不直接过滤，而是把同 Prompt recurrence 交给 Localization 判断已有指导
+是否过于抽象；如能安全收紧，只能使用现有 `ambiguous + replace_existing` 合同。
 
-未经用户明确同意，不得自主执行：
+### Localization, Editor and Rewriter
 
-- 任何真实模型 API 调用。
-- calibration、在线 smoke run、单 case 在线探测或正式训练。
-- heldout evaluation 或完整实验。
+Localization 对冻结 group 先验证一条安全规则能否覆盖全组，再返回 `localized`、
+`already_covered` 或 `no_prompt_gap`。只允许 `append_new`、`replace_existing`、`none`。
+Selector 只有在全组成员需要同一种结构修复且保留相同边界时才能合并；原因主题相似但需要
+删除、移动或改变不同结构的 findings 必须拆分，不确定时使用 singleton group。
 
-到达实验检查点时必须停止，向用户提供建议命令、配置、实验目的、预期产物和成功/失败判据，由用户决定并运行。
+`already_covered` 必须由一段唯一现有原文同时覆盖每个代表样本的 input-side trigger、目标
+结构修复和 preservation boundary；仅使用相同术语或讨论相关主题不构成覆盖。相关原文若
+触发条件或结构操作仍然间接、缺失或允许当前错误，应使用现有
+`ambiguous + replace_existing` 合同收紧，而不是追加重叠规则。现有指导确实覆盖时只能返回
+`already_covered`，不得返回 `no_prompt_gap`；`no_prompt_gap` 只表示组内修复冲突、预测有效、
+证据不足或 judge/generation limitation。
 
-## 8. Goal 执行约定
+Editor 只返回 intent、positive trigger、negative boundary 和 change instruction。trigger 和
+boundary 必须是 input-side generation language，不得依赖 prediction、gold、evaluator、
+dataset 或 metric。
 
-- 讨论和方案确认阶段不创建修改 goal。
-- 用户明确要求开始后，再以已确认目标和本文边界创建 goal。
-- Goal 不扩大权限；即使自动继续，也不得越过 workflow 和实验红线。
-- 较大实现开始前先给出具体计划，说明哪些文件和契约会变化。
-- 每个阶段完成后运行允许范围内的本地验证，并报告真实结果。
-- 若发现必须修改 workflow，立即停止实现并请求批准。
-- 若代码已经 experiment-ready 但需要真实实验验证，停止在实验检查点，不擅自运行。
-- 在没有实验结果前，不声称 heldout 已经改善；只能说明代码和离线证据支持某种预期。
+Rewriter 只返回 `rule_text` 并拥有最终规则措辞。Python 只按忽略大小写、标点和空格差异的
+canonical contract 做校验，再确定性修改一个 section；不得向 Rewriter 文本追加或注入语义
+片段，非目标 section 必须字节一致。
 
-## 9. 当前已知基线
+### Validation and application
 
-- generation model 为 `glm-4.5`，analysis/editor/judge 为 `glm-5.1`。
-- generation、agents 和 judge 默认显式使用 `do_sample=false`；采样实验必须主动传入 `--do-sample true`。
-- 最近一次 candidate 仅因 Compile 上升而被现有实现接受；按本文固定语义应追溯为 rejected。
-- 后续实验不应从该错误接受的 Prompt 继续叠加，应从未接受该修改的基线 Prompt 开始。
-- 当前优先问题是让窄、可验证的 child hypothesis 能进入 validation，同时避免 parent cluster 或 taxonomy fallback 扩大规则边界。
-- training batch 指标只用于诊断，不作为 candidate 是否值得验证的前置证明。
-- validation 仍决定 Prompt 候选的净收益；允许局部 case 或 training metric 回退，但不改变既有 acceptance threshold。
+结构合法性、validation 是否执行、measurement 是否有效、metric decision 和是否应用必须
+分开记录。支持三种 application mode：
 
-## 10. 约定变更
+- `diagnostic-apply`：candidate 合法且 measurement 有效即应用；metric decision 只记录。
+- `cumulative`：只有 paired validation metric decision accepted 才应用。
+- `isolated`：只评估 candidate，不修改 work Prompt。
 
-如果后续讨论改变上述目标或边界，应先更新本文档，再按新约定修改代码。不能先越过边界实施，再补写文档。
+默认 `auto` 解析为 `diagnostic-apply`。`any-improvement` 要求至少一个语义指标满足配置的
+平均 delta 和最小 wins；Compile 和 Syntax 只作诊断，不能单独接受 candidate。
+
+## 4. Heldout 和真实实验红线
+
+- heldout 不参与 finding、grouping、candidate、阈值或 acceptance 决策。
+- `--eval-initial-test` 只生成 iteration-0 baseline；它是无值开关。
+- `isolated` 不得与 `--eval-initial-test` 同时使用。
+- Prompt 未变化时只写 skip manifest，不调用 heldout generation 或 judge。
+- 未经用户明确同意，不运行真实模型、训练、calibration、在线 smoke 或 heldout。
+- 到达 experiment-ready 检查点时停止，向用户提供命令、目的、产物和判据。
+
+## 5. 允许的自主修改
+
+在已确认目标内，可以修改：
+
+- 当前阶段内部的 Python 实现、validator、聚合和确定性排序；
+- 被当前 validator 或报告消费的紧凑 schema；
+- 当前五个 agent Prompt 的职责和边界；
+- 审计字段、拒绝原因、单元测试、mock 流程测试和历史 run 的只读分析；
+- 不改变 split、heldout 或 application 语义的向后兼容 CLI 调整。
+
+以下属于 workflow 大改，必须先计划并获得确认：
+
+- 新增、删除、合并或重排 agent 阶段；
+- 增加 critic、reviewer、debate、self-consistency 或额外真实模型调用；
+- 改为并行候选、validation 后择优或单 epoch 多次应用；
+- 改变 validation/heldout 数据边界、调用时机或 candidate selection 职责；
+- 显著改变 API 调用数量、并发或成本模型。
+
+## 6. Schema 和 Prompt 复杂度边界
+
+- 只保留当前 validator、聚合器或审计产物消费的字段。
+- Agent 不得返回 Python 可计算的 ID、count、rank、hash 或 canonical metadata。
+- 优先扁平字段和短列表；能够推导的信息不重复保存。
+- Prompt 修改优先替换和收紧，追加次之；正向 trigger 和负向 boundary 紧邻表达。
+- 不在多个 Prompt 中复制相同完整规则集。
+- 每次修改后检查 Prompt 长度、重复规则、职责冲突和非目标 section 字节保留。
+
+## 7. 验证和产物边界
+
+可以自主执行：单元测试、compileall、静态检查、`git diff --check`、mock smoke 和历史
+run 的只读分析。不得删除或回写 `prompt_runs/`、`prompt_runs_by_dataset/`、
+`baseline_predictions/` 或其他实验产物。
+
+完成实现后至少验证：
+
+```powershell
+py -m unittest discover -s tests -q
+py -m compileall analysis tests run.py
+git diff --check
+```
+
+涉及 CLI/orchestration 时还必须运行 `--mock-with-gold --no-evolve
+--no-llm-element-metrics` 的离线 smoke test。
+
+## 8. 约定变更
+
+若后续需要改变本目标或边界，先更新本文档和根目录 `CLAUDE.md`，再修改代码。不得先
+实施超出边界的 workflow，再补写规范。

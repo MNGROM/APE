@@ -2,7 +2,7 @@ param(
     [string]$TestDataset = "fsd",
     [int]$Iterations = 3,
     [int]$AnalysisBatchSize = 10,
-    [int]$GateBatchSize = 10,
+    [int]$ValidationGateSize = 10,
     [switch]$Smoke
 )
 
@@ -17,7 +17,7 @@ $argsList = @(
     "--max-train-cases", "0",
     "--max-test-cases", "0",
     "--analysis-batch-size", "$AnalysisBatchSize",
-    "--gate-batch-size", "$GateBatchSize"
+    "--validation-gate-size", "$ValidationGateSize"
 )
 
 if ($Smoke) {

@@ -4,7 +4,7 @@ param(
     [int]$MaxTrainCases = 20,
     [int]$MaxTestCases = 10,
     [int]$AnalysisBatchSize = 5,
-    [int]$GateBatchSize = 5,
+    [int]$ValidationGateSize = 5,
     [switch]$Smoke
 )
 
@@ -19,7 +19,7 @@ $argsList = @(
     "--max-train-cases", "$MaxTrainCases",
     "--max-test-cases", "$MaxTestCases",
     "--analysis-batch-size", "$AnalysisBatchSize",
-    "--gate-batch-size", "$GateBatchSize"
+    "--validation-gate-size", "$ValidationGateSize"
 )
 
 if ($Smoke) {

@@ -307,27 +307,6 @@ def read_text_if_exists(path: Path) -> str | None:
     return read_text(path)
 
 
-def first_existing(*paths: Path) -> Path | None:
-    for path in paths:
-        if path.exists():
-            return path
-    return None
-
-
-def read_json_first(*paths: Path) -> Any | None:
-    path = first_existing(*paths)
-    if path is None:
-        return None
-    return read_json_if_exists(path)
-
-
-def read_text_first(*paths: Path) -> str | None:
-    path = first_existing(*paths)
-    if path is None:
-        return None
-    return read_text_if_exists(path)
-
-
 def refresh_iteration_report(iter_dir: Path) -> None:
     if not iter_dir.is_dir():
         return
@@ -337,25 +316,22 @@ def refresh_iteration_report(iter_dir: Path) -> None:
     except ValueError:
         iteration = 0
 
-    prompt_before = read_text_first(iter_dir / "prompts" / "before.md", iter_dir / "prompt_before.md")
-    prompt_after = read_text_first(iter_dir / "prompts" / "after.md", iter_dir / "prompt_after.md")
+    prompt_before = read_text_if_exists(iter_dir / "prompts" / "before.md")
+    prompt_after = read_text_if_exists(iter_dir / "prompts" / "after.md")
     if prompt_before is None or prompt_after is None:
         return
 
-    candidate_prompt = read_text_first(iter_dir / "prompts" / "candidate.md", iter_dir / "candidate_prompt.md", iter_dir / "prompt_candidate.md")
-    analysis_summary = read_json_first(iter_dir / "evaluation" / "analysis_summary.json", iter_dir / "evaluation_summary.json", iter_dir / "train_summary.json") or {}
-    baseline_gate_summary = read_json_first(
-        iter_dir / "validation_gate" / "baseline_summary.json",
-        iter_dir / "evaluation" / "gate_baseline_summary.json",
-        iter_dir / "baseline_gate_summary.json",
+    candidate_prompt = read_text_if_exists(iter_dir / "prompts" / "candidate.md")
+    analysis_summary = read_json_if_exists(
+        iter_dir / "evaluation" / "analysis_summary.json"
+    ) or {}
+    baseline_gate_summary = read_json_if_exists(
+        iter_dir / "validation_gate" / "baseline_summary.json"
     )
-    candidate_summary = read_json_first(
-        iter_dir / "validation_gate" / "candidate_summary.json",
-        iter_dir / "evaluation" / "gate_candidate_summary.json",
-        iter_dir / "candidate_summary.json",
-        iter_dir / "gate_summary.json",
+    candidate_summary = read_json_if_exists(
+        iter_dir / "validation_gate" / "candidate_summary.json"
     )
-    acceptance = read_json_first(iter_dir / "decision" / "acceptance.json", iter_dir / "prompt_acceptance.json")
+    acceptance = read_json_if_exists(iter_dir / "decision" / "acceptance.json")
 
     write_iteration_reports(
         iter_dir=iter_dir,
@@ -383,23 +359,24 @@ def write_iteration_reports(
     acceptance: dict[str, Any] | None,
 ) -> None:
     accepted = bool(acceptance and acceptance.get("accepted"))
+    applied = bool(acceptance and acceptance.get("applied"))
     acceptance_mode = acceptance.get("acceptance_mode") if acceptance else "not_evaluated"
     rejection_reasons = acceptance.get("rejection_reasons", []) if acceptance else []
-    evaluation_source = acceptance.get("evaluation_source") if acceptance else None
-    baseline_label = "validation_baseline" if evaluation_source == "validation_gate" else "gate_baseline"
-    candidate_label = "validation_candidate" if evaluation_source == "validation_gate" else "gate_candidate"
+    baseline_label = "validation_baseline"
+    candidate_label = "validation_candidate"
 
     prompt_lines = [
         f"# Iteration {iteration:03d} Prompt Change",
         "",
         f"- accepted: {accepted}",
+        f"- applied: {applied}",
         f"- acceptance_mode: {acceptance_mode}",
         f"- rejection_reasons: {', '.join(rejection_reasons) if rejection_reasons else 'none'}",
         f"- chars_before: {len(prompt_before)}",
         f"- chars_after: {len(prompt_after)}",
     ]
-    if acceptance and acceptance.get("selected_mechanism_id"):
-        prompt_lines.append(f"- selected_mechanism_id: {acceptance['selected_mechanism_id']}")
+    if acceptance and acceptance.get("selected_group_id"):
+        prompt_lines.append(f"- selected_group_id: {acceptance['selected_group_id']}")
     if acceptance and acceptance.get("winning_metrics"):
         prompt_lines.append(f"- winning_metrics: {', '.join(acceptance['winning_metrics'])}")
     if candidate_prompt is not None:
@@ -409,7 +386,7 @@ def write_iteration_reports(
     prompt_lines.append("```diff")
     prompt_lines.append(applied_diff or "# no applied prompt change")
     prompt_lines.append("```")
-    if candidate_prompt is not None and not accepted:
+    if candidate_prompt is not None and not applied:
         prompt_lines.extend(["", "## Rejected Candidate Diff", "", "```diff"])
         prompt_lines.append(prompt_diff(prompt_before, candidate_prompt, from_label="prompt_before.md", to_label="prompt_candidate.md") or "# no candidate prompt change")
         prompt_lines.append("```")
@@ -419,6 +396,7 @@ def write_iteration_reports(
         f"# Iteration {iteration:03d} Metrics",
         "",
         f"- accepted: {accepted}",
+        f"- applied: {applied}",
         f"- acceptance_mode: {acceptance_mode}",
         f"- rejection_reasons: {', '.join(rejection_reasons) if rejection_reasons else 'none'}",
         "",
@@ -432,20 +410,13 @@ def write_iteration_reports(
     if acceptance:
         metric_lines.extend(["", "## Deltas", "", *metrics_table_header()])
         metric_lines.append(metric_delta_row("candidate_minus_baseline", metric_deltas(baseline_gate_summary, candidate_summary)))
-        gate_payload = (
-            {
-                "acceptance_policy": acceptance.get("acceptance_policy"),
-                "evaluation_valid": acceptance.get("evaluation_valid"),
-                "winning_metrics": acceptance.get("winning_metrics", []),
-                "metric_results": acceptance.get("metric_results", {}),
-            }
-            if acceptance.get("acceptance_policy") == "any-improvement"
-            else {
-                "safety_gate": acceptance.get("safety_gate"),
-                "benefit_gate": acceptance.get("benefit_gate"),
-                "bootstrap_gate": acceptance.get("bootstrap_gate"),
-            }
-        )
+        threshold = acceptance.get("threshold_decision") or acceptance
+        gate_payload = {
+            "acceptance_policy": threshold.get("acceptance_policy"),
+            "evaluation_valid": threshold.get("evaluation_valid"),
+            "winning_metrics": threshold.get("winning_metrics", []),
+            "metric_results": threshold.get("metric_results", {}),
+        }
         metric_lines.extend(["", "## Gates", "", "```json", json.dumps(gate_payload, ensure_ascii=False, indent=2), "```"])
     write_text(iter_dir / "reports" / "metrics_report.md", "\n".join(metric_lines).rstrip() + "\n")
 
@@ -471,11 +442,11 @@ def refresh_run_reports(run_dir: Path) -> None:
 
     has_iteration_test_metrics = False
     for iter_dir in sorted(run_dir.glob("iteration_*")):
-        prompt_report = first_existing(iter_dir / "reports" / "prompt_change.md", iter_dir / "prompt_change.md")
-        if prompt_report and prompt_report.exists():
+        prompt_report = iter_dir / "reports" / "prompt_change.md"
+        if prompt_report.exists():
             prompt_lines.extend([f"## {iter_dir.name}", "", f"See `{prompt_report.relative_to(run_dir).as_posix()}`.", ""])
-            acceptance_path = first_existing(iter_dir / "decision" / "acceptance.json", iter_dir / "prompt_acceptance.json")
-            if acceptance_path and acceptance_path.exists():
+            acceptance_path = iter_dir / "decision" / "acceptance.json"
+            if acceptance_path.exists():
                 acceptance = json.loads(read_text(acceptance_path))
                 acceptance_rows.append(
                     "| "
@@ -502,15 +473,12 @@ def refresh_run_reports(run_dir: Path) -> None:
             metrics_lines.append(metric_row(f"{iter_dir.name}:test", json.loads(read_text(test_summary_path))))
             has_iteration_test_metrics = True
 
-    best_path = run_dir / "prompt_best.md"
     final_path = run_dir / "prompt_final.md"
-    if best_path.exists():
-        prompt_lines.extend(["## Best Prompt", "", "```markdown", read_text(best_path).rstrip(), "```", ""])
     if final_path.exists():
         prompt_lines.extend(["## Final Prompt", "", "```markdown", read_text(final_path).rstrip(), "```", ""])
 
-    test_summary_path = first_existing(run_dir / "test" / "summary.json", run_dir / "test_summary.json")
-    if test_summary_path and test_summary_path.exists() and not has_iteration_test_metrics:
+    test_summary_path = run_dir / "test" / "summary.json"
+    if test_summary_path.exists() and not has_iteration_test_metrics:
         metrics_lines.append(metric_row("held_out_test", json.loads(read_text(test_summary_path))))
 
     if len(acceptance_rows) > 5:

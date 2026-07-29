@@ -1,18 +1,11 @@
-import json
-import tempfile
 import unittest
-from pathlib import Path
-from types import SimpleNamespace
 
-from analysis.error_localization import localize_errors
 from prompt_ops import (
     apply_prompt_revision_fragment,
-    normalize_prompt_revision_plan,
+    normalized_contract_contains,
+    normalized_contract_occurrences,
     parse_prompt_sections,
-    validate_error_localization_payload,
     validate_prompt_candidate,
-    validate_prompt_revision_plan,
-    validate_revision_against_prompt_gap,
 )
 
 
@@ -42,332 +35,136 @@ Do not invent behavior.
 """
 
 
-class FakeLLMClient:
-    def __init__(self, response: dict) -> None:
-        self.response = json.dumps(response)
+def plan(*, operation: str, target: str = "") -> dict:
+    return {
+        "revision_plan": [
+            {
+                "section": "workflow",
+                "operation": operation,
+                "text_to_modify": target,
+                "positive_trigger": "When the requirement states an explicit alternative",
+                "negative_boundary": "Do not infer alternatives from unrelated actions",
+            }
+        ]
+    }
 
-    def chat(self, messages, **kwargs):
-        return self.response
+
+RULE = (
+    "When the requirement states an explicit alternative, model decision branches. "
+    "Do not infer alternatives from unrelated actions."
+)
 
 
 class PromptOpsTest(unittest.TestCase):
-    def diagnosis(self, *, section: str = "workflow") -> dict:
-        return {
-            "section": section,
-            "repair_type": "activity_extraction",
-            "section_problem": "The extraction boundary is incomplete.",
-            "risk_if_modified": "An overbroad rule could remove explicit actions.",
-        }
+    def test_parse_requires_all_sections_in_order(self) -> None:
+        self.assertEqual(list(parse_prompt_sections(PROMPT)), [
+            "agent task",
+            "input",
+            "output",
+            "workflow",
+            "knowledge",
+            "rule",
+        ])
+        with self.assertRaisesRegex(ValueError, "Missing required prompt sections"):
+            parse_prompt_sections("## output\n\nReturn PlantUML code.")
 
-    def test_revision_plan_defaults_missing_operation_to_append_new(self) -> None:
-        payload = {
-            "revision_plan": [
-                {
-                    "section": "knowledge",
-                    "intent": "Add fork guidance.",
-                    "change_instruction": "Add guidance for explicit parallel work.",
-                }
-            ]
-        }
-
-        normalized = normalize_prompt_revision_plan(payload)
-        ok, errors = validate_prompt_revision_plan(normalized, max_sections=1)
-
-        self.assertTrue(ok, errors)
-        self.assertEqual(normalized["revision_plan"][0]["operation"], "append_new")
-
-    def test_revision_plan_accepts_non_append_operation_with_text_to_modify(self) -> None:
-        payload = {
-            "revision_plan": [
-                {
-                    "section": "rule",
-                    "operation": "qualify_existing",
-                    "text_to_modify": "Use fork only for explicit parallel work.",
-                    "intent": "Tighten fork usage.",
-                    "change_instruction": "Exclude ordinary lists and sequential UI steps.",
-                }
-            ]
-        }
-
-        normalized = normalize_prompt_revision_plan(payload)
-        ok, errors = validate_prompt_revision_plan(normalized, max_sections=1)
-
-        self.assertTrue(ok, errors)
-        self.assertEqual(normalized["revision_plan"][0]["operation"], "qualify_existing")
-        self.assertEqual(normalized["revision_plan"][0]["text_to_modify"], "Use fork only for explicit parallel work.")
-
-    def test_revision_plan_rejects_invalid_operation(self) -> None:
-        payload = {
-            "revision_plan": [
-                {
-                    "section": "rule",
-                    "operation": "rewrite_everything",
-                    "intent": "Change too much.",
-                    "change_instruction": "Rewrite the prompt.",
-                }
-            ]
-        }
-
-        normalized = normalize_prompt_revision_plan(payload)
-        ok, errors = validate_prompt_revision_plan(normalized, max_sections=1)
-
-        self.assertFalse(ok)
-        self.assertIn("invalid operation", "\n".join(errors))
-
-    def test_revision_plan_requires_text_to_modify_for_existing_text_operations(self) -> None:
-        payload = {
-            "revision_plan": [
-                {
-                    "section": "rule",
-                    "operation": "replace_existing",
-                    "intent": "Replace weak guidance.",
-                    "change_instruction": "Replace the existing guidance with a stricter one.",
-                }
-            ]
-        }
-
-        normalized = normalize_prompt_revision_plan(payload)
-        ok, errors = validate_prompt_revision_plan(normalized, max_sections=1)
-
-        self.assertFalse(ok)
-        self.assertIn("text_to_modify", "\n".join(errors))
-
-    def test_revision_plan_requires_boundaries_and_exact_existing_text(self) -> None:
-        payload = {
-            "revision_plan": [
-                {
-                    "section": "knowledge",
-                    "operation": "qualify_existing",
-                    "text_to_modify": "Text that is not in the section.",
-                    "intent": "Constrain forks.",
-                    "change_instruction": "Tighten the fork rule.",
-                    "positive_trigger": "Use fork for explicit concurrency.",
-                    "negative_boundary": "Do not use fork for lists.",
-                }
-            ]
-        }
-        ok, errors = validate_prompt_revision_plan(
-            payload,
-            max_sections=1,
-            current_prompt=PROMPT,
-            require_boundaries=True,
-        )
-        self.assertFalse(ok)
-        self.assertIn("was not found", "\n".join(errors))
-
-        payload["revision_plan"][0]["text_to_modify"] = "Use fork only for explicit parallel work."
-        payload["revision_plan"][0]["negative_boundary"] = ""
-        ok, errors = validate_prompt_revision_plan(
-            payload,
-            max_sections=1,
-            current_prompt=PROMPT,
-            require_boundaries=True,
-        )
-        self.assertFalse(ok)
-        self.assertIn("negative_boundary", "\n".join(errors))
-
-    def test_candidate_may_change_only_declared_section(self) -> None:
-        candidate = PROMPT.replace(
-            "Use fork only for explicit parallel work.",
-            "Use fork only for explicitly concurrent execution.",
-        )
-        ok, errors = validate_prompt_candidate(
-            candidate,
-            baseline_prompt=PROMPT,
-            target_section="knowledge",
-        )
-        self.assertTrue(ok, errors)
-
-        candidate = candidate.replace("Do not invent behavior.", "Never invent behavior.")
-        ok, errors = validate_prompt_candidate(
-            candidate,
-            baseline_prompt=PROMPT,
-            target_section="knowledge",
-        )
-        self.assertFalse(ok)
-        self.assertIn("change exactly", "\n".join(errors))
-
-    def test_fragment_rewriter_replaces_one_unique_target_span(self) -> None:
-        positive = "Use fork for explicit concurrency."
-        negative = "Do not use fork for ordinary lists."
-        plan = {
-            "revision_plan": [
-                {
-                    "section": "knowledge",
-                    "operation": "qualify_existing",
-                    "text_to_modify": "Use fork only for explicit parallel work.",
-                    "positive_trigger": positive,
-                    "negative_boundary": negative,
-                }
-            ]
-        }
+    def test_replace_changes_only_declared_section_and_preserves_other_bytes(self) -> None:
         candidate, errors = apply_prompt_revision_fragment(
             PROMPT,
-            plan,
-            f"{positive}\n{negative}",
+            plan(operation="replace_existing", target="Extract actions."),
+            RULE,
         )
-        self.assertIsNotNone(candidate, errors)
-        assert candidate is not None
+        self.assertEqual(errors, [])
+        self.assertIsNotNone(candidate)
         before = parse_prompt_sections(PROMPT)
-        after = parse_prompt_sections(candidate)
-        self.assertEqual(
-            [section for section in before if before[section] != after[section]],
-            ["knowledge"],
+        after = parse_prompt_sections(candidate or "")
+        self.assertEqual(after["workflow"], RULE)
+        for section in before:
+            if section != "workflow":
+                self.assertEqual(after[section], before[section])
+        ok, validation_errors = validate_prompt_candidate(
+            candidate or "",
+            baseline_prompt=PROMPT,
+            target_section="workflow",
+        )
+        self.assertTrue(ok, validation_errors)
+
+    def test_replace_preserves_numbered_line_item_prefix(self) -> None:
+        numbered_prompt = PROMPT.replace("Extract actions.", "1. Extract actions.")
+        candidate, errors = apply_prompt_revision_fragment(
+            numbered_prompt,
+            plan(operation="replace_existing", target="1. Extract actions."),
+            RULE,
         )
 
-    def test_fragment_rewriter_rejects_non_unique_or_non_contiguous_target(self) -> None:
-        duplicated = PROMPT.replace(
-            "Use fork only for explicit parallel work.",
-            "Use fork only for explicit parallel work.\nUse fork only for explicit parallel work.",
-        )
-        positive = "Use fork for explicit concurrency."
-        negative = "Do not use fork for ordinary lists."
-        plan = {
-            "revision_plan": [
-                {
-                    "section": "knowledge",
-                    "operation": "merge_existing",
-                    "text_to_modify": "Use fork only for explicit parallel work.",
-                    "positive_trigger": positive,
-                    "negative_boundary": negative,
-                }
-            ]
-        }
+        self.assertEqual(errors, [])
+        workflow = parse_prompt_sections(candidate or "")["workflow"]
+        self.assertTrue(workflow.startswith("1. "))
+        self.assertIn(RULE, workflow)
+
+    def test_append_adds_one_fragment(self) -> None:
         candidate, errors = apply_prompt_revision_fragment(
-            duplicated,
-            plan,
-            f"{positive}\n{negative}",
+            PROMPT,
+            plan(operation="append_new"),
+            RULE,
+        )
+        self.assertEqual(errors, [])
+        workflow = parse_prompt_sections(candidate or "")["workflow"]
+        self.assertEqual(workflow, f"Extract actions.\n\n{RULE}")
+
+    def test_replace_requires_one_exact_target(self) -> None:
+        repeated = PROMPT.replace("Extract actions.", "Extract actions.\nExtract actions.")
+        candidate, errors = apply_prompt_revision_fragment(
+            repeated,
+            plan(operation="replace_existing", target="Extract actions."),
+            RULE,
         )
         self.assertIsNone(candidate)
-        self.assertIn("exactly once", "\n".join(errors))
+        self.assertIn("found=2", errors[0])
 
-    def test_already_covered_requires_exact_quote_and_empty_diagnoses(self) -> None:
-        payload = {
-            "prompt_gap": "already_covered",
-            "existing_prompt_quote": "Do not invent behavior.",
-            "gap_rationale": "The rule already states the selected boundary.",
-            "section_diagnoses": [],
-        }
-        ok, errors = validate_error_localization_payload(
-            payload,
-            max_sections=1,
-            current_prompt=PROMPT,
-        )
-        self.assertTrue(ok, errors)
-
-        payload["existing_prompt_quote"] = "Fabricated prompt text."
-        ok, errors = validate_error_localization_payload(
-            payload,
-            max_sections=1,
-            current_prompt=PROMPT,
-        )
-        self.assertFalse(ok)
-        self.assertIn("was not found", "\n".join(errors))
-
-    def test_ambiguous_quote_must_exist_in_the_diagnosed_section(self) -> None:
-        payload = {
-            "prompt_gap": "ambiguous",
-            "existing_prompt_quote": "Do not invent behavior.",
-            "gap_rationale": "The wording permits conflicting interpretations.",
-            "section_diagnoses": [self.diagnosis(section="workflow")],
-        }
-        ok, errors = validate_error_localization_payload(
-            payload,
-            max_sections=1,
-            current_prompt=PROMPT,
-        )
-        self.assertFalse(ok)
-        self.assertIn("diagnosed section", "\n".join(errors))
-
-    def test_missing_rejects_existing_quote_and_incomplete_diagnosis(self) -> None:
-        payload = {
-            "prompt_gap": "missing",
-            "existing_prompt_quote": "Extract actions.",
-            "gap_rationale": "A boundary is absent.",
-            "section_diagnoses": [self.diagnosis()],
-        }
-        ok, errors = validate_error_localization_payload(
-            payload,
-            max_sections=1,
-            current_prompt=PROMPT,
-        )
-        self.assertFalse(ok)
-        self.assertIn("empty existing_prompt_quote", "\n".join(errors))
-
-        payload["existing_prompt_quote"] = ""
-        del payload["section_diagnoses"][0]["risk_if_modified"]
-        ok, errors = validate_error_localization_payload(
-            payload,
-            max_sections=1,
-            current_prompt=PROMPT,
-        )
-        self.assertFalse(ok)
-        self.assertIn("risk_if_modified", "\n".join(errors))
-
-    def test_localization_input_contains_python_selected_mechanism(self) -> None:
-        response = {
-            "prompt_gap": "already_covered",
-            "existing_prompt_quote": "Do not invent behavior.",
-            "gap_rationale": "The selected boundary is already explicit.",
-            "section_diagnoses": [],
-        }
-        selected = {
-            "mechanism_id": "unsupported_fork",
-            "mechanism_signature": {"construct_family": "fork"},
-            "supporting_evidence_ids": ["e1"],
-            "positive_trigger": "Avoid unsupported fork.",
-            "negative_boundary": "Preserve explicit concurrency.",
-        }
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            system_prompt = root / "localize.md"
-            input_path = root / "input.json"
-            output_path = root / "output.json"
-            system_prompt.write_text("Localize", encoding="utf-8")
-            args = SimpleNamespace(
-                error_localization_prompt_path=system_prompt,
-                localization_temperature=0.0,
-                localization_max_tokens=1000,
-                localization_thinking="disabled",
-                max_sections_per_edit=1,
+    def test_only_current_operations_are_allowed(self) -> None:
+        for operation in ("unsupported_operation_a", "unsupported_operation_b"):
+            candidate, errors = apply_prompt_revision_fragment(
+                PROMPT,
+                plan(operation=operation, target="Extract actions."),
+                RULE,
             )
-            result = localize_errors(
-                current_prompt=PROMPT,
-                failure_analysis={"error_patterns": [], "evidence_catalog": []},
-                selected_mechanism=selected,
-                args=args,
-                llm_client=FakeLLMClient(response),
-                output_input_path=input_path,
-                output_path=output_path,
-                state_dir=root,
-                iteration=1,
-            )
-            payload = json.loads(input_path.read_text(encoding="utf-8"))
-        self.assertEqual(result["prompt_gap"], "already_covered")
-        self.assertEqual(payload["selected_mechanism"]["mechanism_id"], "unsupported_fork")
+            self.assertIsNone(candidate)
+            self.assertIn("Invalid fragment revision operation", errors[0])
 
-    def test_ambiguous_revision_cannot_change_section_or_omit_the_quote(self) -> None:
-        localization = {
-            "prompt_gap": "ambiguous",
-            "existing_prompt_quote": "Extract actions.",
-            "gap_rationale": "The extraction boundary is ambiguous.",
-            "section_diagnoses": [self.diagnosis(section="workflow")],
-        }
-        payload = {
-            "revision_plan": [
-                {
-                    "section": "rule",
-                    "operation": "qualify_existing",
-                    "text_to_modify": "Do not invent behavior.",
-                    "intent": "Change the wrong section.",
-                    "change_instruction": "Add an unrelated qualification.",
-                }
-            ]
-        }
-        ok, errors = validate_revision_against_prompt_gap(payload, localization)
-        self.assertFalse(ok)
-        self.assertIn("must match", "\n".join(errors))
-        self.assertIn("must contain", "\n".join(errors))
+    def test_rule_must_contain_frozen_trigger_and_boundary(self) -> None:
+        candidate, errors = apply_prompt_revision_fragment(
+            PROMPT,
+            plan(operation="append_new"),
+            "Model decision branches.",
+        )
+        self.assertIsNone(candidate)
+        self.assertIn("positive_trigger", errors[0])
+
+    def test_contract_matching_ignores_case_punctuation_and_whitespace(self) -> None:
+        text = (
+            "when the requirement states an explicit alternative; "
+            "do not infer alternatives from unrelated actions."
+        )
+        self.assertTrue(
+            normalized_contract_contains(
+                text,
+                "When the requirement states an explicit alternative.",
+            )
+        )
+        self.assertTrue(
+            normalized_contract_contains(
+                text,
+                "Do not infer alternatives from unrelated actions.",
+            )
+        )
+        self.assertEqual(
+            normalized_contract_occurrences(
+                text,
+                "When the requirement states an explicit alternative.",
+            ),
+            1,
+        )
 
 
 if __name__ == "__main__":

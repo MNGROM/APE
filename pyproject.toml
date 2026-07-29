@@ -25,11 +25,10 @@ py-modules = [
     "llm_element_metrics",
     "metrics",
     "prediction",
-    "prompt_evolve",
     "prompt_ops",
     "run",
     "versioning",
 ]
 
 [tool.setuptools.packages.find]
-include = ["analysis*", "datasets*", "utils*"]
+include = ["analysis*", "ape_datasets*", "utils*"]

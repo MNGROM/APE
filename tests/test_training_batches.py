@@ -2,7 +2,13 @@ import unittest
 from collections import Counter
 
 from ape_datasets.lato import Case
-from run import build_parser, split_training_batches, split_validation_gate_cases, validate_glm_args
+from run import (
+    build_parser,
+    resolve_pipeline_defaults,
+    split_training_batches,
+    split_validation_gate_cases,
+    validate_glm_args,
+)
 
 
 def make_cases(dataset: str, count: int) -> list[Case]:
@@ -20,11 +26,12 @@ def make_cases(dataset: str, count: int) -> list[Case]:
 def resolve_thinking_defaults(args) -> None:
     args.generation_thinking = "disabled"
     args.analysis_thinking = "disabled"
+    args.selector_thinking = "disabled"
     args.localization_thinking = "disabled"
     args.editor_thinking = "disabled"
-    args.epoch_planner_thinking = "disabled"
     args.judge_thinking = "disabled"
     args.element_extraction_thinking = "disabled"
+    resolve_pipeline_defaults(args)
 
 
 class TrainingBatchTest(unittest.TestCase):
@@ -35,8 +42,8 @@ class TrainingBatchTest(unittest.TestCase):
         self.assertEqual(args.epoch_batch_concurrency, 1)
         self.assertEqual(args.heldout_test_concurrency, 1)
         self.assertEqual(args.validation_gate_concurrency, 1)
-        self.assertEqual(args.acceptance_policy, "any-improvement")
         self.assertEqual(args.validation_repeats, 3)
+        self.assertEqual(args.max_candidate_attempts_per_epoch, 3)
         self.assertEqual(args.acceptance_min_wins, 2)
         self.assertTrue(args.validation_gate)
         self.assertEqual(args.validation_gate_strategy, "stratified")
@@ -53,10 +60,46 @@ class TrainingBatchTest(unittest.TestCase):
 
         self.assertEqual(args.heldout_test_concurrency, 2)
 
+    def test_parser_accepts_candidate_attempt_limit(self) -> None:
+        args = build_parser().parse_args(["--max-candidate-attempts-per-epoch", "5"])
+
+        self.assertEqual(args.max_candidate_attempts_per_epoch, 5)
+
     def test_parser_accepts_embedding_element_metrics(self) -> None:
         args = build_parser().parse_args(["--embedding-element-metrics"])
 
         self.assertTrue(args.embedding_element_metrics)
+
+    def test_evolution_requires_validation_gate(self) -> None:
+        args = build_parser().parse_args(
+            [
+                "--test-dataset",
+                "us",
+                "--no-validation-gate",
+                "--candidate-application-mode",
+                "cumulative",
+            ]
+        )
+        resolve_thinking_defaults(args)
+        args.api_key = "dummy"
+        with self.assertRaisesRegex(ValueError, "requires an enabled"):
+            validate_glm_args(args)
+
+    def test_isolated_mode_rejects_heldout_evaluation_during_search(self) -> None:
+        args = build_parser().parse_args(
+            [
+                "--test-dataset",
+                "us",
+                "--eval-initial-test",
+                "--candidate-application-mode",
+                "isolated",
+            ]
+        )
+        resolve_thinking_defaults(args)
+        args.api_key = "dummy"
+
+        with self.assertRaisesRegex(ValueError, "does not evaluate heldout"):
+            validate_glm_args(args)
 
     def test_training_requires_llm_element_metrics(self) -> None:
         args = build_parser().parse_args(["--no-llm-element-metrics"])

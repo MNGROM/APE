@@ -40,14 +40,12 @@ class ValidationRepeatTest(unittest.TestCase):
             for index in range(1, 4)
         ]
         self.args = SimpleNamespace(
-            acceptance_policy="any-improvement",
             validation_repeats=3,
             validation_gate_concurrency=4,
             max_prompt_chars=100,
             acceptance_min_wins=2,
             any_improvement_node_min_delta=0.0,
             any_improvement_relation_min_delta=0.0,
-            any_improvement_compile_min_delta=0.0,
             validation_calibration_repeats=5,
             validation_gate=True,
             validation_gate_size=3,
@@ -82,7 +80,6 @@ class ValidationRepeatTest(unittest.TestCase):
                 iter_dir=iter_dir,
                 paths=paths,
                 iteration=1,
-                allow_bootstrap=True,
                 phase_prefix="test",
             )
 
@@ -94,6 +91,50 @@ class ValidationRepeatTest(unittest.TestCase):
             self.assertEqual(len(aggregate["baseline_repeat_summaries"]), 3)
             self.assertEqual(aggregate["validation_split_fingerprint"], case_split_fingerprint(self.cases))
             self.assertTrue((iter_dir / "validation_gate" / "repeat_002" / "candidate" / "summary.json").exists())
+
+    def test_multiple_candidates_reuse_one_repeated_baseline(self) -> None:
+        role_counts = {"baseline": 0, "candidate": 0}
+
+        def fake_evaluate_cases(**kwargs):
+            role = "baseline" if kwargs["prompt"] == "baseline" else "candidate"
+            role_counts[role] += 1
+            write_text(kwargs["output_path"], "")
+            return [], summary(node=0.7 if role == "baseline" else 0.71)
+
+        with tempfile.TemporaryDirectory() as temp_dir, patch(
+            "run.evaluate_cases", side_effect=fake_evaluate_cases
+        ):
+            root = Path(temp_dir)
+            baseline_cache = {}
+            for attempt in (1, 2):
+                attempt_dir = root / f"attempt_{attempt:03d}"
+                evaluate_validation_gate(
+                    baseline_prompt="baseline",
+                    candidate_prompt=f"candidate_{attempt}",
+                    validation_cases=self.cases,
+                    args=self.args,
+                    llm_client=object(),
+                    run_dir=root,
+                    iter_dir=attempt_dir,
+                    paths=iteration_paths(attempt_dir),
+                    iteration=1,
+                    phase_prefix=f"test:attempt_{attempt:03d}",
+                    baseline_cache=baseline_cache,
+                )
+
+            self.assertEqual(role_counts["baseline"], 3)
+            self.assertEqual(role_counts["candidate"], 6)
+            self.assertEqual(len(baseline_cache["repeat_summaries"]), 3)
+            self.assertTrue(
+                (
+                    root
+                    / "attempt_002"
+                    / "validation_gate"
+                    / "repeat_001"
+                    / "baseline"
+                    / "summary.json"
+                ).exists()
+            )
 
     def test_calibration_runs_only_configured_seed_repeats(self) -> None:
         calls: list[int] = []
