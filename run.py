@@ -20,6 +20,7 @@ from analysis.error_selector import (
     failure_analysis_item_count,
     representative_errors,
     select_error_group,
+    selected_group_evidence_family,
     validate_selected_group_eligibility,
 )
 from analysis.selector_agents import (
@@ -820,6 +821,10 @@ SEMANTIC_ACCEPTANCE_METRICS = (
     "llm_relation_f1",
 )
 
+DIRECT_ACCEPTANCE_METRIC_BY_FAMILY = {
+    "diagnostic": "plantuml_compilation_pass_rate",
+}
+
 VALIDATION_CALIBRATION_METRICS = (
     *SEMANTIC_ACCEPTANCE_METRICS,
     "plantuml_compilation_pass_rate",
@@ -868,7 +873,15 @@ def any_improvement_decision(
     max_prompt_chars: int,
     min_wins: int,
     min_deltas: dict[str, float],
+    candidate_evidence_family: str = "semantic",
 ) -> tuple[bool, dict[str, Any]]:
+    if candidate_evidence_family not in {
+        "semantic",
+        *DIRECT_ACCEPTANCE_METRIC_BY_FAMILY,
+    }:
+        raise ValueError(
+            f"Unsupported candidate evidence family: {candidate_evidence_family!r}"
+        )
     repeat_count = len(baseline_summaries)
     invalid_reasons: list[str] = []
     if repeat_count == 0 or repeat_count != len(candidate_summaries):
@@ -882,43 +895,108 @@ def any_improvement_decision(
     ):
         invalid_reasons.append("infrastructure_error")
 
-    metric_results: dict[str, dict[str, Any]] = {}
-    for metric in SEMANTIC_ACCEPTANCE_METRICS:
-        available = all(
-            int(float(summary.get("llm_element_evaluated", -1))) == validation_case_count
-            and int(float(summary.get("llm_element_failed", -1))) == 0
-            for summary in [*baseline_summaries, *candidate_summaries]
-        )
+    def metric_result(*, metric: str, available: bool) -> dict[str, Any]:
         deltas = [
             float(candidate.get(metric, 0.0)) - float(baseline.get(metric, 0.0))
             for baseline, candidate in zip(baseline_summaries, candidate_summaries)
         ]
         mean_delta = statistics.fmean(deltas) if deltas else 0.0
-        median_delta = statistics.median(deltas) if deltas else 0.0
-        wins = sum(1 for delta in deltas if delta > 0.0)
-        min_delta = float(min_deltas.get(metric, 0.0))
-        stable = available and mean_delta > min_delta and wins >= min_wins
-        metric_results[metric] = {
+        return {
             "available": available,
             "repeat_deltas": deltas,
             "mean_delta": mean_delta,
-            "median_delta": median_delta,
-            "wins": wins,
+            "median_delta": statistics.median(deltas) if deltas else 0.0,
+            "wins": sum(1 for delta in deltas if delta > 0.0),
             "repeat_count": repeat_count,
             "min_wins": min_wins,
-            "min_delta": min_delta,
-            "stable_improvement": stable,
+            "min_delta": float(min_deltas.get(metric, 0.0)),
         }
 
-    if not any(result["available"] for result in metric_results.values()):
+    semantic_metrics_available = all(
+        int(float(summary.get("llm_element_evaluated", -1))) == validation_case_count
+        and int(float(summary.get("llm_element_failed", -1))) == 0
+        for summary in [*baseline_summaries, *candidate_summaries]
+    )
+    metric_results: dict[str, dict[str, Any]] = {}
+    for metric in SEMANTIC_ACCEPTANCE_METRICS:
+        result = metric_result(metric=metric, available=semantic_metrics_available)
+        result["stable_improvement"] = bool(
+            result["available"]
+            and result["mean_delta"] > result["min_delta"]
+            and result["wins"] >= min_wins
+        )
+        metric_results[metric] = result
+
+    if not semantic_metrics_available:
         invalid_reasons.append("no_complete_acceptance_metric")
     winning_metrics = [
         metric
         for metric, result in metric_results.items()
         if result["stable_improvement"]
     ]
+
+    direct_metric = DIRECT_ACCEPTANCE_METRIC_BY_FAMILY.get(
+        candidate_evidence_family
+    )
+    direct_metric_results: dict[str, dict[str, Any]] = {}
+    semantic_safety_results: dict[str, dict[str, Any]] = {}
+    direct_metric_improved = False
+    semantic_safety_passed = True
+    if direct_metric is not None:
+        direct_metric_available = all(
+            int(float(summary.get("count", -1))) == validation_case_count
+            and direct_metric in summary
+            for summary in [*baseline_summaries, *candidate_summaries]
+        )
+        direct_result = metric_result(
+            metric=direct_metric,
+            available=direct_metric_available,
+        )
+        direct_result["stable_improvement"] = bool(
+            direct_result["available"]
+            and direct_result["mean_delta"] > direct_result["min_delta"]
+            and direct_result["wins"] >= min_wins
+        )
+        direct_metric_results[direct_metric] = direct_result
+        direct_metric_improved = bool(direct_result["stable_improvement"])
+        if not direct_metric_available:
+            invalid_reasons.append("direct_metric_incomplete")
+
+        for metric, result in metric_results.items():
+            floor = -float(result["min_delta"])
+            safe = bool(result["available"] and result["mean_delta"] >= floor)
+            semantic_safety_results[metric] = {
+                "available": result["available"],
+                "repeat_deltas": result["repeat_deltas"],
+                "mean_delta": result["mean_delta"],
+                "non_regression_floor": floor,
+                "safe": safe,
+            }
+        semantic_safety_passed = all(
+            result["safe"] for result in semantic_safety_results.values()
+        )
+
     evaluation_valid = not invalid_reasons
-    accepted = evaluation_valid and bool(winning_metrics)
+    if candidate_evidence_family == "semantic":
+        accepted = evaluation_valid and bool(winning_metrics)
+        rejection_reasons = (
+            invalid_reasons
+            if invalid_reasons
+            else ([] if accepted else ["no_stable_improvement"])
+        )
+        acceptance_policy = "any-improvement"
+    else:
+        accepted = (
+            evaluation_valid
+            and direct_metric_improved
+            and semantic_safety_passed
+        )
+        rejection_reasons = list(invalid_reasons)
+        if not invalid_reasons and not direct_metric_improved:
+            rejection_reasons.append("direct_metric_not_improved")
+        if not semantic_safety_passed:
+            rejection_reasons.append("semantic_regression")
+        acceptance_policy = "direct-improvement-with-semantic-safety"
 
     diagnostic_metrics = (
         "plantuml_compilation_pass_rate",
@@ -937,11 +1015,14 @@ def any_improvement_decision(
         ]
         for metric in diagnostic_metrics
     }
-    rejection_reasons = invalid_reasons if invalid_reasons else ([] if accepted else ["no_stable_improvement"])
     return accepted, {
         "accepted": accepted,
         "acceptance_mode": "any_improvement" if accepted else "rejected",
-        "acceptance_policy": "any-improvement",
+        "acceptance_policy": acceptance_policy,
+        "candidate_evidence_family": candidate_evidence_family,
+        "direct_metric": direct_metric,
+        "direct_metric_results": direct_metric_results,
+        "semantic_safety_results": semantic_safety_results,
         "evaluation_valid": evaluation_valid,
         "invalid_reasons": invalid_reasons,
         "rejection_reasons": rejection_reasons,
@@ -1121,6 +1202,7 @@ def evaluate_validation_gate(
     iteration: int,
     phase_prefix: str,
     baseline_cache: dict[str, Any] | None = None,
+    candidate_evidence_family: str = "semantic",
 ) -> tuple[list[Any], list[Any], dict[str, float], dict[str, float], dict[str, Any]]:
     baseline_cache = baseline_cache if baseline_cache is not None else {}
     write_case_manifest(paths["validation_cases"], validation_cases)
@@ -1208,7 +1290,12 @@ def evaluate_validation_gate(
         min_deltas={
             "llm_node_f1": args.any_improvement_node_min_delta,
             "llm_relation_f1": args.any_improvement_relation_min_delta,
+            "plantuml_compilation_pass_rate": max(
+                args.any_improvement_node_min_delta,
+                args.any_improvement_relation_min_delta,
+            ),
         },
+        candidate_evidence_family=candidate_evidence_family,
     )
     aggregate_payload = {
         "baseline_summary": baseline_summary,
@@ -1216,6 +1303,10 @@ def evaluate_validation_gate(
         "baseline_repeat_summaries": baseline_repeat_summaries,
         "candidate_repeat_summaries": candidate_repeat_summaries,
         "metric_results": decision["metric_results"],
+        "candidate_evidence_family": decision["candidate_evidence_family"],
+        "direct_metric": decision["direct_metric"],
+        "direct_metric_results": decision["direct_metric_results"],
+        "semantic_safety_results": decision["semantic_safety_results"],
         "diagnostic_repeat_deltas": decision["diagnostic_repeat_deltas"],
         "winning_metrics": decision["winning_metrics"],
         "validation_case_count": len(validation_cases),
@@ -1226,6 +1317,8 @@ def evaluate_validation_gate(
         paths["validation_analysis"],
         "# Repeated Validation Gate\n\n"
         f"- repeats: {args.validation_repeats}\n"
+        f"- candidate evidence family: {decision['candidate_evidence_family']}\n"
+        f"- direct metric: {decision['direct_metric'] or 'none'}\n"
         f"- winning metrics: {', '.join(decision['winning_metrics']) or 'none'}\n"
         f"- accepted: {str(accepted).lower()}\n\n"
         "See `aggregate_summary.json` for paired repeat deltas and diagnostic metrics.\n",
@@ -1541,6 +1634,10 @@ def run_training_iterations(
             "candidate_generated": False,
             "candidate_status": "not_generated",
             "candidate_valid": False,
+            "candidate_evidence_family": None,
+            "direct_metric": None,
+            "direct_metric_results": {},
+            "semantic_safety_results": {},
             "validation_evaluated": False,
             "validation_decision": None,
             "applied": False,
@@ -1634,6 +1731,7 @@ def run_training_iterations(
 
             selected_group = dict(group)
             selected_group["representative_errors"] = representative_errors(selected_group)
+            candidate_evidence_family: str | None = None
             finding_keys = selected_group_finding_keys(selected_group)
             prior_group_attempts = group_attempt_history(
                 registry,
@@ -1658,6 +1756,10 @@ def run_training_iterations(
                 "candidate_generated": False,
                 "candidate_status": "not_generated",
                 "candidate_valid": False,
+                "candidate_evidence_family": None,
+                "direct_metric": None,
+                "direct_metric_results": {},
+                "semantic_safety_results": {},
                 "validation_evaluated": False,
                 "validation_decision": None,
                 "applied": False,
@@ -1674,6 +1776,15 @@ def run_training_iterations(
                 attempt_acceptance["rejection_reasons"] = ["selected_group_ineligible"]
                 attempt_acceptance["selected_group_eligibility_errors"] = group_eligibility_errors
             else:
+                candidate_evidence_family = selected_group_evidence_family(
+                    selected_group
+                )
+                attempt_acceptance["candidate_evidence_family"] = candidate_evidence_family
+                attempt_acceptance["direct_metric"] = (
+                    DIRECT_ACCEPTANCE_METRIC_BY_FAMILY.get(
+                        candidate_evidence_family
+                    )
+                )
                 localization = localize_selector_group(
                     current_prompt=prompt_before,
                     selected_group=selected_group,
@@ -1734,6 +1845,8 @@ def run_training_iterations(
                             write_text(paths["prompt_candidate"], attempt_candidate_prompt)
 
             if attempt_candidate_prompt is not None:
+                if candidate_evidence_family is None:
+                    raise RuntimeError("Valid candidate is missing an evidence family")
                 rewriter_payload = extract_json_object(
                     read_text(attempt_paths["prompt_rewriter_output"])
                 ) or {}
@@ -1772,6 +1885,7 @@ def run_training_iterations(
                             f"iteration_{iteration:03d}:selector:attempt_{attempt_index:03d}"
                         ),
                         baseline_cache=validation_baseline_cache,
+                        candidate_evidence_family=candidate_evidence_family,
                     )
                     application = selector_application_decision(
                         mode=args.candidate_application_mode,
@@ -1780,18 +1894,40 @@ def run_training_iterations(
                         threshold_decision=threshold_decision,
                     )
                     validation_decision = application["validation_decision"]
+                    threshold_rejection_reasons = list(
+                        threshold_decision.get("rejection_reasons", [])
+                    )
                     attempt_acceptance.update(
                         {
                             **application,
                             "threshold_decision": threshold_decision,
+                            "candidate_evidence_family": threshold_decision.get(
+                                "candidate_evidence_family",
+                                candidate_evidence_family,
+                            ),
+                            "direct_metric": threshold_decision.get(
+                                "direct_metric",
+                                DIRECT_ACCEPTANCE_METRIC_BY_FAMILY.get(
+                                    candidate_evidence_family
+                                ),
+                            ),
+                            "direct_metric_results": threshold_decision.get(
+                                "direct_metric_results", {}
+                            ),
+                            "semantic_safety_results": threshold_decision.get(
+                                "semantic_safety_results", {}
+                            ),
                             "rejection_reasons": (
                                 []
                                 if validation_decision
                                 or args.candidate_application_mode == "isolated"
-                                else ["validation_gate_rejected_diagnostic_apply"]
+                                else [
+                                    "validation_gate_rejected_diagnostic_apply",
+                                    *threshold_rejection_reasons,
+                                ]
                                 if application["applied"]
                                 and args.candidate_application_mode == "diagnostic-apply"
-                                else list(threshold_decision.get("invalid_reasons", []))
+                                else threshold_rejection_reasons
                                 or ["validation_gate_rejected"]
                             ),
                         }
@@ -1812,6 +1948,13 @@ def run_training_iterations(
                         "negative_boundary": revision_plan["revision_plan"][0][
                             "negative_boundary"
                         ],
+                        "candidate_evidence_family": candidate_evidence_family,
+                        "direct_metric": threshold_decision.get(
+                            "direct_metric",
+                            DIRECT_ACCEPTANCE_METRIC_BY_FAMILY.get(
+                                candidate_evidence_family
+                            ),
+                        ),
                     }
                     write_text(
                         attempt_paths["acceptance"],
@@ -1935,6 +2078,16 @@ def run_training_iterations(
                     "applied_attempt": applied_attempt,
                     "selected_group_id": final_attempt.get("group_id"),
                     "candidate_id": final_attempt.get("candidate_id"),
+                    "candidate_evidence_family": final_attempt.get(
+                        "candidate_evidence_family"
+                    ),
+                    "direct_metric": final_attempt.get("direct_metric"),
+                    "direct_metric_results": final_attempt.get(
+                        "direct_metric_results", {}
+                    ),
+                    "semantic_safety_results": final_attempt.get(
+                        "semantic_safety_results", {}
+                    ),
                     "threshold_decision": final_attempt.get("threshold_decision"),
                     "rejection_reasons": (
                         list(applied_payload.get("rejection_reasons", []))

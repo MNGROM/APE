@@ -54,6 +54,11 @@ generation and evaluation
 - heldout 不得参与候选发现、排序、修改、阈值校准或 acceptance gate。
 - 同一 epoch 的 candidate attempts 必须使用同一个 base Prompt，不能串行叠加。
 - 同一 epoch 最多应用一个 candidate，validation baseline 只生成一次并复用。
+- semantic finding group 必须通过 LLM Node F1 或 Relation F1 的 repeated validation gate。
+  `syntax_error` 与 `compile_error` 属于同一个 diagnostic evidence family，可以同组，并统一
+  使用包装后 PlantUML JAR 检查产生的 `plantuml_compilation_pass_rate` 作为直接 acceptance
+  指标；diagnostic group 还必须满足语义 F1 的 non-regression safety check，不能仅凭无关的
+  语义波动被接受。`syntax_pass_rate` 只保留为诊断指标，不参与 acceptance。
 - 只有相同 base Prompt、相同 finding keys 且已确认 `no_prompt_gap` 的 group 可以过滤；
   不得使用 summary、embedding 或模糊语义匹配跳过新证据。
 - 重复 `already_covered` 只能通过现有 `ambiguous + replace_existing` 合同收紧原指导，

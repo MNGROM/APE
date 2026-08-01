@@ -29,6 +29,10 @@ SEMANTIC_FINDING_KINDS = (
     "missing_relation",
     "extra_relation",
 )
+DIAGNOSTIC_FINDING_KINDS = (
+    "syntax_error",
+    "compile_error",
+)
 FINDING_KINDS = {
     "missing_node",
     "extra_node",
@@ -733,7 +737,7 @@ def validate_selected_group_eligibility(group: dict[str, Any]) -> list[str]:
         anchor_kind = str(item.get("anchor_kind") or "")
         if item.get("status") != "actionable":
             errors.append(f"finding {finding_id} is not a validated actionable error")
-        if anchor_kind in {"syntax_error", "compile_error"}:
+        if anchor_kind in DIAGNOSTIC_FINDING_KINDS:
             families.add("diagnostic")
             if GENERIC_COMPILER_CUE.match(str(item.get("error_anchor") or "").strip()):
                 errors.append(f"finding {finding_id} is a generic compiler/syntax diagnostic")
@@ -744,6 +748,24 @@ def validate_selected_group_eligibility(group: dict[str, Any]) -> list[str]:
     if len(families) > 1:
         errors.append("selected group mixes semantic and compiler/syntax findings")
     return errors
+
+
+def selected_group_evidence_family(group: dict[str, Any]) -> str:
+    """Return the one acceptance metric family supported by a selected group."""
+
+    members = [item for item in group.get("members", []) if isinstance(item, dict)]
+    anchor_kinds = {
+        str(item.get("anchor_kind") or "").strip()
+        for item in members
+        if str(item.get("anchor_kind") or "").strip()
+    }
+    if anchor_kinds and anchor_kinds <= set(SEMANTIC_FINDING_KINDS):
+        return "semantic"
+    if anchor_kinds and anchor_kinds <= set(DIAGNOSTIC_FINDING_KINDS):
+        return "diagnostic"
+    raise ValueError(
+        "Selected group must contain one homogeneous semantic or diagnostic evidence family"
+    )
 
 
 def select_error_group(

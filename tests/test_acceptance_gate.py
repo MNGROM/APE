@@ -3,9 +3,19 @@ import unittest
 from run import any_improvement_decision
 
 
-def repeat_summary(*, node: float, relation: float, compile_rate: float, evaluated: int = 30, failed: int = 0, infra: float = 0.0) -> dict[str, float]:
+def repeat_summary(
+    *,
+    node: float,
+    relation: float,
+    compile_rate: float,
+    syntax_rate: float | None = None,
+    evaluated: int = 30,
+    failed: int = 0,
+    infra: float = 0.0,
+) -> dict[str, float]:
     return {
         "count": 30.0,
+        "syntax_pass_rate": compile_rate if syntax_rate is None else syntax_rate,
         "llm_element_evaluated": float(evaluated),
         "llm_element_failed": float(failed),
         "llm_node_f1": node,
@@ -43,7 +53,194 @@ class AnyImprovementGateTest(unittest.TestCase):
         ]
         payload = self.decide(baseline, candidate)
         self.assertTrue(payload["accepted"])
+        self.assertEqual(payload["candidate_evidence_family"], "semantic")
+        self.assertIsNone(payload["direct_metric"])
         self.assertEqual(payload["winning_metrics"], ["llm_node_f1"])
+
+    def test_diagnostic_candidate_rejects_semantic_gain_without_direct_gain(self):
+        baseline = [
+            repeat_summary(node=0.7, relation=0.6, compile_rate=0.8)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.7, relation=value, compile_rate=0.8)
+            for value in (0.63, 0.64, 0.62)
+        ]
+        payload = self.decide(
+            baseline,
+            candidate,
+            candidate_evidence_family="diagnostic",
+            min_deltas={
+                "llm_node_f1": 0.01,
+                "llm_relation_f1": 0.01,
+                "plantuml_compilation_pass_rate": 0.01,
+            },
+        )
+        self.assertFalse(payload["accepted"])
+        self.assertEqual(payload["direct_metric"], "plantuml_compilation_pass_rate")
+        self.assertEqual(payload["rejection_reasons"], ["direct_metric_not_improved"])
+        self.assertFalse(
+            payload["direct_metric_results"]["plantuml_compilation_pass_rate"][
+                "stable_improvement"
+            ]
+        )
+
+    def test_syntax_rate_gain_cannot_replace_compilation_gain(self):
+        baseline = [
+            repeat_summary(
+                node=0.7,
+                relation=0.6,
+                syntax_rate=0.8,
+                compile_rate=0.8,
+            )
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(
+                node=0.7,
+                relation=0.6,
+                syntax_rate=value,
+                compile_rate=0.8,
+            )
+            for value in (0.9, 0.9, 0.7)
+        ]
+        payload = self.decide(
+            baseline,
+            candidate,
+            candidate_evidence_family="diagnostic",
+            min_deltas={
+                "llm_node_f1": 0.01,
+                "llm_relation_f1": 0.01,
+                "plantuml_compilation_pass_rate": 0.01,
+            },
+        )
+        self.assertFalse(payload["accepted"])
+        self.assertEqual(payload["rejection_reasons"], ["direct_metric_not_improved"])
+
+    def test_diagnostic_candidate_uses_compilation_metric(self):
+        baseline = [
+            repeat_summary(
+                node=0.7,
+                relation=0.6,
+                syntax_rate=0.7,
+                compile_rate=0.8,
+            )
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(
+                node=0.7,
+                relation=0.6,
+                syntax_rate=0.7,
+                compile_rate=value,
+            )
+            for value in (0.9, 0.9, 0.7)
+        ]
+        payload = self.decide(
+            baseline,
+            candidate,
+            candidate_evidence_family="diagnostic",
+            min_deltas={
+                "llm_node_f1": 0.01,
+                "llm_relation_f1": 0.01,
+                "plantuml_compilation_pass_rate": 0.01,
+            },
+        )
+        self.assertTrue(payload["accepted"])
+        self.assertEqual(payload["direct_metric"], "plantuml_compilation_pass_rate")
+        self.assertTrue(
+            payload["direct_metric_results"]["plantuml_compilation_pass_rate"][
+                "stable_improvement"
+            ]
+        )
+
+    def test_diagnostic_candidate_ignores_syntax_rate_when_compilation_improves(self):
+        baseline = [
+            repeat_summary(
+                node=0.7,
+                relation=0.6,
+                syntax_rate=0.9,
+                compile_rate=0.8,
+            )
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(
+                node=0.7,
+                relation=0.6,
+                syntax_rate=0.6,
+                compile_rate=value,
+            )
+            for value in (0.9, 0.9, 0.7)
+        ]
+        payload = self.decide(
+            baseline,
+            candidate,
+            candidate_evidence_family="diagnostic",
+            min_deltas={
+                "llm_node_f1": 0.01,
+                "llm_relation_f1": 0.01,
+                "plantuml_compilation_pass_rate": 0.01,
+            },
+        )
+        self.assertTrue(payload["accepted"])
+
+    def test_diagnostic_candidate_rejects_semantic_regression(self):
+        baseline = [
+            repeat_summary(
+                node=0.7,
+                relation=0.6,
+                syntax_rate=0.8,
+                compile_rate=0.8,
+            )
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(
+                node=0.68,
+                relation=0.6,
+                syntax_rate=0.9,
+                compile_rate=0.9,
+            )
+            for _ in range(3)
+        ]
+        payload = self.decide(
+            baseline,
+            candidate,
+            candidate_evidence_family="diagnostic",
+            min_deltas={
+                "llm_node_f1": 0.01,
+                "llm_relation_f1": 0.01,
+                "plantuml_compilation_pass_rate": 0.01,
+            },
+        )
+        self.assertFalse(payload["accepted"])
+        self.assertEqual(payload["rejection_reasons"], ["semantic_regression"])
+        self.assertFalse(payload["semantic_safety_results"]["llm_node_f1"]["safe"])
+
+    def test_missing_direct_metric_invalidates_diagnostic_evaluation(self):
+        baseline = [
+            repeat_summary(node=0.7, relation=0.6, compile_rate=0.8)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.7, relation=0.6, compile_rate=0.8)
+            for _ in range(3)
+        ]
+        for summary in [*baseline, *candidate]:
+            summary.pop("plantuml_compilation_pass_rate")
+        payload = self.decide(
+            baseline,
+            candidate,
+            candidate_evidence_family="diagnostic",
+            min_deltas={
+                "llm_node_f1": 0.01,
+                "llm_relation_f1": 0.01,
+                "plantuml_compilation_pass_rate": 0.01,
+            },
+        )
+        self.assertFalse(payload["accepted"])
+        self.assertIn("direct_metric_incomplete", payload["invalid_reasons"])
 
     def test_relation_gain_accepts_despite_other_regressions(self):
         baseline = [repeat_summary(node=0.8, relation=0.6, compile_rate=1.0) for _ in range(3)]
@@ -163,6 +360,54 @@ class AnyImprovementGateTest(unittest.TestCase):
             sum(payload["diagnostic_repeat_deltas"]["plantuml_compilation_pass_rate"]),
             0.0,
         )
+
+    def test_latest_epoch_five_wrapper_candidate_is_rejected(self):
+        baseline = [
+            repeat_summary(
+                node=node,
+                relation=relation,
+                syntax_rate=syntax_rate,
+                compile_rate=compile_rate,
+            )
+            for node, relation, syntax_rate, compile_rate in (
+                (0.7833966666666666, 0.50697, 0.9666666666666667, 0.9666666666666667),
+                (0.7346066666666666, 0.48511666666666664, 1.0, 1.0),
+                (0.7573333333333333, 0.51022, 0.9666666666666667, 0.9666666666666667),
+            )
+        ]
+        candidate = [
+            repeat_summary(
+                node=node,
+                relation=relation,
+                syntax_rate=syntax_rate,
+                compile_rate=compile_rate,
+            )
+            for node, relation, syntax_rate, compile_rate in (
+                (0.7618833333333334, 0.5125466666666667, 0.9666666666666667, 0.9666666666666667),
+                (0.8213766666666668, 0.5434800000000001, 1.0, 1.0),
+                (0.7914733333333334, 0.5373066666666666, 0.9666666666666667, 0.9666666666666667),
+            )
+        ]
+        payload = self.decide(
+            baseline,
+            candidate,
+            candidate_evidence_family="diagnostic",
+            min_wins=3,
+            min_deltas={
+                "llm_node_f1": 0.01,
+                "llm_relation_f1": 0.01,
+                "plantuml_compilation_pass_rate": 0.01,
+            },
+        )
+        self.assertFalse(payload["accepted"])
+        self.assertEqual(payload["winning_metrics"], ["llm_relation_f1"])
+        self.assertEqual(
+            payload["direct_metric_results"]["plantuml_compilation_pass_rate"][
+                "repeat_deltas"
+            ],
+            [0.0, 0.0, 0.0],
+        )
+        self.assertEqual(payload["rejection_reasons"], ["direct_metric_not_improved"])
 
 
 if __name__ == "__main__":

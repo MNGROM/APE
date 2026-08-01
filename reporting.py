@@ -377,6 +377,12 @@ def write_iteration_reports(
     ]
     if acceptance and acceptance.get("selected_group_id"):
         prompt_lines.append(f"- selected_group_id: {acceptance['selected_group_id']}")
+    if acceptance and acceptance.get("candidate_evidence_family"):
+        prompt_lines.append(
+            f"- candidate_evidence_family: {acceptance['candidate_evidence_family']}"
+        )
+    if acceptance and acceptance.get("direct_metric"):
+        prompt_lines.append(f"- direct_metric: {acceptance['direct_metric']}")
     if acceptance and acceptance.get("winning_metrics"):
         prompt_lines.append(f"- winning_metrics: {', '.join(acceptance['winning_metrics'])}")
     if candidate_prompt is not None:
@@ -413,6 +419,14 @@ def write_iteration_reports(
         threshold = acceptance.get("threshold_decision") or acceptance
         gate_payload = {
             "acceptance_policy": threshold.get("acceptance_policy"),
+            "candidate_evidence_family": threshold.get(
+                "candidate_evidence_family"
+            ),
+            "direct_metric": threshold.get("direct_metric"),
+            "direct_metric_results": threshold.get("direct_metric_results", {}),
+            "semantic_safety_results": threshold.get(
+                "semantic_safety_results", {}
+            ),
             "evaluation_valid": threshold.get("evaluation_valid"),
             "winning_metrics": threshold.get("winning_metrics", []),
             "metric_results": threshold.get("metric_results", {}),
@@ -464,6 +478,8 @@ def refresh_run_reports(run_dir: Path) -> None:
                     [
                         f"- accepted: {acceptance.get('accepted')}",
                         f"- acceptance_mode: {acceptance.get('acceptance_mode', '-')}",
+                        f"- candidate_evidence_family: {acceptance.get('candidate_evidence_family') or '-'}",
+                        f"- direct_metric: {acceptance.get('direct_metric') or '-'}",
                         f"- rejection_reasons: {', '.join(acceptance.get('rejection_reasons', [])) or 'none'}",
                         "",
                     ]

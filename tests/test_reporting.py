@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from reporting import (
     build_validation_impact_summary,
     refresh_run_reports,
+    write_iteration_reports,
     write_validation_impact_report,
 )
 
@@ -128,6 +129,57 @@ class ReportingTest(unittest.TestCase):
         self.assertEqual(saved["acceptance_effect"], "none")
         self.assertIn("diagnostic only", report)
         self.assertIn("a-1", report)
+
+    def test_iteration_report_records_diagnostic_gate_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            iter_dir = Path(temp_dir) / "iteration_005"
+            acceptance = {
+                "accepted": False,
+                "applied": False,
+                "acceptance_mode": "rejected",
+                "candidate_evidence_family": "diagnostic",
+                "direct_metric": "plantuml_compilation_pass_rate",
+                "rejection_reasons": ["direct_metric_not_improved"],
+                "threshold_decision": {
+                    "acceptance_policy": "direct-improvement-with-semantic-safety",
+                    "candidate_evidence_family": "diagnostic",
+                    "direct_metric": "plantuml_compilation_pass_rate",
+                    "direct_metric_results": {
+                        "plantuml_compilation_pass_rate": {"mean_delta": 0.0}
+                    },
+                    "semantic_safety_results": {
+                        "llm_node_f1": {"safe": True},
+                        "llm_relation_f1": {"safe": True},
+                    },
+                    "evaluation_valid": True,
+                    "winning_metrics": ["llm_relation_f1"],
+                    "metric_results": {},
+                },
+            }
+            write_iteration_reports(
+                iter_dir=iter_dir,
+                iteration=5,
+                prompt_before="before",
+                prompt_after="before",
+                candidate_prompt="candidate",
+                analysis_summary={},
+                baseline_gate_summary={},
+                candidate_summary={},
+                acceptance=acceptance,
+            )
+
+            prompt_report = (iter_dir / "reports" / "prompt_change.md").read_text(
+                encoding="utf-8"
+            )
+            metrics_report = (iter_dir / "reports" / "metrics_report.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("candidate_evidence_family: diagnostic", prompt_report)
+            self.assertIn(
+                '"direct_metric": "plantuml_compilation_pass_rate"',
+                metrics_report,
+            )
+            self.assertIn('"semantic_safety_results"', metrics_report)
 
 
 if __name__ == "__main__":

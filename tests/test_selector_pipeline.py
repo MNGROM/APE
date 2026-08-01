@@ -9,6 +9,7 @@ from analysis.error_selector import (
     _selector_input,
     build_failure_analysis_input,
     select_error_group,
+    selected_group_evidence_family,
     validate_failure_errors,
     validate_selected_group_eligibility,
     validate_selector_output,
@@ -333,6 +334,43 @@ class SelectorPipelineTest(unittest.TestCase):
         )
         self.assertTrue(any("generic" in item for item in errors))
         self.assertTrue(any("mixes semantic" in item for item in errors))
+
+    def test_selected_group_evidence_family_is_derived_from_anchor_kind(self):
+        def group(*anchor_kinds):
+            return {
+                "members": [
+                    {
+                        "finding_id": index,
+                        "status": "actionable",
+                        "anchor_kind": anchor_kind,
+                        "error_anchor": f"specific {anchor_kind} evidence",
+                        "matching_quality": "bijective",
+                    }
+                    for index, anchor_kind in enumerate(anchor_kinds, start=1)
+                ]
+            }
+
+        self.assertEqual(
+            selected_group_evidence_family(group("missing_node", "extra_relation")),
+            "semantic",
+        )
+        self.assertEqual(
+            selected_group_evidence_family(group("syntax_error")),
+            "diagnostic",
+        )
+        self.assertEqual(
+            selected_group_evidence_family(group("compile_error")),
+            "diagnostic",
+        )
+        mixed_diagnostic_group = group("syntax_error", "compile_error")
+        self.assertEqual(
+            selected_group_evidence_family(mixed_diagnostic_group),
+            "diagnostic",
+        )
+        self.assertEqual(
+            validate_selected_group_eligibility(mixed_diagnostic_group),
+            [],
+        )
 
     def test_generic_only_batch_skips_failure_analysis_llm(self):
         class Client:

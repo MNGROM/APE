@@ -38,6 +38,13 @@ Localization 只有在唯一现有原文同时覆盖代表样本的 input-side t
 preservation boundary 时才可返回 `already_covered`。主题相关但 trigger 或 correction 不足的
 原文通过 `ambiguous + replace_existing` 收紧；“现有指导覆盖”与 `no_prompt_gap` 互斥。
 
+Validation gate 按 selected group 的 evidence family 解释指标。semantic group 维持 Node F1 或
+Relation F1 的 `any-improvement` gate。`syntax_error` 与 `compile_error` 合并为 diagnostic
+evidence family，可以同组，并统一使用包装后 PlantUML JAR 检查产生的
+`plantuml_compilation_pass_rate` 作为直接验证指标；两项语义 F1 都不能低于各自
+`-min_delta` safety floor。diagnostic finding 不与 semantic finding 混组。`syntax_pass_rate`
+只保留在评估和报告中，不参与 acceptance。
+
 ## 代码边界
 
 - `run.py`：CLI、split、batch orchestration、candidate attempts、validation 和 heldout 调度。

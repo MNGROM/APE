@@ -98,8 +98,14 @@ canonical contract 做校验，再确定性修改一个 section；不得向 Rewr
 - `cumulative`：只有 paired validation metric decision accepted 才应用。
 - `isolated`：只评估 candidate，不修改 work Prompt。
 
-默认 `auto` 解析为 `diagnostic-apply`。`any-improvement` 要求至少一个语义指标满足配置的
-平均 delta 和最小 wins；Compile 和 Syntax 只作诊断，不能单独接受 candidate。
+默认 `auto` 解析为 `diagnostic-apply`。semantic candidate 的 `any-improvement` 要求至少一个
+语义指标满足配置的平均 delta 和最小 wins。`syntax_error` 与 `compile_error` 合并为一个
+diagnostic evidence family，可以同组，并统一使用包装后 PlantUML JAR 检查产生的
+`plantuml_compilation_pass_rate` 证明直接改善。该指标使用同一 repeated mean-delta 和 win-count
+合同；diagnostic candidate 还必须让两项语义 F1 都不低于各自的 non-regression floor
+（`-min_delta`），不能仅因无关的语义 F1 波动而接受。`syntax_pass_rate` 只作诊断，不参与
+acceptance；wrapper 缺失若被 compilation evaluator 自动补齐而没有改善 compilation pass rate，
+对应 candidate 应以 `direct_metric_not_improved` 拒绝。
 
 ## 4. Heldout 和真实实验红线
 

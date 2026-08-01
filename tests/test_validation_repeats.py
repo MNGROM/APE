@@ -86,9 +86,13 @@ class ValidationRepeatTest(unittest.TestCase):
             self.assertEqual([role for role, _, _ in calls], ["baseline", "candidate", "candidate", "baseline", "baseline", "candidate"])
             self.assertTrue(all(concurrency == 4 for _, concurrency, _ in calls))
             self.assertTrue(decision["accepted"])
+            self.assertEqual(decision["candidate_evidence_family"], "semantic")
+            self.assertIsNone(decision["direct_metric"])
             self.assertEqual(decision["winning_metrics"], ["llm_node_f1"])
             aggregate = json.loads(paths["validation_aggregate_summary"].read_text(encoding="utf-8"))
             self.assertEqual(len(aggregate["baseline_repeat_summaries"]), 3)
+            self.assertEqual(aggregate["candidate_evidence_family"], "semantic")
+            self.assertEqual(aggregate["direct_metric_results"], {})
             self.assertEqual(aggregate["validation_split_fingerprint"], case_split_fingerprint(self.cases))
             self.assertTrue((iter_dir / "validation_gate" / "repeat_002" / "candidate" / "summary.json").exists())
 
