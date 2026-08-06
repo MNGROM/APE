@@ -21,6 +21,7 @@ from analysis.error_selector import (
     representative_errors,
     select_error_group,
     selected_group_evidence_family,
+    selected_group_required_metrics,
     validate_selected_group_eligibility,
 )
 from analysis.selector_agents import (
@@ -55,6 +56,7 @@ from config import (
     DEFAULT_PROMPT_PATH,
     DEFAULT_RUNS_DIR,
     DEFAULT_THINKING_TYPE,
+    get_llm_provider_settings,
     optional_bool,
     optional_float,
 )
@@ -116,13 +118,32 @@ def validate_glm_args(args: argparse.Namespace) -> None:
             raise ValueError(
                 f"--{field.replace('_', '-')} must resolve to enabled or disabled"
             )
+    temperature_fields = (
+        "temperature",
+        "analysis_temperature",
+        "selector_temperature",
+        "localization_temperature",
+        "editor_temperature",
+        "llm_judge_temperature",
+        "element_extraction_temperature",
+    )
+    nonzero_temperatures = [
+        f"--{field.replace('_', '-')}={getattr(args, field)}"
+        for field in temperature_fields
+        if float(getattr(args, field)) != 0.0
+    ]
+    if nonzero_temperatures:
+        raise ValueError(
+            "All model temperatures must be 0; rejected "
+            + ", ".join(nonzero_temperatures)
+        )
     if args.max_tokens < 1:
         raise ValueError("--max-tokens must be positive")
     if args.top_p is not None and not 0.01 <= args.top_p <= 0.99:
         raise ValueError("--top-p must be between 0.01 and 0.99, or omit")
     if args.top_p is not None:
         print(
-            "[config] Both temperature and top_p are set; GLM docs recommend adjusting only one.",
+            "[config] Both temperature and top_p are set; provider docs recommend adjusting only one.",
             flush=True,
         )
     if args.max_prompt_chars < 1000:
@@ -135,21 +156,40 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         raise ValueError("--epoch-batch-concurrency must be positive")
     if args.heldout_test_concurrency < 1:
         raise ValueError("--heldout-test-concurrency must be positive")
-    if args.validation_gate_concurrency < 1:
-        raise ValueError("--validation-gate-concurrency must be positive")
-    if args.validation_gate_size < 0:
-        raise ValueError("--validation-gate-size must be non-negative")
-    if args.validation_gate_seed < 0:
-        raise ValueError("--validation-gate-seed must be non-negative")
+    if args.heldout_repeats < 1:
+        raise ValueError("--heldout-repeats must be positive")
+    if args.gate_concurrency < 1:
+        raise ValueError("--gate-concurrency must be positive")
+    if args.gate1_size < 0:
+        raise ValueError("--gate1-size must be non-negative")
+    if args.gate1_seed < 0:
+        raise ValueError("--gate1-seed must be non-negative")
+    if args.gate2_size < 0:
+        raise ValueError("--gate2-size must be non-negative")
+    if args.gate2_seed < 0:
+        raise ValueError("--gate2-seed must be non-negative")
     if args.validation_repeats < 1:
         raise ValueError("--validation-repeats must be positive")
     if args.max_candidate_attempts_per_epoch < 1:
         raise ValueError("--max-candidate-attempts-per-epoch must be positive")
     if not args.no_evolve and (
-        not args.validation_gate or args.validation_gate_size == 0
+        not args.gate1 or args.gate1_size == 0
     ):
         raise ValueError(
-            "Selector workflow requires an enabled non-empty validation gate"
+            "Selector workflow requires an enabled non-empty Gate1"
+        )
+    if not args.no_evolve and args.gate2 and args.gate2_size == 0:
+        raise ValueError(
+            "Enabled Gate2 requires a non-empty Gate2 split"
+        )
+    if (
+        not args.no_evolve
+        and args.gate2
+        and args.candidate_application_mode == "diagnostic-apply"
+    ):
+        raise ValueError(
+            "--candidate-application-mode diagnostic-apply cannot bypass Gate2; "
+            "use cumulative/isolated or explicitly --no-gate2"
         )
     if (
         args.candidate_application_mode in {"isolated", "diagnostic-apply"}
@@ -168,26 +208,8 @@ def validate_glm_args(args: argparse.Namespace) -> None:
             "Isolated candidate mode does not evaluate heldout during candidate search; "
             "remove --eval-initial-test"
         )
-    if not 1 <= args.acceptance_min_wins <= args.validation_repeats:
-        raise ValueError(
-            "--acceptance-min-wins must be between 1 and --validation-repeats"
-        )
     if args.validation_calibration_repeats < 2:
         raise ValueError("--validation-calibration-repeats must be at least 2")
-    semantic_min_deltas = (
-        args.any_improvement_node_min_delta,
-        args.any_improvement_relation_min_delta,
-    )
-    if any(value < 0 for value in semantic_min_deltas):
-        raise ValueError("any-improvement minimum deltas must be non-negative")
-    if not args.calibrate_validation_only and any(
-        value == 0 for value in semantic_min_deltas
-    ):
-        print(
-            "[config] Warning: one or more semantic any-improvement min deltas are zero; "
-            "calibrate and freeze non-zero Node/Relation thresholds for formal experiments.",
-            flush=True,
-        )
     if any(
         value < 1
         for value in (
@@ -215,7 +237,7 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         )
     if args.llm_element_metrics and not args.api_key:
         raise ValueError(
-            "LLM semantic element metrics require ZHIPU_LLM_API_KEY or --api-key"
+            "LLM semantic element metrics require the active provider API key or --api-key"
         )
     if (
         args.embedding_element_metrics
@@ -223,7 +245,11 @@ def validate_glm_args(args: argparse.Namespace) -> None:
         and not args.api_key
     ):
         raise ValueError(
-            "LLM element extraction requires ZHIPU_LLM_API_KEY or --api-key"
+            "LLM element extraction requires the active provider API key or --api-key"
+        )
+    if getattr(args, "llm_provider", "zhipu") == "deepseek" and args.do_sample is not None:
+        raise ValueError(
+            "DeepSeek does not define do_sample; omit it with --do-sample omit"
         )
 
 
@@ -258,7 +284,9 @@ def resolve_model_roles(args: argparse.Namespace) -> argparse.Namespace:
 def resolve_pipeline_defaults(args: argparse.Namespace) -> argparse.Namespace:
     mode = str(getattr(args, "candidate_application_mode", "auto") or "auto")
     if mode == "auto":
-        args.candidate_application_mode = "diagnostic-apply"
+        args.candidate_application_mode = (
+            "cumulative" if getattr(args, "gate2", True) else "diagnostic-apply"
+        )
     return args
 
 
@@ -275,15 +303,24 @@ def iteration_paths(iter_dir: Path) -> dict[str, Path]:
         "prompt_candidate": iter_dir / "prompts" / "candidate.md",
         "prompt_after": iter_dir / "prompts" / "after.md",
         "analysis_cases": iter_dir / "batches" / "analysis_cases.json",
-        "validation_cases": iter_dir / "validation_gate" / "cases.json",
-        "validation_baseline_records": iter_dir / "validation_gate" / "baseline_records.jsonl",
-        "validation_baseline_summary": iter_dir / "validation_gate" / "baseline_summary.json",
-        "validation_candidate_records": iter_dir / "validation_gate" / "candidate_records.jsonl",
-        "validation_candidate_summary": iter_dir / "validation_gate" / "candidate_summary.json",
-        "validation_aggregate_summary": iter_dir / "validation_gate" / "aggregate_summary.json",
-        "validation_analysis": iter_dir / "validation_gate" / "analysis.md",
-        "validation_impact_summary": iter_dir / "validation_gate" / "impact_summary.json",
-        "validation_impact_report": iter_dir / "validation_gate" / "impact_report.md",
+        "validation_cases": iter_dir / "gate1" / "cases.json",
+        "validation_baseline_records": iter_dir / "gate1" / "baseline_records.jsonl",
+        "validation_baseline_summary": iter_dir / "gate1" / "baseline_summary.json",
+        "validation_candidate_records": iter_dir / "gate1" / "candidate_records.jsonl",
+        "validation_candidate_summary": iter_dir / "gate1" / "candidate_summary.json",
+        "validation_aggregate_summary": iter_dir / "gate1" / "aggregate_summary.json",
+        "validation_analysis": iter_dir / "gate1" / "analysis.md",
+        "validation_impact_summary": iter_dir / "gate1" / "impact_summary.json",
+        "validation_impact_report": iter_dir / "gate1" / "impact_report.md",
+        "confirmation_cases": iter_dir / "gate2" / "cases.json",
+        "confirmation_baseline_records": iter_dir / "gate2" / "baseline_records.jsonl",
+        "confirmation_baseline_summary": iter_dir / "gate2" / "baseline_summary.json",
+        "confirmation_candidate_records": iter_dir / "gate2" / "candidate_records.jsonl",
+        "confirmation_candidate_summary": iter_dir / "gate2" / "candidate_summary.json",
+        "confirmation_aggregate_summary": iter_dir / "gate2" / "aggregate_summary.json",
+        "confirmation_analysis": iter_dir / "gate2" / "analysis.md",
+        "confirmation_impact_summary": iter_dir / "gate2" / "impact_summary.json",
+        "confirmation_impact_report": iter_dir / "gate2" / "impact_report.md",
         "analysis_records": iter_dir / "evaluation" / "analysis_records.jsonl",
         "analysis_summary": iter_dir / "evaluation" / "analysis_summary.json",
         "analysis_overview": iter_dir / "evaluation" / "analysis_overview.md",
@@ -325,7 +362,7 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
             "batches": {
                 "analysis_cases": rel_to_iter(iter_dir, paths["analysis_cases"]),
             },
-            "validation_gate": {
+            "gate1": {
                 "cases": rel_to_iter(iter_dir, paths["validation_cases"]),
                 "baseline_records": rel_to_iter(iter_dir, paths["validation_baseline_records"]),
                 "baseline_summary": rel_to_iter(iter_dir, paths["validation_baseline_summary"]),
@@ -335,6 +372,17 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
                 "analysis": rel_to_iter(iter_dir, paths["validation_analysis"]),
                 "impact_summary": rel_to_iter(iter_dir, paths["validation_impact_summary"]),
                 "impact_report": rel_to_iter(iter_dir, paths["validation_impact_report"]),
+            },
+            "gate2": {
+                "cases": rel_to_iter(iter_dir, paths["confirmation_cases"]),
+                "baseline_records": rel_to_iter(iter_dir, paths["confirmation_baseline_records"]),
+                "baseline_summary": rel_to_iter(iter_dir, paths["confirmation_baseline_summary"]),
+                "candidate_records": rel_to_iter(iter_dir, paths["confirmation_candidate_records"]),
+                "candidate_summary": rel_to_iter(iter_dir, paths["confirmation_candidate_summary"]),
+                "aggregate_summary": rel_to_iter(iter_dir, paths["confirmation_aggregate_summary"]),
+                "analysis": rel_to_iter(iter_dir, paths["confirmation_analysis"]),
+                "impact_summary": rel_to_iter(iter_dir, paths["confirmation_impact_summary"]),
+                "impact_report": rel_to_iter(iter_dir, paths["confirmation_impact_report"]),
             },
             "evaluation": {
                 "analysis_records": rel_to_iter(iter_dir, paths["analysis_records"]),
@@ -469,21 +517,56 @@ def split_training_batches(train_cases: list[Case], batch_size: int, *, strategy
     return batches
 
 
-def split_validation_gate_cases(cases: list[Case], args: argparse.Namespace) -> tuple[list[Case], list[Case]]:
-    if not args.validation_gate or args.validation_gate_size <= 0 or len(cases) < 2:
+def split_gate1_cases(cases: list[Case], args: argparse.Namespace) -> tuple[list[Case], list[Case]]:
+    if not args.gate1 or args.gate1_size <= 0 or len(cases) < 2:
         return list(cases), []
 
     max_gate_size_for_pool = max(1, len(cases) // 3)
-    gate_size = min(args.validation_gate_size, max_gate_size_for_pool, len(cases) - 1)
+    gate_size = min(args.gate1_size, max_gate_size_for_pool, len(cases) - 1)
     validation_cases = select_cases_with_strategy(
         cases,
         limit=gate_size,
-        strategy=args.validation_gate_strategy,
-        seed=args.validation_gate_seed,
+        strategy=args.gate1_strategy,
+        seed=args.gate1_seed,
     )
     validation_ids = {(case.dataset, case.case_id) for case in validation_cases}
     optimize_cases = [case for case in cases if (case.dataset, case.case_id) not in validation_ids]
     return optimize_cases, validation_cases
+
+
+def split_gate_cases(
+    cases: list[Case], args: argparse.Namespace
+) -> tuple[list[Case], list[Case], list[Case]]:
+    optimize_cases, validation_cases = split_gate1_cases(cases, args)
+    if (
+        args.no_evolve
+        or not args.gate2
+        or args.gate2_size <= 0
+        or len(optimize_cases) < 2
+    ):
+        return optimize_cases, validation_cases, []
+
+    max_gate_size_for_pool = max(1, len(optimize_cases) // 3)
+    gate_size = min(
+        args.gate2_size,
+        max_gate_size_for_pool,
+        len(optimize_cases) - 1,
+    )
+    confirmation_cases = select_cases_with_strategy(
+        optimize_cases,
+        limit=gate_size,
+        strategy=args.gate2_strategy,
+        seed=args.gate2_seed,
+    )
+    confirmation_ids = {
+        (case.dataset, case.case_id) for case in confirmation_cases
+    }
+    train_cases = [
+        case
+        for case in optimize_cases
+        if (case.dataset, case.case_id) not in confirmation_ids
+    ]
+    return train_cases, validation_cases, confirmation_cases
 
 
 def case_split_fingerprint(cases: list[Case]) -> str:
@@ -501,6 +584,7 @@ def write_data_split_summary(
     train_pool_cases: list[Case],
     train_cases: list[Case],
     validation_cases: list[Case],
+    confirmation_cases: list[Case],
     test_cases: list[Case] | None = None,
 ) -> dict[str, Any]:
     def counts(cases: list[Case]) -> dict[str, int]:
@@ -509,19 +593,33 @@ def write_data_split_summary(
     summary = {
         "train_pool_count": len(train_pool_cases),
         "train_count": len(train_cases),
-        "requested_validation_count": args.validation_gate_size,
-        "actual_validation_count": len(validation_cases),
+        "requested_gate1_count": args.gate1_size,
+        "actual_gate1_count": len(validation_cases),
+        "requested_gate2_count": args.gate2_size,
+        "actual_gate2_count": len(confirmation_cases),
         "test_count": len(test_cases or []),
         "train_dataset_counts": counts(train_cases),
-        "validation_dataset_counts": counts(validation_cases),
+        "gate1_dataset_counts": counts(validation_cases),
+        "gate2_dataset_counts": counts(confirmation_cases),
         "test_dataset_counts": counts(test_cases or []),
-        "validation_split_fingerprint": case_split_fingerprint(validation_cases),
+        "gate1_split_fingerprint": case_split_fingerprint(validation_cases),
+        "gate2_split_fingerprint": case_split_fingerprint(confirmation_cases),
     }
     write_text(run_dir / "data_split_summary.json", json.dumps(summary, ensure_ascii=False, indent=2))
-    if args.validation_gate and len(validation_cases) != args.validation_gate_size:
+    if args.gate1 and len(validation_cases) != args.gate1_size:
         print(
-            f"[split] requested validation cases={args.validation_gate_size}, "
+            f"[split] requested gate1 cases={args.gate1_size}, "
             f"actual={len(validation_cases)} after the one-third training-pool cap",
+            flush=True,
+        )
+    if (
+        args.gate2
+        and not args.no_evolve
+        and len(confirmation_cases) != args.gate2_size
+    ):
+        print(
+            f"[split] requested gate2 cases={args.gate2_size}, "
+            f"actual={len(confirmation_cases)} after the one-third remaining-pool cap",
             flush=True,
         )
     return summary
@@ -822,8 +920,11 @@ SEMANTIC_ACCEPTANCE_METRICS = (
 )
 
 DIRECT_ACCEPTANCE_METRIC_BY_FAMILY = {
-    "diagnostic": "plantuml_compilation_pass_rate",
+    "compile": "plantuml_compilation_pass_rate",
 }
+
+REQUIRED_METRIC_ACCEPTANCE_POLICY = "all-required-positive-mean-delta"
+GATE_SEQUENCE_POLICY = "gate1-then-fresh-gate2"
 
 VALIDATION_CALIBRATION_METRICS = (
     *SEMANTIC_ACCEPTANCE_METRICS,
@@ -831,17 +932,11 @@ VALIDATION_CALIBRATION_METRICS = (
 )
 
 
-def calibration_statistics(
-    values: list[float], *, validation_repeats: int, metric_resolution: float = 0.0
-) -> dict[str, float]:
+def calibration_statistics(values: list[float]) -> dict[str, float]:
     samples = [float(value) for value in values]
     if not samples:
         raise ValueError("Calibration requires at least one value")
     sample_std = statistics.stdev(samples) if len(samples) >= 2 else 0.0
-    suggested = max(
-        metric_resolution,
-        1.645 * math.sqrt(2 / validation_repeats) * sample_std,
-    )
     return {
         "count": float(len(samples)),
         "mean": statistics.fmean(samples),
@@ -849,7 +944,6 @@ def calibration_statistics(
         "min": min(samples),
         "max": max(samples),
         "range": max(samples) - min(samples),
-        "suggested_min_delta": suggested,
     }
 
 
@@ -863,6 +957,75 @@ def aggregate_repeat_summaries(summaries: list[dict[str, float]]) -> dict[str, f
     }
 
 
+PER_DATASET_DECOMPOSITION_METRICS = (
+    "llm_node_f1",
+    "llm_relation_f1",
+    "plantuml_compilation_pass_rate",
+)
+
+
+def per_dataset_metric_decomposition(
+    repeat_pairs: list[tuple[int, list[Any], list[Any]]],
+) -> dict[str, dict[str, Any]]:
+    """Split paired gate repeats by source dataset for audit reporting.
+
+    A mixed gate pools every dataset into one mean, so a rule that helps one
+    dataset and hurts another is indistinguishable from a rule that changes
+    nothing. This decomposition reuses the records already produced by the
+    gate repeats; it issues no additional model calls.
+
+    Audit only. ``any_improvement_decision`` never receives these values, so
+    acceptance cannot depend on them by construction.
+    """
+
+    grouped: dict[str, dict[str, list[dict[str, float]]]] = {}
+    for _repeat, baseline_records, candidate_records in repeat_pairs:
+        datasets = sorted(
+            {
+                str(record.dataset)
+                for record in [*baseline_records, *candidate_records]
+            }
+        )
+        for dataset in datasets:
+            bucket = grouped.setdefault(dataset, {"baseline": [], "candidate": []})
+            for role, records in (
+                ("baseline", baseline_records),
+                ("candidate", candidate_records),
+            ):
+                bucket[role].append(
+                    summarize_records(
+                        [
+                            record
+                            for record in records
+                            if str(record.dataset) == dataset
+                        ]
+                    )
+                )
+
+    decomposition: dict[str, dict[str, Any]] = {}
+    for dataset in sorted(grouped):
+        baselines = grouped[dataset]["baseline"]
+        candidates = grouped[dataset]["candidate"]
+        metrics: dict[str, dict[str, Any]] = {}
+        for metric in PER_DATASET_DECOMPOSITION_METRICS:
+            deltas = [
+                float(candidate.get(metric, 0.0)) - float(baseline.get(metric, 0.0))
+                for baseline, candidate in zip(baselines, candidates)
+            ]
+            metrics[metric] = {
+                "repeat_deltas": deltas,
+                "mean_delta": statistics.fmean(deltas) if deltas else 0.0,
+                "wins": sum(1 for delta in deltas if delta > 0.0),
+            }
+        case_counts = [int(float(item.get("count", 0.0))) for item in baselines]
+        decomposition[dataset] = {
+            "case_count": max(case_counts) if case_counts else 0,
+            "repeat_count": len(baselines),
+            "metrics": metrics,
+        }
+    return decomposition
+
+
 def any_improvement_decision(
     *,
     baseline_summaries: list[dict[str, float]],
@@ -871,9 +1034,8 @@ def any_improvement_decision(
     candidate_prompt: str,
     baseline_prompt: str,
     max_prompt_chars: int,
-    min_wins: int,
-    min_deltas: dict[str, float],
-    candidate_evidence_family: str = "semantic",
+    candidate_evidence_family: str,
+    required_metrics: list[str] | tuple[str, ...],
 ) -> tuple[bool, dict[str, Any]]:
     if candidate_evidence_family not in {
         "semantic",
@@ -882,6 +1044,28 @@ def any_improvement_decision(
         raise ValueError(
             f"Unsupported candidate evidence family: {candidate_evidence_family!r}"
         )
+    normalized_required_metrics = tuple(required_metrics)
+    if not normalized_required_metrics:
+        raise ValueError("required_metrics must not be empty")
+    if len(set(normalized_required_metrics)) != len(normalized_required_metrics):
+        raise ValueError("required_metrics must not contain duplicates")
+    allowed_required_metrics = (
+        set(SEMANTIC_ACCEPTANCE_METRICS)
+        if candidate_evidence_family == "semantic"
+        else set(DIRECT_ACCEPTANCE_METRIC_BY_FAMILY.values())
+    )
+    if not set(normalized_required_metrics) <= allowed_required_metrics:
+        raise ValueError(
+            "required_metrics are incompatible with candidate evidence family"
+        )
+    if (
+        candidate_evidence_family != "semantic"
+        and normalized_required_metrics
+        != (DIRECT_ACCEPTANCE_METRIC_BY_FAMILY[candidate_evidence_family],)
+    ):
+        raise ValueError(
+            "compile evidence must require plantuml_compilation_pass_rate"
+        )
     repeat_count = len(baseline_summaries)
     invalid_reasons: list[str] = []
     if repeat_count == 0 or repeat_count != len(candidate_summaries):
@@ -889,114 +1073,120 @@ def any_improvement_decision(
     prompt_size_ok = len(candidate_prompt) <= max_prompt_chars
     if not prompt_size_ok:
         invalid_reasons.append("prompt_too_long")
+    def finite_metric_value(
+        summary: dict[str, float], metric: str
+    ) -> float | None:
+        value = summary.get(metric)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+        ):
+            return None
+        return float(value)
+
     if any(
-        float(summary.get("infrastructure_error_rate", 0.0)) > 0
+        (finite_metric_value(summary, "infrastructure_error_rate") or 0.0) > 0
         for summary in [*baseline_summaries, *candidate_summaries]
     ):
         invalid_reasons.append("infrastructure_error")
 
     def metric_result(*, metric: str, available: bool) -> dict[str, Any]:
-        deltas = [
-            float(candidate.get(metric, 0.0)) - float(baseline.get(metric, 0.0))
-            for baseline, candidate in zip(baseline_summaries, candidate_summaries)
-        ]
-        mean_delta = statistics.fmean(deltas) if deltas else 0.0
+        measurement_complete = bool(
+            available
+            and repeat_count == len(candidate_summaries)
+            and all(
+                finite_metric_value(summary, metric) is not None
+                for summary in [*baseline_summaries, *candidate_summaries]
+            )
+        )
+        deltas = (
+            [
+                float(candidate[metric]) - float(baseline[metric])
+                for baseline, candidate in zip(
+                    baseline_summaries, candidate_summaries
+                )
+            ]
+            if measurement_complete
+            else []
+        )
+        mean_delta = statistics.fmean(deltas) if deltas else None
         return {
-            "available": available,
+            "available": measurement_complete,
             "repeat_deltas": deltas,
             "mean_delta": mean_delta,
-            "median_delta": statistics.median(deltas) if deltas else 0.0,
+            "median_delta": statistics.median(deltas) if deltas else None,
             "wins": sum(1 for delta in deltas if delta > 0.0),
             "repeat_count": repeat_count,
-            "min_wins": min_wins,
-            "min_delta": float(min_deltas.get(metric, 0.0)),
+            "positive_mean_delta": bool(
+                measurement_complete
+                and mean_delta is not None
+                and mean_delta > 0.0
+            ),
         }
 
-    semantic_metrics_available = all(
-        int(float(summary.get("llm_element_evaluated", -1))) == validation_case_count
-        and int(float(summary.get("llm_element_failed", -1))) == 0
+    semantic_metrics_available = bool(repeat_count) and all(
+        finite_metric_value(summary, "llm_element_evaluated")
+        == float(validation_case_count)
+        and finite_metric_value(summary, "llm_element_failed") == 0.0
         for summary in [*baseline_summaries, *candidate_summaries]
     )
     metric_results: dict[str, dict[str, Any]] = {}
     for metric in SEMANTIC_ACCEPTANCE_METRICS:
         result = metric_result(metric=metric, available=semantic_metrics_available)
-        result["stable_improvement"] = bool(
-            result["available"]
-            and result["mean_delta"] > result["min_delta"]
-            and result["wins"] >= min_wins
-        )
         metric_results[metric] = result
 
-    if not semantic_metrics_available:
-        invalid_reasons.append("no_complete_acceptance_metric")
+    compile_metric = "plantuml_compilation_pass_rate"
+    compile_metric_available = bool(repeat_count) and all(
+        finite_metric_value(summary, "count") == float(validation_case_count)
+        and compile_metric in summary
+        for summary in [*baseline_summaries, *candidate_summaries]
+    )
+    compile_result = metric_result(
+        metric=compile_metric,
+        available=compile_metric_available,
+    )
+    metric_results[compile_metric] = compile_result
+
+    required_metric_results = {
+        metric: dict(metric_results[metric])
+        for metric in normalized_required_metrics
+    }
+    incomplete_required_metrics = [
+        metric
+        for metric, result in required_metric_results.items()
+        if not result["available"]
+    ]
+    if incomplete_required_metrics:
+        invalid_reasons.append("required_metric_incomplete")
+    non_improving_required_metrics = [
+        metric
+        for metric, result in required_metric_results.items()
+        if result["available"] and not result["positive_mean_delta"]
+    ]
     winning_metrics = [
         metric
-        for metric, result in metric_results.items()
-        if result["stable_improvement"]
+        for metric, result in required_metric_results.items()
+        if result["positive_mean_delta"]
     ]
 
-    direct_metric = DIRECT_ACCEPTANCE_METRIC_BY_FAMILY.get(
-        candidate_evidence_family
+    direct_metric = (
+        normalized_required_metrics[0]
+        if len(normalized_required_metrics) == 1
+        else None
     )
-    direct_metric_results: dict[str, dict[str, Any]] = {}
-    semantic_safety_results: dict[str, dict[str, Any]] = {}
-    direct_metric_improved = False
-    semantic_safety_passed = True
-    if direct_metric is not None:
-        direct_metric_available = all(
-            int(float(summary.get("count", -1))) == validation_case_count
-            and direct_metric in summary
-            for summary in [*baseline_summaries, *candidate_summaries]
-        )
-        direct_result = metric_result(
-            metric=direct_metric,
-            available=direct_metric_available,
-        )
-        direct_result["stable_improvement"] = bool(
-            direct_result["available"]
-            and direct_result["mean_delta"] > direct_result["min_delta"]
-            and direct_result["wins"] >= min_wins
-        )
-        direct_metric_results[direct_metric] = direct_result
-        direct_metric_improved = bool(direct_result["stable_improvement"])
-        if not direct_metric_available:
-            invalid_reasons.append("direct_metric_incomplete")
-
-        for metric, result in metric_results.items():
-            floor = -float(result["min_delta"])
-            safe = bool(result["available"] and result["mean_delta"] >= floor)
-            semantic_safety_results[metric] = {
-                "available": result["available"],
-                "repeat_deltas": result["repeat_deltas"],
-                "mean_delta": result["mean_delta"],
-                "non_regression_floor": floor,
-                "safe": safe,
-            }
-        semantic_safety_passed = all(
-            result["safe"] for result in semantic_safety_results.values()
-        )
+    direct_metric_results = (
+        {direct_metric: dict(required_metric_results[direct_metric])}
+        if direct_metric is not None
+        else {}
+    )
 
     evaluation_valid = not invalid_reasons
-    if candidate_evidence_family == "semantic":
-        accepted = evaluation_valid and bool(winning_metrics)
-        rejection_reasons = (
-            invalid_reasons
-            if invalid_reasons
-            else ([] if accepted else ["no_stable_improvement"])
-        )
-        acceptance_policy = "any-improvement"
-    else:
-        accepted = (
-            evaluation_valid
-            and direct_metric_improved
-            and semantic_safety_passed
-        )
-        rejection_reasons = list(invalid_reasons)
-        if not invalid_reasons and not direct_metric_improved:
-            rejection_reasons.append("direct_metric_not_improved")
-        if not semantic_safety_passed:
-            rejection_reasons.append("semantic_regression")
-        acceptance_policy = "direct-improvement-with-semantic-safety"
+    accepted = bool(evaluation_valid and not non_improving_required_metrics)
+    rejection_reasons = list(invalid_reasons)
+    if not invalid_reasons and non_improving_required_metrics:
+        rejection_reasons.append("required_metric_not_improved")
+    acceptance_policy = REQUIRED_METRIC_ACCEPTANCE_POLICY
 
     diagnostic_metrics = (
         "plantuml_compilation_pass_rate",
@@ -1017,12 +1207,15 @@ def any_improvement_decision(
     }
     return accepted, {
         "accepted": accepted,
-        "acceptance_mode": "any_improvement" if accepted else "rejected",
+        "acceptance_mode": "positive_mean_delta" if accepted else "rejected",
         "acceptance_policy": acceptance_policy,
         "candidate_evidence_family": candidate_evidence_family,
+        "required_metrics": list(normalized_required_metrics),
+        "required_metric_results": required_metric_results,
+        "incomplete_required_metrics": incomplete_required_metrics,
+        "non_improving_required_metrics": non_improving_required_metrics,
         "direct_metric": direct_metric,
         "direct_metric_results": direct_metric_results,
-        "semantic_safety_results": semantic_safety_results,
         "evaluation_valid": evaluation_valid,
         "invalid_reasons": invalid_reasons,
         "rejection_reasons": rejection_reasons,
@@ -1048,14 +1241,14 @@ def selector_application_decision(
     *,
     mode: str,
     candidate_valid: bool,
-    validation_evaluated: bool,
-    threshold_decision: dict[str, Any] | None,
+    gate_evaluated: bool,
+    acceptance_decision: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    threshold = threshold_decision or {}
+    decision = acceptance_decision or {}
     measurement_valid = bool(
-        validation_evaluated and threshold.get("evaluation_valid")
+        gate_evaluated and decision.get("evaluation_valid")
     )
-    metric_decision = bool(measurement_valid and threshold.get("accepted"))
+    metric_decision = bool(measurement_valid and decision.get("accepted"))
     if mode == "diagnostic-apply":
         applied = bool(candidate_valid and measurement_valid)
         acceptance_mode = "diagnostic_apply"
@@ -1069,17 +1262,114 @@ def selector_application_decision(
         raise ValueError(f"Unsupported selector application mode: {mode!r}")
     return {
         "candidate_valid": bool(candidate_valid),
-        "validation_evaluated": bool(validation_evaluated),
-        "validation_measurement_valid": measurement_valid,
-        "validation_decision": metric_decision,
+        "gate_evaluated": bool(gate_evaluated),
+        "measurement_valid": measurement_valid,
         "applied": applied,
-        # `accepted` describes the validation gate; `applied` describes the
+        # `accepted` describes the gate decision; `applied` describes the
         # selected application mode. Diagnostic apply may intentionally have
-        # applied=True while validation_decision/accepted remain False.
+        # applied=True while accepted remains False.
         "accepted": metric_decision,
-        "validation_accepted": metric_decision,
         "application_mode": mode,
         "acceptance_mode": acceptance_mode,
+    }
+
+
+def two_stage_gate_decision(
+    *,
+    gate1_decision: dict[str, Any],
+    gate2_decision: dict[str, Any] | None,
+    gate2_required: bool,
+) -> dict[str, Any]:
+    gate1_valid = bool(gate1_decision.get("evaluation_valid"))
+    gate1_accepted = bool(gate1_valid and gate1_decision.get("accepted"))
+    gate2_evaluated = gate2_decision is not None
+    gate2_valid = bool(
+        gate2_evaluated and gate2_decision.get("evaluation_valid")
+    )
+    gate2_accepted = bool(
+        gate2_valid and gate2_decision.get("accepted")
+    )
+
+    if not gate1_accepted:
+        rejection_reasons = [
+            "gate1_rejected",
+            *list(gate1_decision.get("rejection_reasons", [])),
+        ]
+    elif gate2_required and not gate2_evaluated:
+        rejection_reasons = ["gate2_not_evaluated"]
+    elif gate2_required and not gate2_accepted:
+        rejection_reasons = [
+            "gate2_rejected",
+            *list((gate2_decision or {}).get("rejection_reasons", [])),
+        ]
+    else:
+        rejection_reasons = []
+
+    if not gate1_valid:
+        invalid_reasons = [
+            f"gate1:{reason}"
+            for reason in gate1_decision.get("invalid_reasons", [])
+        ] or ["gate1:measurement_invalid"]
+    elif gate1_accepted and gate2_required and not gate2_evaluated:
+        invalid_reasons = ["gate2:not_evaluated"]
+    elif gate1_accepted and gate2_required and not gate2_valid:
+        invalid_reasons = [
+            f"gate2:{reason}"
+            for reason in (gate2_decision or {}).get("invalid_reasons", [])
+        ] or ["gate2:measurement_invalid"]
+    else:
+        invalid_reasons = []
+
+    final_evidence = gate2_decision or gate1_decision
+    accepted = bool(
+        gate1_accepted
+        and (not gate2_required or gate2_accepted)
+    )
+    evaluation_valid = bool(
+        gate1_valid
+        and (
+            not gate1_accepted
+            or not gate2_required
+            or gate2_valid
+        )
+    )
+    return {
+        "schema_version": "two-stage-gate-v1",
+        "acceptance_policy": REQUIRED_METRIC_ACCEPTANCE_POLICY,
+        "gate_sequence_policy": GATE_SEQUENCE_POLICY,
+        "evaluation_valid": evaluation_valid,
+        "invalid_reasons": invalid_reasons,
+        "accepted": accepted,
+        "gate1_accepted": gate1_accepted,
+        "gate2_required": gate2_required,
+        "gate2_evaluated": gate2_evaluated,
+        "gate2_accepted": gate2_accepted if gate2_evaluated else None,
+        "rejection_reasons": rejection_reasons,
+        "candidate_evidence_family": final_evidence.get("candidate_evidence_family"),
+        "required_metrics": final_evidence.get("required_metrics", []),
+        "required_metric_results": final_evidence.get(
+            "required_metric_results", {}
+        ),
+        "incomplete_required_metrics": final_evidence.get(
+            "incomplete_required_metrics", []
+        ),
+        "non_improving_required_metrics": final_evidence.get(
+            "non_improving_required_metrics", []
+        ),
+        "direct_metric": final_evidence.get("direct_metric"),
+        "direct_metric_results": final_evidence.get("direct_metric_results", {}),
+        "winning_metrics": final_evidence.get("winning_metrics", []),
+        "metric_results": final_evidence.get("metric_results", {}),
+        "per_dataset_metric_results": final_evidence.get(
+            "per_dataset_metric_results", {}
+        ),
+        "diagnostic_repeat_deltas": final_evidence.get(
+            "diagnostic_repeat_deltas", {}
+        ),
+        "baseline_summary": final_evidence.get("baseline_summary", {}),
+        "candidate_summary": final_evidence.get("candidate_summary", {}),
+        "gate1_decision": gate1_decision,
+        "gate2_decision": gate2_decision,
     }
 
 
@@ -1098,9 +1388,17 @@ def evaluate_iteration_test(
     records_path = test_dir / "records.jsonl"
     summary_path = test_dir / "summary.json"
     analysis_path = test_dir / "analysis.md"
+    repeats_path = test_dir / "repeats.json"
+    repeat_count = args.heldout_repeats
+    split_fingerprint = case_split_fingerprint(test_cases)
     manifest = {
         "dataset": test_dataset,
         "iteration": iteration,
+        "status": "running",
+        "diagnostic_only": True,
+        "repeat_count": repeat_count,
+        "test_case_count": len(test_cases),
+        "test_split_fingerprint": split_fingerprint,
         "inputs": {
             "prompt": "prompts/after.md",
             "cases": "../test_cases.json",
@@ -1108,24 +1406,103 @@ def evaluate_iteration_test(
         "outputs": {
             "records": "test/records.jsonl",
             "summary": "test/summary.json",
+            "repeats": "test/repeats.json",
             "analysis": "test/analysis.md",
         },
     }
     write_text(test_dir / "manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
-    records, summary = evaluate_cases(
-        prompt=prompt,
-        cases=test_cases,
-        args=args,
-        llm_client=llm_client,
-        output_path=records_path,
-        state_dir=run_dir,
-        phase=f"iteration_{iteration:03d}:held_out_test",
-        case_concurrency=args.heldout_test_concurrency,
+    first_records: list[Any] = []
+    repeat_summaries: list[dict[str, float]] = []
+    for repeat in range(1, repeat_count + 1):
+        repeat_dir = test_dir / f"repeat_{repeat:03d}"
+        repeat_records_path = repeat_dir / "records.jsonl"
+        records, summary = evaluate_cases(
+            prompt=prompt,
+            cases=test_cases,
+            args=args,
+            llm_client=llm_client,
+            output_path=repeat_records_path,
+            state_dir=run_dir,
+            phase=(
+                f"iteration_{iteration:03d}:held_out_test_"
+                f"repeat_{repeat:03d}_of_{repeat_count:03d}"
+            ),
+            case_concurrency=args.heldout_test_concurrency,
+        )
+        if repeat == 1:
+            first_records = records
+        repeat_summaries.append(summary)
+        write_text(
+            repeat_dir / "summary.json",
+            json.dumps(summary, ensure_ascii=False, indent=2),
+        )
+        write_text(repeat_dir / "analysis.md", build_analysis(records, summary))
+        write_text(
+            repeat_dir / "manifest.json",
+            json.dumps(
+                {
+                    "dataset": test_dataset,
+                    "iteration": iteration,
+                    "repeat": repeat,
+                    "repeat_count": repeat_count,
+                    "diagnostic_only": True,
+                    "test_case_count": len(test_cases),
+                    "test_split_fingerprint": split_fingerprint,
+                    "outputs": {
+                        "records": "records.jsonl",
+                        "summary": "summary.json",
+                        "analysis": "analysis.md",
+                    },
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+        )
+        print(
+            f"[iteration {iteration}] held-out repeat {repeat}/{repeat_count} "
+            f"{format_summary(summary)}"
+        )
+
+    aggregate_summary = aggregate_repeat_summaries(repeat_summaries)
+    repeats_payload = {
+        "schema_version": "heldout-repeats-v1",
+        "diagnostic_only": True,
+        "repeat_count": repeat_count,
+        "test_case_count": len(test_cases),
+        "test_split_fingerprint": split_fingerprint,
+        "repeat_summaries": repeat_summaries,
+        "aggregate_summary": aggregate_summary,
+    }
+    write_evaluation_records(records_path, first_records)
+    write_text(
+        summary_path,
+        json.dumps(aggregate_summary, ensure_ascii=False, indent=2),
     )
-    write_text(summary_path, json.dumps(summary, ensure_ascii=False, indent=2))
-    write_text(analysis_path, build_analysis(records, summary))
-    print(f"[iteration {iteration}] held-out test {format_summary(summary)}")
-    return summary
+    write_text(repeats_path, json.dumps(repeats_payload, ensure_ascii=False, indent=2))
+    if repeat_count == 1:
+        top_level_analysis = build_analysis(first_records, aggregate_summary)
+    else:
+        repeat_lines = [
+            "# Repeated Heldout Audit",
+            "",
+            f"- repeats: {repeat_count}",
+            f"- test cases: {len(test_cases)}",
+            f"- split fingerprint: `{split_fingerprint}`",
+            "- diagnostic only: true",
+            "",
+            f"Aggregate: {format_summary(aggregate_summary)}",
+            "",
+            "See `repeats.json` and `repeat_NNN/` for every retained measurement.",
+        ]
+        top_level_analysis = "\n".join(repeat_lines).rstrip() + "\n"
+    write_text(analysis_path, top_level_analysis)
+    manifest["status"] = "success"
+    write_text(test_dir / "manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+    print(
+        f"[iteration {iteration}] held-out aggregate repeats={repeat_count} "
+        f"{format_summary(aggregate_summary)}"
+    )
+    return aggregate_summary
 
 
 def evaluate_initial_iteration_test(
@@ -1149,7 +1526,10 @@ def evaluate_initial_iteration_test(
         "initial_held_out_test",
         status="running",
         inputs={"prompt": rel_to_iter(iter_dir, paths["prompt_after"])},
-        outputs={"test_summary": "test/summary.json"},
+        outputs={
+            "test_summary": "test/summary.json",
+            "test_repeats": "test/repeats.json",
+        },
         note="optional baseline evaluation of the original seed prompt before training",
     )
     write_iteration_manifest(iter_dir, manifest)
@@ -1169,7 +1549,10 @@ def evaluate_initial_iteration_test(
         "initial_held_out_test",
         status="success",
         inputs={"prompt": rel_to_iter(iter_dir, paths["prompt_after"])},
-        outputs={"test_summary": "test/summary.json"},
+        outputs={
+            "test_summary": "test/summary.json",
+            "test_repeats": "test/repeats.json",
+        },
         note="baseline evaluation of the original seed prompt before training",
     )
     write_iteration_manifest(iter_dir, manifest)
@@ -1189,7 +1572,7 @@ def evaluate_initial_iteration_test(
     return summary
 
 
-def evaluate_validation_gate(
+def evaluate_gate(
     *,
     baseline_prompt: str,
     candidate_prompt: str,
@@ -1202,10 +1585,16 @@ def evaluate_validation_gate(
     iteration: int,
     phase_prefix: str,
     baseline_cache: dict[str, Any] | None = None,
-    candidate_evidence_family: str = "semantic",
+    candidate_evidence_family: str,
+    required_metrics: list[str] | tuple[str, ...],
+    gate_name: str = "gate1",
 ) -> tuple[list[Any], list[Any], dict[str, float], dict[str, float], dict[str, Any]]:
+    if gate_name not in {"gate1", "gate2"}:
+        raise ValueError(f"Unsupported gate name: {gate_name!r}")
+    gate_dir_name = gate_name
+    path_prefix = "validation" if gate_name == "gate1" else "confirmation"
     baseline_cache = baseline_cache if baseline_cache is not None else {}
-    write_case_manifest(paths["validation_cases"], validation_cases)
+    write_case_manifest(paths[f"{path_prefix}_cases"], validation_cases)
 
     cached_records = baseline_cache.get("repeat_records")
     cached_summaries = baseline_cache.get("repeat_summaries")
@@ -1227,7 +1616,7 @@ def evaluate_validation_gate(
     repeat_pairs: list[tuple[int, list[Any], list[Any]]] = []
 
     def evaluate_repeat(prompt: str, *, repeat: int, role: str) -> tuple[list[Any], dict[str, float]]:
-        role_dir = iter_dir / "validation_gate" / f"repeat_{repeat:03d}" / role
+        role_dir = iter_dir / gate_dir_name / f"repeat_{repeat:03d}" / role
         records, summary = evaluate_cases(
             prompt=prompt,
             cases=validation_cases,
@@ -1235,8 +1624,8 @@ def evaluate_validation_gate(
             llm_client=llm_client,
             output_path=role_dir / "records.jsonl",
             state_dir=run_dir,
-            phase=f"{phase_prefix}:validation_repeat_{repeat:03d}:{role}",
-            case_concurrency=args.validation_gate_concurrency,
+            phase=f"{phase_prefix}:{gate_name}_repeat_{repeat:03d}:{role}",
+            case_concurrency=args.gate_concurrency,
         )
         write_text(role_dir / "summary.json", json.dumps(summary, ensure_ascii=False, indent=2))
         return records, summary
@@ -1245,7 +1634,7 @@ def evaluate_validation_gate(
         if reuse_baseline:
             baseline_records = baseline_repeat_records[repeat - 1]
             baseline_summary = baseline_repeat_summaries[repeat - 1]
-            baseline_dir = iter_dir / "validation_gate" / f"repeat_{repeat:03d}" / "baseline"
+            baseline_dir = iter_dir / gate_dir_name / f"repeat_{repeat:03d}" / "baseline"
             write_evaluation_records(baseline_dir / "records.jsonl", baseline_records)
             write_text(
                 baseline_dir / "summary.json",
@@ -1275,10 +1664,10 @@ def evaluate_validation_gate(
 
     baseline_summary = aggregate_repeat_summaries(baseline_repeat_summaries)
     candidate_summary = aggregate_repeat_summaries(candidate_repeat_summaries)
-    write_text(paths["validation_baseline_summary"], json.dumps(baseline_summary, ensure_ascii=False, indent=2))
-    write_text(paths["validation_candidate_summary"], json.dumps(candidate_summary, ensure_ascii=False, indent=2))
-    write_evaluation_records(paths["validation_baseline_records"], first_baseline_records)
-    write_evaluation_records(paths["validation_candidate_records"], first_candidate_records)
+    write_text(paths[f"{path_prefix}_baseline_summary"], json.dumps(baseline_summary, ensure_ascii=False, indent=2))
+    write_text(paths[f"{path_prefix}_candidate_summary"], json.dumps(candidate_summary, ensure_ascii=False, indent=2))
+    write_evaluation_records(paths[f"{path_prefix}_baseline_records"], first_baseline_records)
+    write_evaluation_records(paths[f"{path_prefix}_candidate_records"], first_candidate_records)
     accepted, decision = any_improvement_decision(
         baseline_summaries=baseline_repeat_summaries,
         candidate_summaries=candidate_repeat_summaries,
@@ -1286,38 +1675,40 @@ def evaluate_validation_gate(
         candidate_prompt=candidate_prompt,
         baseline_prompt=baseline_prompt,
         max_prompt_chars=args.max_prompt_chars,
-        min_wins=args.acceptance_min_wins,
-        min_deltas={
-            "llm_node_f1": args.any_improvement_node_min_delta,
-            "llm_relation_f1": args.any_improvement_relation_min_delta,
-            "plantuml_compilation_pass_rate": max(
-                args.any_improvement_node_min_delta,
-                args.any_improvement_relation_min_delta,
-            ),
-        },
         candidate_evidence_family=candidate_evidence_family,
+        required_metrics=required_metrics,
     )
+    per_dataset_results = per_dataset_metric_decomposition(repeat_pairs)
     aggregate_payload = {
         "baseline_summary": baseline_summary,
         "candidate_summary": candidate_summary,
+        "per_dataset_metric_results": per_dataset_results,
         "baseline_repeat_summaries": baseline_repeat_summaries,
         "candidate_repeat_summaries": candidate_repeat_summaries,
         "metric_results": decision["metric_results"],
         "candidate_evidence_family": decision["candidate_evidence_family"],
+        "required_metrics": decision["required_metrics"],
+        "required_metric_results": decision["required_metric_results"],
+        "incomplete_required_metrics": decision["incomplete_required_metrics"],
+        "non_improving_required_metrics": decision[
+            "non_improving_required_metrics"
+        ],
         "direct_metric": decision["direct_metric"],
         "direct_metric_results": decision["direct_metric_results"],
-        "semantic_safety_results": decision["semantic_safety_results"],
         "diagnostic_repeat_deltas": decision["diagnostic_repeat_deltas"],
         "winning_metrics": decision["winning_metrics"],
-        "validation_case_count": len(validation_cases),
-        "validation_split_fingerprint": case_split_fingerprint(validation_cases),
+        "gate_case_count": len(validation_cases),
+        f"{gate_name}_case_count": len(validation_cases),
+        f"{gate_name}_split_fingerprint": case_split_fingerprint(validation_cases),
     }
-    write_text(paths["validation_aggregate_summary"], json.dumps(aggregate_payload, ensure_ascii=False, indent=2))
+    aggregate_payload["gate_name"] = gate_name
+    write_text(paths[f"{path_prefix}_aggregate_summary"], json.dumps(aggregate_payload, ensure_ascii=False, indent=2))
     write_text(
-        paths["validation_analysis"],
-        "# Repeated Validation Gate\n\n"
+        paths[f"{path_prefix}_analysis"],
+        f"# Repeated {gate_name.title()} Evaluation\n\n"
         f"- repeats: {args.validation_repeats}\n"
         f"- candidate evidence family: {decision['candidate_evidence_family']}\n"
+        f"- required metrics: {', '.join(decision['required_metrics'])}\n"
         f"- direct metric: {decision['direct_metric'] or 'none'}\n"
         f"- winning metrics: {', '.join(decision['winning_metrics']) or 'none'}\n"
         f"- accepted: {str(accepted).lower()}\n\n"
@@ -1326,13 +1717,15 @@ def evaluate_validation_gate(
     impact_summary = build_validation_impact_summary(repeat_pairs)
     write_validation_impact_report(
         summary=impact_summary,
-        json_path=paths["validation_impact_summary"],
-        report_path=paths["validation_impact_report"],
+        json_path=paths[f"{path_prefix}_impact_summary"],
+        report_path=paths[f"{path_prefix}_impact_report"],
     )
     decision["accepted"] = accepted
-    decision["evaluation_source"] = "validation_gate"
-    decision["validation_case_count"] = len(validation_cases)
-    decision["validation_split_fingerprint"] = case_split_fingerprint(validation_cases)
+    decision["per_dataset_metric_results"] = per_dataset_results
+    decision["gate_name"] = gate_name
+    decision["evaluation_source"] = gate_name
+    decision[f"{gate_name}_case_count"] = len(validation_cases)
+    decision[f"{gate_name}_split_fingerprint"] = case_split_fingerprint(validation_cases)
     return first_baseline_records, first_candidate_records, baseline_summary, candidate_summary, decision
 
 
@@ -1407,8 +1800,8 @@ def candidate_attempt_outcome(attempt_acceptance: dict[str, Any]) -> str:
     ]
     if rejection_reasons:
         return rejection_reasons[0]
-    if attempt_acceptance.get("validation_evaluated"):
-        return "validation_evaluated"
+    if attempt_acceptance.get("gate_evaluated"):
+        return "gate_evaluated"
     if attempt_acceptance.get("candidate_generated"):
         return str(attempt_acceptance.get("candidate_status") or "candidate_generated")
     return "not_generated"
@@ -1476,6 +1869,7 @@ def run_training_iterations(
     work_prompt_path: Path,
     label: str,
     validation_cases: list[Case] | None = None,
+    confirmation_cases: list[Case] | None = None,
     test_cases: list[Case] | None = None,
     test_dataset: str | None = None,
     initial_test_summary: dict[str, float] | None = None,
@@ -1483,8 +1877,11 @@ def run_training_iterations(
     """Run the selector-v4 bounded-attempt no-taxonomy workflow."""
 
     validation_cases = list(validation_cases or [])
+    confirmation_cases = list(confirmation_cases or [])
     if not args.no_evolve and not validation_cases:
-        raise ValueError("taxonomy-v3 selector workflow requires a non-empty validation split")
+        raise ValueError("taxonomy-v3 selector workflow requires a non-empty Gate1 split")
+    if not args.no_evolve and args.gate2 and not confirmation_cases:
+        raise ValueError("selector workflow requires a non-empty Gate2 split")
     prompt = read_text(work_prompt_path)
     registry_path = run_dir / "candidate_registry.json"
     registry = load_candidate_registry(registry_path)
@@ -1495,7 +1892,13 @@ def run_training_iterations(
 
     print(f"[run] {label}, policy=taxonomy-v3 selector-v4-bounded-attempts, train_cases={len(train_cases)}")
     print(f"[run] train distribution: {describe_case_distribution(train_cases)}")
-    print(f"[run] validation gate cases={len(validation_cases)}")
+    print(f"[run] gate1 cases={len(validation_cases)}")
+    print(f"[run] gate2 cases={len(confirmation_cases)}")
+    print(
+        "[run] stop_after_first_apply="
+        f"{bool(getattr(args, 'stop_after_first_apply', False))}"
+    )
+    print(f"[run] heldout_repeats={args.heldout_repeats}")
     print(f"[run] output={run_dir}")
 
     for iteration in range(1, args.iterations + 1):
@@ -1508,10 +1911,16 @@ def run_training_iterations(
                 "candidate_application_mode": args.candidate_application_mode,
                 "candidate_registry": "../candidate_registry.json",
                 "taxonomy_mapping": "disabled",
-                "validation_split": {
-                    "requested_case_count": args.validation_gate_size,
+                "gate1_split": {
+                    "requested_case_count": args.gate1_size,
                     "actual_case_count": len(validation_cases),
                     "fingerprint": case_split_fingerprint(validation_cases),
+                },
+                "gate2_split": {
+                    "enabled": bool(args.gate2),
+                    "requested_case_count": args.gate2_size,
+                    "actual_case_count": len(confirmation_cases),
+                    "fingerprint": case_split_fingerprint(confirmation_cases),
                 },
             }
         )
@@ -1520,6 +1929,8 @@ def run_training_iterations(
         write_text(paths["prompt_before"], prompt)
         write_case_manifest(paths["analysis_cases"], train_cases)
         write_case_manifest(paths["validation_cases"], validation_cases)
+        if confirmation_cases:
+            write_case_manifest(paths["confirmation_cases"], confirmation_cases)
         batches = split_training_batches(
             train_cases,
             args.analysis_batch_size,
@@ -1615,7 +2026,7 @@ def run_training_iterations(
         localization: dict[str, Any] | None = None
         editor_plan: dict[str, Any] | None = None
         revision_plan: dict[str, Any] | None = None
-        threshold_decision: dict[str, Any] | None = None
+        acceptance_decision: dict[str, Any] | None = None
         attempt_payloads: list[dict[str, Any]] = []
         attempt_lineage: list[dict[str, Any]] = []
         validation_baseline_cache: dict[str, Any] = {}
@@ -1624,6 +2035,8 @@ def run_training_iterations(
             "pipeline_policy": "taxonomy-v3",
             "schema_version": "selector-v4-bounded-attempts",
             "application_mode": args.candidate_application_mode,
+            "acceptance_policy": REQUIRED_METRIC_ACCEPTANCE_POLICY,
+            "gate_sequence_policy": GATE_SEQUENCE_POLICY,
             "acceptance_mode": (
                 "diagnostic_apply"
                 if args.candidate_application_mode == "diagnostic-apply"
@@ -1635,11 +2048,17 @@ def run_training_iterations(
             "candidate_status": "not_generated",
             "candidate_valid": False,
             "candidate_evidence_family": None,
+            "required_metrics": [],
+            "required_metric_results": {},
+            "incomplete_required_metrics": [],
+            "non_improving_required_metrics": [],
             "direct_metric": None,
             "direct_metric_results": {},
-            "semantic_safety_results": {},
-            "validation_evaluated": False,
-            "validation_decision": None,
+            "gate1_evaluated": False,
+            "gate1_decision": None,
+            "gate2_evaluated": False,
+            "gate2_decision": None,
+            "gate_evaluated": False,
             "applied": False,
             "accepted": False,
             "rejection_reasons": [],
@@ -1728,10 +2147,13 @@ def run_training_iterations(
             attempt_paths = iteration_paths(attempt_dir)
             write_text(attempt_paths["prompt_before"], prompt_before)
             write_case_manifest(attempt_paths["validation_cases"], validation_cases)
+            if confirmation_cases:
+                write_case_manifest(attempt_paths["confirmation_cases"], confirmation_cases)
 
             selected_group = dict(group)
             selected_group["representative_errors"] = representative_errors(selected_group)
             candidate_evidence_family: str | None = None
+            candidate_required_metrics: tuple[str, ...] | None = None
             finding_keys = selected_group_finding_keys(selected_group)
             prior_group_attempts = group_attempt_history(
                 registry,
@@ -1757,11 +2179,19 @@ def run_training_iterations(
                 "candidate_status": "not_generated",
                 "candidate_valid": False,
                 "candidate_evidence_family": None,
+                "acceptance_policy": REQUIRED_METRIC_ACCEPTANCE_POLICY,
+                "gate_sequence_policy": GATE_SEQUENCE_POLICY,
+                "required_metrics": [],
+                "required_metric_results": {},
+                "incomplete_required_metrics": [],
+                "non_improving_required_metrics": [],
                 "direct_metric": None,
                 "direct_metric_results": {},
-                "semantic_safety_results": {},
-                "validation_evaluated": False,
-                "validation_decision": None,
+                "gate1_evaluated": False,
+                "gate1_decision": None,
+                "gate2_evaluated": False,
+                "gate2_decision": None,
+                "gate_evaluated": False,
                 "applied": False,
                 "accepted": False,
                 "rejection_reasons": [],
@@ -1779,11 +2209,17 @@ def run_training_iterations(
                 candidate_evidence_family = selected_group_evidence_family(
                     selected_group
                 )
+                candidate_required_metrics = selected_group_required_metrics(
+                    selected_group
+                )
                 attempt_acceptance["candidate_evidence_family"] = candidate_evidence_family
+                attempt_acceptance["required_metrics"] = list(
+                    candidate_required_metrics
+                )
                 attempt_acceptance["direct_metric"] = (
-                    DIRECT_ACCEPTANCE_METRIC_BY_FAMILY.get(
-                        candidate_evidence_family
-                    )
+                    candidate_required_metrics[0]
+                    if len(candidate_required_metrics) == 1
+                    else None
                 )
                 localization = localize_selector_group(
                     current_prompt=prompt_before,
@@ -1845,8 +2281,10 @@ def run_training_iterations(
                             write_text(paths["prompt_candidate"], attempt_candidate_prompt)
 
             if attempt_candidate_prompt is not None:
-                if candidate_evidence_family is None:
-                    raise RuntimeError("Valid candidate is missing an evidence family")
+                if candidate_evidence_family is None or not candidate_required_metrics:
+                    raise RuntimeError(
+                        "Valid candidate is missing evidence-bound required metrics"
+                    )
                 rewriter_payload = extract_json_object(
                     read_text(attempt_paths["prompt_rewriter_output"])
                 ) or {}
@@ -1870,8 +2308,8 @@ def run_training_iterations(
                         _candidate_records,
                         baseline_gate_summary,
                         candidate_summary,
-                        threshold_decision,
-                    ) = evaluate_validation_gate(
+                        gate1_decision,
+                    ) = evaluate_gate(
                         baseline_prompt=prompt_before,
                         candidate_prompt=attempt_candidate_prompt,
                         validation_cases=validation_cases,
@@ -1886,49 +2324,106 @@ def run_training_iterations(
                         ),
                         baseline_cache=validation_baseline_cache,
                         candidate_evidence_family=candidate_evidence_family,
+                        required_metrics=candidate_required_metrics,
+                        gate_name="gate1",
+                    )
+                    gate2_decision = None
+                    if (
+                        args.gate2
+                        and gate1_decision.get("evaluation_valid")
+                        and gate1_decision.get("accepted")
+                    ):
+                        (
+                            _confirmation_baseline_records,
+                            _confirmation_candidate_records,
+                            _confirmation_baseline_summary,
+                            _confirmation_candidate_summary,
+                            gate2_decision,
+                        ) = evaluate_gate(
+                            baseline_prompt=prompt_before,
+                            candidate_prompt=attempt_candidate_prompt,
+                            validation_cases=confirmation_cases,
+                            args=args,
+                            llm_client=llm_client,
+                            run_dir=run_dir,
+                            iter_dir=attempt_dir,
+                            paths=attempt_paths,
+                            iteration=iteration,
+                            phase_prefix=(
+                                f"iteration_{iteration:03d}:selector:attempt_{attempt_index:03d}"
+                            ),
+                            baseline_cache=None,
+                            candidate_evidence_family=candidate_evidence_family,
+                            required_metrics=candidate_required_metrics,
+                            gate_name="gate2",
+                        )
+                    acceptance_decision = two_stage_gate_decision(
+                        gate1_decision=gate1_decision,
+                        gate2_decision=gate2_decision,
+                        gate2_required=bool(args.gate2),
                     )
                     application = selector_application_decision(
                         mode=args.candidate_application_mode,
                         candidate_valid=True,
-                        validation_evaluated=True,
-                        threshold_decision=threshold_decision,
+                        gate_evaluated=True,
+                        acceptance_decision=acceptance_decision,
                     )
-                    validation_decision = application["validation_decision"]
+                    gate_decision = application["accepted"]
                     threshold_rejection_reasons = list(
-                        threshold_decision.get("rejection_reasons", [])
+                        acceptance_decision.get("rejection_reasons", [])
                     )
                     attempt_acceptance.update(
                         {
                             **application,
-                            "threshold_decision": threshold_decision,
-                            "candidate_evidence_family": threshold_decision.get(
+                            "acceptance_decision": acceptance_decision,
+                            "gate1_evaluated": True,
+                            "gate1_decision": gate1_decision,
+                            "gate2_evaluated": gate2_decision is not None,
+                            "gate2_decision": gate2_decision,
+                            "candidate_evidence_family": acceptance_decision.get(
                                 "candidate_evidence_family",
                                 candidate_evidence_family,
                             ),
-                            "direct_metric": threshold_decision.get(
+                            "acceptance_policy": acceptance_decision.get(
+                                "acceptance_policy",
+                                REQUIRED_METRIC_ACCEPTANCE_POLICY,
+                            ),
+                            "gate_sequence_policy": acceptance_decision.get(
+                                "gate_sequence_policy", GATE_SEQUENCE_POLICY
+                            ),
+                            "required_metrics": acceptance_decision.get(
+                                "required_metrics", list(candidate_required_metrics)
+                            ),
+                            "required_metric_results": acceptance_decision.get(
+                                "required_metric_results", {}
+                            ),
+                            "incomplete_required_metrics": acceptance_decision.get(
+                                "incomplete_required_metrics", []
+                            ),
+                            "non_improving_required_metrics": acceptance_decision.get(
+                                "non_improving_required_metrics", []
+                            ),
+                            "direct_metric": acceptance_decision.get(
                                 "direct_metric",
-                                DIRECT_ACCEPTANCE_METRIC_BY_FAMILY.get(
-                                    candidate_evidence_family
-                                ),
+                                candidate_required_metrics[0]
+                                if len(candidate_required_metrics) == 1
+                                else None,
                             ),
-                            "direct_metric_results": threshold_decision.get(
+                            "direct_metric_results": acceptance_decision.get(
                                 "direct_metric_results", {}
-                            ),
-                            "semantic_safety_results": threshold_decision.get(
-                                "semantic_safety_results", {}
                             ),
                             "rejection_reasons": (
                                 []
-                                if validation_decision
+                                if gate_decision
                                 or args.candidate_application_mode == "isolated"
                                 else [
-                                    "validation_gate_rejected_diagnostic_apply",
+                                    "gate1_rejected_diagnostic_apply",
                                     *threshold_rejection_reasons,
                                 ]
                                 if application["applied"]
                                 and args.candidate_application_mode == "diagnostic-apply"
                                 else threshold_rejection_reasons
-                                or ["validation_gate_rejected"]
+                                or ["gate1_rejected"]
                             ),
                         }
                     )
@@ -1949,11 +2444,30 @@ def run_training_iterations(
                             "negative_boundary"
                         ],
                         "candidate_evidence_family": candidate_evidence_family,
-                        "direct_metric": threshold_decision.get(
+                        "acceptance_policy": acceptance_decision.get(
+                            "acceptance_policy", REQUIRED_METRIC_ACCEPTANCE_POLICY
+                        ),
+                        "gate_sequence_policy": acceptance_decision.get(
+                            "gate_sequence_policy", GATE_SEQUENCE_POLICY
+                        ),
+                        "required_metrics": list(candidate_required_metrics),
+                        "required_metric_results": acceptance_decision.get(
+                            "required_metric_results", {}
+                        ),
+                        "incomplete_required_metrics": acceptance_decision.get(
+                            "incomplete_required_metrics", []
+                        ),
+                        "non_improving_required_metrics": acceptance_decision.get(
+                            "non_improving_required_metrics", []
+                        ),
+                        "direct_metric": acceptance_decision.get(
                             "direct_metric",
-                            DIRECT_ACCEPTANCE_METRIC_BY_FAMILY.get(
-                                candidate_evidence_family
-                            ),
+                            candidate_required_metrics[0]
+                            if len(candidate_required_metrics) == 1
+                            else None,
+                        ),
+                        "direct_metric_results": acceptance_decision.get(
+                            "direct_metric_results", {}
                         ),
                     }
                     write_text(
@@ -1978,6 +2492,15 @@ def run_training_iterations(
                             "impact_summary": str(
                                 attempt_paths["validation_impact_summary"].relative_to(run_dir)
                             ).replace("\\", "/"),
+                            **(
+                                {
+                                    "gate2_impact_summary": str(
+                                        attempt_paths["confirmation_impact_summary"].relative_to(run_dir)
+                                    ).replace("\\", "/")
+                                }
+                                if gate2_decision is not None
+                                else {}
+                            ),
                         },
                     )
                     save_candidate_registry(registry_path, registry)
@@ -2043,7 +2566,7 @@ def run_training_iterations(
                 (
                     item
                     for item in reversed(attempt_payloads)
-                    if item.get("validation_evaluated")
+                    if item.get("gate_evaluated")
                 ),
                 attempt_payloads[-1],
             )
@@ -2062,15 +2585,18 @@ def run_training_iterations(
                         if any(item.get("candidate_status") == "invalid" for item in attempt_payloads)
                         else "not_generated"
                     ),
-                    "validation_evaluated": any(
-                        item.get("validation_evaluated") for item in attempt_payloads
+                    "gate_evaluated": any(
+                        item.get("gate_evaluated") for item in attempt_payloads
                     ),
-                    "validation_decision": (
-                        True
-                        if any(item.get("validation_decision") is True for item in attempt_payloads)
-                        else False
-                        if any(item.get("validation_evaluated") for item in attempt_payloads)
-                        else None
+                    "gate1_evaluated": any(
+                        item.get("gate1_evaluated") for item in attempt_payloads
+                    ),
+                    "gate1_decision": final_attempt.get("gate1_decision"),
+                    "gate2_evaluated": any(
+                        item.get("gate2_evaluated") for item in attempt_payloads
+                    ),
+                    "gate2_decision": final_attempt.get(
+                        "gate2_decision"
                     ),
                     "applied": applied_payload is not None,
                     "accepted": any(item.get("accepted") for item in attempt_payloads),
@@ -2081,20 +2607,36 @@ def run_training_iterations(
                     "candidate_evidence_family": final_attempt.get(
                         "candidate_evidence_family"
                     ),
+                    "acceptance_policy": final_attempt.get(
+                        "acceptance_policy", REQUIRED_METRIC_ACCEPTANCE_POLICY
+                    ),
+                    "gate_sequence_policy": final_attempt.get(
+                        "gate_sequence_policy", GATE_SEQUENCE_POLICY
+                    ),
+                    "required_metrics": final_attempt.get("required_metrics", []),
+                    "required_metric_results": final_attempt.get(
+                        "required_metric_results", {}
+                    ),
+                    "incomplete_required_metrics": final_attempt.get(
+                        "incomplete_required_metrics", []
+                    ),
+                    "non_improving_required_metrics": final_attempt.get(
+                        "non_improving_required_metrics", []
+                    ),
                     "direct_metric": final_attempt.get("direct_metric"),
                     "direct_metric_results": final_attempt.get(
                         "direct_metric_results", {}
                     ),
-                    "semantic_safety_results": final_attempt.get(
-                        "semantic_safety_results", {}
-                    ),
-                    "threshold_decision": final_attempt.get("threshold_decision"),
+                    "acceptance_decision": final_attempt.get("acceptance_decision"),
                     "rejection_reasons": (
                         list(applied_payload.get("rejection_reasons", []))
                         if applied_payload is not None
                         else []
                         if args.candidate_application_mode == "isolated"
-                        else ["candidate_attempts_exhausted"]
+                        else [
+                            "candidate_attempts_exhausted",
+                            *list(final_attempt.get("rejection_reasons", [])),
+                        ]
                     ),
                 }
             )
@@ -2151,7 +2693,7 @@ def run_training_iterations(
             },
             note=(
                 f"candidate_valid={acceptance['candidate_valid']}, "
-                f"validation_evaluated={acceptance['validation_evaluated']}, applied={acceptance['applied']}"
+                f"gate_evaluated={acceptance['gate_evaluated']}, applied={acceptance['applied']}"
             ),
         )
         write_iteration_manifest(iter_dir, manifest)
@@ -2205,6 +2747,17 @@ def run_training_iterations(
                 )
                 write_iteration_test_metric_plot(run_dir)
 
+        if (
+            bool(getattr(args, "stop_after_first_apply", False))
+            and acceptance["applied"]
+        ):
+            print(
+                "[run] stop_after_first_apply reached: "
+                f"iteration={iteration}, "
+                f"candidate_id={acceptance.get('candidate_id') or 'unknown'}"
+            )
+            break
+
     final_prompt = read_text(work_prompt_path)
     write_text(run_dir / "prompt_final.md", final_prompt)
     if test_cases is not None and test_dataset is not None:
@@ -2239,7 +2792,7 @@ def run_validation_calibration(
             output_path=repeat_dir / "records.jsonl",
             state_dir=run_dir,
             phase=f"validation_calibration:repeat_{repeat:03d}",
-            case_concurrency=args.validation_gate_concurrency,
+            case_concurrency=args.gate_concurrency,
         )
         summaries.append(summary)
         write_text(repeat_dir / "summary.json", json.dumps(summary, ensure_ascii=False, indent=2))
@@ -2247,9 +2800,7 @@ def run_validation_calibration(
     aggregate = aggregate_repeat_summaries(summaries)
     metric_stats = {
         metric: calibration_statistics(
-            [summary.get(metric, 0.0) for summary in summaries],
-            validation_repeats=args.validation_repeats,
-            metric_resolution=(1 / len(validation_cases) if metric == "plantuml_compilation_pass_rate" else 0.0),
+            [summary.get(metric, 0.0) for summary in summaries]
         )
         for metric in VALIDATION_CALIBRATION_METRICS
     }
@@ -2261,8 +2812,11 @@ def run_validation_calibration(
         "repeat_summaries": summaries,
         "aggregate_summary": aggregate,
         "metric_statistics": metric_stats,
-        "threshold_policy": "1.645 * sqrt(2 / target_validation_repeats) * sample_std; compile is diagnostic and floored at 1 / validation_case_count",
-        "note": "Node/Relation recommendations are never applied automatically. Compile calibration is diagnostic only.",
+        "acceptance_policy": (
+            "all required metric mean deltas must be positive; calibration is "
+            "descriptive and never sets a threshold"
+        ),
+        "note": "Calibration reports repeat variability only. No threshold or regression floor is derived or applied.",
     }
     write_text(root / "aggregate_summary.json", json.dumps(report, ensure_ascii=False, indent=2))
     write_text(
@@ -2273,7 +2827,7 @@ def run_validation_calibration(
         f"- validation split fingerprint: `{case_split_fingerprint(validation_cases)}`\n\n"
         + "\n".join(
             f"- {metric}: mean={stats['mean']:.6f}, std={stats['sample_std']:.6f}, "
-            f"range={stats['range']:.6f}, suggested_min_delta={stats['suggested_min_delta']:.6f}"
+            f"range={stats['range']:.6f}"
             for metric, stats in metric_stats.items()
         )
         + "\n",
@@ -2292,19 +2846,24 @@ def run_train_only(args: argparse.Namespace, datasets: dict[str, list[Case]], ll
         strategy=args.sample_strategy,
         seed=args.sample_seed,
     )
-    train_cases, validation_cases = split_validation_gate_cases(train_pool_cases, args)
+    train_cases, validation_cases, confirmation_cases = split_gate_cases(
+        train_pool_cases, args
+    )
     run_dir = make_run_dir(args.runs_dir, f"train-{train_dataset}")
     write_run_args(args, run_dir)
     write_case_manifest(run_dir / "train_pool_cases.json", train_pool_cases)
     write_case_manifest(run_dir / "train_cases.json", train_cases)
     if validation_cases:
-        write_case_manifest(run_dir / "validation_gate_cases.json", validation_cases)
+        write_case_manifest(run_dir / "gate1_cases.json", validation_cases)
+    if confirmation_cases:
+        write_case_manifest(run_dir / "gate2_cases.json", confirmation_cases)
     write_data_split_summary(
         run_dir=run_dir,
         args=args,
         train_pool_cases=train_pool_cases,
         train_cases=train_cases,
         validation_cases=validation_cases,
+        confirmation_cases=confirmation_cases,
     )
     work_prompt_path = initialize_run_prompt(args.prompt_path, run_dir)
     if args.calibrate_validation_only:
@@ -2323,6 +2882,7 @@ def run_train_only(args: argparse.Namespace, datasets: dict[str, list[Case]], ll
         work_prompt_path=work_prompt_path,
         label=f"train_only={train_dataset}",
         validation_cases=validation_cases,
+        confirmation_cases=confirmation_cases,
     )
     return summary
 
@@ -2340,7 +2900,9 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
         strategy=args.sample_strategy,
         seed=args.sample_seed,
     )
-    train_cases, validation_cases = split_validation_gate_cases(train_pool_cases, args)
+    train_cases, validation_cases, confirmation_cases = split_gate_cases(
+        train_pool_cases, args
+    )
     test_cases = select_cases_with_strategy(
         test_cases_all,
         limit=args.max_test_cases,
@@ -2353,7 +2915,9 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
     write_case_manifest(run_dir / "train_pool_cases.json", train_pool_cases)
     write_case_manifest(run_dir / "train_cases.json", train_cases)
     if validation_cases:
-        write_case_manifest(run_dir / "validation_gate_cases.json", validation_cases)
+        write_case_manifest(run_dir / "gate1_cases.json", validation_cases)
+    if confirmation_cases:
+        write_case_manifest(run_dir / "gate2_cases.json", confirmation_cases)
     write_case_manifest(run_dir / "test_cases.json", test_cases)
     write_data_split_summary(
         run_dir=run_dir,
@@ -2361,12 +2925,14 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
         train_pool_cases=train_pool_cases,
         train_cases=train_cases,
         validation_cases=validation_cases,
+        confirmation_cases=confirmation_cases,
         test_cases=test_cases,
     )
     work_prompt_path = initialize_run_prompt(args.prompt_path, run_dir)
     print(
         f"[run] test={test_dataset}, train_pool_cases={len(train_pool_cases)}, "
-        f"train_cases={len(train_cases)}, validation_gate_cases={len(validation_cases)}, "
+        f"train_cases={len(train_cases)}, gate1_cases={len(validation_cases)}, "
+        f"gate2_cases={len(confirmation_cases)}, "
         f"test_cases={len(test_cases)}"
     )
     print(f"[run] test distribution: {describe_case_distribution(test_cases)}")
@@ -2401,6 +2967,7 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
         work_prompt_path=work_prompt_path,
         label=f"test={test_dataset}",
         validation_cases=validation_cases,
+        confirmation_cases=confirmation_cases,
         test_cases=None if isolated_candidates else test_cases,
         test_dataset=None if isolated_candidates else test_dataset,
         initial_test_summary=initial_summary,
@@ -2453,6 +3020,7 @@ def refresh_requested_reports(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    provider = get_llm_provider_settings()
     parser = argparse.ArgumentParser(
         description="Prompt evolution for UML activity diagram PlantUML generation"
     )
@@ -2490,6 +3058,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
     parser.add_argument("--plantuml-jar", type=Path, default=DEFAULT_PLANTUML_JAR)
     parser.add_argument("--iterations", type=int, default=3)
+    parser.add_argument(
+        "--stop-after-first-apply",
+        action="store_true",
+        help=(
+            "Stop after the first applied candidate finishes its normal heldout "
+            "audit; continue all iterations when no candidate is applied"
+        ),
+    )
     parser.add_argument("--max-train-cases", type=int, default=0)
     parser.add_argument("--max-test-cases", type=int, default=0)
     parser.add_argument("--eval-initial-test", action="store_true")
@@ -2501,7 +3077,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--epoch-batch-concurrency", type=int, default=1)
     parser.add_argument("--heldout-test-concurrency", type=int, default=1)
-    parser.add_argument("--validation-gate-concurrency", type=int, default=1)
+    parser.add_argument(
+        "--heldout-repeats",
+        type=int,
+        default=1,
+        help=(
+            "Repeat each initial or applied heldout audit; audit-only and never "
+            "used for candidate acceptance"
+        ),
+    )
+    parser.add_argument(
+        "--gate-concurrency",
+        "--validation-gate-concurrency",
+        dest="gate_concurrency",
+        type=int,
+        default=1,
+    )
     parser.add_argument(
         "--sample-strategy",
         choices=["stratified", "random", "prefix"],
@@ -2513,58 +3104,76 @@ def build_parser() -> argparse.ArgumentParser:
         default="prefix",
     )
     parser.add_argument(
+        "--gate1",
         "--validation-gate",
+        dest="gate1",
         action=argparse.BooleanOptionalAction,
         default=True,
     )
-    parser.add_argument("--validation-gate-size", type=int, default=30)
+    parser.add_argument("--gate1-size", "--validation-gate-size", dest="gate1_size", type=int, default=30)
     parser.add_argument(
+        "--gate1-strategy",
         "--validation-gate-strategy",
+        dest="gate1_strategy",
         choices=["stratified", "random", "prefix"],
         default="stratified",
     )
-    parser.add_argument("--validation-gate-seed", type=int, default=20260629)
+    parser.add_argument("--gate1-seed", "--validation-gate-seed", dest="gate1_seed", type=int, default=20260629)
+    parser.add_argument(
+        "--gate2",
+        "--confirmation-gate",
+        dest="gate2",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--gate2-size", "--confirmation-gate-size", dest="gate2_size", type=int, default=30)
+    parser.add_argument(
+        "--gate2-strategy",
+        "--confirmation-gate-strategy",
+        dest="gate2_strategy",
+        choices=["stratified", "random", "prefix"],
+        default="stratified",
+    )
+    parser.add_argument("--gate2-seed", "--confirmation-gate-seed", dest="gate2_seed", type=int, default=20260630)
     parser.add_argument("--validation-repeats", type=int, default=3)
     parser.add_argument("--max-candidate-attempts-per-epoch", type=int, default=3)
     parser.add_argument(
         "--candidate-application-mode",
         choices=["auto", "isolated", "cumulative", "diagnostic-apply"],
         default="auto",
-        help="auto resolves to diagnostic-apply",
+        help="auto resolves to cumulative when Gate2 is enabled, otherwise diagnostic-apply",
     )
-    parser.add_argument("--acceptance-min-wins", type=int, default=2)
-    parser.add_argument("--any-improvement-node-min-delta", type=float, default=0.0)
-    parser.add_argument("--any-improvement-relation-min-delta", type=float, default=0.0)
     parser.add_argument("--calibrate-validation-only", action="store_true")
     parser.add_argument("--validation-calibration-repeats", type=int, default=5)
     parser.add_argument("--sample-seed", type=int, default=13)
     parser.add_argument(
         "--model",
-        default=os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL),
+        default=provider.model,
         help="Shared fallback model for generation, agents, and judge",
     )
     parser.add_argument(
         "--generation-model",
-        default=os.environ.get("ZHIPU_LLM_GENERATION_MODEL"),
+        default=provider.generation_model,
     )
     parser.add_argument(
         "--agent-model",
-        default=os.environ.get("ZHIPU_LLM_AGENT_MODEL"),
+        default=provider.agent_model,
     )
     parser.add_argument(
         "--judge-model",
-        default=os.environ.get("ZHIPU_LLM_JUDGE_MODEL"),
+        default=provider.judge_model,
     )
-    parser.add_argument("--api-key", default=os.environ.get("ZHIPU_LLM_API_KEY", ""))
+    parser.add_argument("--api-key", default=provider.api_key)
     parser.add_argument(
         "--base-url",
-        default=os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL),
+        default=provider.base_url,
     )
-    parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--analysis-temperature", type=float, default=0.2)
-    parser.add_argument("--selector-temperature", type=float, default=0.2)
-    parser.add_argument("--localization-temperature", type=float, default=0.2)
-    parser.add_argument("--editor-temperature", type=float, default=0.2)
+    parser.set_defaults(llm_provider=provider.name, api_key_environment=provider.api_key_environment)
+    parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--analysis-temperature", type=float, default=0.0)
+    parser.add_argument("--selector-temperature", type=float, default=0.0)
+    parser.add_argument("--localization-temperature", type=float, default=0.0)
+    parser.add_argument("--editor-temperature", type=float, default=0.0)
     parser.add_argument("--top-p", type=optional_float, default=None)
     parser.add_argument("--max-tokens", type=int, default=12000)
     parser.add_argument("--analysis-max-tokens", type=int, default=4096)
@@ -2574,24 +3183,24 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--thinking",
         choices=["enabled", "disabled"],
-        default=os.environ.get("ZHIPU_THINKING_TYPE", DEFAULT_THINKING_TYPE),
+        default=provider.thinking,
     )
-    for option, environment, help_text in (
-        ("generation", "ZHIPU_GENERATION_THINKING_TYPE", "PlantUML generation"),
-        ("analysis", "ZHIPU_ANALYSIS_THINKING_TYPE", "failure analysis"),
-        ("selector", "ZHIPU_SELECTOR_THINKING_TYPE", "error selector"),
-        ("localization", "ZHIPU_LOCALIZATION_THINKING_TYPE", "Prompt-gap localization"),
-        ("editor", "ZHIPU_EDITOR_THINKING_TYPE", "Prompt editor and rewriter"),
-        ("judge", "ZHIPU_JUDGE_THINKING_TYPE", "LLM semantic judge"),
-        ("element-extraction", "ZHIPU_ELEMENT_EXTRACTION_THINKING_TYPE", "auxiliary extraction"),
+    for option, default, help_text in (
+        ("generation", provider.generation_thinking, "PlantUML generation"),
+        ("analysis", provider.analysis_thinking, "failure analysis"),
+        ("selector", provider.selector_thinking, "error selector"),
+        ("localization", provider.localization_thinking, "Prompt-gap localization"),
+        ("editor", provider.editor_thinking, "Prompt editor and rewriter"),
+        ("judge", provider.judge_thinking, "LLM semantic judge"),
+        ("element-extraction", provider.element_extraction_thinking, "auxiliary extraction"),
     ):
         parser.add_argument(
             f"--{option}-thinking",
             choices=["inherit", "enabled", "disabled"],
-            default=os.environ.get(environment, "inherit"),
+            default=default,
             help=f"Thinking mode for {help_text}",
         )
-    parser.add_argument("--do-sample", type=optional_bool, default=False)
+    parser.add_argument("--do-sample", type=optional_bool, default=provider.do_sample)
     parser.add_argument("--llm-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
     parser.add_argument("--llm-max-retries", type=int, default=20)
     parser.add_argument("--llm-rate-limit-initial-wait", type=int, default=30)

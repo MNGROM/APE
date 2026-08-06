@@ -38,6 +38,18 @@ class CandidateRegistryTest(unittest.TestCase):
                 "finding_keys": ["finding_key_1"],
                 "positive_trigger": "Apply the positive side.",
                 "negative_boundary": "Exclude the boundary side.",
+                "candidate_evidence_family": "semantic",
+                "acceptance_policy": "all-required-positive-mean-delta",
+                "gate_sequence_policy": "gate1-then-fresh-gate2",
+                "required_metrics": ["llm_node_f1", "llm_relation_f1"],
+                "required_metric_results": {
+                    "llm_node_f1": {"mean_delta": 0.01},
+                    "llm_relation_f1": {"mean_delta": 0.02},
+                },
+                "incomplete_required_metrics": [],
+                "non_improving_required_metrics": [],
+                "direct_metric": None,
+                "direct_metric_results": {},
             }
 
             record_evaluated_candidate(
@@ -62,6 +74,22 @@ class CandidateRegistryTest(unittest.TestCase):
                 set(),
             )
             self.assertEqual(loaded["entries"][0]["group_id"], "group_1")
+            self.assertEqual(
+                loaded["entries"][0]["required_metrics"],
+                ["llm_node_f1", "llm_relation_f1"],
+            )
+            self.assertEqual(
+                loaded["entries"][0]["candidate_evidence_family"], "semantic"
+            )
+            self.assertEqual(
+                loaded["entries"][0]["acceptance_policy"],
+                "all-required-positive-mean-delta",
+            )
+            self.assertIn(
+                "llm_relation_f1",
+                loaded["entries"][0]["required_metric_results"],
+            )
+            self.assertIsNone(loaded["entries"][0]["direct_metric"])
 
     def test_registry_rejects_duplicate_candidate_for_same_base(self) -> None:
         registry = {

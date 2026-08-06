@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import statistics
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +41,12 @@ IMPACT_METRIC_KEYS = (
     "llm_relation_f1",
     "syntax_pass",
     "plantuml_compilation_pass",
+)
+
+HELDOUT_REPEAT_METRICS = (
+    "llm_node_f1",
+    "llm_relation_f1",
+    "plantuml_compilation_pass_rate",
 )
 
 
@@ -283,6 +290,53 @@ def metrics_table_header() -> list[str]:
     ]
 
 
+PER_DATASET_REPORT_METRICS = (
+    "llm_node_f1",
+    "llm_relation_f1",
+    "plantuml_compilation_pass_rate",
+)
+
+
+def per_dataset_delta_lines(
+    gate1_results: dict[str, Any],
+    gate2_results: dict[str, Any],
+) -> list[str]:
+    """Render per-dataset gate deltas so pooled means cannot hide conflicts.
+
+    A mixed gate dilutes a single-dataset effect by that dataset's share of the
+    gate. These rows are diagnostic and never feed the acceptance decision.
+    """
+
+    datasets = sorted({*gate1_results, *gate2_results})
+    if not datasets:
+        return []
+    labels = ["gate", "dataset", "cases", *PER_DATASET_REPORT_METRICS]
+    lines = [
+        "",
+        "## Per-dataset deltas (diagnostic)",
+        "",
+        "| " + " | ".join(labels) + " |",
+        "| " + " | ".join(["---"] * len(labels)) + " |",
+    ]
+    for gate_name, results in (("gate1", gate1_results), ("gate2", gate2_results)):
+        for dataset in datasets:
+            entry = results.get(dataset)
+            if not entry:
+                continue
+            metrics = entry.get("metrics", {})
+            cells = [
+                gate_name,
+                dataset,
+                str(entry.get("case_count", "")),
+                *(
+                    fmt((metrics.get(metric) or {}).get("mean_delta"))
+                    for metric in PER_DATASET_REPORT_METRICS
+                ),
+            ]
+            lines.append("| " + " | ".join(cells) + " |")
+    return lines
+
+
 def prompt_diff(before: str, after: str, *, from_label: str, to_label: str) -> str:
     return "\n".join(
         difflib.unified_diff(
@@ -326,10 +380,10 @@ def refresh_iteration_report(iter_dir: Path) -> None:
         iter_dir / "evaluation" / "analysis_summary.json"
     ) or {}
     baseline_gate_summary = read_json_if_exists(
-        iter_dir / "validation_gate" / "baseline_summary.json"
+        iter_dir / "gate1" / "baseline_summary.json"
     )
     candidate_summary = read_json_if_exists(
-        iter_dir / "validation_gate" / "candidate_summary.json"
+        iter_dir / "gate1" / "candidate_summary.json"
     )
     acceptance = read_json_if_exists(iter_dir / "decision" / "acceptance.json")
 
@@ -362,8 +416,23 @@ def write_iteration_reports(
     applied = bool(acceptance and acceptance.get("applied"))
     acceptance_mode = acceptance.get("acceptance_mode") if acceptance else "not_evaluated"
     rejection_reasons = acceptance.get("rejection_reasons", []) if acceptance else []
-    baseline_label = "validation_baseline"
-    candidate_label = "validation_candidate"
+    baseline_label = "gate1_baseline"
+    candidate_label = "gate1_candidate"
+    # Read the legacy nested key so historical runs remain renderable; new
+    # decisions are stored under the threshold-free acceptance key.
+    decision = (
+        acceptance.get("acceptance_decision")
+        or acceptance.get("threshold_decision")
+        or acceptance
+    ) if acceptance else {}
+    gate1_decision = decision.get("gate1_decision") or decision
+    gate2_decision = decision.get("gate2_decision") or {}
+    baseline_gate_summary = baseline_gate_summary or gate1_decision.get(
+        "baseline_summary"
+    )
+    candidate_summary = candidate_summary or gate1_decision.get("candidate_summary")
+    gate2_baseline_summary = gate2_decision.get("baseline_summary")
+    gate2_candidate_summary = gate2_decision.get("candidate_summary")
 
     prompt_lines = [
         f"# Iteration {iteration:03d} Prompt Change",
@@ -371,6 +440,8 @@ def write_iteration_reports(
         f"- accepted: {accepted}",
         f"- applied: {applied}",
         f"- acceptance_mode: {acceptance_mode}",
+        f"- gate1_evaluated: {bool(acceptance and acceptance.get('gate1_evaluated'))}",
+        f"- gate2_evaluated: {bool(acceptance and acceptance.get('gate2_evaluated'))}",
         f"- rejection_reasons: {', '.join(rejection_reasons) if rejection_reasons else 'none'}",
         f"- chars_before: {len(prompt_before)}",
         f"- chars_after: {len(prompt_after)}",
@@ -380,6 +451,19 @@ def write_iteration_reports(
     if acceptance and acceptance.get("candidate_evidence_family"):
         prompt_lines.append(
             f"- candidate_evidence_family: {acceptance['candidate_evidence_family']}"
+        )
+    if acceptance and acceptance.get("acceptance_policy"):
+        prompt_lines.append(
+            f"- acceptance_policy: {acceptance['acceptance_policy']}"
+        )
+    if acceptance and acceptance.get("required_metrics"):
+        prompt_lines.append(
+            f"- required_metrics: {', '.join(acceptance['required_metrics'])}"
+        )
+    if acceptance and acceptance.get("non_improving_required_metrics"):
+        prompt_lines.append(
+            "- non_improving_required_metrics: "
+            + ", ".join(acceptance["non_improving_required_metrics"])
         )
     if acceptance and acceptance.get("direct_metric"):
         prompt_lines.append(f"- direct_metric: {acceptance['direct_metric']}")
@@ -412,25 +496,42 @@ def write_iteration_reports(
         metric_row("analysis_current", analysis_summary),
         metric_row(baseline_label, baseline_gate_summary),
         metric_row(candidate_label, candidate_summary),
+        metric_row("gate2_baseline", gate2_baseline_summary),
+        metric_row("gate2_candidate", gate2_candidate_summary),
     ]
     if acceptance:
         metric_lines.extend(["", "## Deltas", "", *metrics_table_header()])
         metric_lines.append(metric_delta_row("candidate_minus_baseline", metric_deltas(baseline_gate_summary, candidate_summary)))
-        threshold = acceptance.get("threshold_decision") or acceptance
         gate_payload = {
-            "acceptance_policy": threshold.get("acceptance_policy"),
-            "candidate_evidence_family": threshold.get(
+            "acceptance_policy": decision.get("acceptance_policy"),
+            "gate_sequence_policy": decision.get("gate_sequence_policy"),
+            "candidate_evidence_family": decision.get(
                 "candidate_evidence_family"
             ),
-            "direct_metric": threshold.get("direct_metric"),
-            "direct_metric_results": threshold.get("direct_metric_results", {}),
-            "semantic_safety_results": threshold.get(
-                "semantic_safety_results", {}
+            "required_metrics": decision.get("required_metrics", []),
+            "required_metric_results": decision.get(
+                "required_metric_results", {}
             ),
-            "evaluation_valid": threshold.get("evaluation_valid"),
-            "winning_metrics": threshold.get("winning_metrics", []),
-            "metric_results": threshold.get("metric_results", {}),
+            "incomplete_required_metrics": decision.get(
+                "incomplete_required_metrics", []
+            ),
+            "non_improving_required_metrics": decision.get(
+                "non_improving_required_metrics", []
+            ),
+            "direct_metric": decision.get("direct_metric"),
+            "direct_metric_results": decision.get("direct_metric_results", {}),
+            "evaluation_valid": decision.get("evaluation_valid"),
+            "winning_metrics": decision.get("winning_metrics", []),
+            "metric_results": decision.get("metric_results", {}),
+            "gate1_decision": decision.get("gate1_decision"),
+            "gate2_decision": decision.get("gate2_decision"),
         }
+        metric_lines.extend(
+            per_dataset_delta_lines(
+                gate1_decision.get("per_dataset_metric_results") or {},
+                gate2_decision.get("per_dataset_metric_results") or {},
+            )
+        )
         metric_lines.extend(["", "## Gates", "", "```json", json.dumps(gate_payload, ensure_ascii=False, indent=2), "```"])
     write_text(iter_dir / "reports" / "metrics_report.md", "\n".join(metric_lines).rstrip() + "\n")
 
@@ -479,6 +580,9 @@ def refresh_run_reports(run_dir: Path) -> None:
                         f"- accepted: {acceptance.get('accepted')}",
                         f"- acceptance_mode: {acceptance.get('acceptance_mode', '-')}",
                         f"- candidate_evidence_family: {acceptance.get('candidate_evidence_family') or '-'}",
+                        f"- acceptance_policy: {acceptance.get('acceptance_policy') or '-'}",
+                        "- required_metrics: "
+                        + (", ".join(acceptance.get("required_metrics", [])) or "-"),
                         f"- direct_metric: {acceptance.get('direct_metric') or '-'}",
                         f"- rejection_reasons: {', '.join(acceptance.get('rejection_reasons', [])) or 'none'}",
                         "",
@@ -499,6 +603,123 @@ def refresh_run_reports(run_dir: Path) -> None:
 
     if len(acceptance_rows) > 5:
         metrics_lines.extend(acceptance_rows)
+
+    repeat_payloads: list[tuple[Path, dict[str, Any]]] = []
+    for iter_dir in sorted(run_dir.glob("iteration_*")):
+        repeats_path = iter_dir / "test" / "repeats.json"
+        if not repeats_path.exists():
+            continue
+        payload = json.loads(read_text(repeats_path))
+        if isinstance(payload, dict):
+            repeat_payloads.append((iter_dir, payload))
+    if repeat_payloads:
+        metrics_lines.extend(
+            [
+                "",
+                "## Heldout Repeats",
+                "",
+                "These measurements are diagnostic-only and do not affect acceptance.",
+                "",
+                "| iteration | repeat | node_f1 | relation_f1 | compile |",
+                "| --- | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for iter_dir, payload in repeat_payloads:
+            summaries = payload.get("repeat_summaries")
+            summaries = summaries if isinstance(summaries, list) else []
+            for repeat, summary in enumerate(summaries, 1):
+                summary = summary if isinstance(summary, dict) else {}
+                metrics_lines.append(
+                    "| "
+                    + " | ".join(
+                        [
+                            iter_dir.name,
+                            str(repeat),
+                            fmt(summary.get("llm_node_f1")),
+                            fmt(summary.get("llm_relation_f1")),
+                            fmt(summary.get("plantuml_compilation_pass_rate")),
+                        ]
+                    )
+                    + " |"
+                )
+
+        baseline_payload = next(
+            (
+                payload
+                for iter_dir, payload in repeat_payloads
+                if iter_dir.name == "iteration_000"
+            ),
+            None,
+        )
+        if baseline_payload is not None:
+            baseline_summaries = baseline_payload.get("repeat_summaries")
+            baseline_summaries = (
+                baseline_summaries if isinstance(baseline_summaries, list) else []
+            )
+            metrics_lines.extend(
+                [
+                    "",
+                    "## Heldout Repeat Deltas",
+                    "",
+                    "| iteration | metric | repeat_deltas | mean_delta | min_delta | max_delta |",
+                    "| --- | --- | --- | ---: | ---: | ---: |",
+                ]
+            )
+            for iter_dir, payload in repeat_payloads:
+                if iter_dir.name == "iteration_000":
+                    continue
+                candidate_summaries = payload.get("repeat_summaries")
+                candidate_summaries = (
+                    candidate_summaries
+                    if isinstance(candidate_summaries, list)
+                    else []
+                )
+                if len(candidate_summaries) != len(baseline_summaries):
+                    metrics_lines.append(
+                        f"| {iter_dir.name} | repeat_count_mismatch | - | - | - | - |"
+                    )
+                    continue
+                for metric in HELDOUT_REPEAT_METRICS:
+                    deltas: list[float] = []
+                    for baseline, candidate in zip(
+                        baseline_summaries, candidate_summaries
+                    ):
+                        baseline_value = (
+                            baseline.get(metric) if isinstance(baseline, dict) else None
+                        )
+                        candidate_value = (
+                            candidate.get(metric) if isinstance(candidate, dict) else None
+                        )
+                        if not isinstance(baseline_value, (int, float)) or isinstance(
+                            baseline_value, bool
+                        ):
+                            deltas = []
+                            break
+                        if not isinstance(candidate_value, (int, float)) or isinstance(
+                            candidate_value, bool
+                        ):
+                            deltas = []
+                            break
+                        deltas.append(float(candidate_value) - float(baseline_value))
+                    if not deltas:
+                        metrics_lines.append(
+                            f"| {iter_dir.name} | {metric} | missing | - | - | - |"
+                        )
+                        continue
+                    metrics_lines.append(
+                        "| "
+                        + " | ".join(
+                            [
+                                iter_dir.name,
+                                metric,
+                                ", ".join(fmt(delta) for delta in deltas),
+                                fmt(statistics.fmean(deltas)),
+                                fmt(min(deltas)),
+                                fmt(max(deltas)),
+                            ]
+                        )
+                        + " |"
+                    )
 
     write_text(run_dir / "prompt_evolution.md", "\n".join(prompt_lines).rstrip() + "\n")
     write_text(run_dir / "metrics_overview.md", "\n".join(metrics_lines).rstrip() + "\n")

@@ -33,6 +33,19 @@ DIAGNOSTIC_FINDING_KINDS = (
     "syntax_error",
     "compile_error",
 )
+REQUIRED_METRIC_BY_FINDING_KIND = {
+    "missing_node": "llm_node_f1",
+    "extra_node": "llm_node_f1",
+    "missing_relation": "llm_relation_f1",
+    "extra_relation": "llm_relation_f1",
+    "syntax_error": "plantuml_compilation_pass_rate",
+    "compile_error": "plantuml_compilation_pass_rate",
+}
+REQUIRED_METRIC_ORDER = (
+    "llm_node_f1",
+    "llm_relation_f1",
+    "plantuml_compilation_pass_rate",
+)
 FINDING_KINDS = {
     "missing_node",
     "extra_node",
@@ -738,13 +751,17 @@ def validate_selected_group_eligibility(group: dict[str, Any]) -> list[str]:
         if item.get("status") != "actionable":
             errors.append(f"finding {finding_id} is not a validated actionable error")
         if anchor_kind in DIAGNOSTIC_FINDING_KINDS:
-            families.add("diagnostic")
+            families.add("compile")
             if GENERIC_COMPILER_CUE.match(str(item.get("error_anchor") or "").strip()):
                 errors.append(f"finding {finding_id} is a generic compiler/syntax diagnostic")
-        else:
+        elif anchor_kind in SEMANTIC_FINDING_KINDS:
             families.add("semantic")
             if str(item.get("matching_quality") or "not_available") != "bijective":
                 errors.append(f"finding {finding_id} is not bijective")
+        else:
+            errors.append(
+                f"finding {finding_id} has unsupported anchor_kind {anchor_kind!r}"
+            )
     if len(families) > 1:
         errors.append("selected group mixes semantic and compiler/syntax findings")
     return errors
@@ -753,19 +770,38 @@ def validate_selected_group_eligibility(group: dict[str, Any]) -> list[str]:
 def selected_group_evidence_family(group: dict[str, Any]) -> str:
     """Return the one acceptance metric family supported by a selected group."""
 
+    required_metrics = selected_group_required_metrics(group)
+    if required_metrics == ("plantuml_compilation_pass_rate",):
+        return "compile"
+    return "semantic"
+
+
+def selected_group_required_metrics(group: dict[str, Any]) -> tuple[str, ...]:
+    """Derive the acceptance metrics directly supported by group findings."""
+
     members = [item for item in group.get("members", []) if isinstance(item, dict)]
-    anchor_kinds = {
-        str(item.get("anchor_kind") or "").strip()
-        for item in members
-        if str(item.get("anchor_kind") or "").strip()
+    anchor_kind_values = [
+        str(item.get("anchor_kind") or "").strip() for item in members
+    ]
+    anchor_kinds = set(anchor_kind_values)
+    if (
+        not members
+        or any(
+            anchor_kind not in REQUIRED_METRIC_BY_FINDING_KIND
+            for anchor_kind in anchor_kind_values
+        )
+    ):
+        raise ValueError("Selected group must contain supported finding anchor kinds")
+    required = {
+        REQUIRED_METRIC_BY_FINDING_KIND[anchor_kind]
+        for anchor_kind in anchor_kinds
     }
-    if anchor_kinds and anchor_kinds <= set(SEMANTIC_FINDING_KINDS):
-        return "semantic"
-    if anchor_kinds and anchor_kinds <= set(DIAGNOSTIC_FINDING_KINDS):
-        return "diagnostic"
-    raise ValueError(
-        "Selected group must contain one homogeneous semantic or diagnostic evidence family"
-    )
+    compile_metric = "plantuml_compilation_pass_rate"
+    if compile_metric in required and len(required) > 1:
+        raise ValueError(
+            "Selected group must not mix semantic and compile required metrics"
+        )
+    return tuple(metric for metric in REQUIRED_METRIC_ORDER if metric in required)
 
 
 def select_error_group(

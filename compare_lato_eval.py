@@ -22,6 +22,7 @@ from config import (
     DEFAULT_PROMPT_PATH,
     DEFAULT_RUNS_DIR,
     DEFAULT_THINKING_TYPE,
+    get_llm_provider_settings,
     optional_bool,
 )
 from element_extraction import extract_graph_for_metrics
@@ -351,6 +352,7 @@ def write_run_args(output_dir: Path, args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    provider = get_llm_provider_settings()
     parser = argparse.ArgumentParser(description="Evaluate LATO zero-shot and APE prompts with identical APE metrics")
     parser.add_argument("--datasets-dir", type=Path, default=DEFAULT_DATASETS_DIR)
     parser.add_argument("--test-dataset", default="fsd", help="Dataset name, or 'all'")
@@ -363,15 +365,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--prompt-path", type=Path, default=DEFAULT_PROMPT_PATH)
     parser.add_argument("--plantuml-jar", type=Path, default=DEFAULT_PLANTUML_JAR)
     parser.add_argument("--plantuml-compile-timeout", type=int, default=30)
-    parser.add_argument("--model", default=os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL))
-    parser.add_argument("--api-key", default=os.environ.get("ZHIPU_LLM_API_KEY", ""))
-    parser.add_argument("--base-url", default=os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL))
-    parser.add_argument("--temperature", type=float, default=0.2)
+    parser.add_argument("--model", default=provider.model)
+    parser.add_argument("--api-key", default=provider.api_key)
+    parser.add_argument("--base-url", default=provider.base_url)
+    parser.set_defaults(llm_provider=provider.name, api_key_environment=provider.api_key_environment)
+    parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top-p", type=float, default=None)
-    parser.add_argument("--do-sample", type=optional_bool, default=False)
+    parser.add_argument("--do-sample", type=optional_bool, default=provider.do_sample)
     parser.add_argument("--max-tokens", type=int, default=12000)
-    parser.add_argument("--thinking", choices=["enabled", "disabled"], default=os.environ.get("ZHIPU_THINKING_TYPE", DEFAULT_THINKING_TYPE))
-    parser.add_argument("--generation-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_GENERATION_THINKING_TYPE", "inherit"))
+    parser.add_argument("--thinking", choices=["enabled", "disabled"], default=provider.thinking)
+    parser.add_argument("--generation-thinking", choices=["inherit", "enabled", "disabled"], default=provider.generation_thinking)
     parser.add_argument("--llm-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
     parser.add_argument("--llm-max-retries", type=int, default=20)
     parser.add_argument("--llm-rate-limit-initial-wait", type=int, default=30)
@@ -384,16 +387,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--element-extraction-temperature", type=float, default=0.0)
     parser.add_argument("--element-extraction-max-tokens", type=int, default=4096)
     parser.add_argument("--element-extraction-max-retries", type=int, default=3)
-    parser.add_argument("--element-extraction-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_ELEMENT_EXTRACTION_THINKING_TYPE", "inherit"))
+    parser.add_argument("--element-extraction-thinking", choices=["inherit", "enabled", "disabled"], default=provider.element_extraction_thinking)
     parser.add_argument("--llm-element-metrics", action=argparse.BooleanOptionalAction, default=False)
-    parser.add_argument("--llm-judge-model", default=os.environ.get("ZHIPU_LLM_JUDGE_MODEL", os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL)))
-    parser.add_argument("--llm-judge-api-key", default=os.environ.get("ZHIPU_LLM_JUDGE_API_KEY", os.environ.get("ZHIPU_LLM_API_KEY", "")))
-    parser.add_argument("--llm-judge-base-url", default=os.environ.get("ZHIPU_LLM_JUDGE_BASE_URL", os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL)))
+    parser.add_argument("--llm-judge-model", default=provider.judge_model or provider.model)
+    parser.add_argument("--llm-judge-api-key", default=provider.judge_api_key)
+    parser.add_argument("--llm-judge-base-url", default=provider.judge_base_url)
     parser.add_argument("--llm-judge-temperature", type=float, default=0.0)
     parser.add_argument("--llm-judge-max-tokens", type=int, default=4096)
     parser.add_argument("--llm-judge-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
     parser.add_argument("--llm-judge-max-retries", type=int, default=3)
-    parser.add_argument("--llm-judge-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_LLM_JUDGE_THINKING_TYPE", "disabled"))
+    parser.add_argument("--llm-judge-thinking", choices=["inherit", "enabled", "disabled"], default=provider.judge_thinking)
     parser.add_argument("--mock-with-gold", action="store_true", help="Use gold PlantUML as generated output to smoke-test the evaluation flow")
     return parser
 
@@ -412,12 +415,30 @@ def main() -> None:
     args = parser.parse_args()
     normalize_inherited_modes(args)
 
+    temperature_fields = (
+        "temperature",
+        "element_extraction_temperature",
+        "llm_judge_temperature",
+    )
+    nonzero_temperatures = [
+        f"--{field.replace('_', '-')}={getattr(args, field)}"
+        for field in temperature_fields
+        if float(getattr(args, field)) != 0.0
+    ]
+    if nonzero_temperatures:
+        raise RuntimeError(
+            "All model temperatures must be 0; rejected "
+            + ", ".join(nonzero_temperatures)
+        )
+
     if not args.mock_with_gold and not args.api_key:
-        raise RuntimeError("ZHIPU_LLM_API_KEY is required unless --mock-with-gold is used.")
+        raise RuntimeError("The active provider API key is required unless --mock-with-gold is used.")
     if args.element_extractor == "llm" and not args.api_key:
-        raise RuntimeError("ZHIPU_LLM_API_KEY is required when --element-extractor llm is used.")
+        raise RuntimeError("The active provider API key is required when --element-extractor llm is used.")
     if args.llm_element_metrics and not args.llm_judge_api_key:
         raise RuntimeError("LLM judge API key is required when --llm-element-metrics is enabled.")
+    if getattr(args, "llm_provider", "zhipu") == "deepseek" and args.do_sample is not None:
+        raise RuntimeError("DeepSeek does not define do_sample; omit it with --do-sample omit.")
 
     output_dir = args.output_dir or make_output_dir(args.runs_dir, args.test_dataset)
     output_dir.mkdir(parents=True, exist_ok=True)

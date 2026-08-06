@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py -m unittest discover -s tests -q)",
+      "Bash(py *)"
+    ]
+  }
+}

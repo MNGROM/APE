@@ -30,6 +30,15 @@ class RecordingClient:
 
 
 class ModelRoutingTest(unittest.TestCase):
+    def test_llm_client_defaults_to_zero_temperature(self):
+        self.assertEqual(LLMClient().temperature, 0.0)
+
+    def test_llm_client_rejects_nonzero_temperature(self):
+        client = LLMClient(api_key="key", temperature=0.0)
+
+        with self.assertRaisesRegex(ValueError, "LLM temperature must be 0"):
+            client.chat([{"role": "user", "content": "test"}], temperature=0.2)
+
     def test_legacy_model_fallback_and_explicit_roles(self):
         args = build_parser().parse_args([
             "--model", "legacy-model",
@@ -135,6 +144,20 @@ class ModelRoutingTest(unittest.TestCase):
 
         self.assertEqual(result, "ok")
         self.assertIs(captured["do_sample"], False)
+
+    def test_judge_rejects_nonzero_temperature(self):
+        with self.assertRaisesRegex(ValueError, "LLM temperature must be 0"):
+            judge_chat(
+                messages=[{"role": "user", "content": "test"}],
+                model="glm-5.1",
+                api_key="key",
+                base_url="https://example.invalid/v4/",
+                temperature=0.2,
+                max_tokens=128,
+                timeout=10,
+                thinking="disabled",
+                provider_max_retries=0,
+            )
 
     def test_judge_pipeline_threads_sampling_mode_to_every_call(self):
         responses = [

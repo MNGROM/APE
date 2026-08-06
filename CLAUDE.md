@@ -14,7 +14,8 @@ generation and evaluation
 -> Prompt editor
 -> Prompt rewriter
 -> deterministic single-section apply
--> paired repeated validation
+-> paired repeated gate1
+-> fresh paired repeated gate2 for gate1-passing candidates
 -> application policy
 -> heldout audit only after a Prompt change
 ```
@@ -27,9 +28,11 @@ generation and evaluation
 
 - `analysis/`：当前 selector-v4 的失败分析、分组、候选 agent 和 registry。
 - `ape_datasets/`：数据加载、采样和 split 辅助逻辑。
-- `prompt_workspace/`：当前运行使用的 seed Prompt 和五个 agent Prompt；不保存旧版本。
+- `prompt_workspace/`：当前运行使用的 seed Prompt 和五个 agent Prompt；不保存旧版本。任何
+  Prompt 文本修改都必须先提交精确 diff 并获得用户明确审核批准，不能与普通代码修改一并落盘。
 - `tests/`：当前支持行为的单元测试和流程测试；不保留已删除兼容流程的测试。
 - `scripts/`：仍可运行的离线诊断或实验启动脚本。
+- `utils/`：共享文件、限流和 Prompt hash 辅助模块；跨平台 Prompt identity 必须复用这里的实现。
 - `docs/`：当前架构、执行边界和交接说明；Git 历史负责保存过时设计。
 - `tools/prompt_snapshots/`：仅保存经用户明确要求的活跃 Prompt 精确回滚快照；文件名使用
   `YYYY-MM-DD__<prompt-component>__<reason>.md`，不得由运行流程读取或覆盖当前 Prompt。
@@ -51,14 +54,54 @@ generation and evaluation
 
 ## Experiment boundaries
 
+- 正式实验默认直接使用 `py run.py` 启动。除非用户主动明确要求使用 PowerShell
+  调度脚本，否则不得以 `scripts/*.ps1` 作为实验入口；`.ps1` 仅用于用户明确指定的
+  批量调度、跨数据集编排或状态监控场景。使用 `run.py` 时必须在命令中显式写出本次
+  实验所需的 provider、模型角色、Gate、采样、重复次数和 application mode 参数，不能
+  依赖 `.ps1` 的隐含默认值。
+
+- APE 支持 `zhipu` 与 `deepseek` 两种 OpenAI-compatible provider。provider 优先由
+  `APE_LLM_PROVIDER` 显式选择；未设置时仅在只有一个 provider API key 的情况下确定性推导。凭据只能从
+  provider 对应环境变量或显式 CLI 参数读取，且 `run_args.json` 只能记录 `*_present`。
+- DeepSeek 请求必须使用其当前 Chat Completion 合同：保留 `temperature=0` 和显式
+  `thinking.type=disabled`，但不得发送未在 DeepSeek OpenAI API schema 中定义的
+  `do_sample`。Zhipu 继续显式发送 `do_sample=false`。
+- 所有真实模型调用的 temperature 必须严格为 `0`，包括 generation、failure analysis、
+  selector、localization、editor/rewriter、LLM Judge 和 element extraction。CLI 默认值必须为
+  `0`，任何非零 temperature 配置必须在模型调用前直接拒绝；历史 run 中的非零配置只保留
+  作审计，不得复制到新实验或 replay。
 - heldout 不得参与候选发现、排序、修改、阈值校准或 acceptance gate。
+- `--heldout-repeats` 只控制 heldout 审计的重复次数，默认 `1`。每个 initial 或 applied
+  Prompt 必须在同一组 heldout cases 上完成全部 repeats，并保留逐次 summary 与聚合均值；
+  repeats 不得进入 candidate discovery、排序、Gate、application 或 Prompt 修改。
 - 同一 epoch 的 candidate attempts 必须使用同一个 base Prompt，不能串行叠加。
-- 同一 epoch 最多应用一个 candidate，validation baseline 只生成一次并复用。
-- semantic finding group 必须通过 LLM Node F1 或 Relation F1 的 repeated validation gate。
-  `syntax_error` 与 `compile_error` 属于同一个 diagnostic evidence family，可以同组，并统一
-  使用包装后 PlantUML JAR 检查产生的 `plantuml_compilation_pass_rate` 作为直接 acceptance
-  指标；diagnostic group 还必须满足语义 F1 的 non-regression safety check，不能仅凭无关的
-  语义波动被接受。`syntax_pass_rate` 只保留为诊断指标，不参与 acceptance。
+- 同一 epoch 最多应用一个 candidate。gate1 baseline 在同一 epoch 内只生成一次并复用；gate2
+  baseline/candidate 必须为每个通过 gate1 的 candidate fresh evaluation，
+  不得跨 candidate 复用。
+- gate1 与 gate2 必须从非 heldout training pool 固定、分层且互不重叠地划出，并从 candidate
+  discovery training cases 中排除。只有 gate1 通过的 candidate 才运行 gate2；两关都通过后
+  `cumulative` 才能应用。gate2 失败不得修改 Prompt 或进入
+  heldout，candidate attempts 继续使用当前 frozen base Prompt。
+- Python 必须从 validated selected group 的 `anchor_kind` 确定 required metrics：
+  `missing_node/extra_node` 使用 `llm_node_f1`，`missing_relation/extra_relation` 使用
+  `llm_relation_f1`，同时包含 node 和 relation findings 的 semantic group 必须同时使用两项，
+  `syntax_error/compile_error` 使用 `plantuml_compilation_pass_rate`。gate1 与 gate2 中每个
+  required metric 的 repeated mean delta 都必须严格大于 `0`；不相关指标只作诊断，不能代偿。
+  不设置 `min_delta`、`min_wins`、regression floor 或“允许回退多少”的人工阈值。缺少任一
+  required metric 的完整 measurement 时 evaluation invalid。`syntax_error` 与
+  `compile_error` 属于同一个 compile evidence family，可以同组，并统一使用包装后 PlantUML
+  JAR 检查产生的 compilation 指标；`syntax_pass_rate` 只保留为诊断指标，不参与 acceptance。
+- 该无阈值 acceptance policy 是当前用户明确指定的项目契约。除非用户主动明确要求，后续
+  不得重新添加最小提升、最小 wins、semantic/compile floor 或其他等价的回退阈值。
+- Gate2 默认启用；启用时 `auto` application mode 解析为 `cumulative`，且不得使用
+  `diagnostic-apply` 绕过双 gate。旧诊断应用语义只能与 `--no-gate2` 显式配合。
+- `--stop-after-first-apply` 是正式 paired run 的可选因果隔离开关。启用后，APE 在首个
+  applied candidate 对应的 heldout audit 或 skip manifest 完成后结束后续 epoch；若没有
+  candidate 应用，则仍完成配置的全部 iterations。该开关不得提前跳过 Gate2、任一
+  heldout repeat 或 heldout 调度。
+- 跨 run 的来源-受益分析只能读取既有 `candidate_registry.json`、split、Gate 和 heldout
+  产物。宏平均、training-pool weighted 平均和逐数据集 delta 都属于 report-only 派生证据，
+  不得回写历史 run、覆盖原 `accepted`，也不得成为隐藏 acceptance gate。
 - 只有相同 base Prompt、相同 finding keys 且已确认 `no_prompt_gap` 的 group 可以过滤；
   不得使用 summary、embedding 或模糊语义匹配跳过新证据。
 - 重复 `already_covered` 只能通过现有 `ambiguous + replace_existing` 合同收紧原指导，
@@ -68,6 +111,7 @@ generation and evaluation
   以“已有指导覆盖”为理由返回 `no_prompt_gap`。
 - Prompt hash 未变化时不得运行 heldout generation 或 judge。
 - 未经用户明确同意，不得调用真实模型、运行训练、validation calibration 或 heldout。
+- 未经用户逐次审核批准，不得修改 `prompt_workspace/*.md`；可以先提供拟议 diff，但不能落盘。
 - 不得修改或删除现有实验日志和 run 产物。
 
 ## Change discipline

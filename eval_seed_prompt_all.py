@@ -19,6 +19,7 @@ from config import (
     DEFAULT_PROMPT_PATH,
     DEFAULT_THINKING_TYPE,
     PROJECT_DIR,
+    get_llm_provider_settings,
     optional_bool,
     optional_float,
 )
@@ -28,6 +29,7 @@ from metrics import DEFAULT_EMBEDDING_MODEL, format_summary
 from reporting import refresh_run_reports
 from run import make_llm_client, resolve_agent_thinking, resolve_model_roles
 from utils.io import read_prompt_file, write_text
+from utils.prompt_hash import PROMPT_HASH_NORMALIZATION_VERSION, prompt_sha256
 from versioning import make_run_dir, write_run_args
 
 
@@ -67,6 +69,7 @@ def parse_dataset_names(value: str) -> list[str]:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    provider = get_llm_provider_settings()
     parser = argparse.ArgumentParser(
         description="Evaluate prompt_workspace/tst.md as a fixed iteration_000 baseline on LATO datasets.",
     )
@@ -76,27 +79,34 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--datasets-dir", type=Path, default=DEFAULT_DATASETS_DIR)
     parser.add_argument("--datasets", type=parse_dataset_names, default=list(DEFAULT_DATASETS), help="Comma-separated dataset names, or 'all'")
     parser.add_argument("--max-test-cases", type=int, default=0, help="0 means all cases for each dataset")
+    parser.add_argument(
+        "--case-concurrency",
+        type=int,
+        default=1,
+        help="Concurrent case evaluations within each dataset",
+    )
     parser.add_argument("--test-sample-strategy", choices=["stratified", "random", "prefix"], default="prefix")
     parser.add_argument("--sample-seed", type=int, default=13)
 
-    parser.add_argument("--model", default=os.environ.get("ZHIPU_LLM_MODEL", DEFAULT_MODEL), help="Legacy fallback model for all roles")
-    parser.add_argument("--generation-model", default=os.environ.get("ZHIPU_LLM_GENERATION_MODEL"), help="Model used for PlantUML prediction; defaults to --model")
-    parser.add_argument("--agent-model", default=os.environ.get("ZHIPU_LLM_AGENT_MODEL"), help="Compatibility role for the shared APE client; defaults to --model")
-    parser.add_argument("--judge-model", default=os.environ.get("ZHIPU_LLM_JUDGE_MODEL"), help="Model used for semantic judging; defaults to --model")
-    parser.add_argument("--api-key", default=os.environ.get("ZHIPU_LLM_API_KEY", ""))
-    parser.add_argument("--base-url", default=os.environ.get("ZHIPU_LLM_BASE_URL", DEFAULT_BASE_URL))
-    parser.add_argument("--temperature", type=float, default=0.2)
-    parser.add_argument("--top-p", type=optional_float, default=None, help="GLM top_p, or 'omit' to use provider default")
+    parser.add_argument("--model", default=provider.model, help="Legacy fallback model for all roles")
+    parser.add_argument("--generation-model", default=provider.generation_model, help="Model used for PlantUML prediction; defaults to --model")
+    parser.add_argument("--agent-model", default=provider.agent_model, help="Compatibility role for the shared APE client; defaults to --model")
+    parser.add_argument("--judge-model", default=provider.judge_model, help="Model used for semantic judging; defaults to --model")
+    parser.add_argument("--api-key", default=provider.api_key)
+    parser.add_argument("--base-url", default=provider.base_url)
+    parser.set_defaults(llm_provider=provider.name, api_key_environment=provider.api_key_environment)
+    parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--top-p", type=optional_float, default=None, help="Provider top_p, or 'omit' to use provider default")
     parser.add_argument("--max-tokens", type=int, default=12000)
-    parser.add_argument("--thinking", choices=["enabled", "disabled"], default=os.environ.get("ZHIPU_THINKING_TYPE", DEFAULT_THINKING_TYPE))
-    parser.add_argument("--generation-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_GENERATION_THINKING_TYPE", "inherit"))
-    parser.add_argument("--judge-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_JUDGE_THINKING_TYPE", "inherit"))
-    parser.add_argument("--element-extraction-thinking", choices=["inherit", "enabled", "disabled"], default=os.environ.get("ZHIPU_ELEMENT_EXTRACTION_THINKING_TYPE", "inherit"))
+    parser.add_argument("--thinking", choices=["enabled", "disabled"], default=provider.thinking)
+    parser.add_argument("--generation-thinking", choices=["inherit", "enabled", "disabled"], default=provider.generation_thinking)
+    parser.add_argument("--judge-thinking", choices=["inherit", "enabled", "disabled"], default=provider.judge_thinking)
+    parser.add_argument("--element-extraction-thinking", choices=["inherit", "enabled", "disabled"], default=provider.element_extraction_thinking)
     parser.add_argument(
         "--do-sample",
         type=optional_bool,
-        default=False,
-        help="GLM sampling mode; defaults to false, true enables sampling, and 'omit' uses the provider default",
+        default=provider.do_sample,
+        help="Sampling control; Zhipu defaults to false, DeepSeek omits this unsupported field",
     )
     parser.add_argument("--llm-timeout", type=int, default=DEFAULT_LLM_TIMEOUT)
     parser.add_argument("--llm-max-retries", type=int, default=20)
@@ -125,6 +135,23 @@ def build_parser() -> argparse.ArgumentParser:
 def validate_args(args: argparse.Namespace) -> None:
     if args.max_test_cases < 0:
         raise ValueError("--max-test-cases must be non-negative")
+    if args.case_concurrency < 1:
+        raise ValueError("--case-concurrency must be positive")
+    temperature_fields = (
+        "temperature",
+        "element_extraction_temperature",
+        "llm_judge_temperature",
+    )
+    nonzero_temperatures = [
+        f"--{field.replace('_', '-')}={getattr(args, field)}"
+        for field in temperature_fields
+        if float(getattr(args, field)) != 0.0
+    ]
+    if nonzero_temperatures:
+        raise ValueError(
+            "All model temperatures must be 0; rejected "
+            + ", ".join(nonzero_temperatures)
+        )
     if args.max_tokens < 1:
         raise ValueError("--max-tokens must be positive")
     if args.top_p is not None and not (0.01 <= args.top_p <= 0.99):
@@ -140,11 +167,13 @@ def validate_args(args: argparse.Namespace) -> None:
     if args.element_extraction_max_retries < 1:
         raise ValueError("--element-extraction-max-retries must be positive")
     if not args.mock_with_gold and not args.api_key:
-        raise ValueError("Seed prompt evaluation requires ZHIPU_LLM_API_KEY or --api-key unless --mock-with-gold is used")
+        raise ValueError("Seed prompt evaluation requires the active provider API key or --api-key unless --mock-with-gold is used")
     if args.llm_element_metrics and not args.api_key:
-        raise ValueError("LLM semantic element metrics require ZHIPU_LLM_API_KEY or --api-key")
+        raise ValueError("LLM semantic element metrics require the active provider API key or --api-key")
     if args.element_extractor == "llm" and not args.api_key:
-        raise ValueError("LLM element extraction requires ZHIPU_LLM_API_KEY or --api-key")
+        raise ValueError("LLM element extraction requires the active provider API key or --api-key")
+    if getattr(args, "llm_provider", "zhipu") == "deepseek" and args.do_sample is not None:
+        raise ValueError("DeepSeek does not define do_sample; omit it with --do-sample omit")
 
 
 def prepare_args(args: argparse.Namespace) -> None:
@@ -200,10 +229,18 @@ def write_overview(run_dir: Path, rows: list[dict[str, Any]]) -> None:
     write_text(run_dir / "baseline_overview.md", "\n".join(lines) + "\n")
 
 
-def write_manifest(run_dir: Path, args: argparse.Namespace, rows: list[dict[str, Any]]) -> None:
+def write_manifest(
+    run_dir: Path,
+    args: argparse.Namespace,
+    rows: list[dict[str, Any]],
+    *,
+    prompt_hash: str,
+) -> None:
     payload = {
         "mode": "seed_prompt_baseline",
         "prompt": "prompt_used.md",
+        "prompt_sha256": prompt_hash,
+        "prompt_hash_normalization": PROMPT_HASH_NORMALIZATION_VERSION,
         "datasets": [row["dataset"] for row in rows],
         "overview": {
             "csv": "baseline_overview.csv",
@@ -215,6 +252,7 @@ def write_manifest(run_dir: Path, args: argparse.Namespace, rows: list[dict[str,
             "llm_element_metrics": args.llm_element_metrics,
             "metric_matcher": args.metric_matcher,
             "max_test_cases": args.max_test_cases,
+            "case_concurrency": args.case_concurrency,
             "test_sample_strategy": args.test_sample_strategy,
         },
     }
@@ -241,6 +279,8 @@ def evaluate_seed_dataset(
                 "iteration": 0,
                 "mode": "seed_prompt_baseline",
                 "dataset": dataset,
+                "prompt_sha256": prompt_sha256(prompt),
+                "prompt_hash_normalization": PROMPT_HASH_NORMALIZATION_VERSION,
                 "inputs": {
                     "prompt": "prompts/after.md",
                     "cases": "../test_cases.json",
@@ -282,6 +322,7 @@ def evaluate_seed_dataset(
         output_path=test_dir / "records.jsonl",
         state_dir=dataset_dir,
         phase=f"iteration_000:{dataset}:seed_baseline",
+        case_concurrency=args.case_concurrency,
     )
     write_text(test_dir / "summary.json", json.dumps(summary, ensure_ascii=False, indent=2))
     write_text(test_dir / "analysis.md", build_analysis(records, summary))
@@ -296,6 +337,7 @@ def main() -> None:
     validate_args(args)
 
     prompt = read_prompt_file(args.prompt_path, label="seed")
+    prompt_hash = prompt_sha256(prompt)
     datasets = load_cases(args.datasets_dir)
     missing = [name for name in args.datasets if name not in datasets]
     if missing:
@@ -337,10 +379,10 @@ def main() -> None:
         print(f"[baseline:{dataset}] {format_summary(summary)}")
         rows.append(overview_row(dataset, dataset_dir, run_dir, summary))
         write_overview(run_dir, rows)
-        write_manifest(run_dir, args, rows)
+        write_manifest(run_dir, args, rows, prompt_hash=prompt_hash)
 
     write_overview(run_dir, rows)
-    write_manifest(run_dir, args, rows)
+    write_manifest(run_dir, args, rows, prompt_hash=prompt_hash)
     print(f"\n[baseline] overview: {run_dir / 'baseline_overview.md'}")
 
 

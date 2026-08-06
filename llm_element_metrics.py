@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from llm import should_send_sampling_control
 from utils.rate_limit import ProviderHTTPError, call_with_provider_retries
 
 
@@ -257,6 +258,8 @@ def judge_chat(
 ) -> str:
     """Call an OpenAI-compatible chat endpoint with APE's provider retry layer."""
 
+    if float(temperature) != 0.0:
+        raise ValueError("LLM temperature must be 0")
     if not api_key:
         raise RuntimeError("LLM judge API key is required when semantic element metrics are enabled")
 
@@ -267,7 +270,7 @@ def judge_chat(
         "max_tokens": max_tokens,
         "stream": False,
     }
-    if do_sample is not None:
+    if should_send_sampling_control(base_url, do_sample):
         body["do_sample"] = do_sample
     if thinking:
         body["thinking"] = {"type": thinking}

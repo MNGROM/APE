@@ -1,6 +1,6 @@
 import unittest
 
-from run import any_improvement_decision
+from run import any_improvement_decision, two_stage_gate_decision
 
 
 def repeat_summary(
@@ -26,7 +26,15 @@ def repeat_summary(
 
 
 class AnyImprovementGateTest(unittest.TestCase):
-    def decide(self, baseline, candidate, **overrides):
+    def decide(
+        self,
+        baseline,
+        candidate,
+        *,
+        family="semantic",
+        required_metrics=("llm_node_f1",),
+        **overrides,
+    ):
         kwargs = {
             "baseline_summaries": baseline,
             "candidate_summaries": candidate,
@@ -34,380 +42,337 @@ class AnyImprovementGateTest(unittest.TestCase):
             "candidate_prompt": "candidate",
             "baseline_prompt": "baseline",
             "max_prompt_chars": 100,
-            "min_wins": 2,
-            "min_deltas": {
-                "llm_node_f1": 0.0,
-                "llm_relation_f1": 0.0,
-            },
+            "candidate_evidence_family": family,
+            "required_metrics": required_metrics,
         }
         kwargs.update(overrides)
         accepted, payload = any_improvement_decision(**kwargs)
         self.assertEqual(accepted, payload["accepted"])
         return payload
 
-    def test_node_gain_accepts_despite_relation_and_compile_regression(self):
-        baseline = [repeat_summary(node=0.7, relation=0.7, compile_rate=1.0) for _ in range(3)]
-        candidate = [
-            repeat_summary(node=node, relation=0.3, compile_rate=0.5)
-            for node in (0.72, 0.71, 0.69)
+    def test_node_candidate_accepts_positive_node_without_regression_floor(self):
+        baseline = [
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
+            for _ in range(3)
         ]
+        candidate = [
+            repeat_summary(node=0.7001, relation=0.30, compile_rate=0.40)
+            for _ in range(3)
+        ]
+
         payload = self.decide(baseline, candidate)
+
         self.assertTrue(payload["accepted"])
-        self.assertEqual(payload["candidate_evidence_family"], "semantic")
-        self.assertIsNone(payload["direct_metric"])
+        self.assertEqual(
+            payload["acceptance_policy"],
+            "all-required-positive-mean-delta",
+        )
+        self.assertEqual(payload["required_metrics"], ["llm_node_f1"])
         self.assertEqual(payload["winning_metrics"], ["llm_node_f1"])
+        self.assertGreater(payload["metric_results"]["llm_node_f1"]["mean_delta"], 0.0)
+        self.assertNotIn("min_delta", payload["metric_results"]["llm_node_f1"])
+        self.assertNotIn("min_wins", payload["metric_results"]["llm_node_f1"])
+        self.assertNotIn("semantic_safety_results", payload)
+        self.assertNotIn("compile_safety_results", payload)
 
-    def test_diagnostic_candidate_rejects_semantic_gain_without_direct_gain(self):
+    def test_node_candidate_cannot_use_relation_gain_as_substitute(self):
         baseline = [
-            repeat_summary(node=0.7, relation=0.6, compile_rate=0.8)
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
             for _ in range(3)
         ]
         candidate = [
-            repeat_summary(node=0.7, relation=value, compile_rate=0.8)
-            for value in (0.63, 0.64, 0.62)
+            repeat_summary(node=0.60, relation=0.80, compile_rate=0.90)
+            for _ in range(3)
         ]
-        payload = self.decide(
-            baseline,
-            candidate,
-            candidate_evidence_family="diagnostic",
-            min_deltas={
-                "llm_node_f1": 0.01,
-                "llm_relation_f1": 0.01,
-                "plantuml_compilation_pass_rate": 0.01,
-            },
-        )
+
+        payload = self.decide(baseline, candidate)
+
         self.assertFalse(payload["accepted"])
-        self.assertEqual(payload["direct_metric"], "plantuml_compilation_pass_rate")
-        self.assertEqual(payload["rejection_reasons"], ["direct_metric_not_improved"])
-        self.assertFalse(
-            payload["direct_metric_results"]["plantuml_compilation_pass_rate"][
-                "stable_improvement"
-            ]
+        self.assertEqual(
+            payload["non_improving_required_metrics"], ["llm_node_f1"]
+        )
+        self.assertEqual(
+            payload["rejection_reasons"], ["required_metric_not_improved"]
         )
 
-    def test_syntax_rate_gain_cannot_replace_compilation_gain(self):
+    def test_relation_candidate_cannot_use_node_gain_as_substitute(self):
         baseline = [
-            repeat_summary(
-                node=0.7,
-                relation=0.6,
-                syntax_rate=0.8,
-                compile_rate=0.8,
-            )
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
             for _ in range(3)
         ]
         candidate = [
-            repeat_summary(
-                node=0.7,
-                relation=0.6,
-                syntax_rate=value,
-                compile_rate=0.8,
-            )
-            for value in (0.9, 0.9, 0.7)
+            repeat_summary(node=0.80, relation=0.60, compile_rate=0.90)
+            for _ in range(3)
         ]
+
         payload = self.decide(
             baseline,
             candidate,
-            candidate_evidence_family="diagnostic",
-            min_deltas={
-                "llm_node_f1": 0.01,
-                "llm_relation_f1": 0.01,
-                "plantuml_compilation_pass_rate": 0.01,
-            },
+            required_metrics=("llm_relation_f1",),
         )
+
         self.assertFalse(payload["accepted"])
-        self.assertEqual(payload["rejection_reasons"], ["direct_metric_not_improved"])
+        self.assertEqual(
+            payload["non_improving_required_metrics"], ["llm_relation_f1"]
+        )
 
-    def test_diagnostic_candidate_uses_compilation_metric(self):
+    def test_mixed_semantic_candidate_requires_both_metrics(self):
         baseline = [
-            repeat_summary(
-                node=0.7,
-                relation=0.6,
-                syntax_rate=0.7,
-                compile_rate=0.8,
-            )
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
             for _ in range(3)
         ]
         candidate = [
-            repeat_summary(
-                node=0.7,
-                relation=0.6,
-                syntax_rate=0.7,
-                compile_rate=value,
-            )
-            for value in (0.9, 0.9, 0.7)
+            repeat_summary(node=0.75, relation=0.69, compile_rate=0.90)
+            for _ in range(3)
         ]
+
         payload = self.decide(
             baseline,
             candidate,
-            candidate_evidence_family="diagnostic",
-            min_deltas={
-                "llm_node_f1": 0.01,
-                "llm_relation_f1": 0.01,
-                "plantuml_compilation_pass_rate": 0.01,
-            },
+            required_metrics=("llm_node_f1", "llm_relation_f1"),
         )
+
+        self.assertFalse(payload["accepted"])
+        self.assertEqual(payload["winning_metrics"], ["llm_node_f1"])
+        self.assertEqual(
+            payload["non_improving_required_metrics"], ["llm_relation_f1"]
+        )
+        self.assertIsNone(payload["direct_metric"])
+        self.assertEqual(payload["direct_metric_results"], {})
+
+    def test_required_metric_does_not_require_positive_every_repeat(self):
+        baseline = [
+            repeat_summary(node=0.50, relation=0.50, compile_rate=0.90)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.80, relation=0.50, compile_rate=0.90),
+            repeat_summary(node=0.40, relation=0.50, compile_rate=0.90),
+            repeat_summary(node=0.40, relation=0.50, compile_rate=0.90),
+        ]
+
+        payload = self.decide(baseline, candidate)
+
         self.assertTrue(payload["accepted"])
-        self.assertEqual(payload["direct_metric"], "plantuml_compilation_pass_rate")
-        self.assertTrue(
-            payload["direct_metric_results"]["plantuml_compilation_pass_rate"][
-                "stable_improvement"
-            ]
-        )
+        self.assertEqual(payload["metric_results"]["llm_node_f1"]["wins"], 1)
+        self.assertGreater(payload["metric_results"]["llm_node_f1"]["mean_delta"], 0.0)
 
-    def test_diagnostic_candidate_ignores_syntax_rate_when_compilation_improves(self):
+    def test_exact_zero_required_metric_is_rejected(self):
         baseline = [
-            repeat_summary(
-                node=0.7,
-                relation=0.6,
-                syntax_rate=0.9,
-                compile_rate=0.8,
-            )
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
             for _ in range(3)
         ]
         candidate = [
-            repeat_summary(
-                node=0.7,
-                relation=0.6,
-                syntax_rate=0.6,
-                compile_rate=value,
-            )
-            for value in (0.9, 0.9, 0.7)
+            repeat_summary(node=0.70, relation=0.80, compile_rate=0.99)
+            for _ in range(3)
         ]
-        payload = self.decide(
-            baseline,
-            candidate,
-            candidate_evidence_family="diagnostic",
-            min_deltas={
-                "llm_node_f1": 0.01,
-                "llm_relation_f1": 0.01,
-                "plantuml_compilation_pass_rate": 0.01,
-            },
-        )
-        self.assertTrue(payload["accepted"])
 
-    def test_diagnostic_candidate_rejects_semantic_regression(self):
-        baseline = [
-            repeat_summary(
-                node=0.7,
-                relation=0.6,
-                syntax_rate=0.8,
-                compile_rate=0.8,
-            )
-            for _ in range(3)
-        ]
-        candidate = [
-            repeat_summary(
-                node=0.68,
-                relation=0.6,
-                syntax_rate=0.9,
-                compile_rate=0.9,
-            )
-            for _ in range(3)
-        ]
-        payload = self.decide(
-            baseline,
-            candidate,
-            candidate_evidence_family="diagnostic",
-            min_deltas={
-                "llm_node_f1": 0.01,
-                "llm_relation_f1": 0.01,
-                "plantuml_compilation_pass_rate": 0.01,
-            },
-        )
+        payload = self.decide(baseline, candidate)
+
         self.assertFalse(payload["accepted"])
-        self.assertEqual(payload["rejection_reasons"], ["semantic_regression"])
-        self.assertFalse(payload["semantic_safety_results"]["llm_node_f1"]["safe"])
+        self.assertEqual(
+            payload["rejection_reasons"], ["required_metric_not_improved"]
+        )
 
-    def test_missing_direct_metric_invalidates_diagnostic_evaluation(self):
+    def test_compile_accepts_direct_gain_without_semantic_safety_check(self):
         baseline = [
-            repeat_summary(node=0.7, relation=0.6, compile_rate=0.8)
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.80)
             for _ in range(3)
         ]
         candidate = [
-            repeat_summary(node=0.7, relation=0.6, compile_rate=0.8)
+            repeat_summary(node=0.20, relation=0.20, compile_rate=0.8001)
+            for _ in range(3)
+        ]
+
+        payload = self.decide(
+            baseline,
+            candidate,
+            family="compile",
+            required_metrics=("plantuml_compilation_pass_rate",),
+        )
+
+        self.assertTrue(payload["accepted"])
+        self.assertEqual(
+            payload["acceptance_policy"],
+            "all-required-positive-mean-delta",
+        )
+        self.assertEqual(
+            payload["direct_metric"], "plantuml_compilation_pass_rate"
+        )
+
+    def test_compile_rejects_when_direct_metric_does_not_improve(self):
+        baseline = [
+            repeat_summary(node=0.50, relation=0.50, compile_rate=0.80)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.60, relation=0.60, compile_rate=0.80, syntax_rate=0.90)
+            for _ in range(3)
+        ]
+
+        payload = self.decide(
+            baseline,
+            candidate,
+            family="compile",
+            required_metrics=("plantuml_compilation_pass_rate",),
+        )
+
+        self.assertFalse(payload["accepted"])
+        self.assertEqual(
+            payload["rejection_reasons"], ["required_metric_not_improved"]
+        )
+
+    def test_missing_semantic_measurement_is_invalid(self):
+        baseline = [
+            repeat_summary(node=0.50, relation=0.50, compile_rate=0.80)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.60, relation=0.50, compile_rate=0.80, evaluated=0, failed=30)
+            for _ in range(3)
+        ]
+
+        payload = self.decide(baseline, candidate)
+
+        self.assertFalse(payload["evaluation_valid"])
+        self.assertFalse(payload["accepted"])
+        self.assertEqual(payload["invalid_reasons"], ["required_metric_incomplete"])
+        self.assertEqual(payload["incomplete_required_metrics"], ["llm_node_f1"])
+
+    def test_missing_required_metric_key_is_invalid_not_zero(self):
+        baseline = [
+            repeat_summary(node=0.50, relation=0.50, compile_rate=0.80)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.60, relation=0.60, compile_rate=0.80)
+            for _ in range(3)
+        ]
+        candidate[1].pop("llm_node_f1")
+
+        payload = self.decide(baseline, candidate)
+
+        self.assertFalse(payload["evaluation_valid"])
+        self.assertEqual(payload["incomplete_required_metrics"], ["llm_node_f1"])
+        self.assertIsNone(
+            payload["required_metric_results"]["llm_node_f1"]["mean_delta"]
+        )
+        self.assertEqual(
+            payload["required_metric_results"]["llm_node_f1"]["repeat_deltas"],
+            [],
+        )
+
+    def test_missing_compile_measurement_is_invalid_for_compile_candidate(self):
+        baseline = [
+            repeat_summary(node=0.50, relation=0.50, compile_rate=0.80)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.50, relation=0.50, compile_rate=0.80)
             for _ in range(3)
         ]
         for summary in [*baseline, *candidate]:
             summary.pop("plantuml_compilation_pass_rate")
+
         payload = self.decide(
             baseline,
             candidate,
-            candidate_evidence_family="diagnostic",
-            min_deltas={
-                "llm_node_f1": 0.01,
-                "llm_relation_f1": 0.01,
-                "plantuml_compilation_pass_rate": 0.01,
-            },
+            family="compile",
+            required_metrics=("plantuml_compilation_pass_rate",),
         )
-        self.assertFalse(payload["accepted"])
-        self.assertIn("direct_metric_incomplete", payload["invalid_reasons"])
 
-    def test_relation_gain_accepts_despite_other_regressions(self):
-        baseline = [repeat_summary(node=0.8, relation=0.6, compile_rate=1.0) for _ in range(3)]
-        candidate = [
-            repeat_summary(node=0.4, relation=relation, compile_rate=0.5)
-            for relation in (0.62, 0.63, 0.59)
-        ]
-        self.assertTrue(self.decide(baseline, candidate)["accepted"])
-
-    def test_compile_gain_cannot_win_when_judge_metrics_are_unavailable(self):
-        baseline = [repeat_summary(node=0.0, relation=0.0, compile_rate=0.8, evaluated=0, failed=30) for _ in range(3)]
-        candidate = [
-            repeat_summary(node=0.0, relation=0.0, compile_rate=value, evaluated=0, failed=30)
-            for value in (0.9, 0.9, 0.7)
-        ]
-        payload = self.decide(baseline, candidate)
-        self.assertFalse(payload["accepted"])
-        self.assertEqual(payload["winning_metrics"], [])
-        self.assertIn("no_complete_acceptance_metric", payload["invalid_reasons"])
-        for actual, expected in zip(
-            payload["diagnostic_repeat_deltas"]["plantuml_compilation_pass_rate"],
-            [0.1, 0.1, -0.1],
-        ):
-            self.assertAlmostEqual(actual, expected)
-
-    def test_compile_gain_is_diagnostic_when_semantic_metrics_do_not_improve(self):
-        baseline = [repeat_summary(node=0.7, relation=0.6, compile_rate=0.8) for _ in range(3)]
-        candidate = [repeat_summary(node=0.7, relation=0.6, compile_rate=0.9) for _ in range(3)]
-        payload = self.decide(baseline, candidate)
-        self.assertFalse(payload["accepted"])
-        self.assertEqual(payload["rejection_reasons"], ["no_stable_improvement"])
-        self.assertEqual(payload["winning_metrics"], [])
-        self.assertNotIn("plantuml_compilation_pass_rate", payload["metric_results"])
-
-    def test_only_one_positive_repeat_is_rejected(self):
-        baseline = [repeat_summary(node=0.7, relation=0.7, compile_rate=1.0) for _ in range(3)]
-        candidate = [
-            repeat_summary(node=node, relation=0.7, compile_rate=1.0)
-            for node in (0.73, 0.69, 0.69)
-        ]
-        payload = self.decide(baseline, candidate)
-        self.assertFalse(payload["accepted"])
-        self.assertEqual(payload["rejection_reasons"], ["no_stable_improvement"])
-
-    def test_two_positive_repeats_still_require_mean_above_min_delta(self):
-        baseline = [repeat_summary(node=0.7, relation=0.7, compile_rate=1.0) for _ in range(3)]
-        candidate = [
-            repeat_summary(node=node, relation=0.7, compile_rate=1.0)
-            for node in (0.73, 0.73, 0.69)
-        ]
-        payload = self.decide(
-            baseline,
-            candidate,
-            min_deltas={
-                "llm_node_f1": 0.03,
-                "llm_relation_f1": 0.0,
-            },
-        )
-        self.assertFalse(payload["accepted"])
+        self.assertFalse(payload["evaluation_valid"])
+        self.assertIn("required_metric_incomplete", payload["invalid_reasons"])
 
     def test_prompt_size_and_infrastructure_are_validity_failures(self):
-        baseline = [repeat_summary(node=0.7, relation=0.7, compile_rate=1.0) for _ in range(3)]
-        candidate = [repeat_summary(node=0.8, relation=0.7, compile_rate=1.0) for _ in range(3)]
-        oversized = self.decide(baseline, candidate, candidate_prompt="x" * 101)
-        self.assertFalse(oversized["accepted"])
-        self.assertIn("prompt_too_long", oversized["invalid_reasons"])
-        candidate[1]["infrastructure_error_rate"] = 1 / 30
-        infra = self.decide(baseline, candidate)
-        self.assertFalse(infra["accepted"])
-        self.assertIn("infrastructure_error", infra["invalid_reasons"])
-
-    def test_historical_single_summary_replay_matches_disjunctive_semantics(self):
-        historical = [
-            (0.743523, 0.501193, 1.0, 0.783547, 0.531133, 0.933333),
-            (0.777590, 0.553167, 1.0, 0.792780, 0.530207, 0.966667),
-            (0.780733, 0.525273, 0.966667, 0.771190, 0.537777, 0.933333),
-        ]
-        for base_node, base_relation, base_compile, cand_node, cand_relation, cand_compile in historical:
-            payload = self.decide(
-                [repeat_summary(node=base_node, relation=base_relation, compile_rate=base_compile)],
-                [repeat_summary(node=cand_node, relation=cand_relation, compile_rate=cand_compile)],
-                min_wins=1,
-            )
-            self.assertTrue(payload["accepted"])
-
-    def test_latest_compile_only_run_replays_as_rejected(self):
         baseline = [
-            repeat_summary(node=node, relation=relation, compile_rate=compile_rate, evaluated=20)
-            for node, relation, compile_rate in (
-                (0.771875, 0.496710, 0.95),
-                (0.826955, 0.610505, 0.90),
-                (0.851015, 0.604635, 0.90),
-            )
+            repeat_summary(node=0.50, relation=0.50, compile_rate=0.80, infra=0.1)
+            for _ in range(3)
         ]
         candidate = [
-            repeat_summary(node=node, relation=relation, compile_rate=compile_rate, evaluated=20)
-            for node, relation, compile_rate in (
-                (0.815650, 0.546045, 0.95),
-                (0.792625, 0.531160, 1.00),
-                (0.812435, 0.529725, 1.00),
-            )
+            repeat_summary(node=0.60, relation=0.50, compile_rate=0.80)
+            for _ in range(3)
         ]
+
         payload = self.decide(
             baseline,
             candidate,
-            validation_case_count=20,
-            min_deltas={
-                "llm_node_f1": 0.018995682402974327,
-                "llm_relation_f1": 0.052784916598080704,
-            },
-        )
-        self.assertFalse(payload["accepted"])
-        self.assertEqual(payload["winning_metrics"], [])
-        self.assertEqual(payload["metric_results"]["llm_node_f1"]["wins"], 1)
-        self.assertEqual(payload["metric_results"]["llm_relation_f1"]["wins"], 1)
-        self.assertGreater(
-            sum(payload["diagnostic_repeat_deltas"]["plantuml_compilation_pass_rate"]),
-            0.0,
+            candidate_prompt="x" * 101,
         )
 
-    def test_latest_epoch_five_wrapper_candidate_is_rejected(self):
-        baseline = [
-            repeat_summary(
-                node=node,
-                relation=relation,
-                syntax_rate=syntax_rate,
-                compile_rate=compile_rate,
-            )
-            for node, relation, syntax_rate, compile_rate in (
-                (0.7833966666666666, 0.50697, 0.9666666666666667, 0.9666666666666667),
-                (0.7346066666666666, 0.48511666666666664, 1.0, 1.0),
-                (0.7573333333333333, 0.51022, 0.9666666666666667, 0.9666666666666667),
-            )
-        ]
-        candidate = [
-            repeat_summary(
-                node=node,
-                relation=relation,
-                syntax_rate=syntax_rate,
-                compile_rate=compile_rate,
-            )
-            for node, relation, syntax_rate, compile_rate in (
-                (0.7618833333333334, 0.5125466666666667, 0.9666666666666667, 0.9666666666666667),
-                (0.8213766666666668, 0.5434800000000001, 1.0, 1.0),
-                (0.7914733333333334, 0.5373066666666666, 0.9666666666666667, 0.9666666666666667),
-            )
-        ]
-        payload = self.decide(
-            baseline,
-            candidate,
-            candidate_evidence_family="diagnostic",
-            min_wins=3,
-            min_deltas={
-                "llm_node_f1": 0.01,
-                "llm_relation_f1": 0.01,
-                "plantuml_compilation_pass_rate": 0.01,
+        self.assertFalse(payload["evaluation_valid"])
+        self.assertIn("prompt_too_long", payload["invalid_reasons"])
+        self.assertIn("infrastructure_error", payload["invalid_reasons"])
+
+    def test_two_stage_gate_preserves_gate2_measurement_failure(self):
+        payload = two_stage_gate_decision(
+            gate1_decision={
+                "accepted": True,
+                "evaluation_valid": True,
+                "invalid_reasons": [],
+                "rejection_reasons": [],
             },
+            gate2_decision={
+                "accepted": False,
+                "evaluation_valid": False,
+                "invalid_reasons": ["infrastructure_error"],
+                "rejection_reasons": ["evaluation_invalid"],
+            },
+            gate2_required=True,
         )
+
+        self.assertFalse(payload["evaluation_valid"])
         self.assertFalse(payload["accepted"])
-        self.assertEqual(payload["winning_metrics"], ["llm_relation_f1"])
+        self.assertEqual(payload["invalid_reasons"], ["gate2:infrastructure_error"])
+        self.assertEqual(payload["rejection_reasons"][0], "gate2_rejected")
+
+    def test_two_stage_gate_requires_both_positive_decisions(self):
+        gate = {
+            "accepted": True,
+            "evaluation_valid": True,
+            "invalid_reasons": [],
+            "rejection_reasons": [],
+            "candidate_evidence_family": "semantic",
+            "required_metrics": ["llm_node_f1"],
+        }
+        rejected_gate2 = {
+            **gate,
+            "accepted": False,
+            "rejection_reasons": ["required_metric_not_improved"],
+        }
+
+        payload = two_stage_gate_decision(
+            gate1_decision=gate,
+            gate2_decision=rejected_gate2,
+            gate2_required=True,
+        )
+
+        self.assertFalse(payload["accepted"])
         self.assertEqual(
-            payload["direct_metric_results"]["plantuml_compilation_pass_rate"][
-                "repeat_deltas"
-            ],
-            [0.0, 0.0, 0.0],
+            payload["acceptance_policy"],
+            "all-required-positive-mean-delta",
         )
-        self.assertEqual(payload["rejection_reasons"], ["direct_metric_not_improved"])
+        self.assertEqual(
+            payload["gate_sequence_policy"], "gate1-then-fresh-gate2"
+        )
+        self.assertEqual(
+            payload["rejection_reasons"],
+            ["gate2_rejected", "required_metric_not_improved"],
+        )
+
+    def test_required_metrics_must_be_non_empty_and_match_family(self):
+        summaries = [
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
+        ]
+
+        with self.assertRaisesRegex(ValueError, "must not be empty"):
+            self.decide(summaries, summaries, required_metrics=())
+        with self.assertRaisesRegex(ValueError, "incompatible"):
+            self.decide(
+                summaries,
+                summaries,
+                required_metrics=("plantuml_compilation_pass_rate",),
+            )
 
 
 if __name__ == "__main__":

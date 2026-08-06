@@ -8,8 +8,8 @@
 在不使用 heldout 选择候选或调参的前提下，提高 APE 接受的 Prompt 更新在 heldout
 Node F1 或 Relation F1 上获得稳定泛化收益的概率。
 
-稳定收益应通过固定 validation split 上的 paired repeats、win count、平均 delta 和波动
-范围解释，不能主要依赖单次 generation 或 judge 波动。
+收益应通过固定 validation split 上的 paired repeats、平均 delta 和波动范围解释，不能
+主要依赖单次 generation 或 judge 波动。当前 acceptance 不设置人工收益阈值或回退 floor。
 
 ## 2. 唯一支持的工作流
 
@@ -24,7 +24,8 @@ generation + syntax/compiler + LLM element judge
 -> Prompt editor
 -> Prompt rewriter
 -> deterministic single-section candidate assembly
--> paired repeated validation
+-> paired repeated Gate1
+-> fresh paired repeated Gate2 for Gate1-passing candidates
 -> application policy
 -> heldout only when the applied Prompt hash changes
 ```
@@ -67,6 +68,11 @@ Candidate registry 记录每个实际尝试 group 的精确 finding-key signatur
 `already_covered` 不直接过滤，而是把同 Prompt recurrence 交给 Localization 判断已有指导
 是否过于抽象；如能安全收紧，只能使用现有 `ambiguous + replace_existing` 合同。
 
+正式 paired run 可以显式启用 `--stop-after-first-apply`。该开关只控制跨 epoch 的继续执行：
+首个 candidate 按正常 Gate1、fresh Gate2 和 application policy 应用后，仍须完成该 Prompt
+变化对应的全部 heldout repeats 或 skip manifest，然后才停止后续 epoch。若没有 candidate
+应用，必须继续完成配置的全部 iterations。默认关闭以保持普通 CLI 向后兼容。
+
 ### Localization, Editor and Rewriter
 
 Localization 对冻结 group 先验证一条安全规则能否覆盖全组，再返回 `localized`、
@@ -89,34 +95,77 @@ Rewriter 只返回 `rule_text` 并拥有最终规则措辞。Python 只按忽略
 canonical contract 做校验，再确定性修改一个 section；不得向 Rewriter 文本追加或注入语义
 片段，非目标 section 必须字节一致。
 
-### Validation and application
+### Gate1, Gate2 and application
 
-结构合法性、validation 是否执行、measurement 是否有效、metric decision 和是否应用必须
-分开记录。支持三种 application mode：
+结构合法性、Gate1 是否执行、Gate2 是否执行、各自 measurement 是否有效、
+metric decision 和是否应用必须分开记录。固定 Gate1 与固定 Gate2 split
+都从非 heldout training pool 分层划出，彼此不重叠，也不参与 candidate discovery。默认各请求
+30 条，分别使用独立 seed；实际数量及 fingerprint 必须写入 split summary 和 run artifacts。
+
+Gate1 通过后才运行 Gate2。Gate1 baseline 可以在同一 epoch 的 candidate attempts 间复用；Gate2
+必须针对每个 Gate1-passing candidate fresh 生成 baseline 和 candidate 的
+全部 repeats，不能复用 Gate1 measurement，也不能跨 candidate 复用 Gate2 baseline。
+两关使用相同的无阈值 acceptance 合同。Gate2 失败后 Prompt 保持不变，并在同一个 frozen base
+Prompt 下继续下一 group；不得进入 heldout。
+
+支持三种 application mode：
 
 - `diagnostic-apply`：candidate 合法且 measurement 有效即应用；metric decision 只记录。
-- `cumulative`：只有 paired validation metric decision accepted 才应用。
+- `cumulative`：只有 Gate1 和 Gate2 的 metric decision 都 accepted 才应用。
 - `isolated`：只评估 candidate，不修改 work Prompt。
 
-默认 `auto` 解析为 `diagnostic-apply`。semantic candidate 的 `any-improvement` 要求至少一个
-语义指标满足配置的平均 delta 和最小 wins。`syntax_error` 与 `compile_error` 合并为一个
-diagnostic evidence family，可以同组，并统一使用包装后 PlantUML JAR 检查产生的
-`plantuml_compilation_pass_rate` 证明直接改善。该指标使用同一 repeated mean-delta 和 win-count
-合同；diagnostic candidate 还必须让两项语义 F1 都不低于各自的 non-regression floor
-（`-min_delta`），不能仅因无关的语义 F1 波动而接受。`syntax_pass_rate` 只作诊断，不参与
-acceptance；wrapper 缺失若被 compilation evaluator 自动补齐而没有改善 compilation pass rate，
-对应 candidate 应以 `direct_metric_not_improved` 拒绝。
+Gate2 默认启用；启用时 `auto` 解析为 `cumulative`，并禁止 `diagnostic-apply` 绕过双 gate。
+需要旧诊断应用语义时必须显式 `--no-gate2`，此时 `auto` 才解析为 `diagnostic-apply`。
+Python 从 validated selected group 的 `anchor_kind` 推导非空 required metrics：
+`missing_node/extra_node` 对应 `llm_node_f1`，`missing_relation/extra_relation` 对应
+`llm_relation_f1`，混合 node/relation semantic group 同时要求两项，`syntax_error/compile_error`
+对应 `plantuml_compilation_pass_rate`。两关都使用 `all-required-positive-mean-delta`：每个
+required metric 的 repeated mean delta 必须 `> 0`，其他指标不能代偿，只作为诊断记录。
+缺少任一 required measurement 时以 `required_metric_incomplete` 标记 evaluation invalid；
+完整但未全部改善时以 `required_metric_not_improved` 拒绝，并记录
+`non_improving_required_metrics`。`syntax_pass_rate` 只作诊断，不参与 acceptance。
+
+当前 acceptance policy 明确禁止 `min_delta`、`min_wins`、semantic/compile non-regression
+floor 及任何等价的“允许回退多少”阈值。除非用户主动明确授权，不得重新引入这些参数或
+隐藏的数值回退门槛；calibration 只能描述重复波动，不能产出或应用 acceptance threshold。
 
 ## 4. Heldout 和真实实验红线
 
+- 当前支持 `zhipu` 和 `deepseek` provider。`APE_LLM_PROVIDER`、provider API key、base URL、
+  shared model 和 role-specific model 必须在 run 启动时解析并写入非敏感审计字段；不得把
+  API key 写入命令行、manifest 或日志。只有一个 provider key 存在时允许自动推导 provider，
+  两个 key 同时存在时必须显式选择。
+- DeepSeek 使用官方 OpenAI-compatible `/chat/completions` 合同。非思考模式显式发送
+  `thinking={"type":"disabled"}` 与 `temperature=0`，并省略其 schema 未定义的
+  `do_sample`；不得为了兼容 provider 放宽 APE 的零 temperature 约束。
+- generation、全部 candidate agent、LLM Judge 和 element extraction 的 temperature 必须全部
+  为 `0`。CLI 必须默认使用 `0` 并在任何真实模型调用前拒绝非零值；历史实验的非零
+  temperature 仅用于解释旧日志，不得沿用到新训练、Gate、heldout 或 replay。
 - heldout 不参与 finding、grouping、candidate、阈值或 acceptance 决策。
+- `--heldout-repeats` 必须是正整数，默认 `1`。同一 run 的 initial Prompt 和每个 applied
+  Prompt 使用同一 heldout case manifest 和相同 repeat 数；逐次结果全部保留，顶层
+  `test/summary.json` 只保存确定性聚合均值。不得挑选最好的一次，也不得把 repeat delta
+  回流到 Gate、application 或 Prompt 修改。
+- Gate1、Gate2 与 heldout 三者必须互不重叠；Gate2 不能使用 heldout，
+  也不能回流 candidate discovery。
 - `--eval-initial-test` 只生成 iteration-0 baseline；它是无值开关。
 - `isolated` 不得与 `--eval-initial-test` 同时使用。
 - Prompt 未变化时只写 skip manifest，不调用 heldout generation 或 judge。
 - 未经用户明确同意，不运行真实模型、训练、calibration、在线 smoke 或 heldout。
+- `prompt_workspace/*.md` 的任何修改必须先向用户提交精确拟议 diff，并获得逐次审核批准；
+  普通代码修改授权不自动包含 Prompt 文本修改授权。
 - 到达 experiment-ready 检查点时停止，向用户提供命令、目的、产物和判据。
 
-## 5. 允许的自主修改
+## 5. 跨数据集派生审计
+
+跨 run 分析工具只能只读消费现有产物，并输出来源 finding、Gate1/Gate2 宏平均、逐数据集
+delta、按 `data_split_summary.json` 中 `train_dataset_counts` 计算的 training-pool weighted
+delta、数据集 evidence funnel、recorded decision 与 required-metric counterfactual，以及
+heldout initial/final delta。weighted 和 counterfactual 必须标记为 diagnostic-only；缺失测量
+不得按零补齐，infrastructure-invalid run 不得进入有效汇总。工具不得回写输入 run 或覆盖
+历史 `accepted`。
+
+## 6. 允许的自主修改
 
 在已确认目标内，可以修改：
 
@@ -134,7 +183,7 @@ acceptance；wrapper 缺失若被 compilation evaluator 自动补齐而没有改
 - 改变 validation/heldout 数据边界、调用时机或 candidate selection 职责；
 - 显著改变 API 调用数量、并发或成本模型。
 
-## 6. Schema 和 Prompt 复杂度边界
+## 7. Schema 和 Prompt 复杂度边界
 
 - 只保留当前 validator、聚合器或审计产物消费的字段。
 - Agent 不得返回 Python 可计算的 ID、count、rank、hash 或 canonical metadata。
@@ -143,7 +192,7 @@ acceptance；wrapper 缺失若被 compilation evaluator 自动补齐而没有改
 - 不在多个 Prompt 中复制相同完整规则集。
 - 每次修改后检查 Prompt 长度、重复规则、职责冲突和非目标 section 字节保留。
 
-## 7. 验证和产物边界
+## 8. 验证和产物边界
 
 可以自主执行：单元测试、compileall、静态检查、`git diff --check`、mock smoke 和历史
 run 的只读分析。不得删除或回写 `prompt_runs/`、`prompt_runs_by_dataset/`、
@@ -160,7 +209,7 @@ git diff --check
 涉及 CLI/orchestration 时还必须运行 `--mock-with-gold --no-evolve
 --no-llm-element-metrics` 的离线 smoke test。
 
-## 8. 约定变更
+## 9. 约定变更
 
 若后续需要改变本目标或边界，先更新本文档和根目录 `CLAUDE.md`，再修改代码。不得先
 实施超出边界的 workflow，再补写规范。

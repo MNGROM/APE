@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from config import DEFAULT_BASE_URL, DEFAULT_LLM_TIMEOUT, DEFAULT_MODEL, DEFAULT_THINKING_TYPE
 from utils.rate_limit import ProviderHTTPError, call_with_provider_retries
@@ -19,6 +20,21 @@ def normalize_base_url(base_url: str) -> str:
     if value.endswith(suffix):
         value = value[: -len(suffix)]
     return value + "/"
+
+
+def is_deepseek_base_url(base_url: str) -> bool:
+    """Return whether a URL targets DeepSeek's OpenAI-compatible API."""
+
+    value = (base_url or "").strip()
+    parsed = urlparse(value if "://" in value else f"https://{value}")
+    hostname = (parsed.hostname or "").lower().rstrip(".")
+    return hostname == "api.deepseek.com" or hostname.endswith(".deepseek.com")
+
+
+def should_send_sampling_control(base_url: str, do_sample: bool | None) -> bool:
+    """DeepSeek has no ``do_sample`` request field; other providers may use it."""
+
+    return do_sample is not None and not is_deepseek_base_url(base_url)
 
 
 def post_chat_completion(*, endpoint: str, body: dict[str, Any], api_key: str, timeout: int) -> str:
@@ -50,7 +66,7 @@ class LLMClient:
     model: str = DEFAULT_MODEL
     api_key: str = ""
     base_url: str = DEFAULT_BASE_URL
-    temperature: float = 0.2
+    temperature: float = 0.0
     top_p: float | None = None
     max_tokens: int = 12000
     thinking: str = DEFAULT_THINKING_TYPE
@@ -78,20 +94,23 @@ class LLMClient:
         retry_phase: str = "llm_request",
         retry_context: dict[str, Any] | None = None,
     ) -> str:
+        resolved_temperature = self.temperature if temperature is None else temperature
+        if float(resolved_temperature) != 0.0:
+            raise ValueError("LLM temperature must be 0")
         if not self.api_key:
-            raise RuntimeError("ZHIPU_LLM_API_KEY is required unless --mock-with-gold is used.")
+            raise RuntimeError("The active provider API key is required unless --mock-with-gold is used.")
 
         endpoint = normalize_base_url(self.base_url) + "chat/completions"
         body: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
-            "temperature": self.temperature if temperature is None else temperature,
+            "temperature": resolved_temperature,
             "max_tokens": self.max_tokens if max_tokens is None else max_tokens,
             "stream": False,
         }
         if self.top_p is not None:
             body["top_p"] = self.top_p
-        if self.do_sample is not None:
+        if should_send_sampling_control(self.base_url, self.do_sample):
             body["do_sample"] = self.do_sample
         thinking_type = self.thinking if thinking is None else thinking
         if thinking_type:

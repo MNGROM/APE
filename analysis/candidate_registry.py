@@ -205,12 +205,12 @@ def record_evaluated_candidate(
         registry["entries"] = [
             item for item in registry["entries"] if item not in existing
         ]
-    threshold_decision = validation_diagnostics.get(
-        "threshold_decision", validation_diagnostics
+    acceptance_decision = validation_diagnostics.get(
+        "acceptance_decision", validation_diagnostics
     )
     invalid_reasons = (
-        list(threshold_decision.get("invalid_reasons", []))
-        if isinstance(threshold_decision, dict)
+        list(acceptance_decision.get("invalid_reasons", []))
+        if isinstance(acceptance_decision, dict)
         else []
     )
     entry = {
@@ -233,6 +233,31 @@ def record_evaluated_candidate(
             "finding_keys": list(candidate_metadata.get("finding_keys", [])),
             "positive_trigger": str(candidate_metadata.get("positive_trigger") or ""),
             "negative_boundary": str(candidate_metadata.get("negative_boundary") or ""),
+            "candidate_evidence_family": str(
+                candidate_metadata.get("candidate_evidence_family") or ""
+            ),
+            "acceptance_policy": str(
+                candidate_metadata.get("acceptance_policy") or ""
+            ),
+            "gate_sequence_policy": str(
+                candidate_metadata.get("gate_sequence_policy") or ""
+            ),
+            "required_metrics": list(
+                candidate_metadata.get("required_metrics", [])
+            ),
+            "required_metric_results": dict(
+                candidate_metadata.get("required_metric_results", {})
+            ),
+            "incomplete_required_metrics": list(
+                candidate_metadata.get("incomplete_required_metrics", [])
+            ),
+            "non_improving_required_metrics": list(
+                candidate_metadata.get("non_improving_required_metrics", [])
+            ),
+            "direct_metric": candidate_metadata.get("direct_metric"),
+            "direct_metric_results": dict(
+                candidate_metadata.get("direct_metric_results", {})
+            ),
         }
     )
     registry["entries"].append(entry)

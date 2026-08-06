@@ -10,6 +10,7 @@ from analysis.error_selector import (
     build_failure_analysis_input,
     select_error_group,
     selected_group_evidence_family,
+    selected_group_required_metrics,
     validate_failure_errors,
     validate_selected_group_eligibility,
     validate_selector_output,
@@ -355,22 +356,57 @@ class SelectorPipelineTest(unittest.TestCase):
             "semantic",
         )
         self.assertEqual(
+            selected_group_required_metrics(
+                group("missing_node", "extra_relation")
+            ),
+            ("llm_node_f1", "llm_relation_f1"),
+        )
+        self.assertEqual(
+            selected_group_required_metrics(group("extra_node")),
+            ("llm_node_f1",),
+        )
+        self.assertEqual(
+            selected_group_required_metrics(group("missing_relation")),
+            ("llm_relation_f1",),
+        )
+        self.assertEqual(
             selected_group_evidence_family(group("syntax_error")),
-            "diagnostic",
+            "compile",
         )
         self.assertEqual(
             selected_group_evidence_family(group("compile_error")),
-            "diagnostic",
+            "compile",
         )
         mixed_diagnostic_group = group("syntax_error", "compile_error")
         self.assertEqual(
             selected_group_evidence_family(mixed_diagnostic_group),
-            "diagnostic",
+            "compile",
+        )
+        self.assertEqual(
+            selected_group_required_metrics(mixed_diagnostic_group),
+            ("plantuml_compilation_pass_rate",),
         )
         self.assertEqual(
             validate_selected_group_eligibility(mixed_diagnostic_group),
             [],
         )
+
+    def test_required_metric_routing_rejects_missing_or_unknown_anchor_kind(self):
+        for anchor_kind in (None, "unsupported_kind"):
+            selected_group = {
+                "members": [
+                    {
+                        "finding_id": 1,
+                        "status": "actionable",
+                        "anchor_kind": anchor_kind,
+                        "matching_quality": "bijective",
+                    }
+                ]
+            }
+
+            self.assertTrue(validate_selected_group_eligibility(selected_group))
+            with self.assertRaisesRegex(ValueError, "supported finding anchor kinds"):
+                selected_group_required_metrics(selected_group)
 
     def test_generic_only_batch_skips_failure_analysis_llm(self):
         class Client:
@@ -922,9 +958,23 @@ class SelectorPipelineTest(unittest.TestCase):
             prompt_text,
         )
 
+    def test_editor_prompt_requires_operational_trigger_and_structure_boundaries(self):
+        prompt_text = (
+            PROJECT_DIR / "prompt_workspace" / "prompt_editor_selector_v2.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("operational applicability test", prompt_text)
+        self.assertIn("isolated keyword is never sufficient by itself", prompt_text)
+        self.assertIn("independently performed behavior", prompt_text)
+        self.assertIn("states, predicates, conditions, outcomes", prompt_text)
+        self.assertIn(
+            "Distinguish concurrency, repetition, duration, conditions, and ordinary sequence",
+            prompt_text,
+        )
+
     def test_exact_already_covered_history_builds_recurrence_context(self):
         history = [
-            {"iteration": 1, "outcome": "validation_gate_rejected"},
+            {"iteration": 1, "outcome": "gate1_rejected"},
             {"iteration": 2, "outcome": "already_covered"},
         ]
 
@@ -934,11 +984,11 @@ class SelectorPipelineTest(unittest.TestCase):
         self.assertEqual(recurrence["prior_already_covered_count"], 1)
         self.assertEqual(
             recurrence["previous_outcomes"],
-            ["validation_gate_rejected", "already_covered"],
+            ["gate1_rejected", "already_covered"],
         )
         self.assertIsNone(
             exact_already_covered_recurrence(
-                [{"iteration": 1, "outcome": "validation_gate_rejected"}]
+                [{"iteration": 1, "outcome": "gate1_rejected"}]
             )
         )
 
@@ -952,7 +1002,7 @@ class SelectorPipelineTest(unittest.TestCase):
         self.assertEqual(args.prompt_editor_prompt_path.name, "prompt_editor_selector_v2.md")
         self.assertEqual(args.prompt_rewriter_prompt_path.name, "prompt_rewriter_selector_v1.md")
         resolve_pipeline_defaults(args)
-        self.assertEqual(args.candidate_application_mode, "diagnostic-apply")
+        self.assertEqual(args.candidate_application_mode, "cumulative")
 
     def test_editor_v2_freezes_trigger_and_boundary_without_external_mapping(self):
         prompt = (
@@ -1034,14 +1084,14 @@ class SelectorPipelineTest(unittest.TestCase):
         decision = selector_application_decision(
             mode="diagnostic-apply",
             candidate_valid=True,
-            validation_evaluated=True,
-            threshold_decision={
+            gate_evaluated=True,
+            acceptance_decision={
                 "accepted": True,
                 "evaluation_valid": False,
                 "invalid_reasons": ["infrastructure_error"],
             },
         )
-        self.assertFalse(decision["validation_measurement_valid"])
+        self.assertFalse(decision["measurement_valid"])
         self.assertFalse(decision["applied"])
 
     def test_rewriter_receives_only_the_frozen_target_interface(self):
@@ -1251,6 +1301,7 @@ class SelectorPipelineTest(unittest.TestCase):
                 "10",
                 "--candidate-application-mode",
                 "diagnostic-apply",
+                    "--no-gate2",
             ]
         )
         cases = [
@@ -1354,7 +1405,7 @@ class SelectorPipelineTest(unittest.TestCase):
                     "change_instruction": "Write the canonical rule.",
                 },
             ), patch("run.rewrite_prompt", side_effect=rewrite), patch(
-                "run.evaluate_validation_gate",
+                "run.evaluate_gate",
                 return_value=([], [], {}, {}, validation),
             ):
                 final_prompt, _ = run_training_iterations(
@@ -1380,7 +1431,7 @@ class SelectorPipelineTest(unittest.TestCase):
 
         self.assertEqual(first_after, second_before)
         self.assertTrue(first_decision["applied"])
-        self.assertFalse(first_decision["validation_decision"])
+        self.assertFalse(first_decision["accepted"])
         self.assertEqual(final_prompt.count("Represent each explicitly stated"), 2)
 
     def test_multi_candidate_attempts_apply_second_and_gate_heldout_on_prompt_change(self):
@@ -1394,11 +1445,17 @@ class SelectorPipelineTest(unittest.TestCase):
             Case(dataset="data", case_id="c2", content="Save database.", gold_plantuml="G"),
         ]
 
-        def run_once(decisions, max_attempts=3):
-            args = build_parser().parse_args(
-                [
+        def run_once(
+            decisions,
+            max_attempts=3,
+            gate2_decisions=None,
+            *,
+            iterations=1,
+            stop_after_first_apply=False,
+        ):
+            cli_args = [
                     "--iterations",
-                    "1",
+                    str(iterations),
                     "--analysis-batch-size",
                     "10",
                     "--candidate-application-mode",
@@ -1406,7 +1463,9 @@ class SelectorPipelineTest(unittest.TestCase):
                     "--max-candidate-attempts-per-epoch",
                     str(max_attempts),
                 ]
-            )
+            if stop_after_first_apply:
+                cli_args.append("--stop-after-first-apply")
+            args = build_parser().parse_args(cli_args)
             errors = [
                 {
                     "finding_id": index,
@@ -1489,11 +1548,19 @@ class SelectorPipelineTest(unittest.TestCase):
                 return current_prompt.replace("## rule\n(None)", f"## rule\n{rule}")
 
             decision_iter = iter(decisions)
+            gate2_iter = iter(gate2_decisions or [])
             baseline_caches = []
+            gate_names = []
 
             def validation(**kwargs):
-                accepted = next(decision_iter)
+                gate_name = kwargs.get("gate_name", "gate1")
+                accepted = (
+                    next(gate2_iter)
+                    if gate_name == "gate2"
+                    else next(decision_iter)
+                )
                 baseline_caches.append(kwargs["baseline_cache"])
+                gate_names.append(gate_name)
                 return (
                     [],
                     [],
@@ -1503,7 +1570,33 @@ class SelectorPipelineTest(unittest.TestCase):
                         "accepted": accepted,
                         "evaluation_valid": True,
                         "invalid_reasons": [],
-                        "rejection_reasons": [] if accepted else ["no_stable_improvement"],
+                        "rejection_reasons": (
+                            [] if accepted else ["required_metric_not_improved"]
+                        ),
+                        "candidate_evidence_family": "semantic",
+                        "acceptance_policy": "all-required-positive-mean-delta",
+                        "gate_sequence_policy": "gate1-then-fresh-gate2",
+                        "required_metrics": ["llm_node_f1"],
+                        "required_metric_results": {
+                            "llm_node_f1": {
+                                "available": True,
+                                "mean_delta": 0.1 if accepted else -0.1,
+                                "positive_mean_delta": accepted,
+                            }
+                        },
+                        "incomplete_required_metrics": [],
+                        "non_improving_required_metrics": (
+                            [] if accepted else ["llm_node_f1"]
+                        ),
+                        "direct_metric": None,
+                        "direct_metric_results": {},
+                        "metric_results": {
+                            "llm_node_f1": {
+                                "available": True,
+                                "mean_delta": 0.1 if accepted else -0.1,
+                                "positive_mean_delta": accepted,
+                            },
+                        },
                     },
                 )
 
@@ -1516,7 +1609,7 @@ class SelectorPipelineTest(unittest.TestCase):
                 ), patch("run.localize_selector_group", side_effect=localization), patch(
                     "run.propose_selector_edit", side_effect=editor
                 ), patch("run.rewrite_prompt", side_effect=rewrite), patch(
-                    "run.evaluate_validation_gate", side_effect=validation
+                    "run.evaluate_gate", side_effect=validation
                 ) as validation_mock, patch(
                     "run.evaluate_iteration_test", return_value={"llm_node_f1": 0.7}
                 ) as heldout_mock:
@@ -1528,11 +1621,17 @@ class SelectorPipelineTest(unittest.TestCase):
                         work_prompt_path=work,
                         label="selector-test",
                         validation_cases=cases,
+                        confirmation_cases=cases,
                         test_cases=cases,
                         test_dataset="heldout",
                     )
                 attempts = json.loads(
                     (root / "iteration_001" / "decision" / "candidate_attempts.json").read_text(
+                        encoding="utf-8"
+                    )
+                )
+                acceptance = json.loads(
+                    (root / "iteration_001" / "decision" / "acceptance.json").read_text(
                         encoding="utf-8"
                     )
                 )
@@ -1548,20 +1647,55 @@ class SelectorPipelineTest(unittest.TestCase):
                 return {
                     "final_prompt": final_prompt,
                     "attempts": attempts,
+                    "acceptance": acceptance,
                     "validation_calls": validation_mock.call_count,
                     "heldout_calls": heldout_mock.call_count,
                     "skip_payload": skip_payload,
                     "baseline_cache_ids": [id(item) for item in baseline_caches],
+                    "baseline_caches": baseline_caches,
+                    "gate_names": gate_names,
                     "group_attempts": registry_payload["group_attempts"],
+                    "iteration_002_exists": (root / "iteration_002").exists(),
                 }
 
-        changed = run_once([False, True])
-        self.assertEqual(changed["validation_calls"], 2)
+        changed = run_once([False, True], gate2_decisions=[True])
+        self.assertEqual(changed["validation_calls"], 3)
         self.assertEqual(changed["heldout_calls"], 1)
         self.assertEqual(changed["attempts"]["applied_attempt"], 2)
         self.assertEqual(changed["attempts"]["attempt_count"], 2)
         self.assertEqual(len(changed["group_attempts"]), 2)
-        self.assertEqual(len(set(changed["baseline_cache_ids"])), 1)
+        self.assertEqual(
+            changed["acceptance"]["acceptance_policy"],
+            "all-required-positive-mean-delta",
+        )
+        self.assertEqual(
+            changed["acceptance"]["gate_sequence_policy"],
+            "gate1-then-fresh-gate2",
+        )
+        self.assertEqual(
+            changed["acceptance"]["required_metrics"], ["llm_node_f1"]
+        )
+        self.assertIn(
+            "llm_node_f1", changed["acceptance"]["required_metric_results"]
+        )
+        self.assertEqual(
+            changed["acceptance"]["acceptance_decision"]["metric_results"],
+            changed["attempts"]["attempts"][1]["acceptance_decision"][
+                "metric_results"
+            ],
+        )
+        screen_caches = [
+            cache
+            for cache, gate_name in zip(changed["baseline_caches"], changed["gate_names"])
+            if gate_name == "gate1"
+        ]
+        confirmation_caches = [
+            cache
+            for cache, gate_name in zip(changed["baseline_caches"], changed["gate_names"])
+            if gate_name == "gate2"
+        ]
+        self.assertEqual(len({id(cache) for cache in screen_caches}), 1)
+        self.assertEqual(confirmation_caches, [None])
         self.assertIn("group_2", changed["final_prompt"])
 
         unchanged = run_once([False, False])
@@ -1572,11 +1706,39 @@ class SelectorPipelineTest(unittest.TestCase):
         self.assertEqual(unchanged["final_prompt"], prompt)
         self.assertEqual(len(unchanged["group_attempts"]), 2)
 
+        confirmation_rejected = run_once(
+            [True, True], gate2_decisions=[False, True]
+        )
+        self.assertEqual(confirmation_rejected["validation_calls"], 4)
+        self.assertEqual(confirmation_rejected["attempts"]["applied_attempt"], 2)
+        self.assertEqual(
+            confirmation_rejected["attempts"]["attempts"][0]["rejection_reasons"][0],
+            "gate2_rejected",
+        )
+        self.assertEqual(confirmation_rejected["heldout_calls"], 1)
+        self.assertIn("group_2", confirmation_rejected["final_prompt"])
+
         limited = run_once([False], max_attempts=1)
         self.assertEqual(limited["validation_calls"], 1)
         self.assertEqual(limited["attempts"]["attempt_count"], 1)
         self.assertEqual(len(limited["group_attempts"]), 1)
         self.assertEqual(limited["heldout_calls"], 0)
+
+        stopped = run_once(
+            [False, True],
+            gate2_decisions=[True],
+            iterations=3,
+            stop_after_first_apply=True,
+        )
+        self.assertEqual(stopped["heldout_calls"], 1)
+        self.assertFalse(stopped["iteration_002_exists"])
+
+        no_apply = run_once(
+            [False, False],
+            iterations=2,
+            stop_after_first_apply=True,
+        )
+        self.assertTrue(no_apply["iteration_002_exists"])
 
 
 if __name__ == "__main__":

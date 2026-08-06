@@ -6,7 +6,8 @@ from run import (
     build_parser,
     resolve_pipeline_defaults,
     split_training_batches,
-    split_validation_gate_cases,
+    split_gate_cases,
+    split_gate1_cases,
     validate_glm_args,
 )
 
@@ -41,24 +42,76 @@ class TrainingBatchTest(unittest.TestCase):
         self.assertEqual(args.training_batch_strategy, "stratified")
         self.assertEqual(args.epoch_batch_concurrency, 1)
         self.assertEqual(args.heldout_test_concurrency, 1)
-        self.assertEqual(args.validation_gate_concurrency, 1)
+        self.assertEqual(args.heldout_repeats, 1)
+        self.assertEqual(args.gate_concurrency, 1)
         self.assertEqual(args.validation_repeats, 3)
         self.assertEqual(args.max_candidate_attempts_per_epoch, 3)
-        self.assertEqual(args.acceptance_min_wins, 2)
-        self.assertTrue(args.validation_gate)
-        self.assertEqual(args.validation_gate_strategy, "stratified")
+        self.assertFalse(args.stop_after_first_apply)
+        self.assertFalse(hasattr(args, "acceptance_min_wins"))
+        self.assertTrue(args.gate1)
+        self.assertEqual(args.gate1_strategy, "stratified")
+        self.assertTrue(args.gate2)
+        self.assertEqual(args.gate2_size, 30)
+        self.assertEqual(args.gate2_strategy, "stratified")
+        self.assertEqual(args.gate2_seed, 20260630)
         self.assertTrue(args.llm_element_metrics)
         self.assertFalse(args.embedding_element_metrics)
+        self.assertEqual(args.temperature, 0.0)
+        self.assertEqual(args.analysis_temperature, 0.0)
+        self.assertEqual(args.selector_temperature, 0.0)
+        self.assertEqual(args.localization_temperature, 0.0)
+        self.assertEqual(args.editor_temperature, 0.0)
+        self.assertEqual(args.llm_judge_temperature, 0.0)
+        self.assertEqual(args.element_extraction_temperature, 0.0)
+
+    def test_nonzero_model_temperatures_are_rejected(self) -> None:
+        temperature_options = (
+            "--temperature",
+            "--analysis-temperature",
+            "--selector-temperature",
+            "--localization-temperature",
+            "--editor-temperature",
+            "--llm-judge-temperature",
+            "--element-extraction-temperature",
+        )
+        for option in temperature_options:
+            with self.subTest(option=option):
+                args = build_parser().parse_args([option, "0.2"])
+                resolve_thinking_defaults(args)
+                args.api_key = "dummy"
+
+                with self.assertRaisesRegex(
+                    ValueError, "All model temperatures must be 0"
+                ):
+                    validate_glm_args(args)
 
     def test_parser_accepts_epoch_batch_concurrency(self) -> None:
         args = build_parser().parse_args(["--epoch-batch-concurrency", "3"])
 
         self.assertEqual(args.epoch_batch_concurrency, 3)
 
+    def test_parser_accepts_stop_after_first_apply(self) -> None:
+        args = build_parser().parse_args(["--stop-after-first-apply"])
+
+        self.assertTrue(args.stop_after_first_apply)
+
     def test_parser_accepts_heldout_test_concurrency(self) -> None:
         args = build_parser().parse_args(["--heldout-test-concurrency", "2"])
 
         self.assertEqual(args.heldout_test_concurrency, 2)
+
+    def test_parser_accepts_heldout_repeats(self) -> None:
+        args = build_parser().parse_args(["--heldout-repeats", "3"])
+
+        self.assertEqual(args.heldout_repeats, 3)
+
+    def test_heldout_repeats_must_be_positive(self) -> None:
+        args = build_parser().parse_args(["--heldout-repeats", "0"])
+        resolve_thinking_defaults(args)
+        args.api_key = "dummy"
+
+        with self.assertRaisesRegex(ValueError, "--heldout-repeats must be positive"):
+            validate_glm_args(args)
 
     def test_parser_accepts_candidate_attempt_limit(self) -> None:
         args = build_parser().parse_args(["--max-candidate-attempts-per-epoch", "5"])
@@ -70,7 +123,7 @@ class TrainingBatchTest(unittest.TestCase):
 
         self.assertTrue(args.embedding_element_metrics)
 
-    def test_evolution_requires_validation_gate(self) -> None:
+    def test_evolution_requires_gate1(self) -> None:
         args = build_parser().parse_args(
             [
                 "--test-dataset",
@@ -84,6 +137,22 @@ class TrainingBatchTest(unittest.TestCase):
         args.api_key = "dummy"
         with self.assertRaisesRegex(ValueError, "requires an enabled"):
             validate_glm_args(args)
+
+    def test_gate2_rejects_diagnostic_apply_bypass(self) -> None:
+        args = build_parser().parse_args(
+            ["--candidate-application-mode", "diagnostic-apply"]
+        )
+        resolve_thinking_defaults(args)
+        args.api_key = "dummy"
+        with self.assertRaisesRegex(ValueError, "cannot bypass"):
+            validate_glm_args(args)
+
+        args = build_parser().parse_args(
+            ["--candidate-application-mode", "diagnostic-apply", "--no-gate2"]
+        )
+        resolve_thinking_defaults(args)
+        args.api_key = "dummy"
+        validate_glm_args(args)
 
     def test_isolated_mode_rejects_heldout_evaluation_during_search(self) -> None:
         args = build_parser().parse_args(
@@ -140,7 +209,7 @@ class TrainingBatchTest(unittest.TestCase):
             counts = [sum(1 for case in batch if case.dataset == dataset) for batch in batches]
             self.assertLessEqual(max(counts) - min(counts), 1)
 
-    def test_validation_gate_is_fixed_and_removed_from_training_cases(self) -> None:
+    def test_gate1_is_fixed_and_removed_from_training_cases(self) -> None:
         cases = make_cases("a", 10) + make_cases("b", 10)
         args = build_parser().parse_args([
             "--validation-gate-size",
@@ -149,8 +218,8 @@ class TrainingBatchTest(unittest.TestCase):
             "123",
         ])
 
-        optimize_cases, validation_cases = split_validation_gate_cases(cases, args)
-        optimize_cases_again, validation_cases_again = split_validation_gate_cases(cases, args)
+        optimize_cases, validation_cases = split_gate1_cases(cases, args)
+        optimize_cases_again, validation_cases_again = split_gate1_cases(cases, args)
 
         validation_ids = {(case.dataset, case.case_id) for case in validation_cases}
         optimize_ids = {(case.dataset, case.case_id) for case in optimize_cases}
@@ -161,17 +230,47 @@ class TrainingBatchTest(unittest.TestCase):
         self.assertEqual([case.case_id for case in optimize_cases], [case.case_id for case in optimize_cases_again])
         self.assertEqual(Counter(case.dataset for case in validation_cases), Counter({"a": 3, "b": 3}))
 
-    def test_validation_gate_size_is_capped_for_small_training_pools(self) -> None:
+    def test_gate1_size_is_capped_for_small_training_pools(self) -> None:
         cases = make_cases("a", 15) + make_cases("b", 15)
         args = build_parser().parse_args([
             "--validation-gate-size",
             "30",
         ])
 
-        optimize_cases, validation_cases = split_validation_gate_cases(cases, args)
+        optimize_cases, validation_cases = split_gate1_cases(cases, args)
 
         self.assertEqual(len(validation_cases), 10)
         self.assertEqual(len(optimize_cases), 20)
+
+    def test_validation_confirmation_and_training_splits_are_fixed_and_disjoint(self) -> None:
+        cases = make_cases("a", 30) + make_cases("b", 30)
+        args = build_parser().parse_args(
+            [
+                "--validation-gate-size",
+                "10",
+                "--validation-gate-seed",
+                "123",
+                "--gate2-size",
+                "10",
+                "--gate2-seed",
+                "456",
+            ]
+        )
+
+        first = split_gate_cases(cases, args)
+        second = split_gate_cases(cases, args)
+        train_cases, validation_cases, confirmation_cases = first
+        id_sets = [
+            {(case.dataset, case.case_id) for case in split}
+            for split in first
+        ]
+
+        self.assertEqual([case.case_id for split in first for case in split], [case.case_id for split in second for case in split])
+        self.assertEqual([len(train_cases), len(validation_cases), len(confirmation_cases)], [40, 10, 10])
+        self.assertFalse(id_sets[0] & id_sets[1])
+        self.assertFalse(id_sets[0] & id_sets[2])
+        self.assertFalse(id_sets[1] & id_sets[2])
+        self.assertEqual(Counter(case.dataset for case in confirmation_cases), Counter({"a": 5, "b": 5}))
 
 
 if __name__ == "__main__":
