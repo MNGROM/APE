@@ -1,7 +1,7 @@
 import unittest
 from collections import Counter
 
-from ape_datasets.lato import Case
+from ape_datasets.lato import Case, select_cases_with_strategy
 from run import (
     build_parser,
     resolve_pipeline_defaults,
@@ -50,7 +50,7 @@ class TrainingBatchTest(unittest.TestCase):
         self.assertFalse(hasattr(args, "acceptance_min_wins"))
         self.assertTrue(args.gate1)
         self.assertEqual(args.gate1_strategy, "stratified")
-        self.assertTrue(args.gate2)
+        self.assertFalse(args.gate2)
         self.assertEqual(args.gate2_size, 30)
         self.assertEqual(args.gate2_strategy, "stratified")
         self.assertEqual(args.gate2_seed, 20260630)
@@ -140,7 +140,7 @@ class TrainingBatchTest(unittest.TestCase):
 
     def test_gate2_rejects_diagnostic_apply_bypass(self) -> None:
         args = build_parser().parse_args(
-            ["--candidate-application-mode", "diagnostic-apply"]
+            ["--candidate-application-mode", "diagnostic-apply", "--gate2"]
         )
         resolve_thinking_defaults(args)
         args.api_key = "dummy"
@@ -209,6 +209,28 @@ class TrainingBatchTest(unittest.TestCase):
             counts = [sum(1 for case in batch if case.dataset == dataset) for batch in batches]
             self.assertLessEqual(max(counts) - min(counts), 1)
 
+    def test_lodo_stratified_pool_of_100_balances_five_sources(self) -> None:
+        source_cases = (
+            make_cases("bp", 120)
+            + make_cases("fsd", 80)
+            + make_cases("lmc", 60)
+            + make_cases("pure", 40)
+            + make_cases("rac", 30)
+        )
+
+        pool = select_cases_with_strategy(
+            source_cases,
+            limit=100,
+            strategy="stratified",
+            seed=20260629,
+        )
+
+        self.assertEqual(
+            Counter(case.dataset for case in pool),
+            Counter({"bp": 20, "fsd": 20, "lmc": 20, "pure": 20, "rac": 20}),
+        )
+        self.assertNotIn("us", {case.dataset for case in pool})
+
     def test_gate1_is_fixed_and_removed_from_training_cases(self) -> None:
         cases = make_cases("a", 10) + make_cases("b", 10)
         args = build_parser().parse_args([
@@ -254,6 +276,7 @@ class TrainingBatchTest(unittest.TestCase):
                 "10",
                 "--gate2-seed",
                 "456",
+                "--gate2",
             ]
         )
 

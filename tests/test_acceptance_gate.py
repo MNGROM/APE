@@ -25,6 +25,20 @@ def repeat_summary(
     }
 
 
+def positive_cross_dataset_results(metrics):
+    return {
+        metric: {
+            "available": True,
+            "balanced_mean_delta": 0.01,
+            "source_weighted_mean_delta": 0.01,
+            "weight_basis": "source_population",
+            "missing_datasets": [],
+            "source_dataset_count_missing": False,
+        }
+        for metric in metrics
+    }
+
+
 class AnyImprovementGateTest(unittest.TestCase):
     def decide(
         self,
@@ -44,6 +58,9 @@ class AnyImprovementGateTest(unittest.TestCase):
             "max_prompt_chars": 100,
             "candidate_evidence_family": family,
             "required_metrics": required_metrics,
+            "cross_dataset_metric_results": positive_cross_dataset_results(
+                required_metrics
+            ),
         }
         kwargs.update(overrides)
         accepted, payload = any_improvement_decision(**kwargs)
@@ -65,7 +82,7 @@ class AnyImprovementGateTest(unittest.TestCase):
         self.assertTrue(payload["accepted"])
         self.assertEqual(
             payload["acceptance_policy"],
-            "all-required-positive-mean-delta",
+            "all-required-positive-pooled-balanced-and-source-weighted-mean-delta",
         )
         self.assertEqual(payload["required_metrics"], ["llm_node_f1"])
         self.assertEqual(payload["winning_metrics"], ["llm_node_f1"])
@@ -174,6 +191,103 @@ class AnyImprovementGateTest(unittest.TestCase):
             payload["rejection_reasons"], ["required_metric_not_improved"]
         )
 
+    def test_balanced_positive_but_source_weighted_negative_is_rejected(self):
+        baseline = [
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.71, relation=0.70, compile_rate=0.90)
+            for _ in range(3)
+        ]
+        cross_dataset = positive_cross_dataset_results(("llm_node_f1",))
+        cross_dataset["llm_node_f1"]["source_weighted_mean_delta"] = -0.001
+
+        payload = self.decide(
+            baseline,
+            candidate,
+            cross_dataset_metric_results=cross_dataset,
+        )
+
+        self.assertTrue(payload["evaluation_valid"])
+        self.assertFalse(payload["accepted"])
+        self.assertEqual(
+            payload["rejection_reasons"],
+            ["required_metric_source_weighted_not_improved"],
+        )
+
+    def test_balanced_and_source_weighted_positive_are_accepted(self):
+        baseline = [
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.71, relation=0.70, compile_rate=0.90)
+            for _ in range(3)
+        ]
+
+        payload = self.decide(baseline, candidate)
+
+        self.assertTrue(payload["accepted"])
+        self.assertEqual(payload["rejection_reasons"], [])
+
+    def test_missing_source_count_is_invalid(self):
+        baseline = [
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.71, relation=0.70, compile_rate=0.90)
+            for _ in range(3)
+        ]
+        cross_dataset = positive_cross_dataset_results(("llm_node_f1",))
+        cross_dataset["llm_node_f1"].update(
+            {
+                "available": False,
+                "balanced_mean_delta": None,
+                "source_weighted_mean_delta": None,
+                "source_dataset_count_missing": True,
+                "missing_count_datasets": ["rac"],
+            }
+        )
+
+        payload = self.decide(
+            baseline,
+            candidate,
+            cross_dataset_metric_results=cross_dataset,
+        )
+
+        self.assertFalse(payload["evaluation_valid"])
+        self.assertEqual(payload["invalid_reasons"], ["source_dataset_count_missing"])
+
+    def test_missing_required_source_dataset_measurement_is_invalid(self):
+        baseline = [
+            repeat_summary(node=0.70, relation=0.70, compile_rate=0.90)
+            for _ in range(3)
+        ]
+        candidate = [
+            repeat_summary(node=0.71, relation=0.70, compile_rate=0.90)
+            for _ in range(3)
+        ]
+        cross_dataset = positive_cross_dataset_results(("llm_node_f1",))
+        cross_dataset["llm_node_f1"].update(
+            {
+                "available": False,
+                "balanced_mean_delta": None,
+                "source_weighted_mean_delta": None,
+                "missing_datasets": ["pure"],
+            }
+        )
+
+        payload = self.decide(
+            baseline,
+            candidate,
+            cross_dataset_metric_results=cross_dataset,
+        )
+
+        self.assertFalse(payload["evaluation_valid"])
+        self.assertEqual(payload["invalid_reasons"], ["required_metric_incomplete"])
+
     def test_compile_accepts_direct_gain_without_semantic_safety_check(self):
         baseline = [
             repeat_summary(node=0.70, relation=0.70, compile_rate=0.80)
@@ -194,7 +308,7 @@ class AnyImprovementGateTest(unittest.TestCase):
         self.assertTrue(payload["accepted"])
         self.assertEqual(
             payload["acceptance_policy"],
-            "all-required-positive-mean-delta",
+            "all-required-positive-pooled-balanced-and-source-weighted-mean-delta",
         )
         self.assertEqual(
             payload["direct_metric"], "plantuml_compilation_pass_rate"
@@ -350,7 +464,7 @@ class AnyImprovementGateTest(unittest.TestCase):
         self.assertFalse(payload["accepted"])
         self.assertEqual(
             payload["acceptance_policy"],
-            "all-required-positive-mean-delta",
+            "all-required-positive-pooled-balanced-and-source-weighted-mean-delta",
         )
         self.assertEqual(
             payload["gate_sequence_policy"], "gate1-then-fresh-gate2"
@@ -359,6 +473,27 @@ class AnyImprovementGateTest(unittest.TestCase):
             payload["rejection_reasons"],
             ["gate2_rejected", "required_metric_not_improved"],
         )
+
+    def test_single_gate_uses_gate1_decision_and_records_policy(self):
+        gate = {
+            "accepted": True,
+            "evaluation_valid": True,
+            "invalid_reasons": [],
+            "rejection_reasons": [],
+            "candidate_evidence_family": "semantic",
+            "required_metrics": ["llm_node_f1"],
+        }
+        payload = two_stage_gate_decision(
+            gate1_decision=gate,
+            gate2_decision=None,
+            gate2_required=False,
+        )
+
+        self.assertTrue(payload["accepted"])
+        self.assertTrue(payload["evaluation_valid"])
+        self.assertEqual(payload["gate_sequence_policy"], "single-gate1")
+        self.assertFalse(payload["gate2_required"])
+        self.assertFalse(payload["gate2_evaluated"])
 
     def test_required_metrics_must_be_non_empty_and_match_family(self):
         summaries = [

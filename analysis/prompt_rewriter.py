@@ -23,6 +23,31 @@ RETROSPECTIVE_RULE_CUE = re.compile(
     r"validation|training\s+case|dataset|missing\s+node|extra\s+node)\b",
     re.IGNORECASE,
 )
+NON_TERMINAL_PERIOD = "\x00"
+PROSE_ABBREVIATION_RE = re.compile(r"\b(?:e\.g|i\.e)\.", re.IGNORECASE)
+
+
+def rule_sentence_count(rule_text: str) -> int:
+    """Count prose sentences while ignoring non-terminal period sequences."""
+    stripped = str(rule_text or "").strip()
+    if not stripped:
+        return 0
+    protected = re.sub(
+        r"\.{2,}",
+        lambda match: NON_TERMINAL_PERIOD * len(match.group(0)),
+        stripped,
+    )
+    protected = PROSE_ABBREVIATION_RE.sub(
+        lambda match: match.group(0).replace(".", NON_TERMINAL_PERIOD),
+        protected,
+    )
+    protected = re.sub(r"(?<=\d)\.(?=\d)", NON_TERMINAL_PERIOD, protected)
+    parts = [
+        part
+        for part in re.split(r"[.!?]+(?:[\"')\]]+)?(?:\s+|$)", protected)
+        if part.strip()
+    ]
+    return len(parts) or 1
 
 
 def rewrite_prompt(
@@ -71,7 +96,12 @@ def rewrite_prompt(
                 "validation_errors": validation_errors,
                 "repair_instruction": (
                     "Return only a complete corrected {\"rule_text\": \"...\"} object. "
-                    "Preserve the supplied canonical positive trigger and negative boundary exactly."
+                    "Repair every reported violation, including sentence-count and canonical "
+                    "preservation or occurrence violations. Copy all words of the supplied "
+                    "positive trigger and negative boundary in their original order as one "
+                    "contiguous span exactly once; only case, punctuation, and whitespace may "
+                    "change. Do not paraphrase, reorder, inflect, delete, or insert words inside "
+                    "either canonical span. Keep rule_text to at most two sentences."
                 ),
             }
         raw = llm_client.chat(
@@ -118,26 +148,42 @@ def rewrite_prompt(
             validation_errors.append(
                 "Prompt rewriter rule_text contains retrospective evaluator language"
             )
+        if rule_sentence_count(rule_text) > 2:
+            validation_errors.append(
+                "rule_text must contain at most two sentences"
+            )
         if positive_trigger and not normalized_contract_contains(
             rule_text, positive_trigger
         ):
             validation_errors.append(
-                "rule_text must contain the canonical positive trigger"
+                "rule_text must contain canonical positive_trigger once as one contiguous "
+                "canonical token sequence; required fragment: "
+                + json.dumps(positive_trigger, ensure_ascii=False)
             )
         if negative_boundary and not normalized_contract_contains(
             rule_text, negative_boundary
         ):
             validation_errors.append(
-                "rule_text must contain the canonical negative boundary"
+                "rule_text must contain canonical negative_boundary once as one contiguous "
+                "canonical token sequence; required fragment: "
+                + json.dumps(negative_boundary, ensure_ascii=False)
             )
         if positive_trigger and normalized_contract_occurrences(
             rule_text, positive_trigger
         ) > 1:
-            validation_errors.append("rule_text repeats the canonical positive trigger")
+            validation_errors.append(
+                "rule_text must contain canonical positive_trigger exactly once; required "
+                "fragment: "
+                + json.dumps(positive_trigger, ensure_ascii=False)
+            )
         if negative_boundary and normalized_contract_occurrences(
             rule_text, negative_boundary
         ) > 1:
-            validation_errors.append("rule_text repeats the canonical negative boundary")
+            validation_errors.append(
+                "rule_text must contain canonical negative_boundary exactly once; required "
+                "fragment: "
+                + json.dumps(negative_boundary, ensure_ascii=False)
+            )
         if validation_errors:
             continue
         candidate, errors = apply_prompt_revision_fragment(

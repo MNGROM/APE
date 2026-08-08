@@ -284,9 +284,9 @@ def resolve_model_roles(args: argparse.Namespace) -> argparse.Namespace:
 def resolve_pipeline_defaults(args: argparse.Namespace) -> argparse.Namespace:
     mode = str(getattr(args, "candidate_application_mode", "auto") or "auto")
     if mode == "auto":
-        args.candidate_application_mode = (
-            "cumulative" if getattr(args, "gate2", True) else "diagnostic-apply"
-        )
+        # Formal runs must always apply only after the enabled Gate's metric decision.
+        # The legacy diagnostic path remains available only when explicitly requested.
+        args.candidate_application_mode = "cumulative"
     return args
 
 
@@ -577,31 +577,41 @@ def case_split_fingerprint(cases: list[Case]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def case_dataset_counts(cases: list[Case]) -> dict[str, int]:
+    return {
+        dataset: len(items)
+        for dataset, items in sorted(grouped_cases(cases).items())
+    }
+
+
 def write_data_split_summary(
     *,
     run_dir: Path,
     args: argparse.Namespace,
+    source_cases: list[Case],
     train_pool_cases: list[Case],
     train_cases: list[Case],
     validation_cases: list[Case],
     confirmation_cases: list[Case],
     test_cases: list[Case] | None = None,
 ) -> dict[str, Any]:
-    def counts(cases: list[Case]) -> dict[str, int]:
-        return {dataset: len(items) for dataset, items in sorted(grouped_cases(cases).items())}
-
     summary = {
+        "source_count": len(source_cases),
         "train_pool_count": len(train_pool_cases),
         "train_count": len(train_cases),
         "requested_gate1_count": args.gate1_size,
         "actual_gate1_count": len(validation_cases),
         "requested_gate2_count": args.gate2_size,
         "actual_gate2_count": len(confirmation_cases),
+        "gate2_enabled": bool(args.gate2),
+        "gate_sequence_policy": gate_sequence_policy(bool(args.gate2)),
         "test_count": len(test_cases or []),
-        "train_dataset_counts": counts(train_cases),
-        "gate1_dataset_counts": counts(validation_cases),
-        "gate2_dataset_counts": counts(confirmation_cases),
-        "test_dataset_counts": counts(test_cases or []),
+        "source_dataset_counts": case_dataset_counts(source_cases),
+        "train_pool_dataset_counts": case_dataset_counts(train_pool_cases),
+        "train_dataset_counts": case_dataset_counts(train_cases),
+        "gate1_dataset_counts": case_dataset_counts(validation_cases),
+        "gate2_dataset_counts": case_dataset_counts(confirmation_cases),
+        "test_dataset_counts": case_dataset_counts(test_cases or []),
         "gate1_split_fingerprint": case_split_fingerprint(validation_cases),
         "gate2_split_fingerprint": case_split_fingerprint(confirmation_cases),
     }
@@ -923,8 +933,20 @@ DIRECT_ACCEPTANCE_METRIC_BY_FAMILY = {
     "compile": "plantuml_compilation_pass_rate",
 }
 
-REQUIRED_METRIC_ACCEPTANCE_POLICY = "all-required-positive-mean-delta"
-GATE_SEQUENCE_POLICY = "gate1-then-fresh-gate2"
+REQUIRED_METRIC_ACCEPTANCE_POLICY = (
+    "all-required-positive-pooled-balanced-and-source-weighted-mean-delta"
+)
+SINGLE_GATE_SEQUENCE_POLICY = "single-gate1"
+DUAL_GATE_SEQUENCE_POLICY = "gate1-then-fresh-gate2"
+
+
+def gate_sequence_policy(gate2_required: bool) -> str:
+    """Return the recorded gate sequence without changing acceptance semantics."""
+    return (
+        DUAL_GATE_SEQUENCE_POLICY
+        if gate2_required
+        else SINGLE_GATE_SEQUENCE_POLICY
+    )
 
 VALIDATION_CALIBRATION_METRICS = (
     *SEMANTIC_ACCEPTANCE_METRICS,
@@ -958,7 +980,11 @@ def aggregate_repeat_summaries(summaries: list[dict[str, float]]) -> dict[str, f
 
 
 PER_DATASET_DECOMPOSITION_METRICS = (
+    "llm_node_precision",
+    "llm_node_recall",
     "llm_node_f1",
+    "llm_relation_precision",
+    "llm_relation_recall",
     "llm_relation_f1",
     "plantuml_compilation_pass_rate",
 )
@@ -967,19 +993,19 @@ PER_DATASET_DECOMPOSITION_METRICS = (
 def per_dataset_metric_decomposition(
     repeat_pairs: list[tuple[int, list[Any], list[Any]]],
 ) -> dict[str, dict[str, Any]]:
-    """Split paired gate repeats by source dataset for audit reporting.
+    """Split paired gate repeats by source dataset for audit and Gate aggregation.
 
     A mixed gate pools every dataset into one mean, so a rule that helps one
     dataset and hurts another is indistinguishable from a rule that changes
     nothing. This decomposition reuses the records already produced by the
     gate repeats; it issues no additional model calls.
 
-    Audit only. ``any_improvement_decision`` never receives these values, so
-    acceptance cannot depend on them by construction.
+    The full decomposition remains an audit artifact. Acceptance receives only
+    the compact aggregates produced by ``aggregate_source_dataset_metrics``.
     """
 
-    grouped: dict[str, dict[str, list[dict[str, float]]]] = {}
-    for _repeat, baseline_records, candidate_records in repeat_pairs:
+    grouped: dict[str, dict[int, dict[str, dict[str, float] | None]]] = {}
+    for repeat, baseline_records, candidate_records in repeat_pairs:
         datasets = sorted(
             {
                 str(record.dataset)
@@ -987,43 +1013,161 @@ def per_dataset_metric_decomposition(
             }
         )
         for dataset in datasets:
-            bucket = grouped.setdefault(dataset, {"baseline": [], "candidate": []})
+            bucket = grouped.setdefault(dataset, {}).setdefault(
+                repeat, {"baseline": None, "candidate": None}
+            )
             for role, records in (
                 ("baseline", baseline_records),
                 ("candidate", candidate_records),
             ):
-                bucket[role].append(
-                    summarize_records(
-                        [
-                            record
-                            for record in records
-                            if str(record.dataset) == dataset
-                        ]
-                    )
+                dataset_records = [
+                    record
+                    for record in records
+                    if str(record.dataset) == dataset
+                ]
+                bucket[role] = (
+                    summarize_records(dataset_records) if dataset_records else None
                 )
 
     decomposition: dict[str, dict[str, Any]] = {}
     for dataset in sorted(grouped):
-        baselines = grouped[dataset]["baseline"]
-        candidates = grouped[dataset]["candidate"]
+        repeats = grouped[dataset]
         metrics: dict[str, dict[str, Any]] = {}
         for metric in PER_DATASET_DECOMPOSITION_METRICS:
-            deltas = [
-                float(candidate.get(metric, 0.0)) - float(baseline.get(metric, 0.0))
-                for baseline, candidate in zip(baselines, candidates)
-            ]
+            deltas: list[float] = []
+            missing_repeats: list[int] = []
+            for repeat in sorted(repeats):
+                baseline = repeats[repeat]["baseline"]
+                candidate = repeats[repeat]["candidate"]
+                baseline_value = (
+                    baseline.get(metric) if isinstance(baseline, dict) else None
+                )
+                candidate_value = (
+                    candidate.get(metric) if isinstance(candidate, dict) else None
+                )
+                semantic_metric = metric.startswith("llm_")
+                semantic_available = bool(
+                    not semantic_metric
+                    or (
+                        isinstance(baseline, dict)
+                        and isinstance(candidate, dict)
+                        and float(baseline.get("llm_element_evaluated", 0.0)) > 0.0
+                        and float(candidate.get("llm_element_evaluated", 0.0)) > 0.0
+                    )
+                )
+                if (
+                    isinstance(baseline_value, (int, float))
+                    and not isinstance(baseline_value, bool)
+                    and isinstance(candidate_value, (int, float))
+                    and not isinstance(candidate_value, bool)
+                    and semantic_available
+                ):
+                    deltas.append(float(candidate_value) - float(baseline_value))
+                else:
+                    missing_repeats.append(repeat)
+            available = bool(repeats) and not missing_repeats
             metrics[metric] = {
-                "repeat_deltas": deltas,
-                "mean_delta": statistics.fmean(deltas) if deltas else 0.0,
-                "wins": sum(1 for delta in deltas if delta > 0.0),
+                "available": available,
+                "repeat_deltas": deltas if available else [],
+                "mean_delta": statistics.fmean(deltas) if available else None,
+                "wins": (
+                    sum(1 for delta in deltas if delta > 0.0)
+                    if available
+                    else None
+                ),
+                "missing_repeats": missing_repeats,
             }
-        case_counts = [int(float(item.get("count", 0.0))) for item in baselines]
+        case_counts = [
+            int(float(summary.get("count", 0.0)))
+            for repeat in repeats.values()
+            for summary in (repeat["baseline"], repeat["candidate"])
+            if isinstance(summary, dict)
+        ]
         decomposition[dataset] = {
             "case_count": max(case_counts) if case_counts else 0,
-            "repeat_count": len(baselines),
+            "repeat_count": len(repeats),
             "metrics": metrics,
         }
     return decomposition
+
+
+def aggregate_source_dataset_metrics(
+    *,
+    per_dataset_results: dict[str, dict[str, Any]],
+    source_dataset_counts: dict[str, int],
+    metrics: list[str] | tuple[str, ...],
+) -> dict[str, dict[str, Any]]:
+    """Compute equal-domain and source-population-weighted Gate deltas."""
+
+    valid_counts: dict[str, int] = {}
+    invalid_count_datasets: list[str] = []
+    for dataset, count in sorted(source_dataset_counts.items()):
+        if isinstance(count, bool) or not isinstance(count, int) or count <= 0:
+            invalid_count_datasets.append(str(dataset))
+        else:
+            valid_counts[str(dataset)] = count
+
+    observed_datasets = {str(dataset) for dataset in per_dataset_results}
+    expected_datasets = set(valid_counts)
+    missing_count_datasets = sorted(
+        set(invalid_count_datasets) | (observed_datasets - expected_datasets)
+    )
+    source_count_missing = bool(
+        not valid_counts or missing_count_datasets
+    )
+
+    aggregates: dict[str, dict[str, Any]] = {}
+    for metric in metrics:
+        deltas: dict[str, float] = {}
+        missing_datasets: list[str] = []
+        for dataset in sorted(expected_datasets):
+            dataset_payload = per_dataset_results.get(dataset)
+            metric_payload = (
+                dataset_payload.get("metrics", {}).get(metric)
+                if isinstance(dataset_payload, dict)
+                else None
+            )
+            mean_delta = (
+                metric_payload.get("mean_delta")
+                if isinstance(metric_payload, dict)
+                and metric_payload.get("available") is True
+                else None
+            )
+            if (
+                isinstance(mean_delta, bool)
+                or not isinstance(mean_delta, (int, float))
+                or not math.isfinite(float(mean_delta))
+            ):
+                missing_datasets.append(dataset)
+            else:
+                deltas[dataset] = float(mean_delta)
+
+        available = bool(
+            expected_datasets
+            and not source_count_missing
+            and not missing_datasets
+            and len(deltas) == len(expected_datasets)
+        )
+        total_weight = sum(valid_counts.values())
+        aggregates[metric] = {
+            "available": available,
+            "balanced_mean_delta": (
+                statistics.fmean(deltas.values()) if available else None
+            ),
+            "source_weighted_mean_delta": (
+                sum(deltas[dataset] * valid_counts[dataset] for dataset in deltas)
+                / total_weight
+                if available and total_weight > 0
+                else None
+            ),
+            "weight_basis": "source_population",
+            "missing_datasets": missing_datasets,
+            "source_dataset_count_missing": source_count_missing,
+            "missing_count_datasets": missing_count_datasets,
+            "dataset_count": len(expected_datasets),
+            "source_population_count": total_weight,
+        }
+    return aggregates
 
 
 def any_improvement_decision(
@@ -1036,6 +1180,7 @@ def any_improvement_decision(
     max_prompt_chars: int,
     candidate_evidence_family: str,
     required_metrics: list[str] | tuple[str, ...],
+    cross_dataset_metric_results: dict[str, dict[str, Any]],
 ) -> tuple[bool, dict[str, Any]]:
     if candidate_evidence_family not in {
         "semantic",
@@ -1152,22 +1297,86 @@ def any_improvement_decision(
         metric: dict(metric_results[metric])
         for metric in normalized_required_metrics
     }
-    incomplete_required_metrics = [
+    pooled_incomplete_required_metrics = [
         metric
         for metric, result in required_metric_results.items()
         if not result["available"]
     ]
+    def finite_cross_dataset_delta(metric: str, key: str) -> float | None:
+        aggregate = cross_dataset_metric_results.get(metric)
+        value = aggregate.get(key) if isinstance(aggregate, dict) else None
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+        ):
+            return None
+        return float(value)
+
+    cross_dataset_incomplete_required_metrics: list[str] = []
+    source_count_missing_metrics: list[str] = []
+    for metric in normalized_required_metrics:
+        aggregate = cross_dataset_metric_results.get(metric)
+        if not isinstance(aggregate, dict):
+            cross_dataset_incomplete_required_metrics.append(metric)
+            continue
+        if aggregate.get("source_dataset_count_missing"):
+            source_count_missing_metrics.append(metric)
+            continue
+        if (
+            aggregate.get("available") is not True
+            or aggregate.get("missing_datasets")
+            or finite_cross_dataset_delta(metric, "balanced_mean_delta") is None
+            or finite_cross_dataset_delta(
+                metric, "source_weighted_mean_delta"
+            ) is None
+        ):
+            cross_dataset_incomplete_required_metrics.append(metric)
+
+    incomplete_required_metrics = sorted(
+        set(pooled_incomplete_required_metrics)
+        | set(cross_dataset_incomplete_required_metrics)
+    )
+    if source_count_missing_metrics:
+        invalid_reasons.append("source_dataset_count_missing")
     if incomplete_required_metrics:
         invalid_reasons.append("required_metric_incomplete")
-    non_improving_required_metrics = [
+    non_improving_pooled_required_metrics = [
         metric
         for metric, result in required_metric_results.items()
         if result["available"] and not result["positive_mean_delta"]
     ]
+    non_improving_balanced_required_metrics = [
+        metric
+        for metric in normalized_required_metrics
+        if isinstance(cross_dataset_metric_results.get(metric), dict)
+        and cross_dataset_metric_results[metric].get("available") is True
+        and finite_cross_dataset_delta(metric, "balanced_mean_delta") is not None
+        and finite_cross_dataset_delta(metric, "balanced_mean_delta") <= 0.0
+    ]
+    non_improving_source_weighted_required_metrics = [
+        metric
+        for metric in normalized_required_metrics
+        if isinstance(cross_dataset_metric_results.get(metric), dict)
+        and cross_dataset_metric_results[metric].get("available") is True
+        and finite_cross_dataset_delta(
+            metric, "source_weighted_mean_delta"
+        ) is not None
+        and finite_cross_dataset_delta(
+            metric, "source_weighted_mean_delta"
+        ) <= 0.0
+    ]
+    non_improving_required_metrics = sorted(
+        set(non_improving_pooled_required_metrics)
+        | set(non_improving_balanced_required_metrics)
+        | set(non_improving_source_weighted_required_metrics)
+    )
     winning_metrics = [
         metric
-        for metric, result in required_metric_results.items()
-        if result["positive_mean_delta"]
+        for metric in normalized_required_metrics
+        if metric not in incomplete_required_metrics
+        and metric not in source_count_missing_metrics
+        and metric not in non_improving_required_metrics
     ]
 
     direct_metric = (
@@ -1184,8 +1393,14 @@ def any_improvement_decision(
     evaluation_valid = not invalid_reasons
     accepted = bool(evaluation_valid and not non_improving_required_metrics)
     rejection_reasons = list(invalid_reasons)
-    if not invalid_reasons and non_improving_required_metrics:
+    if not invalid_reasons and non_improving_pooled_required_metrics:
         rejection_reasons.append("required_metric_not_improved")
+    if not invalid_reasons and non_improving_balanced_required_metrics:
+        rejection_reasons.append("required_metric_balanced_not_improved")
+    if not invalid_reasons and non_improving_source_weighted_required_metrics:
+        rejection_reasons.append(
+            "required_metric_source_weighted_not_improved"
+        )
     acceptance_policy = REQUIRED_METRIC_ACCEPTANCE_POLICY
 
     diagnostic_metrics = (
@@ -1212,7 +1427,18 @@ def any_improvement_decision(
         "candidate_evidence_family": candidate_evidence_family,
         "required_metrics": list(normalized_required_metrics),
         "required_metric_results": required_metric_results,
+        "cross_dataset_metric_results": cross_dataset_metric_results,
         "incomplete_required_metrics": incomplete_required_metrics,
+        "source_count_missing_metrics": source_count_missing_metrics,
+        "non_improving_pooled_required_metrics": (
+            non_improving_pooled_required_metrics
+        ),
+        "non_improving_balanced_required_metrics": (
+            non_improving_balanced_required_metrics
+        ),
+        "non_improving_source_weighted_required_metrics": (
+            non_improving_source_weighted_required_metrics
+        ),
         "non_improving_required_metrics": non_improving_required_metrics,
         "direct_metric": direct_metric,
         "direct_metric_results": direct_metric_results,
@@ -1336,7 +1562,7 @@ def two_stage_gate_decision(
     return {
         "schema_version": "two-stage-gate-v1",
         "acceptance_policy": REQUIRED_METRIC_ACCEPTANCE_POLICY,
-        "gate_sequence_policy": GATE_SEQUENCE_POLICY,
+        "gate_sequence_policy": gate_sequence_policy(gate2_required),
         "evaluation_valid": evaluation_valid,
         "invalid_reasons": invalid_reasons,
         "accepted": accepted,
@@ -1350,11 +1576,20 @@ def two_stage_gate_decision(
         "required_metric_results": final_evidence.get(
             "required_metric_results", {}
         ),
+        "cross_dataset_metric_results": final_evidence.get(
+            "cross_dataset_metric_results", {}
+        ),
         "incomplete_required_metrics": final_evidence.get(
             "incomplete_required_metrics", []
         ),
         "non_improving_required_metrics": final_evidence.get(
             "non_improving_required_metrics", []
+        ),
+        "non_improving_balanced_required_metrics": final_evidence.get(
+            "non_improving_balanced_required_metrics", []
+        ),
+        "non_improving_source_weighted_required_metrics": final_evidence.get(
+            "non_improving_source_weighted_required_metrics", []
         ),
         "direct_metric": final_evidence.get("direct_metric"),
         "direct_metric_results": final_evidence.get("direct_metric_results", {}),
@@ -1587,6 +1822,7 @@ def evaluate_gate(
     baseline_cache: dict[str, Any] | None = None,
     candidate_evidence_family: str,
     required_metrics: list[str] | tuple[str, ...],
+    source_dataset_counts: dict[str, int],
     gate_name: str = "gate1",
 ) -> tuple[list[Any], list[Any], dict[str, float], dict[str, float], dict[str, Any]]:
     if gate_name not in {"gate1", "gate2"}:
@@ -1668,6 +1904,12 @@ def evaluate_gate(
     write_text(paths[f"{path_prefix}_candidate_summary"], json.dumps(candidate_summary, ensure_ascii=False, indent=2))
     write_evaluation_records(paths[f"{path_prefix}_baseline_records"], first_baseline_records)
     write_evaluation_records(paths[f"{path_prefix}_candidate_records"], first_candidate_records)
+    per_dataset_results = per_dataset_metric_decomposition(repeat_pairs)
+    cross_dataset_metric_results = aggregate_source_dataset_metrics(
+        per_dataset_results=per_dataset_results,
+        source_dataset_counts=source_dataset_counts,
+        metrics=required_metrics,
+    )
     accepted, decision = any_improvement_decision(
         baseline_summaries=baseline_repeat_summaries,
         candidate_summaries=candidate_repeat_summaries,
@@ -1677,8 +1919,8 @@ def evaluate_gate(
         max_prompt_chars=args.max_prompt_chars,
         candidate_evidence_family=candidate_evidence_family,
         required_metrics=required_metrics,
+        cross_dataset_metric_results=cross_dataset_metric_results,
     )
-    per_dataset_results = per_dataset_metric_decomposition(repeat_pairs)
     aggregate_payload = {
         "baseline_summary": baseline_summary,
         "candidate_summary": candidate_summary,
@@ -1686,12 +1928,25 @@ def evaluate_gate(
         "baseline_repeat_summaries": baseline_repeat_summaries,
         "candidate_repeat_summaries": candidate_repeat_summaries,
         "metric_results": decision["metric_results"],
+        "accepted": decision["accepted"],
+        "evaluation_valid": decision["evaluation_valid"],
+        "invalid_reasons": decision["invalid_reasons"],
+        "rejection_reasons": decision["rejection_reasons"],
         "candidate_evidence_family": decision["candidate_evidence_family"],
         "required_metrics": decision["required_metrics"],
         "required_metric_results": decision["required_metric_results"],
+        "cross_dataset_metric_results": decision[
+            "cross_dataset_metric_results"
+        ],
         "incomplete_required_metrics": decision["incomplete_required_metrics"],
         "non_improving_required_metrics": decision[
             "non_improving_required_metrics"
+        ],
+        "non_improving_balanced_required_metrics": decision[
+            "non_improving_balanced_required_metrics"
+        ],
+        "non_improving_source_weighted_required_metrics": decision[
+            "non_improving_source_weighted_required_metrics"
         ],
         "direct_metric": decision["direct_metric"],
         "direct_metric_results": decision["direct_metric_results"],
@@ -1711,6 +1966,9 @@ def evaluate_gate(
         f"- required metrics: {', '.join(decision['required_metrics'])}\n"
         f"- direct metric: {decision['direct_metric'] or 'none'}\n"
         f"- winning metrics: {', '.join(decision['winning_metrics']) or 'none'}\n"
+        f"- balanced/source-weighted required metrics: "
+        f"{json.dumps(decision['cross_dataset_metric_results'], ensure_ascii=False)}\n"
+        f"- rejection reasons: {', '.join(decision['rejection_reasons']) or 'none'}\n"
         f"- accepted: {str(accepted).lower()}\n\n"
         "See `aggregate_summary.json` for paired repeat deltas and diagnostic metrics.\n",
     )
@@ -1822,7 +2080,14 @@ def filter_candidate_groups_by_attempt_history(
             base_prompt_hash=base_prompt_hash,
             finding_keys=finding_keys,
         )
-        if any(item.get("outcome") == "no_prompt_gap" for item in history):
+        prior_terminal_outcomes = sorted(
+            {
+                str(item.get("outcome") or "")
+                for item in history
+                if item.get("outcome") in {"no_prompt_gap", "group_incoherent"}
+            }
+        )
+        if prior_terminal_outcomes:
             filtered.append(
                 {
                     "group_id": str(group.get("group_id") or ""),
@@ -1832,7 +2097,8 @@ def filter_candidate_groups_by_attempt_history(
                     ),
                     "finding_keys": finding_keys,
                     "prior_attempt_count": len(history),
-                    "reason": "prior_no_prompt_gap_same_prompt_and_findings",
+                    "prior_terminal_outcomes": prior_terminal_outcomes,
+                    "reason": "prior_terminal_localization_same_prompt_and_findings",
                 }
             )
             continue
@@ -1865,6 +2131,7 @@ def run_training_iterations(
     args: argparse.Namespace,
     llm_client: LLMClient,
     train_cases: list[Case],
+    source_dataset_counts: dict[str, int],
     run_dir: Path,
     work_prompt_path: Path,
     label: str,
@@ -1893,7 +2160,10 @@ def run_training_iterations(
     print(f"[run] {label}, policy=taxonomy-v3 selector-v4-bounded-attempts, train_cases={len(train_cases)}")
     print(f"[run] train distribution: {describe_case_distribution(train_cases)}")
     print(f"[run] gate1 cases={len(validation_cases)}")
-    print(f"[run] gate2 cases={len(confirmation_cases)}")
+    print(
+        f"[run] gate_policy={gate_sequence_policy(bool(args.gate2))}, "
+        f"gate2_enabled={bool(args.gate2)}, gate2_cases={len(confirmation_cases)}"
+    )
     print(
         "[run] stop_after_first_apply="
         f"{bool(getattr(args, 'stop_after_first_apply', False))}"
@@ -1909,6 +2179,7 @@ def run_training_iterations(
             {
                 "mode": "taxonomy-v3-selector-v4-bounded-attempts",
                 "candidate_application_mode": args.candidate_application_mode,
+                "gate_sequence_policy": gate_sequence_policy(bool(args.gate2)),
                 "candidate_registry": "../candidate_registry.json",
                 "taxonomy_mapping": "disabled",
                 "gate1_split": {
@@ -2036,7 +2307,7 @@ def run_training_iterations(
             "schema_version": "selector-v4-bounded-attempts",
             "application_mode": args.candidate_application_mode,
             "acceptance_policy": REQUIRED_METRIC_ACCEPTANCE_POLICY,
-            "gate_sequence_policy": GATE_SEQUENCE_POLICY,
+            "gate_sequence_policy": gate_sequence_policy(bool(args.gate2)),
             "acceptance_mode": (
                 "diagnostic_apply"
                 if args.candidate_application_mode == "diagnostic-apply"
@@ -2139,7 +2410,7 @@ def run_training_iterations(
             and not acceptance["rejection_reasons"]
         ):
             acceptance["rejection_reasons"] = [
-                "prior_no_prompt_gap_groups_filtered"
+                "prior_terminal_localization_groups_filtered"
             ]
 
         for attempt_index, group in enumerate(candidate_groups, start=1):
@@ -2180,7 +2451,7 @@ def run_training_iterations(
                 "candidate_valid": False,
                 "candidate_evidence_family": None,
                 "acceptance_policy": REQUIRED_METRIC_ACCEPTANCE_POLICY,
-                "gate_sequence_policy": GATE_SEQUENCE_POLICY,
+                "gate_sequence_policy": gate_sequence_policy(bool(args.gate2)),
                 "required_metrics": [],
                 "required_metric_results": {},
                 "incomplete_required_metrics": [],
@@ -2234,6 +2505,9 @@ def run_training_iterations(
                 )
                 if localization is None:
                     attempt_acceptance["rejection_reasons"] = ["localization_invalid"]
+                elif localization.get("group_consistency") == "incoherent":
+                    attempt_acceptance["candidate_status"] = "group_incoherent"
+                    attempt_acceptance["rejection_reasons"] = ["group_incoherent"]
                 elif localization["localization_status"] == "no_prompt_gap":
                     attempt_acceptance["rejection_reasons"] = ["no_prompt_gap"]
                 elif localization["localization_status"] == "already_covered":
@@ -2325,6 +2599,7 @@ def run_training_iterations(
                         baseline_cache=validation_baseline_cache,
                         candidate_evidence_family=candidate_evidence_family,
                         required_metrics=candidate_required_metrics,
+                        source_dataset_counts=source_dataset_counts,
                         gate_name="gate1",
                     )
                     gate2_decision = None
@@ -2355,6 +2630,7 @@ def run_training_iterations(
                             baseline_cache=None,
                             candidate_evidence_family=candidate_evidence_family,
                             required_metrics=candidate_required_metrics,
+                            source_dataset_counts=source_dataset_counts,
                             gate_name="gate2",
                         )
                     acceptance_decision = two_stage_gate_decision(
@@ -2389,7 +2665,8 @@ def run_training_iterations(
                                 REQUIRED_METRIC_ACCEPTANCE_POLICY,
                             ),
                             "gate_sequence_policy": acceptance_decision.get(
-                                "gate_sequence_policy", GATE_SEQUENCE_POLICY
+                                "gate_sequence_policy",
+                                gate_sequence_policy(bool(args.gate2)),
                             ),
                             "required_metrics": acceptance_decision.get(
                                 "required_metrics", list(candidate_required_metrics)
@@ -2448,7 +2725,8 @@ def run_training_iterations(
                             "acceptance_policy", REQUIRED_METRIC_ACCEPTANCE_POLICY
                         ),
                         "gate_sequence_policy": acceptance_decision.get(
-                            "gate_sequence_policy", GATE_SEQUENCE_POLICY
+                            "gate_sequence_policy",
+                            gate_sequence_policy(bool(args.gate2)),
                         ),
                         "required_metrics": list(candidate_required_metrics),
                         "required_metric_results": acceptance_decision.get(
@@ -2611,7 +2889,8 @@ def run_training_iterations(
                         "acceptance_policy", REQUIRED_METRIC_ACCEPTANCE_POLICY
                     ),
                     "gate_sequence_policy": final_attempt.get(
-                        "gate_sequence_policy", GATE_SEQUENCE_POLICY
+                        "gate_sequence_policy",
+                        gate_sequence_policy(bool(args.gate2)),
                     ),
                     "required_metrics": final_attempt.get("required_metrics", []),
                     "required_metric_results": final_attempt.get(
@@ -2813,8 +3092,8 @@ def run_validation_calibration(
         "aggregate_summary": aggregate,
         "metric_statistics": metric_stats,
         "acceptance_policy": (
-            "all required metric mean deltas must be positive; calibration is "
-            "descriptive and never sets a threshold"
+            "all required pooled, balanced, and source-weighted metric mean deltas "
+            "must be positive; calibration is descriptive and never sets a threshold"
         ),
         "note": "Calibration reports repeat variability only. No threshold or regression floor is derived or applied.",
     }
@@ -2840,8 +3119,10 @@ def run_train_only(args: argparse.Namespace, datasets: dict[str, list[Case]], ll
     train_dataset = train_dataset.lower()
     if train_dataset not in datasets:
         raise ValueError(f"Unknown train dataset {train_dataset!r}. Available: {', '.join(sorted(datasets))}")
+    source_cases = list(datasets[train_dataset])
+    source_dataset_counts = case_dataset_counts(source_cases)
     train_pool_cases = select_cases_with_strategy(
-        datasets[train_dataset],
+        source_cases,
         limit=args.max_train_cases,
         strategy=args.sample_strategy,
         seed=args.sample_seed,
@@ -2860,6 +3141,7 @@ def run_train_only(args: argparse.Namespace, datasets: dict[str, list[Case]], ll
     write_data_split_summary(
         run_dir=run_dir,
         args=args,
+        source_cases=source_cases,
         train_pool_cases=train_pool_cases,
         train_cases=train_cases,
         validation_cases=validation_cases,
@@ -2878,6 +3160,7 @@ def run_train_only(args: argparse.Namespace, datasets: dict[str, list[Case]], ll
         args=args,
         llm_client=llm_client,
         train_cases=train_cases,
+        source_dataset_counts=source_dataset_counts,
         run_dir=run_dir,
         work_prompt_path=work_prompt_path,
         label=f"train_only={train_dataset}",
@@ -2893,6 +3176,7 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
         raise ValueError(f"Unknown test dataset {test_dataset!r}. Available: {', '.join(sorted(datasets))}")
 
     train_cases_all = [case for name, cases in datasets.items() if name != test_dataset for case in cases]
+    source_dataset_counts = case_dataset_counts(train_cases_all)
     test_cases_all = datasets[test_dataset]
     train_pool_cases = select_cases_with_strategy(
         train_cases_all,
@@ -2922,6 +3206,7 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
     write_data_split_summary(
         run_dir=run_dir,
         args=args,
+        source_cases=train_cases_all,
         train_pool_cases=train_pool_cases,
         train_cases=train_cases,
         validation_cases=validation_cases,
@@ -2963,6 +3248,7 @@ def run_one_split(args: argparse.Namespace, datasets: dict[str, list[Case]], llm
         args=args,
         llm_client=llm_client,
         train_cases=train_cases,
+        source_dataset_counts=source_dataset_counts,
         run_dir=run_dir,
         work_prompt_path=work_prompt_path,
         label=f"test={test_dataset}",
@@ -3124,7 +3410,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--confirmation-gate",
         dest="gate2",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=False,
     )
     parser.add_argument("--gate2-size", "--confirmation-gate-size", dest="gate2_size", type=int, default=30)
     parser.add_argument(
@@ -3141,7 +3427,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--candidate-application-mode",
         choices=["auto", "isolated", "cumulative", "diagnostic-apply"],
         default="auto",
-        help="auto resolves to cumulative when Gate2 is enabled, otherwise diagnostic-apply",
+        help=(
+            "auto resolves to cumulative for the enabled Gate; diagnostic-apply is "
+            "legacy and must be explicit with --no-gate2"
+        ),
     )
     parser.add_argument("--calibrate-validation-only", action="store_true")
     parser.add_argument("--validation-calibration-repeats", type=int, default=5)

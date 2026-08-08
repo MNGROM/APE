@@ -8,10 +8,15 @@ param(
     [ValidateRange(1, 5)]
     [int]$HeldoutRepeats = 1,
     [switch]$Smoke,
+    [switch]$Gate2,
     [switch]$NoGate2
 )
 
 $ErrorActionPreference = "Stop"
+$Gate2AndNoGate2 = $Gate2 -and $NoGate2
+if ($Gate2AndNoGate2) {
+    throw "Use either -Gate2 or -NoGate2, not both."
+}
 $Repo = Split-Path -Parent $PSScriptRoot
 $Python = (Get-Command py -ErrorAction Stop).Source
 
@@ -130,15 +135,23 @@ function New-ExperimentArguments {
             "--candidate-application-mode", "diagnostic-apply"
         )
     }
-    else {
+    elseif ($Gate2) {
         @(
             "--gate2",
             "--gate2-size", "30",
             "--gate2-strategy", "stratified",
             "--gate2-seed", "20260630",
-            "--candidate-application-mode", "cumulative",
-            "--stop-after-first-apply"
+            "--candidate-application-mode", "cumulative"
         )
+    }
+    else {
+        @(
+            "--no-gate2",
+            "--candidate-application-mode", "cumulative"
+        )
+    }
+    if (-not $NoGate2) {
+        $gateArguments += "--stop-after-first-apply"
     }
 
     $arguments = @(
@@ -364,7 +377,7 @@ $active = [System.Collections.Generic.List[object]]::new()
 $results = [System.Collections.Generic.List[object]]::new()
 
 $StopAfterFirstApply = -not $NoGate2
-Write-Host "[scheduler] provider=$ActiveProvider datasets=$($Datasets -join ',') max_parallel=$MaxParallel smoke=$Smoke no_gate2=$NoGate2 stop_after_first_apply=$StopAfterFirstApply heldout_repeats=$HeldoutRepeats"
+Write-Host "[scheduler] provider=$ActiveProvider datasets=$($Datasets -join ',') max_parallel=$MaxParallel smoke=$Smoke gate2=$Gate2 legacy_no_gate2=$NoGate2 stop_after_first_apply=$StopAfterFirstApply heldout_repeats=$HeldoutRepeats"
 Write-Host "[scheduler] process logs=$LogDir"
 Write-Host "[scheduler] status interval=${StatusIntervalSeconds}s (use -StatusIntervalSeconds to adjust)"
 

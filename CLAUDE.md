@@ -15,7 +15,7 @@ generation and evaluation
 -> Prompt rewriter
 -> deterministic single-section apply
 -> paired repeated gate1
--> fresh paired repeated gate2 for gate1-passing candidates
+-> optional fresh paired repeated gate2 only when explicitly enabled
 -> application policy
 -> heldout audit only after a Prompt change
 ```
@@ -49,7 +49,9 @@ generation and evaluation
 - Python 拥有 ID、hash、计数、排序、去重、聚合和最终确定性决策。
 - Agent 只负责其阶段明确需要的语义判断或文本生成。
 - Rewriter 拥有最终 `rule_text` 措辞；Python 只能校验 canonical contract 并确定性应用，
-  不得补写或追加语义文本。
+  不得补写或追加语义文本。`rule_text` 最多两句；Editor 的 positive trigger 必须保留
+  Localization 的 `shared_repair.input_trigger` 与 `structural_operation`，negative boundary
+  必须保留 `preservation_boundary`。
 - 每个 schema 字段都必须被 validator、聚合器或审计产物实际消费。
 
 ## Experiment boundaries
@@ -75,34 +77,51 @@ generation and evaluation
   Prompt 必须在同一组 heldout cases 上完成全部 repeats，并保留逐次 summary 与聚合均值；
   repeats 不得进入 candidate discovery、排序、Gate、application 或 Prompt 修改。
 - 同一 epoch 的 candidate attempts 必须使用同一个 base Prompt，不能串行叠加。
-- 同一 epoch 最多应用一个 candidate。gate1 baseline 在同一 epoch 内只生成一次并复用；gate2
-  baseline/candidate 必须为每个通过 gate1 的 candidate fresh evaluation，
+- 同一 epoch 最多应用一个 candidate。gate1 baseline 在同一 epoch 内只生成一次并复用；显式
+  启用 gate2 时，其 baseline/candidate 必须为每个通过 gate1 的 candidate fresh evaluation，
   不得跨 candidate 复用。
-- gate1 与 gate2 必须从非 heldout training pool 固定、分层且互不重叠地划出，并从 candidate
-  discovery training cases 中排除。只有 gate1 通过的 candidate 才运行 gate2；两关都通过后
-  `cumulative` 才能应用。gate2 失败不得修改 Prompt 或进入
-  heldout，candidate attempts 继续使用当前 frozen base Prompt。
+- 正式默认流程只使用一个固定、分层的 30-case gate1，并从 candidate discovery training cases
+  中排除。gate1 通过后 `cumulative` 才能应用 candidate。`--gate2` 只用于显式兼容或复现实验；
+  启用时 gate2 必须与 gate1、heldout 互不重叠，且只有两关都通过才能应用。
 - Python 必须从 validated selected group 的 `anchor_kind` 确定 required metrics：
   `missing_node/extra_node` 使用 `llm_node_f1`，`missing_relation/extra_relation` 使用
   `llm_relation_f1`，同时包含 node 和 relation findings 的 semantic group 必须同时使用两项，
-  `syntax_error/compile_error` 使用 `plantuml_compilation_pass_rate`。gate1 与 gate2 中每个
-  required metric 的 repeated mean delta 都必须严格大于 `0`；不相关指标只作诊断，不能代偿。
+  `syntax_error/compile_error` 使用 `plantuml_compilation_pass_rate`。每个已启用 Gate 中的每个
+  required metric 必须同时满足 pooled repeated mean delta、全部 eligible source dataset 等权平均
+  delta（正式 LODO run 为五个 source dataset）和按采样前 source population 加权平均 delta 严格
+  大于 `0`；不相关指标只作诊断，不能代偿。
   不设置 `min_delta`、`min_wins`、regression floor 或“允许回退多少”的人工阈值。缺少任一
   required metric 的完整 measurement 时 evaluation invalid。`syntax_error` 与
   `compile_error` 属于同一个 compile evidence family，可以同组，并统一使用包装后 PlantUML
   JAR 检查产生的 compilation 指标；`syntax_pass_rate` 只保留为诊断指标，不参与 acceptance。
+- 新 run 的 split summary 必须分别记录：排除 heldout 后且均衡采样前的
+  `source_dataset_counts`、均衡采样后的 `train_pool_dataset_counts`，以及排除 Gate 后实际用于
+  discovery 的 `train_dataset_counts`。Gate weighted acceptance 只能使用
+  `source_dataset_counts`；缺失 source count 或任一 source dataset 的 required measurement 时
+  evaluation invalid，不得补零或改用 Gate 后 count。
 - 该无阈值 acceptance policy 是当前用户明确指定的项目契约。除非用户主动明确要求，后续
   不得重新添加最小提升、最小 wins、semantic/compile floor 或其他等价的回退阈值。
-- Gate2 默认启用；启用时 `auto` application mode 解析为 `cumulative`，且不得使用
-  `diagnostic-apply` 绕过双 gate。旧诊断应用语义只能与 `--no-gate2` 显式配合。
+- Gate2 默认关闭，只有显式 `--gate2` 才启用。`auto` application mode 无论 Gate2 是否启用都
+  解析为 `cumulative`；单 Gate 正式流程仍必须遵守 gate1 metric decision。旧诊断应用语义只能
+  通过 `--candidate-application-mode diagnostic-apply --no-gate2` 显式进入。
 - `--stop-after-first-apply` 是正式 paired run 的可选因果隔离开关。启用后，APE 在首个
   applied candidate 对应的 heldout audit 或 skip manifest 完成后结束后续 epoch；若没有
-  candidate 应用，则仍完成配置的全部 iterations。该开关不得提前跳过 Gate2、任一
+  candidate 应用，则仍完成配置的全部 iterations。该开关不得提前跳过已启用的 Gate2、任一
   heldout repeat 或 heldout 调度。
 - 跨 run 的来源-受益分析只能读取既有 `candidate_registry.json`、split、Gate 和 heldout
-  产物。宏平均、training-pool weighted 平均和逐数据集 delta 都属于 report-only 派生证据，
-  不得回写历史 run、覆盖原 `accepted`，也不得成为隐藏 acceptance gate。
-- 只有相同 base Prompt、相同 finding keys 且已确认 `no_prompt_gap` 的 group 可以过滤；
+  产物。新 run 写入 Gate decision 的 required-metric balanced/source-population-weighted delta
+  属于正式 acceptance evidence；分析器对历史 run 事后派生的宏平均、weighted 平均、逐数据集
+  delta、规范化 PlantUML 文本变化率和 heldout cumulative/incremental delta 仍为 report-only，
+  不得回写历史 run 或覆盖原 `accepted`。历史 run 缺少 `source_dataset_counts` 时只能回退使用
+  `train_dataset_counts` 并标记 `weight_basis=historical_train_pool`；缺失 paired measurement 必须
+  标记 unavailable，不能补成 `0`。
+- Localization 必须接收 frozen group 的全部成员证据，并以 `prompt-gap-localization-v2`
+  对每个 `finding_id` 恰好返回一次 compatibility check。`localized` 和 `already_covered` 只允许
+  coherent group，且必须给出非空 input trigger、structural operation 和 preservation boundary；
+  incoherent group 必须返回 `no_prompt_gap`，由 Python 记录为 `group_incoherent`，并跳过 Editor、
+  Rewriter、Gate 和 heldout 后继续下一 group。
+- 只有相同 base Prompt、相同 finding keys 且已确认 `no_prompt_gap` 或 `group_incoherent` 的
+  group 可以过滤；
   不得使用 summary、embedding 或模糊语义匹配跳过新证据。
 - 重复 `already_covered` 只能通过现有 `ambiguous + replace_existing` 合同收紧原指导，
   不得追加重复规则。
@@ -112,6 +131,8 @@ generation and evaluation
 - Prompt hash 未变化时不得运行 heldout generation 或 judge。
 - 未经用户明确同意，不得调用真实模型、运行训练、validation calibration 或 heldout。
 - 未经用户逐次审核批准，不得修改 `prompt_workspace/*.md`；可以先提供拟议 diff，但不能落盘。
+- Localization Prompt 已同步到严格 v2 contract；后续 Prompt 修改仍必须先提交精确 diff 并获得
+  用户逐次审核。当前 workflow 可在离线验证通过且另行获得真实 API 授权后运行。
 - 不得修改或删除现有实验日志和 run 产物。
 
 ## Change discipline

@@ -50,6 +50,18 @@ class ValidationRepeatTest(unittest.TestCase):
             gate2_size=3,
             no_evolve=False,
         )
+        self.per_dataset_results = {
+            "a": {
+                "case_count": 3,
+                "repeat_count": 3,
+                "metrics": {
+                    "llm_node_f1": {
+                        "available": True,
+                        "mean_delta": 0.01,
+                    }
+                },
+            }
+        }
 
     def test_repeats_alternate_order_and_write_aggregate(self) -> None:
         calls: list[tuple[str, int, Path]] = []
@@ -66,7 +78,12 @@ class ValidationRepeatTest(unittest.TestCase):
             node = 0.7 if role == "baseline" else candidate_nodes[index]
             return [], summary(node=node)
 
-        with tempfile.TemporaryDirectory() as temp_dir, patch("run.evaluate_cases", side_effect=fake_evaluate_cases):
+        with tempfile.TemporaryDirectory() as temp_dir, patch(
+            "run.evaluate_cases", side_effect=fake_evaluate_cases
+        ), patch(
+            "run.per_dataset_metric_decomposition",
+            return_value=self.per_dataset_results,
+        ):
             root = Path(temp_dir)
             iter_dir = root / "iteration_001"
             paths = iteration_paths(iter_dir)
@@ -83,6 +100,7 @@ class ValidationRepeatTest(unittest.TestCase):
                 phase_prefix="test",
                 candidate_evidence_family="semantic",
                 required_metrics=("llm_node_f1",),
+                source_dataset_counts={"a": 30},
             )
 
             self.assertEqual([role for role, _, _ in calls], ["baseline", "candidate", "candidate", "baseline", "baseline", "candidate"])
@@ -115,6 +133,9 @@ class ValidationRepeatTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir, patch(
             "run.evaluate_cases", side_effect=fake_evaluate_cases
+        ), patch(
+            "run.per_dataset_metric_decomposition",
+            return_value=self.per_dataset_results,
         ):
             root = Path(temp_dir)
             baseline_cache = {}
@@ -134,6 +155,7 @@ class ValidationRepeatTest(unittest.TestCase):
                     baseline_cache=baseline_cache,
                     candidate_evidence_family="semantic",
                     required_metrics=("llm_node_f1",),
+                    source_dataset_counts={"a": 30},
                 )
 
             self.assertEqual(role_counts["baseline"], 3)
@@ -177,7 +199,7 @@ class ValidationRepeatTest(unittest.TestCase):
             )
             self.assertEqual(
                 report["acceptance_policy"],
-                "all required metric mean deltas must be positive; calibration is descriptive and never sets a threshold",
+                "all required pooled, balanced, and source-weighted metric mean deltas must be positive; calibration is descriptive and never sets a threshold",
             )
 
     def test_gate2_evaluation_uses_fresh_baseline_each_time(self) -> None:
@@ -191,6 +213,9 @@ class ValidationRepeatTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir, patch(
             "run.evaluate_cases", side_effect=fake_evaluate_cases
+        ), patch(
+            "run.per_dataset_metric_decomposition",
+            return_value=self.per_dataset_results,
         ):
             root = Path(temp_dir)
             for attempt in (1, 2):
@@ -209,6 +234,7 @@ class ValidationRepeatTest(unittest.TestCase):
                     baseline_cache=None,
                     candidate_evidence_family="semantic",
                     required_metrics=("llm_node_f1",),
+                    source_dataset_counts={"a": 30},
                     gate_name="gate2",
                 )
 
@@ -221,6 +247,7 @@ class ValidationRepeatTest(unittest.TestCase):
             summary_payload = write_data_split_summary(
                 run_dir=root,
                 args=self.args,
+                source_cases=self.cases,
                 train_pool_cases=self.cases,
                 train_cases=self.cases[:2],
                 validation_cases=self.cases[2:],
@@ -228,6 +255,10 @@ class ValidationRepeatTest(unittest.TestCase):
             )
             self.assertEqual(summary_payload["requested_gate1_count"], 3)
             self.assertEqual(summary_payload["actual_gate1_count"], 1)
+            self.assertEqual(summary_payload["source_dataset_counts"], {"a": 3})
+            self.assertEqual(
+                summary_payload["train_pool_dataset_counts"], {"a": 3}
+            )
             saved = json.loads((root / "data_split_summary.json").read_text(encoding="utf-8"))
             self.assertEqual(saved["gate1_split_fingerprint"], case_split_fingerprint(self.cases[2:]))
 

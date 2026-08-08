@@ -69,7 +69,7 @@ class SeedPromptEvalConcurrencyTest(unittest.TestCase):
                 PROMPT_HASH_NORMALIZATION_VERSION,
             )
 
-    def test_dataset_scheduler_defaults_to_gate2(self) -> None:
+    def test_dataset_scheduler_defaults_to_single_gate_with_explicit_gate2_compatibility(self) -> None:
         script = (
             Path(__file__).resolve().parents[1]
             / "scripts"
@@ -80,7 +80,9 @@ class SeedPromptEvalConcurrencyTest(unittest.TestCase):
         self.assertIn('"--gate2-seed", "20260630"', script)
         self.assertEqual(script.count('"--stop-after-first-apply"'), 1)
         self.assertIn('"rac", "us"', script)
+        self.assertIn('[switch]$Gate2', script)
         self.assertIn("[switch]$NoGate2", script)
+        self.assertIn('"--no-gate2",\n            "--candidate-application-mode", "cumulative"', script)
         self.assertIn('"--candidate-application-mode", "diagnostic-apply"', script)
         self.assertIn('"--do-sample", "omit"', script)
         self.assertIn('APE_LLM_PROVIDER', script)

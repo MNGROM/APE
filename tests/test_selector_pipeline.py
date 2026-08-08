@@ -19,11 +19,12 @@ from analysis.failure_analysis import analyze_failures
 from analysis.candidate_registry import record_group_attempt
 from analysis.selector_agents import (
     _validate_prompt_gap_localization,
+    _shared_repair_contract_errors,
     build_rewriter_plan,
     localize_selector_group,
     propose_selector_edit,
 )
-from analysis.prompt_rewriter import rewrite_prompt
+from analysis.prompt_rewriter import rewrite_prompt, rule_sentence_count
 from llm_element_metrics import CompilationResult, LLMElementMetrics, PRF
 from metrics import EvaluationRecord, SyntaxResult, empty_metric_bundle
 from prompt_ops import apply_prompt_revision_fragment
@@ -769,15 +770,25 @@ class SelectorPipelineTest(unittest.TestCase):
         )
         localization, errors = _validate_prompt_gap_localization(
             {
-                "schema_version": "prompt-gap-localization-v1",
+                "schema_version": "prompt-gap-localization-v2",
                 "localization_status": "localized",
                 "prompt_gap": "missing",
                 "section": "rule",
                 "operation": "replace_existing",
                 "existing_prompt_quote": "(None)",
                 "rationale": "The blank rule section lacks this guidance.",
+                "group_consistency": "coherent",
+                "member_checks": [
+                    {"finding_id": 1, "compatible": True, "conflict_reason": ""}
+                ],
+                "shared_repair": {
+                    "input_trigger": "An explicit performed action is stated.",
+                    "structural_operation": "Create one activity for the action.",
+                    "preservation_boundary": "Preserve non-action context.",
+                },
             },
             current_prompt=prompt,
+            selected_finding_ids=[1],
         )
         self.assertEqual(errors, [])
         editor_plan = {
@@ -806,23 +817,41 @@ class SelectorPipelineTest(unittest.TestCase):
         )
         responses = [
             {
-                "schema_version": "prompt-gap-localization-v1",
+                "schema_version": "prompt-gap-localization-v2",
                 "localization_status": "localized",
                 "prompt_gap": "missing",
                 "section": "workflow",
                 "operation": "replace_existing",
                 "existing_prompt_quote": "(None)",
                 "rationale": "The first mapping is incompatible.",
+                "group_consistency": "coherent",
+                "member_checks": [
+                    {"finding_id": 999, "compatible": True, "conflict_reason": ""}
+                ],
+                "shared_repair": {
+                    "input_trigger": "An explicit action is stated.",
+                    "structural_operation": "Represent the action once.",
+                    "preservation_boundary": "Preserve contextual descriptions.",
+                },
                 "unsupported_field": "invalid",
             },
             {
-                "schema_version": "prompt-gap-localization-v1",
+                "schema_version": "prompt-gap-localization-v2",
                 "localization_status": "localized",
                 "prompt_gap": "missing",
                 "section": "workflow",
                 "operation": "replace_existing",
                 "existing_prompt_quote": "(None)",
                 "rationale": "The blank workflow lacks guidance for the selected cause.",
+                "group_consistency": "coherent",
+                "member_checks": [
+                    {"finding_id": 1, "compatible": True, "conflict_reason": ""}
+                ],
+                "shared_repair": {
+                    "input_trigger": "An explicit action is stated.",
+                    "structural_operation": "Represent the action once.",
+                    "preservation_boundary": "Preserve contextual descriptions.",
+                },
             },
         ]
 
@@ -845,7 +874,17 @@ class SelectorPipelineTest(unittest.TestCase):
             "group_id": "group_extra",
             "group_summary": "An extra node is introduced.",
             "shared_cause": "The prediction introduces an unsupported extra node.",
-            "members": [{"anchor_kind": "extra_node"}],
+            "members": [
+                {
+                    "finding_id": 1,
+                    "anchor_kind": "extra_node",
+                    "error_anchor": "Load the data",
+                    "requirement_quote": "Load the data.",
+                    "error_summary": "Extra node.",
+                    "causal_rationale": "The selected cause is uncertain.",
+                    "secondary_errors": [],
+                }
+            ],
             "representative_errors": [
                 {
                     "finding_id": 1,
@@ -882,8 +921,120 @@ class SelectorPipelineTest(unittest.TestCase):
 
         self.assertEqual(result["localization_status"], "localized")
         self.assertEqual(len(client.payloads), 2)
-        self.assertEqual(client.payloads[1]["schema_version"], "prompt-gap-localization-repair-v1")
+        self.assertEqual(client.payloads[1]["schema_version"], "prompt-gap-localization-repair-v2")
         self.assertEqual(saved_input["exact_recurrence"]["same_prompt_occurrences"], 2)
+        self.assertEqual(saved_input["schema_version"], "prompt-gap-localization-input-v2")
+        self.assertEqual(
+            saved_input["selected_error_group"]["member_evidence"][0]["finding_id"],
+            1,
+        )
+
+    def test_incoherent_localization_requires_member_conflict_and_no_edit(self):
+        prompt = (
+            "## agent task\nTask\n\n## input\nInput\n\n"
+            "## output\nOutput PlantUML code only.\n\n"
+            "## workflow\n(None)\n\n## knowledge\n(None)\n\n## rule\n(None)\n"
+        )
+        localization, errors = _validate_prompt_gap_localization(
+            {
+                "schema_version": "prompt-gap-localization-v2",
+                "localization_status": "no_prompt_gap",
+                "prompt_gap": "not_applicable",
+                "section": "",
+                "operation": "none",
+                "existing_prompt_quote": "",
+                "rationale": "The members require incompatible node operations.",
+                "group_consistency": "incoherent",
+                "member_checks": [
+                    {
+                        "finding_id": 1,
+                        "compatible": True,
+                        "conflict_reason": "",
+                    },
+                    {
+                        "finding_id": 2,
+                        "compatible": False,
+                        "conflict_reason": (
+                            "This shared-head object list must remain one action, while "
+                            "the other member contains independently performed verbs."
+                        ),
+                    },
+                ],
+                "shared_repair": {
+                    "input_trigger": "",
+                    "structural_operation": "",
+                    "preservation_boundary": "",
+                },
+            },
+            current_prompt=prompt,
+            selected_finding_ids=[1, 2],
+        )
+
+        self.assertEqual(errors, [])
+        self.assertEqual(localization["group_consistency"], "incoherent")
+        self.assertEqual(localization["localization_status"], "no_prompt_gap")
+
+    def test_localization_rejects_missing_duplicate_and_unknown_member_checks(self):
+        prompt = (
+            "## agent task\nTask\n\n## input\nInput\n\n"
+            "## output\nOutput PlantUML code only.\n\n"
+            "## workflow\n(None)\n\n## knowledge\n(None)\n\n## rule\n(None)\n"
+        )
+        base = {
+            "schema_version": "prompt-gap-localization-v2",
+            "localization_status": "localized",
+            "prompt_gap": "missing",
+            "section": "rule",
+            "operation": "replace_existing",
+            "existing_prompt_quote": "(None)",
+            "rationale": "Both members share one repair.",
+            "group_consistency": "coherent",
+            "member_checks": [
+                {"finding_id": 1, "compatible": True, "conflict_reason": ""},
+                {"finding_id": 2, "compatible": True, "conflict_reason": ""},
+            ],
+            "shared_repair": {
+                "input_trigger": "Independent performed verbs are stated.",
+                "structural_operation": "Keep each performed action distinct.",
+                "preservation_boundary": "Do not split shared-head object lists.",
+            },
+        }
+        invalid_checks = {
+            "missing": [base["member_checks"][0]],
+            "duplicate": [base["member_checks"][0], base["member_checks"][0]],
+            "unknown": [base["member_checks"][0], {"finding_id": 3, "compatible": True, "conflict_reason": ""}],
+        }
+
+        for label, checks in invalid_checks.items():
+            with self.subTest(label=label):
+                payload = {**base, "member_checks": checks}
+                localization, errors = _validate_prompt_gap_localization(
+                    payload,
+                    current_prompt=prompt,
+                    selected_finding_ids=[1, 2],
+                )
+                self.assertIsNone(localization)
+                self.assertTrue(errors)
+
+        conflict_payload = {
+            **base,
+            "group_consistency": "incoherent",
+            "member_checks": [
+                base["member_checks"][0],
+                {
+                    "finding_id": 2,
+                    "compatible": False,
+                    "conflict_reason": "The structural operation conflicts.",
+                },
+            ],
+        }
+        localization, errors = _validate_prompt_gap_localization(
+            conflict_payload,
+            current_prompt=prompt,
+            selected_finding_ids=[1, 2],
+        )
+        self.assertIsNone(localization)
+        self.assertTrue(any("must use localization_status=no_prompt_gap" in item for item in errors))
 
     def test_exact_no_prompt_gap_history_filters_only_same_prompt_and_findings(self):
         groups = [
@@ -930,21 +1081,217 @@ class SelectorPipelineTest(unittest.TestCase):
         self.assertEqual(other_prompt_eligible, groups)
         self.assertEqual(other_prompt_filtered, [])
 
+    def test_group_incoherent_skips_downstream_stages_and_continues(self):
+        prompt = (
+            "## agent task\nTask\n\n## input\nInput\n\n"
+            "## output\nOutput PlantUML code only.\n\n"
+            "## workflow\n(None)\n\n## knowledge\n(None)\n\n## rule\n(None)\n"
+        )
+        args = build_parser().parse_args(
+            [
+                "--iterations",
+                "1",
+                "--analysis-batch-size",
+                "10",
+                "--max-candidate-attempts-per-epoch",
+                "2",
+            ]
+        )
+        cases = [
+            Case(
+                dataset="data",
+                case_id="c1",
+                content="Open and save the record.",
+                gold_plantuml="G",
+            ),
+            Case(
+                dataset="data",
+                case_id="c2",
+                content="Enter the name and description.",
+                gold_plantuml="G",
+            ),
+        ]
+
+        members = [
+            {
+                "finding_id": index,
+                "finding_key": f"finding_{index}",
+                "status": "actionable",
+                "primary_finding_id": None,
+                "dataset": "data",
+                "case_id": f"c{index}",
+                "batch_id": 1,
+                "anchor_kind": "missing_node",
+                "error_anchor": f"Action {index}",
+                "matching_quality": "bijective",
+                "requirement_quote": f"Action {index}",
+                "error_summary": f"Action {index} is missing.",
+                "causal_rationale": f"The requirement states action {index}.",
+            }
+            for index in (1, 2)
+        ]
+
+        def batch_result(**kwargs):
+            return EpochBatchResult(
+                batch_index=1,
+                global_update_step=1,
+                records=[],
+                summary={},
+                batch_summary={"batch_index": 1},
+                error_observations=members,
+                valid_pattern_count=2,
+            )
+
+        selector_result = {
+            "schema_version": "error-selector-v2",
+            "selection_status": "selected",
+            "selected_group_id": "group_1",
+            "selection_rationale": "Priority order.",
+            "error_groups": [
+                {
+                    "group_id": f"group_{index}",
+                    "group_summary": f"Group {index}",
+                    "shared_cause": f"Cause {index}",
+                    "finding_ids": [index],
+                    "members": [member],
+                }
+                for index, member in enumerate(members, start=1)
+            ],
+            "selected_group": None,
+        }
+        localizations = [
+            {
+                "schema_version": "prompt-gap-localization-v2",
+                "localization_status": "no_prompt_gap",
+                "prompt_gap": "not_applicable",
+                "section": "",
+                "operation": "none",
+                "existing_prompt_quote": "",
+                "rationale": "The member conflicts with the proposed shared repair.",
+                "group_consistency": "incoherent",
+                "member_checks": [
+                    {
+                        "finding_id": 1,
+                        "compatible": False,
+                        "conflict_reason": "The structural operation conflicts.",
+                    }
+                ],
+                "shared_repair": {
+                    "input_trigger": "",
+                    "structural_operation": "",
+                    "preservation_boundary": "",
+                },
+            },
+            {
+                "schema_version": "prompt-gap-localization-v2",
+                "localization_status": "already_covered",
+                "prompt_gap": "already_covered",
+                "section": "output",
+                "operation": "none",
+                "existing_prompt_quote": "Output PlantUML code only.",
+                "rationale": "Existing guidance covers the member.",
+                "group_consistency": "coherent",
+                "member_checks": [
+                    {"finding_id": 2, "compatible": True, "conflict_reason": ""}
+                ],
+                "shared_repair": {
+                    "input_trigger": "The performed action is explicit.",
+                    "structural_operation": "Represent the action.",
+                    "preservation_boundary": "Preserve shared-head object lists.",
+                },
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            work = root / "work.md"
+            work.write_text(prompt, encoding="utf-8")
+            with patch("run.process_epoch_batch", side_effect=batch_result), patch(
+                "run.select_error_group", return_value=selector_result
+            ), patch(
+                "run.localize_selector_group", side_effect=localizations
+            ) as localize, patch("run.propose_selector_edit") as editor, patch(
+                "run.evaluate_gate"
+            ) as gate:
+                run_training_iterations(
+                    args=args,
+                    llm_client=object(),
+                    train_cases=cases,
+                    source_dataset_counts={"bp": len(cases)},
+                    run_dir=root,
+                    work_prompt_path=work,
+                    label="selector-test",
+                    validation_cases=cases,
+                    confirmation_cases=cases,
+                )
+            registry = json.loads(
+                (root / "candidate_registry.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual(localize.call_count, 2)
+        editor.assert_not_called()
+        gate.assert_not_called()
+        self.assertEqual(
+            [item["outcome"] for item in registry["group_attempts"]],
+            ["group_incoherent", "already_covered"],
+        )
+
+    def test_exact_group_incoherent_history_is_filtered(self):
+        group = {
+            "group_id": "group_1",
+            "members": [{"finding_key": "finding_1"}],
+        }
+        registry = {
+            "version": "candidate-registry-v1",
+            "entries": [],
+            "group_attempts": [],
+        }
+        record_group_attempt(
+            registry,
+            iteration=1,
+            attempt=1,
+            base_prompt_hash="base_hash",
+            group_id="group_1",
+            finding_keys=["finding_1"],
+            outcome="group_incoherent",
+            rejection_reasons=["group_incoherent"],
+        )
+
+        eligible, filtered = filter_candidate_groups_by_attempt_history(
+            [group], registry=registry, base_prompt_hash="base_hash"
+        )
+        other_prompt, _ = filter_candidate_groups_by_attempt_history(
+            [group], registry=registry, base_prompt_hash="other_hash"
+        )
+
+        self.assertEqual(eligible, [])
+        self.assertEqual(filtered[0]["prior_terminal_outcomes"], ["group_incoherent"])
+        self.assertEqual(other_prompt, [group])
+
     def test_localization_prompt_requires_member_level_conflict_for_no_gap(self):
         prompt_text = (
             PROJECT_DIR / "prompt_workspace" / "prompt_gap_localization_v2.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("same input-side cue", prompt_text)
-        self.assertIn("actual member-level conflict", prompt_text)
-        self.assertIn("incompatible structural operations", prompt_text)
-        self.assertIn("the Editor owns the negative boundary", prompt_text)
-        self.assertIn("Different domain nouns", prompt_text)
+        self.assertIn("member_evidence", prompt_text)
+        self.assertIn("one shared input trigger, structural operation, and preservation boundary", prompt_text)
+        self.assertIn("concrete member conflict or evidence limitation", prompt_text)
+        self.assertIn("exactly one `member_checks` item", prompt_text)
+        self.assertIn('"schema_version": "prompt-gap-localization-v2"', prompt_text)
+        self.assertIn("complete `shared_repair`", prompt_text)
+        self.assertIn("evidence-bound semantic applicability test", prompt_text)
+        self.assertIn("not sufficient by themselves", prompt_text)
+        self.assertIn("unspecified order or concurrency must remain unspecified", prompt_text)
+        self.assertIn("Do not write final replacement or rule text", prompt_text)
+        self.assertNotIn(
+            "Never write replacement text, a trigger, a boundary",
+            prompt_text,
+        )
 
     def test_localization_prompt_distinguishes_full_from_related_coverage(self):
         prompt_text = (
             PROJECT_DIR / "prompt_workspace" / "prompt_gap_localization_v2.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("prove coverage against every representative error", prompt_text)
+        self.assertIn("prove coverage against every member", prompt_text)
         self.assertIn("observed input-side cue", prompt_text)
         self.assertIn("same desired structural correction", prompt_text)
         self.assertIn("Shared terminology or a related topic is not coverage", prompt_text)
@@ -965,12 +1312,23 @@ class SelectorPipelineTest(unittest.TestCase):
 
         self.assertIn("operational applicability test", prompt_text)
         self.assertIn("isolated keyword is never sufficient by itself", prompt_text)
-        self.assertIn("independently performed behavior", prompt_text)
-        self.assertIn("states, predicates, conditions, outcomes", prompt_text)
-        self.assertIn(
-            "Distinguish concurrency, repetition, duration, conditions, and ordinary sequence",
-            prompt_text,
-        )
+        self.assertIn("independently performed verb phrases", prompt_text)
+        self.assertIn("shared-head objects, participants, field lists, and compound verbs", prompt_text)
+        self.assertIn("Ordinary `and`, commas, bullets, or headings do not imply concurrency", prompt_text)
+        self.assertIn("explicit simultaneous, concurrent, or in-parallel semantics", prompt_text)
+        self.assertIn("non-branching modifier", prompt_text)
+        self.assertIn("each exactly once as a contiguous span", prompt_text)
+        self.assertIn("Preserve wording and word order", prompt_text)
+        self.assertIn("only case, punctuation, and whitespace may change", prompt_text)
+
+    def test_rewriter_prompt_preserves_canonical_spans_exactly_once(self):
+        prompt_text = (
+            PROJECT_DIR / "prompt_workspace" / "prompt_rewriter_selector_v1.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("exactly once as contiguous spans", prompt_text)
+        self.assertIn("Preserve wording and word order", prompt_text)
+        self.assertIn("only case, punctuation, and whitespace may change", prompt_text)
 
     def test_exact_already_covered_history_builds_recurrence_context(self):
         history = [
@@ -995,6 +1353,7 @@ class SelectorPipelineTest(unittest.TestCase):
     def test_new_pipeline_defaults(self):
         args = build_parser().parse_args([])
         self.assertEqual(args.candidate_application_mode, "auto")
+        self.assertFalse(args.gate2)
         self.assertEqual(args.failure_analysis_prompt_path.name, "failure_analysis_selector_v2.md")
         self.assertEqual(args.error_selector_prompt_path.name, "error_selector_v4.md")
         self.assertEqual(args.error_localization_prompt_path.name, "prompt_gap_localization_v2.md")
@@ -1079,6 +1438,86 @@ class SelectorPipelineTest(unittest.TestCase):
         self.assertEqual(len(client.payloads), 2)
         self.assertEqual(client.payloads[1]["schema_version"], "prompt-edit-plan-repair-v1")
         self.assertNotIn("repair", saved_input)
+
+    def test_editor_retry_names_the_required_canonical_fragment(self):
+        prompt = (
+            "## agent task\nTask\n\n## input\nInput\n\n"
+            "## output\nOutput PlantUML code only.\n\n"
+            "## workflow\n(None)\n\n## knowledge\n(None)\n\n## rule\n(None)\n"
+        )
+        input_trigger = "A requirement stating a continuous action"
+        structural_operation = "Generate one activity node"
+        preservation_boundary = "Do not invent an unstated loop condition"
+        responses = [
+            {
+                "schema_version": "prompt-edit-plan-v2",
+                "intent": "Represent the continuous action once.",
+                "positive_trigger": (
+                    "When a requirement states a continuous action, generate one activity node."
+                ),
+                "negative_boundary": preservation_boundary,
+                "change_instruction": "Write one narrow rule.",
+            },
+            {
+                "schema_version": "prompt-edit-plan-v2",
+                "intent": "Represent the continuous action once.",
+                "positive_trigger": f"{input_trigger}; {structural_operation}.",
+                "negative_boundary": preservation_boundary,
+                "change_instruction": "Write one narrow rule.",
+            },
+        ]
+
+        class Client:
+            payloads = []
+
+            def chat(self, messages, **kwargs):
+                self.payloads.append(json.loads(messages[1]["content"]))
+                return json.dumps(responses[len(self.payloads) - 1])
+
+        localization = {
+            "localization_status": "localized",
+            "section": "rule",
+            "shared_repair": {
+                "input_trigger": input_trigger,
+                "structural_operation": structural_operation,
+                "preservation_boundary": preservation_boundary,
+            },
+        }
+        args = SimpleNamespace(
+            prompt_editor_prompt_path=(
+                PROJECT_DIR / "prompt_workspace" / "prompt_editor_selector_v2.md"
+            ),
+            editor_temperature=0.0,
+            editor_max_tokens=1024,
+            editor_thinking="disabled",
+        )
+        client = Client()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            result = propose_selector_edit(
+                current_prompt=prompt,
+                selected_group={
+                    "group_id": "group_1",
+                    "group_summary": "A continuous action is duplicated.",
+                    "shared_cause": "The action is represented as an extra loop condition.",
+                    "representative_errors": [],
+                },
+                localization=localization,
+                args=args,
+                llm_client=client,
+                output_input_path=root / "editor.input.json",
+                output_path=root / "editor.output.json",
+                state_dir=root,
+                iteration=1,
+            )
+
+        self.assertIsNotNone(result)
+        self.assertEqual(len(client.payloads), 2)
+        retry_payload = client.payloads[1]
+        self.assertTrue(
+            any(input_trigger in error for error in retry_payload["validation_errors"])
+        )
+        self.assertIn("Do not paraphrase", retry_payload["repair_instruction"])
 
     def test_diagnostic_apply_requires_a_valid_measurement(self):
         decision = selector_application_decision(
@@ -1186,10 +1625,10 @@ class SelectorPipelineTest(unittest.TestCase):
         }
 
         class Client:
-            calls = 0
+            payloads = []
 
             def chat(self, messages, **kwargs):
-                self.calls += 1
+                self.payloads.append(json.loads(messages[1]["content"]))
                 return json.dumps({"rule_text": "Map the action concisely."})
 
         args = SimpleNamespace(
@@ -1215,7 +1654,184 @@ class SelectorPipelineTest(unittest.TestCase):
             )
 
         self.assertIsNone(candidate)
+        self.assertEqual(len(client.payloads), 2)
+        retry_payload = client.payloads[1]
+        self.assertTrue(
+            any(positive in error for error in retry_payload["validation_errors"])
+        )
+        self.assertTrue(
+            any(negative in error for error in retry_payload["validation_errors"])
+        )
+        self.assertIn("Do not paraphrase", retry_payload["repair_instruction"])
+
+    def test_rule_sentence_count_ignores_non_terminal_period_sequences(self):
+        self.assertEqual(
+            rule_sentence_count(
+                "A detected condition ... triggers a process. Preserve the event."
+            ),
+            2,
+        )
+        self.assertEqual(
+            rule_sentence_count("Use e.g. one stated action. Preserve version 2.1."),
+            2,
+        )
+        self.assertEqual(
+            rule_sentence_count("Use i.e. one stated guard. Preserve the condition."),
+            2,
+        )
+        self.assertEqual(rule_sentence_count("One rule. Two rules. Three rules."), 3)
+
+    def test_rewriter_accepts_two_sentences_with_an_internal_ellipsis(self):
+        prompt = (
+            "## agent task\nTask\n\n## input\nInput\n\n"
+            "## output\nOutput PlantUML code only.\n\n"
+            "## workflow\n(None)\n\n## knowledge\nKeep valid guidance.\n\n"
+            "## rule\n(None)\n"
+        )
+        positive = (
+            "A requirement where a detected condition uses language such as event detected "
+            "... triggers a state machine: model the condition as the trigger."
+        )
+        negative = "Preserve the event and the state machine invocation."
+        revision_plan = {
+            "revision_plan": [
+                {
+                    "section": "rule",
+                    "operation": "replace_existing",
+                    "text_to_modify": "(None)",
+                    "intent": "Keep the detected condition as a trigger.",
+                    "change_instruction": "Use the frozen trigger and boundary.",
+                    "positive_trigger": positive,
+                    "negative_boundary": negative,
+                }
+            ]
+        }
+
+        class Client:
+            calls = 0
+
+            def chat(self, messages, **kwargs):
+                self.calls += 1
+                return json.dumps({"rule_text": f"{positive} {negative}"})
+
+        args = SimpleNamespace(
+            prompt_rewriter_prompt_path=(
+                PROJECT_DIR / "prompt_workspace" / "prompt_rewriter_selector_v1.md"
+            ),
+            editor_temperature=0.0,
+            editor_max_tokens=512,
+            editor_thinking="disabled",
+        )
+        client = Client()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            candidate = rewrite_prompt(
+                current_prompt=prompt,
+                revision_plan=revision_plan,
+                args=args,
+                llm_client=client,
+                output_input_path=root / "input.json",
+                output_path=root / "output.json",
+                state_dir=root,
+                iteration=1,
+            )
+
+        self.assertIsNotNone(candidate)
+        self.assertEqual(client.calls, 1)
+
+    def test_rewriter_rejects_rule_with_more_than_two_sentences(self):
+        prompt = (
+            "## agent task\nTask\n\n## input\nInput\n\n"
+            "## output\nOutput PlantUML code only.\n\n"
+            "## workflow\n(None)\n\n## knowledge\nKeep valid guidance.\n\n"
+            "## rule\n(None)\n"
+        )
+        positive = "Represent each explicitly stated action as an activity."
+        negative = "Do not invent actions that are not stated."
+        revision_plan = {
+            "revision_plan": [
+                {
+                    "section": "rule",
+                    "operation": "replace_existing",
+                    "text_to_modify": "(None)",
+                    "intent": "Cover one explicit action.",
+                    "change_instruction": "Use the frozen trigger and boundary.",
+                    "positive_trigger": positive,
+                    "negative_boundary": negative,
+                }
+            ]
+        }
+
+        class Client:
+            calls = 0
+
+            def chat(self, messages, **kwargs):
+                self.calls += 1
+                return json.dumps(
+                    {
+                        "rule_text": (
+                            f"{positive} Add an unrelated broad exception. {negative}"
+                        )
+                    }
+                )
+
+        args = SimpleNamespace(
+            prompt_rewriter_prompt_path=(
+                PROJECT_DIR / "prompt_workspace" / "prompt_rewriter_selector_v1.md"
+            ),
+            editor_temperature=0.0,
+            editor_max_tokens=512,
+            editor_thinking="disabled",
+        )
+        client = Client()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            candidate = rewrite_prompt(
+                current_prompt=prompt,
+                revision_plan=revision_plan,
+                args=args,
+                llm_client=client,
+                output_input_path=root / "input.json",
+                output_path=root / "output.json",
+                state_dir=root,
+                iteration=1,
+            )
+
+        self.assertIsNone(candidate)
         self.assertEqual(client.calls, 2)
+
+    def test_editor_scope_must_preserve_localization_shared_repair(self):
+        localization = {
+            "localization_status": "localized",
+            "shared_repair": {
+                "input_trigger": "the requirement explicitly states the action",
+                "structural_operation": "represent that action as one activity",
+                "preservation_boundary": "do not create activities for context",
+            },
+        }
+        values = {
+            "positive_trigger": "Represent explicit actions.",
+            "negative_boundary": "Do not invent activities.",
+        }
+        errors = _shared_repair_contract_errors(localization, values)
+        self.assertTrue(
+            any(
+                error.startswith(
+                    "positive_trigger must contain shared_repair.input_trigger once"
+                )
+                and localization["shared_repair"]["input_trigger"] in error
+                for error in errors
+            )
+        )
+        self.assertTrue(
+            any(
+                error.startswith(
+                    "negative_boundary must contain shared_repair.preservation_boundary once"
+                )
+                and localization["shared_repair"]["preservation_boundary"] in error
+                for error in errors
+            )
+        )
 
     def test_rewriter_keeps_formally_equivalent_text_without_duplicate_append(self):
         prompt = (
@@ -1412,6 +2028,7 @@ class SelectorPipelineTest(unittest.TestCase):
                     args=args,
                     llm_client=object(),
                     train_cases=cases,
+                    source_dataset_counts={"bp": len(cases)},
                     run_dir=root,
                     work_prompt_path=work,
                     label="selector-test",
@@ -1460,9 +2077,11 @@ class SelectorPipelineTest(unittest.TestCase):
                     "10",
                     "--candidate-application-mode",
                     "cumulative",
-                    "--max-candidate-attempts-per-epoch",
-                    str(max_attempts),
-                ]
+                "--max-candidate-attempts-per-epoch",
+                str(max_attempts),
+            ]
+            if gate2_decisions is not None:
+                cli_args.append("--gate2")
             if stop_after_first_apply:
                 cli_args.append("--stop-after-first-apply")
             args = build_parser().parse_args(cli_args)
@@ -1617,6 +2236,7 @@ class SelectorPipelineTest(unittest.TestCase):
                         args=args,
                         llm_client=object(),
                         train_cases=cases,
+                        source_dataset_counts={"bp": len(cases)},
                         run_dir=root,
                         work_prompt_path=work,
                         label="selector-test",
@@ -1666,7 +2286,7 @@ class SelectorPipelineTest(unittest.TestCase):
         self.assertEqual(len(changed["group_attempts"]), 2)
         self.assertEqual(
             changed["acceptance"]["acceptance_policy"],
-            "all-required-positive-mean-delta",
+                "all-required-positive-pooled-balanced-and-source-weighted-mean-delta",
         )
         self.assertEqual(
             changed["acceptance"]["gate_sequence_policy"],

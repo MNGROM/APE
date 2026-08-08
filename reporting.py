@@ -291,7 +291,11 @@ def metrics_table_header() -> list[str]:
 
 
 PER_DATASET_REPORT_METRICS = (
+    "llm_node_precision",
+    "llm_node_recall",
     "llm_node_f1",
+    "llm_relation_precision",
+    "llm_relation_recall",
     "llm_relation_f1",
     "plantuml_compilation_pass_rate",
 )
@@ -304,7 +308,8 @@ def per_dataset_delta_lines(
     """Render per-dataset gate deltas so pooled means cannot hide conflicts.
 
     A mixed gate dilutes a single-dataset effect by that dataset's share of the
-    gate. These rows are diagnostic and never feed the acceptance decision.
+    gate. The full rows are audit output; Gate acceptance consumes their compact
+    required-metric balanced and source-weighted aggregates.
     """
 
     datasets = sorted({*gate1_results, *gate2_results})
@@ -335,6 +340,45 @@ def per_dataset_delta_lines(
             ]
             lines.append("| " + " | ".join(cells) + " |")
     return lines
+
+
+def cross_dataset_aggregate_lines(
+    gate1_decision: dict[str, Any],
+    gate2_decision: dict[str, Any],
+) -> list[str]:
+    rows: list[str] = []
+    for gate_name, decision in (
+        ("gate1", gate1_decision),
+        ("gate2", gate2_decision),
+    ):
+        aggregates = decision.get("cross_dataset_metric_results") or {}
+        for metric, payload in sorted(aggregates.items()):
+            rows.append(
+                "| "
+                + " | ".join(
+                    [
+                        gate_name,
+                        metric,
+                        str(bool(payload.get("available"))).lower(),
+                        fmt(payload.get("balanced_mean_delta")),
+                        fmt(payload.get("source_weighted_mean_delta")),
+                        str(payload.get("weight_basis") or ""),
+                        ", ".join(payload.get("missing_datasets") or [])
+                        or "none",
+                    ]
+                )
+                + " |"
+            )
+    if not rows:
+        return []
+    return [
+        "",
+        "## Required-metric cross-dataset Gate aggregates",
+        "",
+        "| gate | metric | available | balanced_mean_delta | source_weighted_mean_delta | weight_basis | missing_datasets |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+        *rows,
+    ]
 
 
 def prompt_diff(before: str, after: str, *, from_label: str, to_label: str) -> str:
@@ -512,11 +556,20 @@ def write_iteration_reports(
             "required_metric_results": decision.get(
                 "required_metric_results", {}
             ),
+            "cross_dataset_metric_results": decision.get(
+                "cross_dataset_metric_results", {}
+            ),
             "incomplete_required_metrics": decision.get(
                 "incomplete_required_metrics", []
             ),
             "non_improving_required_metrics": decision.get(
                 "non_improving_required_metrics", []
+            ),
+            "non_improving_balanced_required_metrics": decision.get(
+                "non_improving_balanced_required_metrics", []
+            ),
+            "non_improving_source_weighted_required_metrics": decision.get(
+                "non_improving_source_weighted_required_metrics", []
             ),
             "direct_metric": decision.get("direct_metric"),
             "direct_metric_results": decision.get("direct_metric_results", {}),
@@ -531,6 +584,9 @@ def write_iteration_reports(
                 gate1_decision.get("per_dataset_metric_results") or {},
                 gate2_decision.get("per_dataset_metric_results") or {},
             )
+        )
+        metric_lines.extend(
+            cross_dataset_aggregate_lines(gate1_decision, gate2_decision)
         )
         metric_lines.extend(["", "## Gates", "", "```json", json.dumps(gate_payload, ensure_ascii=False, indent=2), "```"])
     write_text(iter_dir / "reports" / "metrics_report.md", "\n".join(metric_lines).rstrip() + "\n")

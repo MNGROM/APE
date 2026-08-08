@@ -25,7 +25,7 @@ generation + syntax/compiler + LLM element judge
 -> Prompt rewriter
 -> deterministic single-section candidate assembly
 -> paired repeated Gate1
--> fresh paired repeated Gate2 for Gate1-passing candidates
+-> optional fresh paired repeated Gate2 only when explicitly enabled
 -> application policy
 -> heldout only when the applied Prompt hash changes
 ```
@@ -58,27 +58,36 @@ Selector 接收当前 epoch 全部 validated actionable primary errors，不接�
 ### Candidate attempts
 
 同一 epoch 按 Selector 顺序最多尝试 `max_candidate_attempts_per_epoch` 个 group。所有
-candidate 相对同一个 base Prompt 独立生成。遇到 ineligible、`no_prompt_gap`、
+candidate 相对同一个 base Prompt 独立生成。遇到 ineligible、`no_prompt_gap`、`group_incoherent`、
 `already_covered`、无效或重复 candidate、validation rejection 时继续下一组；第一个满足
 application policy 的 candidate 结束本 epoch。
 
 Candidate registry 记录每个实际尝试 group 的精确 finding-key signature 和终止结果。只有
-相同 base Prompt、相同 finding keys 且此前已确认 `no_prompt_gap` 的 group 可以在 attempt
+相同 base Prompt、相同 finding keys 且此前已确认 `no_prompt_gap` 或 `group_incoherent` 的
+group 可以在 attempt
 截断前过滤；不得用 summary 文本、embedding 或模糊语义匹配跳过新证据。重复
 `already_covered` 不直接过滤，而是把同 Prompt recurrence 交给 Localization 判断已有指导
 是否过于抽象；如能安全收紧，只能使用现有 `ambiguous + replace_existing` 合同。
 
 正式 paired run 可以显式启用 `--stop-after-first-apply`。该开关只控制跨 epoch 的继续执行：
-首个 candidate 按正常 Gate1、fresh Gate2 和 application policy 应用后，仍须完成该 Prompt
+首个 candidate 按正常 Gate1、可选的 fresh Gate2 和 application policy 应用后，仍须完成该 Prompt
 变化对应的全部 heldout repeats 或 skip manifest，然后才停止后续 epoch。若没有 candidate
 应用，必须继续完成配置的全部 iterations。默认关闭以保持普通 CLI 向后兼容。
 
 ### Localization, Editor and Rewriter
 
-Localization 对冻结 group 先验证一条安全规则能否覆盖全组，再返回 `localized`、
-`already_covered` 或 `no_prompt_gap`。只允许 `append_new`、`replace_existing`、`none`。
+Localization 接收冻结 group 的全部成员紧凑证据，对每个 selected `finding_id` 恰好返回一次
+compatibility check，并以 input trigger、structural operation 和 preservation boundary 三元组
+证明一条安全规则能否覆盖全组，再返回 `localized`、`already_covered` 或 `no_prompt_gap`。
+只允许 `append_new`、`replace_existing`、`none`。
 Selector 只有在全组成员需要同一种结构修复且保留相同边界时才能合并；原因主题相似但需要
 删除、移动或改变不同结构的 findings 必须拆分，不确定时使用 singleton group。
+
+`localized` 与 `already_covered` 必须使用 `group_consistency=coherent`，所有成员 compatible，
+且 shared repair 三项非空。`group_consistency=incoherent` 必须与 `no_prompt_gap`、空 edit 和至少
+一个带具体原因的 incompatible member 同时出现；Python 将该结果记录为 `group_incoherent`，
+不调用 Editor、Rewriter、Gate 或 heldout，并继续下一 frozen group。group diagnostics 不得进入
+acceptance decision。
 
 `already_covered` 必须由一段唯一现有原文同时覆盖每个代表样本的 input-side trigger、目标
 结构修复和 preservation boundary；仅使用相同术语或讨论相关主题不构成覆盖。相关原文若
@@ -92,15 +101,18 @@ boundary 必须是 input-side generation language，不得依赖 prediction、go
 dataset 或 metric。
 
 Rewriter 只返回 `rule_text` 并拥有最终规则措辞。Python 只按忽略大小写、标点和空格差异的
-canonical contract 做校验，再确定性修改一个 section；不得向 Rewriter 文本追加或注入语义
-片段，非目标 section 必须字节一致。
+canonical contract 做校验，再确定性修改一个 section；`rule_text` 最多两句，不得向 Rewriter
+文本追加或注入语义片段，非目标 section 必须字节一致。Editor 的 positive trigger 必须保留
+Localization `shared_repair` 的 input trigger 与 structural operation，negative boundary 必须
+保留 preservation boundary。
 
 ### Gate1, Gate2 and application
 
 结构合法性、Gate1 是否执行、Gate2 是否执行、各自 measurement 是否有效、
-metric decision 和是否应用必须分开记录。固定 Gate1 与固定 Gate2 split
-都从非 heldout training pool 分层划出，彼此不重叠，也不参与 candidate discovery。默认各请求
-30 条，分别使用独立 seed；实际数量及 fingerprint 必须写入 split summary 和 run artifacts。
+metric decision 和是否应用必须分开记录。正式默认流程只使用从非 heldout training pool
+分层划出的固定 Gate1，默认请求 30 条并使用固定 seed，且不参与 candidate discovery。显式
+启用 Gate2 时，它使用独立 seed 和 split，并与 Gate1、heldout 互不重叠。实际数量及 fingerprint
+必须写入 split summary 和 run artifacts。
 
 Gate1 通过后才运行 Gate2。Gate1 baseline 可以在同一 epoch 的 candidate attempts 间复用；Gate2
 必须针对每个 Gate1-passing candidate fresh 生成 baseline 和 candidate 的
@@ -111,19 +123,29 @@ Prompt 下继续下一 group；不得进入 heldout。
 支持三种 application mode：
 
 - `diagnostic-apply`：candidate 合法且 measurement 有效即应用；metric decision 只记录。
-- `cumulative`：只有 Gate1 和 Gate2 的 metric decision 都 accepted 才应用。
+- `cumulative`：Gate1 必须 accepted；显式启用 Gate2 时还要求 Gate2 accepted。
 - `isolated`：只评估 candidate，不修改 work Prompt。
 
-Gate2 默认启用；启用时 `auto` 解析为 `cumulative`，并禁止 `diagnostic-apply` 绕过双 gate。
-需要旧诊断应用语义时必须显式 `--no-gate2`，此时 `auto` 才解析为 `diagnostic-apply`。
+Gate2 默认关闭，仅通过显式 `--gate2` 启用。`auto` 无论 Gate2 是否启用都解析为 `cumulative`，
+因此单 Gate 不会绕过 Gate1 metric decision。需要旧诊断应用语义时必须同时显式使用
+`--candidate-application-mode diagnostic-apply --no-gate2`。
 Python 从 validated selected group 的 `anchor_kind` 推导非空 required metrics：
 `missing_node/extra_node` 对应 `llm_node_f1`，`missing_relation/extra_relation` 对应
 `llm_relation_f1`，混合 node/relation semantic group 同时要求两项，`syntax_error/compile_error`
-对应 `plantuml_compilation_pass_rate`。两关都使用 `all-required-positive-mean-delta`：每个
-required metric 的 repeated mean delta 必须 `> 0`，其他指标不能代偿，只作为诊断记录。
-缺少任一 required measurement 时以 `required_metric_incomplete` 标记 evaluation invalid；
-完整但未全部改善时以 `required_metric_not_improved` 拒绝，并记录
-`non_improving_required_metrics`。`syntax_pass_rate` 只作诊断，不参与 acceptance。
+对应 `plantuml_compilation_pass_rate`。每个已启用 Gate 都使用
+`all-required-positive-pooled-balanced-and-source-weighted-mean-delta`：每个 required metric 的
+pooled repeated mean delta、source dataset 等权平均 delta 和按均衡采样前 source population
+加权平均 delta 必须同时 `> 0`，其他指标不能代偿，只作为诊断记录。缺少任一 required
+measurement 时以 `required_metric_incomplete` 标记 evaluation invalid；缺少有效 source count 时
+以 `source_dataset_count_missing` 标记 invalid；balanced 或 source-weighted 未改善时分别使用
+`required_metric_balanced_not_improved` 和 `required_metric_source_weighted_not_improved` 拒绝。
+`syntax_pass_rate` 只作诊断，不参与 acceptance。
+
+新 run 的 split summary 分别记录排除 heldout 后、均衡采样前的 `source_dataset_counts`，采样后的
+`train_pool_dataset_counts`，以及排除 Gate 后实际 candidate discovery 的
+`train_dataset_counts`。Gate weighted acceptance 只能使用 `source_dataset_counts`；任一 source
+dataset 缺少 required measurement 时 evaluation invalid，不得以 `0` 补齐。Gate1 与显式启用的
+Gate2 使用同一双聚合规则。
 
 当前 acceptance policy 明确禁止 `min_delta`、`min_wins`、semantic/compile non-regression
 floor 及任何等价的“允许回退多少”阈值。除非用户主动明确授权，不得重新引入这些参数或
@@ -146,24 +168,31 @@ floor 及任何等价的“允许回退多少”阈值。除非用户主动明�
   Prompt 使用同一 heldout case manifest 和相同 repeat 数；逐次结果全部保留，顶层
   `test/summary.json` 只保存确定性聚合均值。不得挑选最好的一次，也不得把 repeat delta
   回流到 Gate、application 或 Prompt 修改。
-- Gate1、Gate2 与 heldout 三者必须互不重叠；Gate2 不能使用 heldout，
-  也不能回流 candidate discovery。
+- Gate1 与 heldout 必须互不重叠；显式启用 Gate2 时，三者必须互不重叠。Gate2 不能使用
+  heldout，也不能回流 candidate discovery。
 - `--eval-initial-test` 只生成 iteration-0 baseline；它是无值开关。
 - `isolated` 不得与 `--eval-initial-test` 同时使用。
 - Prompt 未变化时只写 skip manifest，不调用 heldout generation 或 judge。
 - 未经用户明确同意，不运行真实模型、训练、calibration、在线 smoke 或 heldout。
 - `prompt_workspace/*.md` 的任何修改必须先向用户提交精确拟议 diff，并获得逐次审核批准；
   普通代码修改授权不自动包含 Prompt 文本修改授权。
+- Python 与 Localization Prompt 已同步到严格 `prompt-gap-localization-v2` contract；后续 Prompt
+  修改仍必须先提交精确 diff 并获得用户逐次审核。真实实验仍需另行获得 API 授权。
 - 到达 experiment-ready 检查点时停止，向用户提供命令、目的、产物和判据。
 
 ## 5. 跨数据集派生审计
 
-跨 run 分析工具只能只读消费现有产物，并输出来源 finding、Gate1/Gate2 宏平均、逐数据集
-delta、按 `data_split_summary.json` 中 `train_dataset_counts` 计算的 training-pool weighted
-delta、数据集 evidence funnel、recorded decision 与 required-metric counterfactual，以及
-heldout initial/final delta。weighted 和 counterfactual 必须标记为 diagnostic-only；缺失测量
-不得按零补齐，infrastructure-invalid run 不得进入有效汇总。工具不得回写输入 run 或覆盖
-历史 `accepted`。
+跨 run 分析工具只能只读消费现有产物，并输出 discovery source dataset、Gate1/Gate2 宏平均、
+Node/Relation Precision、Recall、F1 与 Compile 的逐数据集 delta、按
+`data_split_summary.json` 中 `source_dataset_counts` 计算的 source-population weighted delta、数据集
+evidence funnel、recorded decision 与 required-metric counterfactual、按
+`(repeat, dataset, case_id)` 配对的规范化 PlantUML 文本变化率，以及 heldout seed-to-current
+cumulative delta 和 previous-applied-to-current incremental delta。Gate 样本不等于 discovery
+source case，不得声称复测了具体来源样本。新 run 自身 Gate decision 中的 balanced 和
+source-population-weighted required-metric delta 是正式 acceptance evidence；分析器事后生成的
+跨 run 派生字段仍标记 diagnostic-only。历史 run 缺少 `source_dataset_counts` 时回退使用
+`train_dataset_counts`，并明确标记 `weight_basis=historical_train_pool`。缺失测量不得按零补齐，
+infrastructure-invalid run 不得进入有效汇总。工具不得回写输入 run 或覆盖历史 `accepted`。
 
 ## 6. 允许的自主修改
 
