@@ -30,6 +30,11 @@ from analysis.selector_agents import (
     propose_selector_edit,
 )
 from analysis.failure_analysis import analyze_failures, build_analysis
+from analysis.behavior_contract import (
+    behavior_contract_cases,
+    compile_behavior_contract,
+    evaluate_behavior_contract,
+)
 from analysis.candidate_registry import (
     evaluated_candidate_ids,
     group_attempt_history,
@@ -312,6 +317,11 @@ def iteration_paths(iter_dir: Path) -> dict[str, Path]:
         "validation_analysis": iter_dir / "gate1" / "analysis.md",
         "validation_impact_summary": iter_dir / "gate1" / "impact_summary.json",
         "validation_impact_report": iter_dir / "gate1" / "impact_report.md",
+        "behavior_contract": iter_dir / "behavior_contract" / "contract.json",
+        "behavior_contract_cases": iter_dir / "behavior_contract" / "cases.json",
+        "behavior_contract_baseline_records": iter_dir / "behavior_contract" / "baseline_records.jsonl",
+        "behavior_contract_candidate_records": iter_dir / "behavior_contract" / "candidate_records.jsonl",
+        "behavior_contract_decision": iter_dir / "behavior_contract" / "decision.json",
         "confirmation_cases": iter_dir / "gate2" / "cases.json",
         "confirmation_baseline_records": iter_dir / "gate2" / "baseline_records.jsonl",
         "confirmation_baseline_summary": iter_dir / "gate2" / "baseline_summary.json",
@@ -383,6 +393,13 @@ def make_iteration_manifest(iter_dir: Path, iteration: int, paths: dict[str, Pat
                 "analysis": rel_to_iter(iter_dir, paths["confirmation_analysis"]),
                 "impact_summary": rel_to_iter(iter_dir, paths["confirmation_impact_summary"]),
                 "impact_report": rel_to_iter(iter_dir, paths["confirmation_impact_report"]),
+            },
+            "behavior_contract": {
+                "contract": rel_to_iter(iter_dir, paths["behavior_contract"]),
+                "cases": rel_to_iter(iter_dir, paths["behavior_contract_cases"]),
+                "baseline_records": rel_to_iter(iter_dir, paths["behavior_contract_baseline_records"]),
+                "candidate_records": rel_to_iter(iter_dir, paths["behavior_contract_candidate_records"]),
+                "decision": rel_to_iter(iter_dir, paths["behavior_contract_decision"]),
             },
             "evaluation": {
                 "analysis_records": rel_to_iter(iter_dir, paths["analysis_records"]),
@@ -1987,6 +2004,110 @@ def evaluate_gate(
     return first_baseline_records, first_candidate_records, baseline_summary, candidate_summary, decision
 
 
+def evaluate_behavior_contract_replay(
+    *,
+    baseline_prompt: str,
+    candidate_prompt: str,
+    contract: dict[str, Any],
+    args: argparse.Namespace,
+    llm_client: LLMClient,
+    run_dir: Path,
+    iter_dir: Path,
+    paths: dict[str, Path],
+    iteration: int,
+    phase_prefix: str,
+    baseline_cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run paired source-case replay and evaluate the deterministic contract.
+
+    This is deliberately separate from Gate metrics: source cases establish only
+    whether the candidate repairs the selected mechanism without new local errors.
+    Overall validation and transfer evidence still come from the independent Gate.
+    """
+    baseline_cache = baseline_cache if baseline_cache is not None else {}
+    replay_cases = behavior_contract_cases(contract)
+    write_text(paths["behavior_contract"], json.dumps(contract, ensure_ascii=False, indent=2))
+    write_case_manifest(paths["behavior_contract_cases"], replay_cases)
+
+    prompt_key = prompt_fingerprint(baseline_prompt)
+    cache_key = f"{prompt_key}:{contract.get('source_case_fingerprint', '')}"
+    cached = baseline_cache.get(cache_key)
+    reuse_baseline = bool(
+        isinstance(cached, dict)
+        and isinstance(cached.get("repeat_records"), list)
+        and isinstance(cached.get("repeat_summaries"), list)
+        and len(cached["repeat_records"]) == args.validation_repeats
+        and len(cached["repeat_summaries"]) == args.validation_repeats
+    )
+    baseline_repeat_records = list(cached["repeat_records"]) if reuse_baseline else []
+    baseline_repeat_summaries = list(cached["repeat_summaries"]) if reuse_baseline else []
+    repeat_pairs: list[tuple[int, list[Any], list[Any]]] = []
+    first_baseline_records: list[Any] = []
+    first_candidate_records: list[Any] = []
+
+    def evaluate_repeat(prompt: str, *, repeat: int, role: str) -> tuple[list[Any], dict[str, float]]:
+        role_dir = iter_dir / "behavior_contract" / f"repeat_{repeat:03d}" / role
+        records, summary = evaluate_cases(
+            prompt=prompt,
+            cases=replay_cases,
+            args=args,
+            llm_client=llm_client,
+            output_path=role_dir / "records.jsonl",
+            state_dir=run_dir,
+            phase=f"{phase_prefix}:behavior_contract_repeat_{repeat:03d}:{role}",
+            case_concurrency=args.gate_concurrency,
+        )
+        write_text(role_dir / "summary.json", json.dumps(summary, ensure_ascii=False, indent=2))
+        return records, summary
+
+    for repeat in range(1, args.validation_repeats + 1):
+        if reuse_baseline:
+            baseline_records = baseline_repeat_records[repeat - 1]
+            baseline_summary = baseline_repeat_summaries[repeat - 1]
+            baseline_dir = iter_dir / "behavior_contract" / f"repeat_{repeat:03d}" / "baseline"
+            write_evaluation_records(baseline_dir / "records.jsonl", baseline_records)
+            write_text(baseline_dir / "summary.json", json.dumps(baseline_summary, ensure_ascii=False, indent=2))
+            candidate_records, _candidate_summary = evaluate_repeat(
+                candidate_prompt, repeat=repeat, role="candidate"
+            )
+        elif repeat % 2 == 1:
+            baseline_records, baseline_summary = evaluate_repeat(
+                baseline_prompt, repeat=repeat, role="baseline"
+            )
+            candidate_records, _candidate_summary = evaluate_repeat(
+                candidate_prompt, repeat=repeat, role="candidate"
+            )
+            baseline_repeat_records.append(baseline_records)
+            baseline_repeat_summaries.append(baseline_summary)
+        else:
+            candidate_records, _candidate_summary = evaluate_repeat(
+                candidate_prompt, repeat=repeat, role="candidate"
+            )
+            baseline_records, baseline_summary = evaluate_repeat(
+                baseline_prompt, repeat=repeat, role="baseline"
+            )
+            baseline_repeat_records.append(baseline_records)
+            baseline_repeat_summaries.append(baseline_summary)
+        if repeat == 1:
+            first_baseline_records = baseline_records
+            first_candidate_records = candidate_records
+        repeat_pairs.append((repeat, baseline_records, candidate_records))
+
+    if not reuse_baseline:
+        baseline_cache[cache_key] = {
+            "repeat_records": baseline_repeat_records,
+            "repeat_summaries": baseline_repeat_summaries,
+        }
+    write_evaluation_records(paths["behavior_contract_baseline_records"], first_baseline_records)
+    write_evaluation_records(paths["behavior_contract_candidate_records"], first_candidate_records)
+    decision = evaluate_behavior_contract(contract=contract, repeat_pairs=repeat_pairs)
+    decision["baseline_prompt_fingerprint"] = prompt_key
+    decision["replay_case_count"] = len(replay_cases)
+    decision["validation_repeats"] = args.validation_repeats
+    write_text(paths["behavior_contract_decision"], json.dumps(decision, ensure_ascii=False, indent=2))
+    return decision
+
+
 def write_iteration_test_metric_plot(run_dir: Path) -> None:
     rows: list[dict[str, float | int]] = []
     for iter_dir in sorted(run_dir.glob("iteration_*")):
@@ -2156,6 +2277,9 @@ def run_training_iterations(
     last_summary: dict[str, float] = {}
     last_test_summary = initial_test_summary
     global_update_step = 0
+    train_case_lookup = {
+        (str(case.dataset), str(case.case_id)): case for case in train_cases
+    }
 
     print(f"[run] {label}, policy=taxonomy-v3 selector-v4-bounded-attempts, train_cases={len(train_cases)}")
     print(f"[run] train distribution: {describe_case_distribution(train_cases)}")
@@ -2301,6 +2425,7 @@ def run_training_iterations(
         attempt_payloads: list[dict[str, Any]] = []
         attempt_lineage: list[dict[str, Any]] = []
         validation_baseline_cache: dict[str, Any] = {}
+        behavior_baseline_cache: dict[str, Any] = {}
         applied_attempt: int | None = None
         acceptance: dict[str, Any] = {
             "pipeline_policy": "taxonomy-v3",
@@ -2329,6 +2454,8 @@ def run_training_iterations(
             "gate1_decision": None,
             "gate2_evaluated": False,
             "gate2_decision": None,
+            "behavior_contract_evaluated": False,
+            "behavior_contract_decision": None,
             "gate_evaluated": False,
             "applied": False,
             "accepted": False,
@@ -2422,6 +2549,19 @@ def run_training_iterations(
                 write_case_manifest(attempt_paths["confirmation_cases"], confirmation_cases)
 
             selected_group = dict(group)
+            enriched_members: list[dict[str, Any]] = []
+            for member in selected_group.get("members", []):
+                if not isinstance(member, dict):
+                    continue
+                enriched = dict(member)
+                key = (str(enriched.get("dataset") or ""), str(enriched.get("case_id") or ""))
+                source_case = train_case_lookup.get(key)
+                if source_case is not None:
+                    enriched.setdefault("requirement", source_case.content)
+                    enriched.setdefault("ground_truth", source_case.gold_plantuml)
+                enriched_members.append(enriched)
+            if enriched_members:
+                selected_group["members"] = enriched_members
             selected_group["representative_errors"] = representative_errors(selected_group)
             candidate_evidence_family: str | None = None
             candidate_required_metrics: tuple[str, ...] | None = None
@@ -2577,47 +2717,15 @@ def run_training_iterations(
                         "candidate_already_evaluated_for_prompt"
                     ]
                 else:
-                    (
-                        _baseline_records,
-                        _candidate_records,
-                        baseline_gate_summary,
-                        candidate_summary,
-                        gate1_decision,
-                    ) = evaluate_gate(
-                        baseline_prompt=prompt_before,
-                        candidate_prompt=attempt_candidate_prompt,
-                        validation_cases=validation_cases,
-                        args=args,
-                        llm_client=llm_client,
-                        run_dir=run_dir,
-                        iter_dir=attempt_dir,
-                        paths=attempt_paths,
-                        iteration=iteration,
-                        phase_prefix=(
-                            f"iteration_{iteration:03d}:selector:attempt_{attempt_index:03d}"
-                        ),
-                        baseline_cache=validation_baseline_cache,
-                        candidate_evidence_family=candidate_evidence_family,
-                        required_metrics=candidate_required_metrics,
-                        source_dataset_counts=source_dataset_counts,
-                        gate_name="gate1",
-                    )
-                    gate2_decision = None
-                    if (
-                        args.gate2
-                        and gate1_decision.get("evaluation_valid")
-                        and gate1_decision.get("accepted")
-                    ):
-                        (
-                            _confirmation_baseline_records,
-                            _confirmation_candidate_records,
-                            _confirmation_baseline_summary,
-                            _confirmation_candidate_summary,
-                            gate2_decision,
-                        ) = evaluate_gate(
+                    try:
+                        behavior_contract = compile_behavior_contract(
+                            selected_group=selected_group,
+                            localization=localization,
+                        )
+                        behavior_contract_decision = evaluate_behavior_contract_replay(
                             baseline_prompt=prompt_before,
                             candidate_prompt=attempt_candidate_prompt,
-                            validation_cases=confirmation_cases,
+                            contract=behavior_contract,
                             args=args,
                             llm_client=llm_client,
                             run_dir=run_dir,
@@ -2627,165 +2735,196 @@ def run_training_iterations(
                             phase_prefix=(
                                 f"iteration_{iteration:03d}:selector:attempt_{attempt_index:03d}"
                             ),
-                            baseline_cache=None,
+                            baseline_cache=behavior_baseline_cache,
+                        )
+                    except ValueError as exc:
+                        behavior_contract = {
+                            "schema_version": "candidate-behavior-contract-v1",
+                            "group_id": group_id,
+                            "replay_scope": "selected_group_source_cases",
+                            "obligations": [],
+                            "source_cases": [],
+                            "source_case_count": 0,
+                            "source_case_fingerprint": "",
+                            "unsupported_anchor_kinds": [],
+                            "compile_error": str(exc),
+                        }
+                        write_text(attempt_paths["behavior_contract"], json.dumps(behavior_contract, ensure_ascii=False, indent=2))
+                        write_case_manifest(attempt_paths["behavior_contract_cases"], [])
+                        behavior_contract_decision = {
+                            "schema_version": "candidate-behavior-contract-v1",
+                            "status": "inconclusive",
+                            "proven": False,
+                            "evaluation_valid": False,
+                            "invalid_reasons": ["behavior_contract_compile_error"],
+                            "rejection_reasons": ["behavior_contract_inconclusive"],
+                            "compile_error": str(exc),
+                        }
+                        write_text(attempt_paths["behavior_contract_decision"], json.dumps(behavior_contract_decision, ensure_ascii=False, indent=2))
+                    attempt_acceptance["behavior_contract_evaluated"] = True
+                    attempt_acceptance["behavior_contract_decision"] = behavior_contract_decision
+                    record_stage(
+                        manifest,
+                        "behavior_contract",
+                        status=str(behavior_contract_decision.get("status") or "inconclusive"),
+                        outputs={
+                            "decision": rel_to_iter(iter_dir, attempt_paths["behavior_contract_decision"]),
+                            "contract": rel_to_iter(iter_dir, attempt_paths["behavior_contract"]),
+                        },
+                        note="source-case replay is eligibility evidence only; Gate remains independent",
+                    )
+                    if behavior_contract_decision.get("status") != "proven":
+                        attempt_acceptance["rejection_reasons"] = [
+                            "behavior_contract_" + str(behavior_contract_decision.get("status") or "inconclusive"),
+                            *list(behavior_contract_decision.get("rejection_reasons", [])),
+                        ]
+                        record_evaluated_candidate(
+                            registry,
+                            iteration=iteration,
+                            base_prompt_hash=base_prompt_hash,
+                            candidate_prompt=attempt_candidate_prompt,
+                            rule_text=rule_text,
+                            candidate_metadata={
+                                "candidate_id": candidate_id,
+                                "group_id": group_id,
+                                "finding_ids": list(selected_group.get("finding_ids", [])),
+                                "finding_keys": finding_keys,
+                                "positive_trigger": revision_plan["revision_plan"][0]["positive_trigger"],
+                                "negative_boundary": revision_plan["revision_plan"][0]["negative_boundary"],
+                            },
+                            validation_diagnostics=attempt_acceptance,
+                            artifact_paths={
+                                "candidate_prompt": str(attempt_paths["prompt_candidate"].relative_to(run_dir)).replace("\\", "/"),
+                                "acceptance": str(attempt_paths["acceptance"].relative_to(run_dir)).replace("\\", "/"),
+                                "behavior_contract": str(attempt_paths["behavior_contract_decision"].relative_to(run_dir)).replace("\\", "/"),
+                            },
+                        )
+                        save_candidate_registry(registry_path, registry)
+                    else:
+                        (
+                            _baseline_records,
+                            _candidate_records,
+                            baseline_gate_summary,
+                            candidate_summary,
+                            gate1_decision,
+                        ) = evaluate_gate(
+                            baseline_prompt=prompt_before,
+                            candidate_prompt=attempt_candidate_prompt,
+                            validation_cases=validation_cases,
+                            args=args,
+                            llm_client=llm_client,
+                            run_dir=run_dir,
+                            iter_dir=attempt_dir,
+                            paths=attempt_paths,
+                            iteration=iteration,
+                            phase_prefix=f"iteration_{iteration:03d}:selector:attempt_{attempt_index:03d}",
+                            baseline_cache=validation_baseline_cache,
                             candidate_evidence_family=candidate_evidence_family,
                             required_metrics=candidate_required_metrics,
                             source_dataset_counts=source_dataset_counts,
-                            gate_name="gate2",
+                            gate_name="gate1",
                         )
-                    acceptance_decision = two_stage_gate_decision(
-                        gate1_decision=gate1_decision,
-                        gate2_decision=gate2_decision,
-                        gate2_required=bool(args.gate2),
-                    )
-                    application = selector_application_decision(
-                        mode=args.candidate_application_mode,
-                        candidate_valid=True,
-                        gate_evaluated=True,
-                        acceptance_decision=acceptance_decision,
-                    )
-                    gate_decision = application["accepted"]
-                    threshold_rejection_reasons = list(
-                        acceptance_decision.get("rejection_reasons", [])
-                    )
-                    attempt_acceptance.update(
-                        {
-                            **application,
-                            "acceptance_decision": acceptance_decision,
-                            "gate1_evaluated": True,
-                            "gate1_decision": gate1_decision,
-                            "gate2_evaluated": gate2_decision is not None,
-                            "gate2_decision": gate2_decision,
-                            "candidate_evidence_family": acceptance_decision.get(
-                                "candidate_evidence_family",
-                                candidate_evidence_family,
-                            ),
-                            "acceptance_policy": acceptance_decision.get(
-                                "acceptance_policy",
-                                REQUIRED_METRIC_ACCEPTANCE_POLICY,
-                            ),
-                            "gate_sequence_policy": acceptance_decision.get(
-                                "gate_sequence_policy",
-                                gate_sequence_policy(bool(args.gate2)),
-                            ),
-                            "required_metrics": acceptance_decision.get(
-                                "required_metrics", list(candidate_required_metrics)
-                            ),
-                            "required_metric_results": acceptance_decision.get(
-                                "required_metric_results", {}
-                            ),
-                            "incomplete_required_metrics": acceptance_decision.get(
-                                "incomplete_required_metrics", []
-                            ),
-                            "non_improving_required_metrics": acceptance_decision.get(
-                                "non_improving_required_metrics", []
-                            ),
-                            "direct_metric": acceptance_decision.get(
-                                "direct_metric",
-                                candidate_required_metrics[0]
-                                if len(candidate_required_metrics) == 1
-                                else None,
-                            ),
-                            "direct_metric_results": acceptance_decision.get(
-                                "direct_metric_results", {}
-                            ),
-                            "rejection_reasons": (
-                                []
-                                if gate_decision
-                                or args.candidate_application_mode == "isolated"
-                                else [
-                                    "gate1_rejected_diagnostic_apply",
-                                    *threshold_rejection_reasons,
-                                ]
-                                if application["applied"]
-                                and args.candidate_application_mode == "diagnostic-apply"
-                                else threshold_rejection_reasons
-                                or ["gate1_rejected"]
-                            ),
+                        gate2_decision = None
+                        if args.gate2 and gate1_decision.get("evaluation_valid") and gate1_decision.get("accepted"):
+                            (
+                                _confirmation_baseline_records,
+                                _confirmation_candidate_records,
+                                _confirmation_baseline_summary,
+                                _confirmation_candidate_summary,
+                                gate2_decision,
+                            ) = evaluate_gate(
+                                baseline_prompt=prompt_before,
+                                candidate_prompt=attempt_candidate_prompt,
+                                validation_cases=confirmation_cases,
+                                args=args,
+                                llm_client=llm_client,
+                                run_dir=run_dir,
+                                iter_dir=attempt_dir,
+                                paths=attempt_paths,
+                                iteration=iteration,
+                                phase_prefix=f"iteration_{iteration:03d}:selector:attempt_{attempt_index:03d}",
+                                baseline_cache=None,
+                                candidate_evidence_family=candidate_evidence_family,
+                                required_metrics=candidate_required_metrics,
+                                source_dataset_counts=source_dataset_counts,
+                                gate_name="gate2",
+                            )
+                        acceptance_decision = two_stage_gate_decision(
+                            gate1_decision=gate1_decision,
+                            gate2_decision=gate2_decision,
+                            gate2_required=bool(args.gate2),
+                        )
+                        application = selector_application_decision(
+                            mode=args.candidate_application_mode,
+                            candidate_valid=True,
+                            gate_evaluated=True,
+                            acceptance_decision=acceptance_decision,
+                        )
+                        gate_decision = application["accepted"]
+                        threshold_rejection_reasons = list(acceptance_decision.get("rejection_reasons", []))
+                        attempt_acceptance.update(
+                            {
+                                **application,
+                                "acceptance_decision": acceptance_decision,
+                                "gate1_evaluated": True,
+                                "gate1_decision": gate1_decision,
+                                "gate2_evaluated": gate2_decision is not None,
+                                "gate2_decision": gate2_decision,
+                                "candidate_evidence_family": acceptance_decision.get("candidate_evidence_family", candidate_evidence_family),
+                                "acceptance_policy": acceptance_decision.get("acceptance_policy", REQUIRED_METRIC_ACCEPTANCE_POLICY),
+                                "gate_sequence_policy": acceptance_decision.get("gate_sequence_policy", gate_sequence_policy(bool(args.gate2))),
+                                "required_metrics": acceptance_decision.get("required_metrics", list(candidate_required_metrics)),
+                                "required_metric_results": acceptance_decision.get("required_metric_results", {}),
+                                "incomplete_required_metrics": acceptance_decision.get("incomplete_required_metrics", []),
+                                "non_improving_required_metrics": acceptance_decision.get("non_improving_required_metrics", []),
+                                "direct_metric": acceptance_decision.get("direct_metric", candidate_required_metrics[0] if len(candidate_required_metrics) == 1 else None),
+                                "direct_metric_results": acceptance_decision.get("direct_metric_results", {}),
+                                "rejection_reasons": (
+                                    [] if gate_decision or args.candidate_application_mode == "isolated"
+                                    else ["gate1_rejected_diagnostic_apply", *threshold_rejection_reasons]
+                                    if application["applied"] and args.candidate_application_mode == "diagnostic-apply"
+                                    else threshold_rejection_reasons or ["gate1_rejected"]
+                                ),
+                            }
+                        )
+                        selected_for_registry = {
+                            "candidate_id": candidate_id,
+                            "group_id": group_id,
+                            "finding_ids": list(selected_group.get("finding_ids", [])),
+                            "finding_keys": [str(item.get("finding_key") or "") for item in selected_group.get("members", []) if isinstance(item, dict) and str(item.get("finding_key") or "")],
+                            "positive_trigger": revision_plan["revision_plan"][0]["positive_trigger"],
+                            "negative_boundary": revision_plan["revision_plan"][0]["negative_boundary"],
+                            "candidate_evidence_family": candidate_evidence_family,
+                            "acceptance_policy": acceptance_decision.get("acceptance_policy", REQUIRED_METRIC_ACCEPTANCE_POLICY),
+                            "gate_sequence_policy": acceptance_decision.get("gate_sequence_policy", gate_sequence_policy(bool(args.gate2))),
+                            "required_metrics": list(candidate_required_metrics),
+                            "required_metric_results": acceptance_decision.get("required_metric_results", {}),
+                            "incomplete_required_metrics": acceptance_decision.get("incomplete_required_metrics", []),
+                            "non_improving_required_metrics": acceptance_decision.get("non_improving_required_metrics", []),
+                            "direct_metric": acceptance_decision.get("direct_metric", candidate_required_metrics[0] if len(candidate_required_metrics) == 1 else None),
+                            "direct_metric_results": acceptance_decision.get("direct_metric_results", {}),
                         }
-                    )
-                    selected_for_registry = {
-                        "candidate_id": candidate_id,
-                        "group_id": group_id,
-                        "finding_ids": list(selected_group.get("finding_ids", [])),
-                        "finding_keys": [
-                            str(item.get("finding_key") or "")
-                            for item in selected_group.get("members", [])
-                            if isinstance(item, dict)
-                            and str(item.get("finding_key") or "")
-                        ],
-                        "positive_trigger": revision_plan["revision_plan"][0][
-                            "positive_trigger"
-                        ],
-                        "negative_boundary": revision_plan["revision_plan"][0][
-                            "negative_boundary"
-                        ],
-                        "candidate_evidence_family": candidate_evidence_family,
-                        "acceptance_policy": acceptance_decision.get(
-                            "acceptance_policy", REQUIRED_METRIC_ACCEPTANCE_POLICY
-                        ),
-                        "gate_sequence_policy": acceptance_decision.get(
-                            "gate_sequence_policy",
-                            gate_sequence_policy(bool(args.gate2)),
-                        ),
-                        "required_metrics": list(candidate_required_metrics),
-                        "required_metric_results": acceptance_decision.get(
-                            "required_metric_results", {}
-                        ),
-                        "incomplete_required_metrics": acceptance_decision.get(
-                            "incomplete_required_metrics", []
-                        ),
-                        "non_improving_required_metrics": acceptance_decision.get(
-                            "non_improving_required_metrics", []
-                        ),
-                        "direct_metric": acceptance_decision.get(
-                            "direct_metric",
-                            candidate_required_metrics[0]
-                            if len(candidate_required_metrics) == 1
-                            else None,
-                        ),
-                        "direct_metric_results": acceptance_decision.get(
-                            "direct_metric_results", {}
-                        ),
-                    }
-                    write_text(
-                        attempt_paths["acceptance"],
-                        json.dumps(attempt_acceptance, ensure_ascii=False, indent=2),
-                    )
-                    record_evaluated_candidate(
-                        registry,
-                        iteration=iteration,
-                        base_prompt_hash=base_prompt_hash,
-                        candidate_prompt=attempt_candidate_prompt,
-                        rule_text=rule_text,
-                        candidate_metadata=selected_for_registry,
-                        validation_diagnostics=attempt_acceptance,
-                        artifact_paths={
-                            "candidate_prompt": str(
-                                attempt_paths["prompt_candidate"].relative_to(run_dir)
-                            ).replace("\\", "/"),
-                            "acceptance": str(
-                                attempt_paths["acceptance"].relative_to(run_dir)
-                            ).replace("\\", "/"),
-                            "impact_summary": str(
-                                attempt_paths["validation_impact_summary"].relative_to(run_dir)
-                            ).replace("\\", "/"),
-                            **(
-                                {
-                                    "gate2_impact_summary": str(
-                                        attempt_paths["confirmation_impact_summary"].relative_to(run_dir)
-                                    ).replace("\\", "/")
-                                }
-                                if gate2_decision is not None
-                                else {}
-                            ),
-                        },
-                    )
-                    save_candidate_registry(registry_path, registry)
-                    if application["applied"]:
-                        prompt = attempt_candidate_prompt
-                        applied_attempt = attempt_index
-                        write_text(work_prompt_path, prompt)
+                        record_evaluated_candidate(
+                            registry,
+                            iteration=iteration,
+                            base_prompt_hash=base_prompt_hash,
+                            candidate_prompt=attempt_candidate_prompt,
+                            rule_text=rule_text,
+                            candidate_metadata=selected_for_registry,
+                            validation_diagnostics=attempt_acceptance,
+                            artifact_paths={
+                                "candidate_prompt": str(attempt_paths["prompt_candidate"].relative_to(run_dir)).replace("\\", "/"),
+                                "acceptance": str(attempt_paths["acceptance"].relative_to(run_dir)).replace("\\", "/"),
+                                "behavior_contract": str(attempt_paths["behavior_contract_decision"].relative_to(run_dir)).replace("\\", "/"),
+                                "impact_summary": str(attempt_paths["validation_impact_summary"].relative_to(run_dir)).replace("\\", "/"),
+                                **({"gate2_impact_summary": str(attempt_paths["confirmation_impact_summary"].relative_to(run_dir)).replace("\\", "/")} if gate2_decision is not None else {}),
+                            },
+                        )
+                        save_candidate_registry(registry_path, registry)
+                        if application["applied"]:
+                            prompt = attempt_candidate_prompt
+                            applied_attempt = attempt_index
+                            write_text(work_prompt_path, prompt)
 
             write_text(attempt_paths["prompt_after"], prompt if attempt_acceptance["applied"] else prompt_before)
             write_text(
@@ -2875,6 +3014,12 @@ def run_training_iterations(
                     ),
                     "gate2_decision": final_attempt.get(
                         "gate2_decision"
+                    ),
+                    "behavior_contract_evaluated": any(
+                        item.get("behavior_contract_evaluated") for item in attempt_payloads
+                    ),
+                    "behavior_contract_decision": final_attempt.get(
+                        "behavior_contract_decision"
                     ),
                     "applied": applied_payload is not None,
                     "accepted": any(item.get("accepted") for item in attempt_payloads),

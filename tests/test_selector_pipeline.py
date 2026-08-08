@@ -2023,6 +2023,9 @@ class SelectorPipelineTest(unittest.TestCase):
             ), patch("run.rewrite_prompt", side_effect=rewrite), patch(
                 "run.evaluate_gate",
                 return_value=([], [], {}, {}, validation),
+            ), patch(
+                "run.evaluate_behavior_contract_replay",
+                return_value={"status": "proven", "proven": True, "rejection_reasons": []},
             ):
                 final_prompt, _ = run_training_iterations(
                     args=args,
@@ -2230,6 +2233,9 @@ class SelectorPipelineTest(unittest.TestCase):
                 ), patch("run.rewrite_prompt", side_effect=rewrite), patch(
                     "run.evaluate_gate", side_effect=validation
                 ) as validation_mock, patch(
+                    "run.evaluate_behavior_contract_replay",
+                    return_value={"status": "proven", "proven": True, "rejection_reasons": []},
+                ), patch(
                     "run.evaluate_iteration_test", return_value={"llm_node_f1": 0.7}
                 ) as heldout_mock:
                     final_prompt, _ = run_training_iterations(

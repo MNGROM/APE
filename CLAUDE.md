@@ -14,6 +14,7 @@ generation and evaluation
 -> Prompt editor
 -> Prompt rewriter
 -> deterministic single-section apply
+-> paired repeated source-case behavior contract
 -> paired repeated gate1
 -> optional fresh paired repeated gate2 only when explicitly enabled
 -> application policy
@@ -54,6 +55,11 @@ generation and evaluation
   必须保留 `preservation_boundary`。
 - 每个 schema 字段都必须被 validator、聚合器或审计产物实际消费。
 
+source-case behavior contract 由 Python 拥有。它从 validated selected findings 编译精确
+obligation，并只把 Localization `shared_repair` 作为可审计的范围文本。Python 不得声称能从
+free-text trigger 分类任意输入，也不得声称验证了 selected node、relation 或 compile anchor
+没有表达的结构行为。
+
 ## Experiment boundaries
 
 - 正式实验默认直接使用 `py run.py` 启动。除非用户主动明确要求使用 PowerShell
@@ -77,6 +83,19 @@ generation and evaluation
   Prompt 必须在同一组 heldout cases 上完成全部 repeats，并保留逐次 summary 与聚合均值；
   repeats 不得进入 candidate discovery、排序、Gate、application 或 Prompt 修改。
 - 同一 epoch 的 candidate attempts 必须使用同一个 base Prompt，不能串行叠加。
+- 每个合法且非重复 candidate 必须先通过 paired repeated source-case behavior contract，才可进入
+  gate1。replay cases 必须从 selected group members 的完整 requirement 和 ground truth 精确重建；
+  它们仍属于 discovery evidence，只证明 candidate 修复声明的 anchors 且未在这些 cases 上引入
+  无关 element errors，不得计入 Gate 或 transfer evidence。
+- behavior contract 将 `missing_node/extra_node/missing_relation/extra_relation` 映射为 LLM Judge
+  matching 中精确的 `FN -> TP` 或 `FP -> absent` obligation，并将 compile/syntax finding 映射为
+  `compile fail -> pass`。每个 paired replay 中新增的无关 node/relation `FN` 或 `FP` 都是
+  preservation violation。缺少 measurement 是 `inconclusive`；全部 repeats 修复且无 violation
+  才是 `proven`；全部 repeats 未修复或均出现 violation 是 `violated`；repeat 分歧是
+  `inconclusive`。不得选择最好 repeat，也不使用多数票或 min-wins。
+- 只有 `behavior_contract.status=proven` 的 candidate 可以进入 gate1 或被任何 application mode
+  应用；`diagnostic-apply` 不得绕过该 eligibility contract。source replay baseline 只允许在相同
+  base Prompt 和完全相同 replay split fingerprint 下复用。
 - 同一 epoch 最多应用一个 candidate。gate1 baseline 在同一 epoch 内只生成一次并复用；显式
   启用 gate2 时，其 baseline/candidate 必须为每个通过 gate1 的 candidate fresh evaluation，
   不得跨 candidate 复用。

@@ -22,6 +22,7 @@ generation
   -> Prompt Editor
   -> Prompt Rewriter (rule_text only)
   -> exact single-section apply
+  -> paired repeated source-case behavior contract
   -> paired repeated Gate1
   -> optional fresh paired repeated Gate2 when explicitly enabled
   -> diagnostic-apply / cumulative / isolated
@@ -50,6 +51,18 @@ Localization 的 `shared_repair` 是后续阶段的 canonical scope。Editor 的
 保留 input trigger 与 structural operation，negative boundary 必须保留 preservation boundary；
 Python 做规范化 contract 校验。Rewriter 最终 `rule_text` 最多两句，并继续要求正向 trigger 和
 负向 boundary 各准确出现一次。
+
+Rewriter 产生合法 candidate 后，Python 从 selected group members 编译精确 target obligations，
+并在这些 source cases 上对 base 与 candidate Prompt 做 paired repeats。contract 使用现有 Judge
+`TP/FP/FN` matching 检查 node/relation anchors，使用 PlantUML compiler 检查 compile anchors，
+同时把相对 paired baseline 新增的非 target `FN/FP` identity 作为 preservation violation。source
+replay 只属于 candidate eligibility evidence，不与 Gate1/Gate2 聚合，也不能支持 transfer claim。
+free-text `shared_repair` 继续用于审计和 Editor/Rewriter binding，Python 不把它当 semantic trigger
+classifier。
+
+全部 repeats 完整修复且没有 preservation violation 才是 `proven` 并进入 Gate1；全部未修复或
+一致 violation 是 `violated`；measurement 缺失或 repeat 分歧是 `inconclusive`。该严格 categorical
+contract 不增加 minimum metric delta、win count 或 regression allowance。
 
 每个已启用 Gate 都按 selected group 的 validated anchor kinds 使用同一无阈值 acceptance 合同。
 Python 将 node findings 映射到 `llm_node_f1`、relation findings 映射到
@@ -103,6 +116,8 @@ required-metric delta。分析器还可以只读派生跨 run 汇总；历史 ru
   canonical IDs 和 selector 调用。
 - `analysis/selector_agents.py`：Localization、Editor、Rewriter 输入辅助和 contract retry。
 - `analysis/prompt_rewriter.py`：只接受 `rule_text` 并调用 exact apply。
+- `analysis/behavior_contract.py`：编译 source-case obligations，并确定性评估 targeted repair 和
+  preservation evidence。
 - `analysis/candidate_registry.py`：run-local candidate 去重、精确 group attempt 历史和 Prompt
   hash。
 - `prompt_ops.py`：Prompt section 解析、candidate byte-preservation 和 append/replace apply。

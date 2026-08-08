@@ -24,6 +24,7 @@ generation + syntax/compiler + LLM element judge
 -> Prompt editor
 -> Prompt rewriter
 -> deterministic single-section candidate assembly
+-> paired repeated source-case behavior contract
 -> paired repeated Gate1
 -> optional fresh paired repeated Gate2 only when explicitly enabled
 -> application policy
@@ -106,9 +107,29 @@ canonical contract 做校验，再确定性修改一个 section；`rule_text` �
 Localization `shared_repair` 的 input trigger 与 structural operation，negative boundary 必须
 保留 preservation boundary。
 
+### Source-case behavior contract
+
+合法且非重复 candidate 组装完成后，Python 从 validated selected group 编译
+`candidate-behavior-contract-v1`。每个 member 使用其 `dataset`、`case_id`、`anchor_kind` 和
+`error_anchor` 贡献一个精确 target obligation；replay case 从已保存的完整 requirement 和 ground
+truth 重建。Localization `shared_repair` 写入产物供审计，但不作为 free-text trigger classifier。
+
+base Prompt 与 candidate 在这些精确 source cases 上按 configured paired repeats 评估，再进入
+Gate1。semantic obligation 要求 `missing_node`/`missing_relation` anchor 从 baseline `FN` 变成
+candidate `TP`，并要求 `extra_node`/`extra_relation` anchor 从 candidate `FP` 消失；compile/syntax
+obligation 要求 baseline compilation failure 和 candidate compilation success。evaluator 同时拒绝
+candidate 相比 paired baseline 新增的无关 node/relation `FN` 或 `FP` identity。该阶段是 targeted
+eligibility 和 preservation check，不是 generalization estimate，cases 不进入 Gate aggregates。
+
+只有每个 repeat 都观察到 baseline failure、candidate repair 且没有无关新错误时，obligation 才是
+`proven`。全部 repeat 均未修复或均发生 boundary violation 时是 `violated`；measurement 缺失或
+repeat 分歧是 `inconclusive`；当前确定性 evaluator 不支持的 evidence 是 `unsupported`。只有整体
+contract 为 `proven` 的 candidate 才继续 Gate1。该 categorical completeness rule 不引入
+`min_delta`、`min_wins`、regression floor 或 best-repeat selection。
+
 ### Gate1, Gate2 and application
 
-结构合法性、Gate1 是否执行、Gate2 是否执行、各自 measurement 是否有效、
+结构合法性、behavior-contract eligibility、Gate1 是否执行、Gate2 是否执行、各自 measurement 是否有效、
 metric decision 和是否应用必须分开记录。正式默认流程只使用从非 heldout training pool
 分层划出的固定 Gate1，默认请求 30 条并使用固定 seed，且不参与 candidate discovery。显式
 启用 Gate2 时，它使用独立 seed 和 split，并与 Gate1、heldout 互不重叠。实际数量及 fingerprint
@@ -125,6 +146,9 @@ Prompt 下继续下一 group；不得进入 heldout。
 - `diagnostic-apply`：candidate 合法且 measurement 有效即应用；metric decision 只记录。
 - `cumulative`：Gate1 必须 accepted；显式启用 Gate2 时还要求 Gate2 accepted。
 - `isolated`：只评估 candidate，不修改 work Prompt。
+
+三种 mode 都要求 behavior contract 在 Gate 前为 `proven`。`diagnostic-apply` 只绕过 Gate metric
+decision，不绕过 source-case repair 或 preservation evidence。
 
 Gate2 默认关闭，仅通过显式 `--gate2` 启用。`auto` 无论 Gate2 是否启用都解析为 `cumulative`，
 因此单 Gate 不会绕过 Gate1 metric decision。需要旧诊断应用语义时必须同时显式使用
